@@ -3,7 +3,6 @@ import propagate_uncertainties as pru
 import binning_utils
 import datetime
 import io
-import tarfile
 import scipy.interpolate
 import json_utils
 import warnings
@@ -14,14 +13,6 @@ def contains_same_bytes(path_a, path_b):
         a_bytes = fa.read()
         b_bytes = fb.read()
         return a_bytes == b_bytes
-
-
-def tar_append(tarout, file_name, file_bytes):
-    with io.BytesIO() as buff:
-        info = tarfile.TarInfo(file_name)
-        info.size = buff.write(file_bytes)
-        buff.seek(0)
-        tarout.addfile(info, buff)
 
 
 def power10space_bin_edges(binning, fine):

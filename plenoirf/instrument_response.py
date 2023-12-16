@@ -5,6 +5,7 @@ from . import production
 from . import analysis
 from . import reconstruction
 from . import outer_telescope_array
+from . import tar_append
 
 import sys
 import numpy as np
@@ -432,7 +433,7 @@ def _run_corsika_and_grid_and_output_to_tmp_dir(
                     bin_idxs_limitation=grid_bin_idxs_limitation,
                 )
                 if event_idx % GRID_SKIP == 0:
-                    utils.tar_append(
+                    tar_append.tar_append(
                         tarout=imgtar,
                         file_name=uid_str + ".f4.gz",
                         file_bytes=atmospheric_cherenkov_response.grid.histogram_to_bytes(
@@ -495,7 +496,7 @@ def _run_corsika_and_grid_and_output_to_tmp_dir(
                     rcor["core_y_m"] = reuse_event["core_y_m"]
                     tabrec["core"].append(rcor)
 
-                    utils.tar_append(
+                    tar_append.tar_append(
                         tarout=imgroitar,
                         file_name=uid_str + ".f4.gz",
                         file_bytes=atmospheric_cherenkov_response.grid.serialization.histogram_to_bytes(
@@ -972,7 +973,7 @@ def _export_grid_region_of_interest_if_passed_loose_trigger(
             if idx in pasttrigger_set:
                 bimg = itar.extractfile(tarinfo).read()
                 filename = unique.UID_FOTMAT_STR.format(idx) + ".f4.gz"
-                utils.tar_append(
+                tar_append.tar_append(
                     tarout=otar,
                     file_name=filename,
                     file_bytes=bimg,
