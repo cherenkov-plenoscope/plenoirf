@@ -13,7 +13,7 @@ with open(os.path.join("plenoirf", "version.py")) as f:
 
 
 setuptools.setup(
-    name="plenoirf",
+    name="plenoirf_cherenkov-plenoscope-project",
     version=version,
     description="Explore magnetic deflection of cosmic-rays below 10GeV.",
     long_description=long_description,
