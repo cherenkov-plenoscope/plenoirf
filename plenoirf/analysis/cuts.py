@@ -9,12 +9,14 @@ def cut_primary_direction_within_angle(
     azimuth_deg,
     zenith_deg,
 ):
-    delta_deg = np.rad2deg(spherical_coordinates.angle_between_az_zd(
-        azimuth1_rad=primary_table["azimuth_rad"],
-        zenith1_rad=primary_table["zenith_rad"],
-        azimuth2_rad=np.deg2rad(azimuth_deg),
-        zenith2_rad=np.deg2rad(zenith_deg),
-    ))
+    delta_deg = np.rad2deg(
+        spherical_coordinates.angle_between_az_zd(
+            azimuth1_rad=primary_table["azimuth_rad"],
+            zenith1_rad=primary_table["zenith_rad"],
+            azimuth2_rad=np.deg2rad(azimuth_deg),
+            zenith2_rad=np.deg2rad(zenith_deg),
+        )
+    )
     inside = delta_deg <= radial_angle_deg
     idxs_inside = primary_table[spt.IDX][inside]
     return idxs_inside

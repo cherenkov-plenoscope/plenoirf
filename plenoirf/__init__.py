@@ -296,7 +296,8 @@ def _estimate_light_field_geometry_of_plenoscope(
                 random_seed=0,
             )
             _ = map_and_reduce_pool.map(
-                merlict_development_kit_python.light_field_calibration.run_job, lfg_jobs
+                merlict_development_kit_python.light_field_calibration.run_job,
+                lfg_jobs,
             )
             merlict_development_kit_python.light_field_calibration.reduce(
                 merlict_reduce_path=executables[

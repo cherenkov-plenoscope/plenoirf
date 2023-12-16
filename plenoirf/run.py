@@ -8,9 +8,8 @@ def make_config():
     c = {}
     c["sites"] = ["namibia", "chile"]
     c["particles"] = ["gamma", "electron", "proton", "helium"]
-    c["magnetic_deflection"] = {"cherenkov_population_target": 2*1000*1000}
+    c["magnetic_deflection"] = {"cherenkov_population_target": 2 * 1000 * 1000}
     return c
-
 
 
 def init(work_dir):
@@ -24,7 +23,3 @@ def init(work_dir):
 
     config_sites_dir = os.path.join(config_dir, "sites")
     os.makedirs(config_sites_dir, exist_ok=True)
-
-
-
-
