@@ -60,7 +60,14 @@ def make_particles():
 
 
 def make_magnetic_deflection():
-    return {"energy_stop_GeV": 64.0}
+    return {
+        "energy_stop_GeV": 64.0,
+        "num_showers_target": 2 * 1000 * 1000,
+        "run": {
+            "num_runs": 192,
+            "num_showers_per_run": 1280,
+        },
+    }
 
 
 def make_plenoptics():

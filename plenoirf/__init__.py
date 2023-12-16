@@ -99,6 +99,41 @@ def run(run_dir, pool, logger=None):
     if logger is None:
         logger = json_line_logger.LoggerStdout()
 
+    logger.debug("gather provenance")
+    prov = provenance.make_provenance()
+    provenance.tar_open_append_close(
+        path=opj(run_dir, "provenance", "init.tar"),
+        provenance=prov,
+    )
+
+    logger.debug("read config")
+    config = configurating.read(run_dir=run_dir)
+
+    while magnetic_deflection.needs_to_run(
+        work_dir=opj(run_dir, "magnetic_deflection"),
+        num_showers_target=config["magnetic_deflection"]["num_showers_target"],
+    ):
+        logger.info("Produce more showers in magnetic_deflection.")
+        magnetic_deflection.run(
+            work_dir=opj(run_dir, "magnetic_deflection"),
+            pool=pool,
+            num_runs=config["magnetic_deflection"]["run"]["num_runs"],
+            num_showers_per_run=config["magnetic_deflection"]["run"][
+                "num_showers_per_run"
+            ],
+            num_showers_target=config["magnetic_deflection"][
+                "num_showers_target"
+            ],
+        )
+    logger.info("magnetic_deflection is complete")
+
+    plenoptics.run(
+        work_dir=opj(run_dir, "plenoptics"),
+        pool=pool,
+        logger=logger,
+    )
+    logger.info("plenoptics is complete")
+
 
 def makesuredirs(path):
     os.makedirs(path, exist_ok=True)
