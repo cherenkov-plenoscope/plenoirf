@@ -1,6 +1,6 @@
-############################################################################
-Estimating Instrument-Response-Functions (IRFs) for the Cherenkov-plenoscope
-############################################################################
+#####################################################################
+Estimating Instrument Response Functions for the Cherenkov plenoscope
+#####################################################################
 |TestStatus| |PyPiStatus| |BlackStyle| |BlackPackStyle| |MITLicenseBadge|
 
 Large scale deployment of the plenoscope's simulation to estimate its response to cosmic-rays, and gamma-rays.
