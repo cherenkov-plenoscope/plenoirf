@@ -5,7 +5,7 @@ from atmospheric_cherenkov_response.production import table as acr_table
 # ------
 
 STRUCTURE = {}
-for key in acr_table.STRUCTURE:
+for key in acr_table.init():
     STRUCTURE[key] = acr_table.STRUCTURE[key].copy()
 
 
