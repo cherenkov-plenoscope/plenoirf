@@ -15,7 +15,7 @@ with open(os.path.join("plenoirf", "version.py")) as f:
 setuptools.setup(
     name="plenoirf_cherenkov-plenoscope-project",
     version=version,
-    description="Explore magnetic deflection of cosmic-rays below 10GeV.",
+    description="Estimate Portal's instrument response function",
     long_description=long_description,
     long_description_content_type="text/x-rst",
     url="https://github.com/cherenkov-plenoscope/plenoirf",
