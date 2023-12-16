@@ -16,6 +16,7 @@ from . import other_instruments
 from . import unique
 from . import outer_telescope_array
 from . import configurating
+from . import tar_append
 
 import os
 from os import path as op
@@ -29,8 +30,16 @@ import json_line_logger
 
 
 def init(run_dir, build_dir="build"):
+    prov = provenance.make_provenance()
+
     run_dir = op.abspath(run_dir)
     makesuredirs(run_dir)
+
+    makesuredirs(opj(run_dir, "provenance"))
+    provenance.tar_open_append_close(
+        path=opj(run_dir, "provenance", "init.tar"),
+        provenance=prov,
+    )
 
     makesuredirs(opj(run_dir, "config"))
     with rnw.open(opj(run_dir, "config", "executables.json"), "wt") as f:

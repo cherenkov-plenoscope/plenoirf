@@ -4,18 +4,23 @@ import datetime
 import warnings
 import shutil
 import corsika_primary
+import json_utils
+import gzip
+from . import tar_append
 
 
-IMPORTANT_PROGRAMS = {
-    "git": {"version": "--version"},
-    "python": {"version": "--version"},
-    "cmake": {"version": "--version"},
-    "make": {"version": "--version"},
-    "gcc": {"version": "--version"},
-    "g++": {"version": "--version"},
-    "f77": {"version": "--version"},
-    "gfortran": {"version": "--version"},
-}
+def list_important_programs():
+    out = {
+        "git": {"version": "--version"},
+        "python": {"version": "--version"},
+        "cmake": {"version": "--version"},
+        "make": {"version": "--version"},
+        "gcc": {"version": "--version"},
+        "g++": {"version": "--version"},
+        "f77": {"version": "--version"},
+        "gfortran": {"version": "--version"},
+    }
+    return out
 
 
 def _get_ascii_stdout_stderr(command, cwd="."):
@@ -112,19 +117,21 @@ def get_current_working_directory():
 
 
 def make_provenance():
+    important_programs = list_important_programs()
+
     p = {}
     p["time"] = get_time_dict_now()
     p["hostname"] = get_hostname()
     p["username"] = get_username()
     p["current_working_directory"] = get_current_working_directory()
     p["which"] = {}
-    for prg in IMPORTANT_PROGRAMS:
+    for prg in important_programs:
         p["which"][prg] = which(prg)
 
     p["version"] = {}
-    for prg in IMPORTANT_PROGRAMS:
+    for prg in important_programs:
         _o, _ = get_ascii_stdout_stderr(
-            command=[prg, IMPORTANT_PROGRAMS[prg]["version"]]
+            command=[prg, important_programs[prg]["version"]]
         )
         p["version"][prg] = _o
 
@@ -180,3 +187,20 @@ def make_basic_version_str(
     )
     ver += "    hostname: {:s}\n".format(ap["hostname"])
     return ver
+
+
+def iso_time_str_to_filename(iso_time_str):
+    return str.replace(iso_time_str, ":", "-")
+
+
+def tar_open_append_close(path, provenance):
+    content = json_utils.dumps(provenance)
+    filename = (
+        iso_time_str_to_filename(iso_time_str=provenance["time"]["iso"])
+        + ".json.gz"
+    )
+    tar_append.tar_open_append_close(
+        path=path,
+        filename=filename,
+        filebytes=gzip.compress(data=content.encode()),
+    )
