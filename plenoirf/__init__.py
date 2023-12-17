@@ -5,18 +5,19 @@ from .version import __version__
 # from . import features
 # from . import table
 # from . import instrument_response
-from . import provenance
+
 
 # from . import create_test_tables
 # from . import reconstruction
 from . import utils
-
-# from . import production
-from . import other_instruments
-from . import bookkeeping
 from . import outer_telescope_array
-from . import configurating
 from . import tar_append
+from . import other_instruments
+
+from . import provenance
+from . import bookkeeping
+from . import producing
+from . import configurating
 
 import os
 from os import path as op

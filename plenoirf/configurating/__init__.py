@@ -72,8 +72,8 @@ def make_executables_paths(build_dir="build"):
 def make_sites():
     out = {
         "instruemnt_response": {
-            "namibia": {"random_seed_offset": 6},
-            "chile": {"random_seed_offset": 4},
+            "namibia": {"random_seed_offset": 0},
+            "chile": {"random_seed_offset": 1},
         },
         "only_magnetic_deflection": ["lapalma", "namibiaOff"],
     }
@@ -101,16 +101,16 @@ def compile_sites(sites):
 def make_particles():
     return {
         "gamma": {
-            "random_seed_offset": 1,
+            "random_seed_offset": 0,
         },
         "electron": {
-            "random_seed_offset": 3,
+            "random_seed_offset": 1,
         },
         "proton": {
-            "random_seed_offset": 14,
+            "random_seed_offset": 2,
         },
         "helium": {
-            "random_seed_offset": 402,
+            "random_seed_offset": 3,
         },
     }
 
