@@ -4,8 +4,11 @@ from os import path as op
 from os.path import join as opj
 
 
-def read(run_dir):
-    cfg = json_utils.tree.read(opj(run_dir, "config"))
+def read(plenoirf_dir):
+    """
+    Returns the configuration of a plenoirf directory.
+    """
+    cfg = json_utils.tree.read(opj(plenoirf_dir, "config"))
     cfg["sites"] = compile_sites(sites=cfg["sites"])
     return cfg
 
@@ -72,3 +75,15 @@ def make_magnetic_deflection():
 
 def make_plenoptics():
     return {"random_seed": 42, "minimal": False}
+
+
+def make_instruments():
+    """
+    Returns the list of instrumtns which are simulated.
+    The instruments here are keys (str) which point to an instrument in
+    the plenoptic package.
+
+    The Portal Cherenkov plenoscope in its default geometry without
+    deformations and without misalignments is called 'diag9_default_default'.
+    """
+    return ["diag9_default_default"]

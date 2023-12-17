@@ -29,55 +29,58 @@ import magnetic_deflection
 import json_line_logger
 
 
-def init(run_dir, build_dir="build"):
-    prov = provenance.make_provenance()
+def init(plenoirf_dir, build_dir="build"):
+    """
+    Initializes a directory in where the instrument response function of an
+    atmospheric Cherenkov instrument is estimated.
 
-    run_dir = op.abspath(run_dir)
-    makesuredirs(run_dir)
+    Parameters
+    ----------
+    plenoirf_dir : str
+        Path of the new plenoirf directory.
+    build_dir : str
+        Path to the build directory where the CORSIKA and merlict executables
+        are located.
 
-    makesuredirs(opj(run_dir, "provenance"))
-    provenance.tar_open_append_close(
-        path=opj(run_dir, "provenance", "init.tar"),
-        provenance=prov,
-    )
+    Directory structure
+    -------------------
+    |-> plenoirf_dir
+        |-> magnetic_deflection
+        |   |-> namibia
+        |   |   |-> gamma
+        |   |   |-> electron
+        |   |   |-> proton
+        |   |   |-> helium
+        |   |-> ...
+        |
+        |-> plenoptics
+        |   |-> instruments
+        |       |-> diag9_default_default
+        |       |-> diag9_perlin55mm_gentle
+        |       |-> ...
+        |
+        |-> response
+        |   |-> namibia
+        |   |   |-> gamma
+        |   |   |   |-> diag9_default_default
 
-    makesuredirs(opj(run_dir, "config"))
-    with rnw.open(opj(run_dir, "config", "executables.json"), "wt") as f:
-        f.write(
-            json_utils.dumps(
-                configurating.make_executables_paths(build_dir=build_dir),
-                indent=4,
-            )
-        )
+    """
+    plenoirf_dir = op.abspath(plenoirf_dir)
+    makesuredirs(plenoirf_dir)
 
-    with rnw.open(opj(run_dir, "config", "sites.json"), "wt") as f:
-        f.write(json_utils.dumps(configurating.make_sites(), indent=4))
+    _init_provenance(plenoirf_dir=plenoirf_dir)
+    _init_write_default_config(plenoirf_dir=plenoirf_dir, build_dir=build_dir)
 
-    with rnw.open(opj(run_dir, "config", "particles.json"), "wt") as f:
-        f.write(json_utils.dumps(configurating.make_particles(), indent=4))
-
-    with rnw.open(
-        opj(run_dir, "config", "magnetic_deflection.json"), "wt"
-    ) as f:
-        f.write(
-            json_utils.dumps(
-                configurating.make_magnetic_deflection(), indent=4
-            )
-        )
-
-    with rnw.open(opj(run_dir, "config", "plenoptics.json"), "wt") as f:
-        f.write(json_utils.dumps(configurating.make_plenoptics(), indent=4))
-
-    config = configurating.read(run_dir=run_dir)
+    config = configurating.read(plenoirf_dir=plenoirf_dir)
 
     plenoptics.init(
-        work_dir=opj(run_dir, "plenoptics"),
+        work_dir=opj(plenoirf_dir, "plenoptics"),
         random_seed=config["plenoptics"]["random_seed"],
         minimal=config["plenoptics"]["minimal"],
     )
 
     magnetic_deflection.init(
-        work_dir=opj(run_dir, "magnetic_deflection"),
+        work_dir=opj(plenoirf_dir, "magnetic_deflection"),
         energy_stop_GeV=config["magnetic_deflection"]["energy_stop_GeV"],
         site_keys=config["sites"]["magnetic_deflection"],
         particle_keys=config["particles"],
@@ -85,14 +88,55 @@ def init(run_dir, build_dir="build"):
     )
 
 
-def run(run_dir, pool, logger=None):
+def _init_provenance(plenoirf_dir):
+    prov = provenance.make_provenance()
+    makesuredirs(opj(plenoirf_dir, "provenance"))
+    provenance.tar_open_append_close(
+        path=opj(plenoirf_dir, "provenance", "init.tar"),
+        provenance=prov,
+    )
+
+
+def _init_write_default_config(plenoirf_dir, build_dir):
+    makesuredirs(opj(plenoirf_dir, "config"))
+    with rnw.open(opj(plenoirf_dir, "config", "executables.json"), "wt") as f:
+        f.write(
+            json_utils.dumps(
+                configurating.make_executables_paths(build_dir=build_dir),
+                indent=4,
+            )
+        )
+
+    with rnw.open(opj(plenoirf_dir, "config", "sites.json"), "wt") as f:
+        f.write(json_utils.dumps(configurating.make_sites(), indent=4))
+
+    with rnw.open(opj(plenoirf_dir, "config", "particles.json"), "wt") as f:
+        f.write(json_utils.dumps(configurating.make_particles(), indent=4))
+
+    with rnw.open(
+        opj(plenoirf_dir, "config", "magnetic_deflection.json"), "wt"
+    ) as f:
+        f.write(
+            json_utils.dumps(
+                configurating.make_magnetic_deflection(), indent=4
+            )
+        )
+
+    with rnw.open(opj(plenoirf_dir, "config", "plenoptics.json"), "wt") as f:
+        f.write(json_utils.dumps(configurating.make_plenoptics(), indent=4))
+
+    with rnw.open(opj(plenoirf_dir, "config", "instruments.json"), "wt") as f:
+        f.write(json_utils.dumps(configurating.make_instruments(), indent=4))
+
+
+def run(plenoirf_dir, pool, logger=None):
     """
     Run all simulations.
 
     Parameters
     ----------
-    run_dir : str
-        Path to the run_dir initialized with init(run_dir).
+    plenoirf_dir : str
+        Path to the plenoirf_dir initialized with init(plenoirf_dir).
     pool : e.g. multiprocessing.Pool
         Parallel compute pool which must provide a map() function.
     """
@@ -102,20 +146,20 @@ def run(run_dir, pool, logger=None):
     logger.debug("gather provenance")
     prov = provenance.make_provenance()
     provenance.tar_open_append_close(
-        path=opj(run_dir, "provenance", "init.tar"),
+        path=opj(plenoirf_dir, "provenance", "run.tar"),
         provenance=prov,
     )
 
     logger.debug("read config")
-    config = configurating.read(run_dir=run_dir)
+    config = configurating.read(plenoirf_dir=plenoirf_dir)
 
     while magnetic_deflection.needs_to_run(
-        work_dir=opj(run_dir, "magnetic_deflection"),
+        work_dir=opj(plenoirf_dir, "magnetic_deflection"),
         num_showers_target=config["magnetic_deflection"]["num_showers_target"],
     ):
         logger.info("Produce more showers in magnetic_deflection.")
         magnetic_deflection.run(
-            work_dir=opj(run_dir, "magnetic_deflection"),
+            work_dir=opj(plenoirf_dir, "magnetic_deflection"),
             pool=pool,
             num_runs=config["magnetic_deflection"]["run"]["num_runs"],
             num_showers_per_run=config["magnetic_deflection"]["run"][
@@ -128,7 +172,7 @@ def run(run_dir, pool, logger=None):
     logger.info("magnetic_deflection is complete")
 
     plenoptics.run(
-        work_dir=opj(run_dir, "plenoptics"),
+        work_dir=opj(plenoirf_dir, "plenoptics"),
         pool=pool,
         logger=logger,
     )
