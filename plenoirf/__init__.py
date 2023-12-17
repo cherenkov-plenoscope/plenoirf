@@ -86,7 +86,7 @@ def init(plenoirf_dir, build_dir="build"):
         corsika_primary_path=config["executables"]["corsika_primary_path"],
     )
 
-    configurating.version_control_init(plenoirf_dir=plenoirf_dir)
+    configurating.version_control.init(plenoirf_dir=plenoirf_dir)
 
 
 def _init_provenance(plenoirf_dir):
@@ -112,7 +112,7 @@ def run(plenoirf_dir, pool, logger=None):
     if logger is None:
         logger = json_line_logger.LoggerStdout()
 
-    assert configurating.version_control_is_clean(plenoirf_dir=plenoirf_dir)
+    assert configurating.version_control.is_clean(plenoirf_dir=plenoirf_dir)
 
     logger.debug("gather provenance")
     prov = provenance.make_provenance()

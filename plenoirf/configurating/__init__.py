@@ -23,7 +23,8 @@ def write_default(plenoirf_dir, build_dir):
     with rnw.open(opj(plenoirf_dir, "config", "executables.json"), "wt") as f:
         f.write(
             json_utils.dumps(
-                make_executables_paths(build_dir=build_dir), indent=4)
+                make_executables_paths(build_dir=build_dir), indent=4
+            )
         )
 
     with rnw.open(opj(plenoirf_dir, "config", "sites.json"), "wt") as f:
@@ -41,7 +42,6 @@ def write_default(plenoirf_dir, build_dir):
 
     with rnw.open(opj(plenoirf_dir, "config", "instruments.json"), "wt") as f:
         f.write(json_utils.dumps(make_instruments(), indent=4))
-
 
 
 def make_executables_paths(build_dir="build"):
@@ -142,37 +142,3 @@ def make_instruments():
     deformations and without misalignments is called 'diag9_default_default'.
     """
     return ["diag9_default_default"]
-
-
-
-def version_control_init(plenoirf_dir):
-    with rnw.open(opj(plenoirf_dir, ".gitignore"), "wt") as f:
-        f.write(_make_plenoirf_dir_gitignore())
-    repo = git.Repo.init(plenoirf_dir)
-    repo.git.branch(M="main") # change name of branch to 'main'
-    repo.git.add(".")
-    repo.git.commit(m="init")
-
-
-def version_control_is_dirty(plenoirf_dir):
-    repo = git.Repo(plenoirf_dir)
-    if repo.active_branch.name == "main"
-        return repo.is_dirty()
-    else:
-        return True
-
-
-def version_control_is_clean(plenoirf_dir):
-    return not version_control_is_dirty(plenoirf_dir=plenoirf_dir)
-
-
-def _make_plenoirf_dir_gitignore():
-    txt = ""
-    txt += "magnetic_deflection/*/*/store\n"
-    txt += "magnetic_deflection/*/*/production\n"
-    txt += "magnetic_deflection/plots\n"
-    txt += "plenoptics/*\n"
-    txt += "!plenoptics/config\n"
-    txt += "response\n"
-    txt += "provenance\n"
-    return txt
