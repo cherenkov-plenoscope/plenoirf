@@ -10,6 +10,7 @@ def read(plenoirf_dir):
     """
     cfg = json_utils.tree.read(opj(plenoirf_dir, "config"))
     cfg["sites"] = compile_sites(sites=cfg["sites"])
+    cfg["particles"] = compile_particles(particles=cfg["particles"])
     return cfg
 
 
@@ -40,7 +41,10 @@ def make_executables_paths(build_dir="build"):
 
 def make_sites():
     out = {
-        "instruemnt_response": ["namibia", "chile"],
+        "instruemnt_response": {
+            "namibia": {"random_seed_offset": 6},
+            "chile": {"random_seed_offset": 4},
+        },
         "only_magnetic_deflection": ["lapalma", "namibiaOff"],
     }
     return out
@@ -51,15 +55,36 @@ def compile_sites(sites):
         set(sites["instruemnt_response"] + sites["only_magnetic_deflection"])
     )
 
-    # assert
+    # assert only_magnetic_deflection does not lie
     for key in sites["only_magnetic_deflection"]:
         assert key not in sites["instruemnt_response"]
 
+    assert_random_seed_offset_range(obj=sites["instruemnt_response"])
+    assert_random_seed_offset_unique(obj=sites["instruemnt_response"])
     return sites
 
 
 def make_particles():
-    return ["gamma", "electron", "proton", "helium"]
+    return {
+        "gamma": {
+            "random_seed_offset": 1,
+        },
+        "electron": {
+            "random_seed_offset": 3,
+        },
+        "proton": {
+            "random_seed_offset": 14,
+        },
+        "helium": {
+            "random_seed_offset": 402,
+        },
+    }
+
+
+def compile_particles(particles):
+    assert_random_seed_offset_range(obj=particles)
+    assert_random_seed_offset_unique(obj=particles)
+    return particles
 
 
 def make_magnetic_deflection():
@@ -87,3 +112,15 @@ def make_instruments():
     deformations and without misalignments is called 'diag9_default_default'.
     """
     return ["diag9_default_default"]
+
+
+def assert_random_seed_offset_range(obj):
+    for key in obj:
+        assert 0 <= obj[key]["random_seed_offset"] < 1000
+
+
+def assert_random_seed_offset_unique(obj):
+    num_unique_random_seed_offsets = len(
+        set([obj[key]["random_seed_offset"] for key in obj])
+    )
+    assert num_unique_random_seed_offsets == len(obj)
