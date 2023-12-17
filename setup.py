@@ -42,6 +42,7 @@ setuptools.setup(
         "confusion_matrix_sebastian-achim-mueller>=0.0.4",
         "flux_sensitivity_sebastian-achim-mueller>=0.0.1",
         "rename_after_writing",
+        "gitpython>=3.1.40",
     ],
     package_data={"plenoirf": [os.path.join("summary", "scripts", "*")]},
     classifiers=[

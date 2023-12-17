@@ -3,6 +3,7 @@ import os
 import rename_after_writing as rnw
 from os import path as op
 from os.path import join as opj
+import git
 
 from . import bookkeeping
 
@@ -14,9 +15,6 @@ def read(plenoirf_dir):
     cfg = json_utils.tree.read(opj(plenoirf_dir, "config"))
     cfg["sites"] = compile_sites(sites=cfg["sites"])
     cfg["particles"] = compile_particles(particles=cfg["particles"])
-    assert_config_random_seed_offsets_did_not_change_since_first_seen(
-        plenoirf_dir=plenoirf_dir, config=cfg
-    )
     return cfg
 
 
@@ -25,8 +23,7 @@ def write_default(plenoirf_dir, build_dir):
     with rnw.open(opj(plenoirf_dir, "config", "executables.json"), "wt") as f:
         f.write(
             json_utils.dumps(
-                make_executables_paths(build_dir=build_dir), indent=4
-            )
+                make_executables_paths(build_dir=build_dir), indent=4)
         )
 
     with rnw.open(opj(plenoirf_dir, "config", "sites.json"), "wt") as f:
@@ -44,6 +41,7 @@ def write_default(plenoirf_dir, build_dir):
 
     with rnw.open(opj(plenoirf_dir, "config", "instruments.json"), "wt") as f:
         f.write(json_utils.dumps(make_instruments(), indent=4))
+
 
 
 def make_executables_paths(build_dir="build"):
@@ -146,34 +144,35 @@ def make_instruments():
     return ["diag9_default_default"]
 
 
-def assert_config_random_seed_offsets_did_not_change_since_first_seen(
-    plenoirf_dir,
-    config,
-):
-    fresh = {}
-    fresh["sites_instruemnt_response"] = config["sites"]["instruemnt_response"]
-    fresh["particles"] = config["particles"]
 
-    path = opj(plenoirf_dir, ".random_seed_offsets_when_first_seen.json")
-    if op.exists(path):
-        with open(path, "rt") as f:
-            last = json_utils.loads(f.read())
+def version_control_init(plenoirf_dir):
+    with rnw.open(opj(plenoirf_dir, ".gitignore"), "wt") as f:
+        f.write(_make_plenoirf_dir_gitignore())
+    repo = git.Repo.init(plenoirf_dir)
+    repo.git.branch(M="main") # change name of branch to 'main'
+    repo.git.add(".")
+    repo.git.commit(m="init")
 
-        union = {}
-        union[
-            "sites_instruemnt_response"
-        ] = bookkeeping.random_seed_offset.combine_into_valid_union(
-            last=last["sites_instruemnt_response"],
-            fresh=fresh["sites_instruemnt_response"],
-        )
-        union[
-            "particles"
-        ] = bookkeeping.random_seed_offset.combine_into_valid_union(
-            last=last["particles"], fresh=fresh["particles"]
-        )
-        with open(path, "wt") as f:
-            f.write(json_utils.dumps(union))
 
+def version_control_is_dirty(plenoirf_dir):
+    repo = git.Repo(plenoirf_dir)
+    if repo.active_branch.name == "main"
+        return repo.is_dirty()
     else:
-        with open(path, "wt") as f:
-            f.write(json_utils.dumps(fresh))
+        return True
+
+
+def version_control_is_clean(plenoirf_dir):
+    return not version_control_is_dirty(plenoirf_dir=plenoirf_dir)
+
+
+def _make_plenoirf_dir_gitignore():
+    txt = ""
+    txt += "magnetic_deflection/*/*/store\n"
+    txt += "magnetic_deflection/*/*/production\n"
+    txt += "magnetic_deflection/plots\n"
+    txt += "plenoptics/*\n"
+    txt += "!plenoptics/config\n"
+    txt += "response\n"
+    txt += "provenance\n"
+    return txt
