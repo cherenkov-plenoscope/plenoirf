@@ -18,29 +18,31 @@ def read(plenoirf_dir):
 
 
 def write_default(plenoirf_dir, build_dir):
-    os.makedirs(opj(plenoirf_dir, "config"), exist_ok=False)
-    with rnw.open(opj(plenoirf_dir, "config", "executables.json"), "wt") as f:
+    pdir = plenoirf_dir
+    os.makedirs(opj(pdir, "config"), exist_ok=False)
+    with rnw.open(opj(pdir, "config", "executables.json"), "wt") as f:
         f.write(
             json_utils.dumps(
                 make_executables_paths(build_dir=build_dir), indent=4
             )
         )
 
-    with rnw.open(opj(plenoirf_dir, "config", "sites.json"), "wt") as f:
+    with rnw.open(opj(pdir, "config", "sites.json"), "wt") as f:
         f.write(json_utils.dumps(make_sites(), indent=4))
-    with rnw.open(opj(plenoirf_dir, "config", "particles.json"), "wt") as f:
+    with rnw.open(opj(pdir, "config", "particles.json"), "wt") as f:
         f.write(json_utils.dumps(make_particles(), indent=4))
 
-    with rnw.open(
-        opj(plenoirf_dir, "config", "magnetic_deflection.json"), "wt"
-    ) as f:
+    with rnw.open(opj(pdir, "config", "magnetic_deflection.json"), "wt") as f:
         f.write(json_utils.dumps(make_magnetic_deflection(), indent=4))
 
-    with rnw.open(opj(plenoirf_dir, "config", "plenoptics.json"), "wt") as f:
+    with rnw.open(opj(pdir, "config", "plenoptics.json"), "wt") as f:
         f.write(json_utils.dumps(make_plenoptics(), indent=4))
 
-    with rnw.open(opj(plenoirf_dir, "config", "instruments.json"), "wt") as f:
+    with rnw.open(opj(pdir, "config", "instruments.json"), "wt") as f:
         f.write(json_utils.dumps(make_instruments(), indent=4))
+
+    with rnw.open(opj(pdir, "config", "pointing.json"), "wt") as f:
+        f.write(json_utils.dumps(make_pointing(), indent=4))
 
 
 def make_executables_paths(build_dir="build"):
@@ -78,9 +80,7 @@ def make_sites():
 
 def compile_sites(sites):
     sites["magnetic_deflection"] = list(
-        set(
-            sites["instruemnt_response"] + sites["only_magnetic_deflection"]
-        )
+        set(sites["instruemnt_response"] + sites["only_magnetic_deflection"])
     )
     # assert only_magnetic_deflection does not lie
     for key in sites["only_magnetic_deflection"]:
@@ -117,3 +117,13 @@ def make_instruments():
     deformations and without misalignments is called 'diag9_default_default'.
     """
     return ["diag9_default_default"]
+
+
+def make_pointing():
+    return {
+        "model": "cable_robo_mount",
+        "range": {
+            "max_zenith_distance_rad": np.deg2rad(60.0),
+            "run_half_angle_rad": np.deg2rad(5.0),
+        },
+    }

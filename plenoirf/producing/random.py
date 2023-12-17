@@ -4,12 +4,12 @@ import magnetic_deflection
 import atmospheric_cherenkov_response as acr
 
 
-def draw_events(
+def draw_primaries_and_pointings(
     prng,
     run_id,
     site_particle_magnetic_deflection,
-    instrument_pointing_range,
-    instrument_field_of_view_half_angle_rad,
+    pointing_range,
+    field_of_view_half_angle_rad,
     num_events,
 ):
     """
@@ -25,6 +25,10 @@ def draw_events(
     site_particle_magnetic_deflection : magnetic_deflection.allsky.Random()
         Describes from what direction the given particle must be thrown in
         order to see its Cherenkov-light. Must match 'particle' and 'site'.
+    pointing_range : dict
+        Instrument's range to draw pointings from.
+    field_of_view_half_angle_rad : float
+        Instrument's field-of-view
     num_events : int
         The number of events in the run.
 
@@ -39,7 +43,7 @@ def draw_events(
     # ----------------
     assert run_id > 0
     assert num_events > 0
-    assert instrument_field_of_view_half_angle_rad > 0.0
+    assert field_of_view_half_angle_rad > 0.0
 
     site = site_particle_magnetic_deflection.config["site"]
     acr.sites.assert_valid(site)
@@ -64,13 +68,13 @@ def draw_events(
 
     # instrument pointings
     # --------------------
-    instrument_pointings = []
+    pointings = []
     for i in range(num_events):
         instrument_pointing = acr.pointing_range.draw_pointing(
-            pointing_range=instrument_pointing_range,
+            pointing_range=pointing_range,
             prng=prng,
         )
-        instrument_pointings.append(instrument_pointing)
+        pointings.append(instrument_pointing)
 
     # primary directions
     # ------------------
@@ -81,18 +85,20 @@ def draw_events(
         particle["population"]["direction"]["scatter_cone_half_angle_deg"]
     )
     primary_directions = []
+    primary_directions_dbg = []
     for i in range(num_events):
         res, dbg = rnd.draw_particle_direction(
             prng=prng,
             method="grid",
-            azimuth_rad=instrument_pointings[i]["azimuth_rad"],
-            zenith_rad=instrument_pointings[i]["zenith_rad"],
-            half_angle_rad=instrument_field_of_view_half_angle_rad,
+            azimuth_rad=pointings[i]["azimuth_rad"],
+            zenith_rad=pointings[i]["zenith_rad"],
+            half_angle_rad=field_of_view_half_angle_rad,
             energy_GeV=energies_GeV[i],
             shower_spread_half_angle_rad=_shower_spread_half_angle_rad,
             min_num_cherenkov_photons=1e3,
         )
         primary_directions.append(res)
+        primary_directions_dbg.append(dbg)
 
     i8 = np.int64
     f8 = np.float64
@@ -125,7 +131,7 @@ def draw_events(
 
     out = {}
     out["corsika_primary_steering"] = corsika_primary_steering
-    out["instrument_pointings"] = instrument_pointings
+    out["pointings"] = pointings
     out["primary_directions"] = []
     for x in primary_directions:
         y = {}
