@@ -3,8 +3,13 @@ from os import path as op
 from os.path import join as opj
 import magnetic_deflection
 import tempfile
-import json_line_logger as jlog
+import json_utils
+import json_line_logger
 import copy
+import merlict_development_kit_python
+import numpy as np
+import atmospheric_cherenkov_response as acr
+import rename_after_writing as rnw
 
 from .. import bookkeeping
 from .. import configurating
@@ -23,7 +28,7 @@ def make_example_job(
     site_key="chile",
     particle_key="electron",
     instrument_key="diag9_default_default",
-    num_events=16,
+    num_events=128,
 ):
     job = {}
     job["run_id"] = run_id
@@ -43,18 +48,17 @@ def run_job(job):
 
 def run_job_in_dir(job, tmp_dir):
     paths = make_paths(job=job)
-
-    os.makedirs(paths["stage_dir"])
+    os.makedirs(paths["stage_dir"], exist_ok=True)
 
     logger_path = op.join(paths["stage_dir"], "log.jsonl")
-    logger = jlog.LoggerFile(path=logger_path + ".tmp")
+    logger = json_line_logger.LoggerFile(path=logger_path + ".tmp")
     logger.info("starting")
 
     logger.debug("making tmp_dir: {:s}".format(tmp_dir))
     os.makedirs(tmp_dir, exist_ok=True)
 
     logger.debug("reading plenoirf config")
-    config = configurating.read(plenoirf_dir=plenoirf_dir)
+    config = configurating.read(plenoirf_dir=job["plenoirf_dir"])
     logger.debug("reading light-field camera config")
     light_field_camera_config = read_light_field_camera_config(
         plenoirf_dir=job["plenoirf_dir"],
@@ -67,7 +71,7 @@ def run_job_in_dir(job, tmp_dir):
     logger.debug("initializing this run's pointing-range")
     pointing_range = make_pointing_range_for_run(config=config, prng=prng)
 
-    with jlog.TimeDelta(logger, "draw_primary_and_pointing"):
+    with json_line_logger.TimeDelta(logger, "draw_primary_and_pointing"):
         _allsky = magnetic_deflection.allsky.AllSky(
             paths["magnetic_deflection_allsky"]
         )
@@ -85,6 +89,10 @@ def run_job_in_dir(job, tmp_dir):
             ),
             num_events=job["num_events"],
         )
+
+        for kkk in drw:
+            with rnw.open(opj(paths["stage_dir"], kkk + ".json"), "wt") as f:
+                f.write(json_utils.dumps(drw[kkk], indent=4))
 
     logger.info("ending")
     logger.debug("moving log.json to final path")
@@ -107,32 +115,31 @@ def read_light_field_camera_config(plenoirf_dir, instrument_key):
     )
 
 
-def make_paths(
-    plenoirf_dir,
-    site_key,
-    particle_key,
-    instrument_key,
-):
+def make_paths(job):
     paths = {}
-    paths["plenoirf_dir"] = plenoirf_dir
+    paths["plenoirf_dir"] = job["plenoirf_dir"]
     paths["stage_dir"] = opj(
-        plenoirf_dir,
+        job["plenoirf_dir"],
         "response",
-        instrument_key,
-        site_key,
-        particle_key,
+        job["instrument_key"],
+        job["site_key"],
+        job["particle_key"],
         "stage",
     )
     paths["magnetic_deflection_allsky"] = opj(
-        plenoirf_dir, "magnetic_deflection", site_key, particle_key
+        job["plenoirf_dir"],
+        "magnetic_deflection",
+        job["site_key"],
+        job["particle_key"],
     )
     paths["light_field_calibration"] = opj(
-        plenoirf_dir,
+        job["plenoirf_dir"],
         "plenoptics",
         "instruments",
-        instrument_key,
+        job["instrument_key"],
         "light_field_geometry",
     )
+    return paths
 
 
 def make_pointing_range_for_run(config, prng):
