@@ -1,7 +1,10 @@
-import os
 import json_utils
+import os
+import rename_after_writing as rnw
 from os import path as op
 from os.path import join as opj
+
+from . import bookkeeping
 
 
 def read(plenoirf_dir):
@@ -11,7 +14,36 @@ def read(plenoirf_dir):
     cfg = json_utils.tree.read(opj(plenoirf_dir, "config"))
     cfg["sites"] = compile_sites(sites=cfg["sites"])
     cfg["particles"] = compile_particles(particles=cfg["particles"])
+    assert_config_random_seed_offsets_did_not_change_since_first_seen(
+        plenoirf_dir=plenoirf_dir, config=cfg
+    )
     return cfg
+
+
+def write_default(plenoirf_dir, build_dir):
+    os.makedirs(opj(plenoirf_dir, "config"), exist_ok=False)
+    with rnw.open(opj(plenoirf_dir, "config", "executables.json"), "wt") as f:
+        f.write(
+            json_utils.dumps(
+                make_executables_paths(build_dir=build_dir), indent=4
+            )
+        )
+
+    with rnw.open(opj(plenoirf_dir, "config", "sites.json"), "wt") as f:
+        f.write(json_utils.dumps(make_sites(), indent=4))
+    with rnw.open(opj(plenoirf_dir, "config", "particles.json"), "wt") as f:
+        f.write(json_utils.dumps(make_particles(), indent=4))
+
+    with rnw.open(
+        opj(plenoirf_dir, "config", "magnetic_deflection.json"), "wt"
+    ) as f:
+        f.write(json_utils.dumps(make_magnetic_deflection(), indent=4))
+
+    with rnw.open(opj(plenoirf_dir, "config", "plenoptics.json"), "wt") as f:
+        f.write(json_utils.dumps(make_plenoptics(), indent=4))
+
+    with rnw.open(opj(plenoirf_dir, "config", "instruments.json"), "wt") as f:
+        f.write(json_utils.dumps(make_instruments(), indent=4))
 
 
 def make_executables_paths(build_dir="build"):
@@ -59,8 +91,9 @@ def compile_sites(sites):
     for key in sites["only_magnetic_deflection"]:
         assert key not in sites["instruemnt_response"]
 
-    assert_random_seed_offset_range(obj=sites["instruemnt_response"])
-    assert_random_seed_offset_unique(obj=sites["instruemnt_response"])
+    bookkeeping.random_seed_offset.assert_valid_dict(
+        obj=sites["instruemnt_response"]
+    )
     return sites
 
 
@@ -82,8 +115,7 @@ def make_particles():
 
 
 def compile_particles(particles):
-    assert_random_seed_offset_range(obj=particles)
-    assert_random_seed_offset_unique(obj=particles)
+    bookkeeping.random_seed_offset.assert_valid_dict(obj=particles)
     return particles
 
 
@@ -114,13 +146,34 @@ def make_instruments():
     return ["diag9_default_default"]
 
 
-def assert_random_seed_offset_range(obj):
-    for key in obj:
-        assert 0 <= obj[key]["random_seed_offset"] < 1000
+def assert_config_random_seed_offsets_did_not_change_since_first_seen(
+    plenoirf_dir,
+    config,
+):
+    fresh = {}
+    fresh["sites_instruemnt_response"] = config["sites"]["instruemnt_response"]
+    fresh["particles"] = config["particles"]
 
+    path = opj(plenoirf_dir, ".random_seed_offsets_when_first_seen.json")
+    if op.exists(path):
+        with open(path, "rt") as f:
+            last = json_utils.loads(f.read())
 
-def assert_random_seed_offset_unique(obj):
-    num_unique_random_seed_offsets = len(
-        set([obj[key]["random_seed_offset"] for key in obj])
-    )
-    assert num_unique_random_seed_offsets == len(obj)
+        union = {}
+        union[
+            "sites_instruemnt_response"
+        ] = bookkeeping.random_seed_offset.combine_into_valid_union(
+            last=last["sites_instruemnt_response"],
+            fresh=fresh["sites_instruemnt_response"],
+        )
+        union[
+            "particles"
+        ] = bookkeeping.random_seed_offset.combine_into_valid_union(
+            last=last["particles"], fresh=fresh["particles"]
+        )
+        with open(path, "wt") as f:
+            f.write(json_utils.dumps(union))
+
+    else:
+        with open(path, "wt") as f:
+            f.write(json_utils.dumps(fresh))

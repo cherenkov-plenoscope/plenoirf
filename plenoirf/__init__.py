@@ -69,8 +69,7 @@ def init(plenoirf_dir, build_dir="build"):
     makesuredirs(plenoirf_dir)
 
     _init_provenance(plenoirf_dir=plenoirf_dir)
-    _init_write_default_config(plenoirf_dir=plenoirf_dir, build_dir=build_dir)
-
+    configurating.write_default(plenoirf_dir=plenoirf_dir, build_dir=build_dir)
     config = configurating.read(plenoirf_dir=plenoirf_dir)
 
     plenoptics.init(
@@ -95,38 +94,6 @@ def _init_provenance(plenoirf_dir):
         path=opj(plenoirf_dir, "provenance", "init.tar"),
         provenance=prov,
     )
-
-
-def _init_write_default_config(plenoirf_dir, build_dir):
-    makesuredirs(opj(plenoirf_dir, "config"))
-    with rnw.open(opj(plenoirf_dir, "config", "executables.json"), "wt") as f:
-        f.write(
-            json_utils.dumps(
-                configurating.make_executables_paths(build_dir=build_dir),
-                indent=4,
-            )
-        )
-
-    with rnw.open(opj(plenoirf_dir, "config", "sites.json"), "wt") as f:
-        f.write(json_utils.dumps(configurating.make_sites(), indent=4))
-
-    with rnw.open(opj(plenoirf_dir, "config", "particles.json"), "wt") as f:
-        f.write(json_utils.dumps(configurating.make_particles(), indent=4))
-
-    with rnw.open(
-        opj(plenoirf_dir, "config", "magnetic_deflection.json"), "wt"
-    ) as f:
-        f.write(
-            json_utils.dumps(
-                configurating.make_magnetic_deflection(), indent=4
-            )
-        )
-
-    with rnw.open(opj(plenoirf_dir, "config", "plenoptics.json"), "wt") as f:
-        f.write(json_utils.dumps(configurating.make_plenoptics(), indent=4))
-
-    with rnw.open(opj(plenoirf_dir, "config", "instruments.json"), "wt") as f:
-        f.write(json_utils.dumps(configurating.make_instruments(), indent=4))
 
 
 def run(plenoirf_dir, pool, logger=None):
