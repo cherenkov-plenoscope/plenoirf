@@ -1,11 +1,11 @@
 import json_utils
-import os
 import rename_after_writing as rnw
+import os
 from os import path as op
 from os.path import join as opj
-import git
 
-from . import bookkeeping
+from .. import bookkeeping
+from . import version_control
 
 
 def read(plenoirf_dir):
@@ -82,7 +82,10 @@ def make_sites():
 
 def compile_sites(sites):
     sites["magnetic_deflection"] = list(
-        set(sites["instruemnt_response"] + sites["only_magnetic_deflection"])
+        set(
+            list(sites["instruemnt_response"].keys())
+            + sites["only_magnetic_deflection"]
+        )
     )
 
     # assert only_magnetic_deflection does not lie

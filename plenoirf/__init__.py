@@ -22,8 +22,6 @@ import os
 from os import path as op
 from os.path import join as opj
 
-import rename_after_writing as rnw
-import json_utils
 import plenoptics
 import magnetic_deflection
 import json_line_logger
