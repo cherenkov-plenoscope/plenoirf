@@ -14,7 +14,6 @@ def read(plenoirf_dir):
     """
     cfg = json_utils.tree.read(opj(plenoirf_dir, "config"))
     cfg["sites"] = compile_sites(sites=cfg["sites"])
-    cfg["particles"] = compile_particles(particles=cfg["particles"])
     return cfg
 
 
@@ -71,10 +70,7 @@ def make_executables_paths(build_dir="build"):
 
 def make_sites():
     out = {
-        "instruemnt_response": {
-            "namibia": {"random_seed_offset": 0},
-            "chile": {"random_seed_offset": 1},
-        },
+        "instruemnt_response": ["namibia", "chile"],
         "only_magnetic_deflection": ["lapalma", "namibiaOff"],
     }
     return out
@@ -83,41 +79,17 @@ def make_sites():
 def compile_sites(sites):
     sites["magnetic_deflection"] = list(
         set(
-            list(sites["instruemnt_response"].keys())
-            + sites["only_magnetic_deflection"]
+            sites["instruemnt_response"] + sites["only_magnetic_deflection"]
         )
     )
-
     # assert only_magnetic_deflection does not lie
     for key in sites["only_magnetic_deflection"]:
         assert key not in sites["instruemnt_response"]
-
-    bookkeeping.random_seed_offset.assert_valid_dict(
-        obj=sites["instruemnt_response"]
-    )
     return sites
 
 
 def make_particles():
-    return {
-        "gamma": {
-            "random_seed_offset": 0,
-        },
-        "electron": {
-            "random_seed_offset": 1,
-        },
-        "proton": {
-            "random_seed_offset": 2,
-        },
-        "helium": {
-            "random_seed_offset": 3,
-        },
-    }
-
-
-def compile_particles(particles):
-    bookkeeping.random_seed_offset.assert_valid_dict(obj=particles)
-    return particles
+    return ["gamma", "electron", "proton", "helium"]
 
 
 def make_magnetic_deflection():
