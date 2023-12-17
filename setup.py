@@ -23,6 +23,8 @@ setuptools.setup(
     author_email="sebastian-achim.mueller@mpi-hd.mpg.de",
     packages=[
         "plenoirf",
+        "plenoirf.bookkeeping",
+        "plenoirf.configurating",
         "plenoirf.analysis",
         "plenoirf.other_instruments",
         "plenoirf.reconstruction",
