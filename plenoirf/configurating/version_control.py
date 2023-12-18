@@ -32,5 +32,7 @@ def _make_plenoirf_dir_gitignore():
     txt += "plenoptics/*\n"
     txt += "!plenoptics/config\n"
     txt += "response\n"
+    txt += "trigger_geometry\n"
     txt += "provenance\n"
+    txt += "debug\n"
     return txt

@@ -208,7 +208,7 @@ def tar_open_append_close(path, provenance):
 
 def gather_and_bumb(path):
     prov = make_provenance()
-    os.makedirs(opj(plenoirf_dir, "provenance"), exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     tar_open_append_close(
         path=path,
         provenance=prov,

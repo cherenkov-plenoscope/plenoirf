@@ -1,4 +1,5 @@
 import json_utils
+import numpy as np
 import rename_after_writing as rnw
 import os
 from os import path as op

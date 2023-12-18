@@ -141,7 +141,7 @@ def run(plenoirf_dir, pool, logger=None):
     for ikey in config["instruments"]:
         logger.info("estimating sum-trigger geometry for {:s}".format(ikey))
         producing.sum_trigger.make_write_and_plot_sum_trigger_geometry(
-            path=opj(plenoirf_dir, "sum_trigger_geometry", ikey),
+            path=opj(plenoirf_dir, "trigger_geometry", ikey),
             sum_trigger_config=config["sum_trigger"],
             light_field_calibration_path=opj(
                 plenoirf_dir,
