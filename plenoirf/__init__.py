@@ -67,7 +67,9 @@ def init(plenoirf_dir, build_dir="build"):
     plenoirf_dir = op.abspath(plenoirf_dir)
     makesuredirs(plenoirf_dir)
 
-    _init_provenance(plenoirf_dir=plenoirf_dir)
+    provenance.gather_and_bumb(
+        path=opj(plenoirf_dir, "provenance", "init.tar")
+    )
     configurating.write_default(plenoirf_dir=plenoirf_dir, build_dir=build_dir)
     config = configurating.read(plenoirf_dir=plenoirf_dir)
 
@@ -88,15 +90,6 @@ def init(plenoirf_dir, build_dir="build"):
     configurating.version_control.init(plenoirf_dir=plenoirf_dir)
 
 
-def _init_provenance(plenoirf_dir):
-    prov = provenance.make_provenance()
-    makesuredirs(opj(plenoirf_dir, "provenance"))
-    provenance.tar_open_append_close(
-        path=opj(plenoirf_dir, "provenance", "init.tar"),
-        provenance=prov,
-    )
-
-
 def run(plenoirf_dir, pool, logger=None):
     """
     Run all simulations.
@@ -114,11 +107,7 @@ def run(plenoirf_dir, pool, logger=None):
     assert configurating.version_control.is_clean(plenoirf_dir=plenoirf_dir)
 
     logger.debug("gather provenance")
-    prov = provenance.make_provenance()
-    provenance.tar_open_append_close(
-        path=opj(plenoirf_dir, "provenance", "run.tar"),
-        provenance=prov,
-    )
+    provenance.gather_and_bumb(path=opj(plenoirf_dir, "provenance", "run.tar"))
 
     logger.debug("read config")
     config = configurating.read(plenoirf_dir=plenoirf_dir)
@@ -147,6 +136,24 @@ def run(plenoirf_dir, pool, logger=None):
         logger=logger,
     )
     logger.info("plenoptics is complete")
+
+    logger.info("estimating sum-trigger geometry.")
+    for ikey in config["instruments"]:
+        logger.info("estimating sum-trigger geometry for {:s}".format(ikey))
+        producing.sum_trigger.make_write_and_plot_sum_trigger_geometry(
+            path=opj(plenoirf_dir, "sum_trigger_geometry", ikey),
+            sum_trigger_config=config["sum_trigger"],
+            light_field_calibration_path=opj(
+                plenoirf_dir,
+                "plenoptics",
+                "instruments",
+                ikey,
+                "light_field_geometry",
+            ),
+            logger=logger,
+        )
+
+    logger.info("sum-trigger geometry complete")
 
 
 def makesuredirs(path):
