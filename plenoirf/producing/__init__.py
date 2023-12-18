@@ -14,6 +14,7 @@ import rename_after_writing as rnw
 from .. import bookkeeping
 from .. import configurating
 from . import random
+from . import sum_trigger
 
 
 def make_jobs(production_dir):

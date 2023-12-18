@@ -44,6 +44,9 @@ def write_default(plenoirf_dir, build_dir):
     with rnw.open(opj(pdir, "config", "pointing.json"), "wt") as f:
         f.write(json_utils.dumps(make_pointing(), indent=4))
 
+    with rnw.open(opj(pdir, "config", "sum_trigger.json"), "wt") as f:
+        f.write(json_utils.dumps(make_sum_trigger(), indent=4))
+
 
 def make_executables_paths(build_dir="build"):
     return {
@@ -125,5 +128,32 @@ def make_pointing():
         "range": {
             "max_zenith_distance_rad": np.deg2rad(60.0),
             "run_half_angle_rad": np.deg2rad(5.0),
+        },
+    }
+
+
+def make_sum_trigger():
+    return {
+        "object_distances_m": [
+            5000.0,
+            6164.0,
+            7600.0,
+            9369.0,
+            11551.0,
+            14240.0,
+            17556.0,
+            21644.0,
+            26683.0,
+            32897.0,
+            40557.0,
+            50000.0,
+        ],
+        "threshold_pe": 105,
+        "integration_time_slices": 10,
+        "image": {
+            "image_outer_radius_rad": np.deg2rad(3.25 - 0.033335),
+            "pixel_spacing_rad": np.deg2rad(0.06667),
+            "pixel_radius_rad": np.deg2rad(0.146674),
+            "max_number_nearest_lixel_in_pixel": 7,
         },
     }
