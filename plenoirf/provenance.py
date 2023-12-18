@@ -204,3 +204,13 @@ def tar_open_append_close(path, provenance):
         filename=filename,
         filebytes=gzip.compress(data=content.encode()),
     )
+
+
+def gather_and_bumb(path):
+    prov = make_provenance()
+    os.makedirs(opj(plenoirf_dir, "provenance"), exist_ok=True)
+    tar_open_append_close(
+        path=path,
+        provenance=prov,
+    )
+    return prov
