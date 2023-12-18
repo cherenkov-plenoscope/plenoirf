@@ -48,11 +48,11 @@ def run_job(job):
 
 
 def run_job_in_dir(job, tmp_dir):
-    paths = make_paths(job=job)
-    os.makedirs(paths["stage_dir"], exist_ok=True)
+    job = compile_job(job=job)
 
-    logger_path = op.join(paths["stage_dir"], "log.jsonl")
-    logger = json_line_logger.LoggerFile(path=logger_path + ".tmp")
+    os.makedirs(job["paths"]["stage_dir"], exist_ok=True)
+
+    logger = json_line_logger.LoggerFile(path=job["paths"]["logger_tmp"])
     logger.info("starting")
 
     logger.debug("making tmp_dir: {:s}".format(tmp_dir))
@@ -74,11 +74,14 @@ def run_job_in_dir(job, tmp_dir):
 
     with json_line_logger.TimeDelta(logger, "draw_primary_and_pointing"):
         _allsky = magnetic_deflection.allsky.AllSky(
-            paths["magnetic_deflection_allsky"]
+            job["paths"]["magnetic_deflection_allsky"]
         )
         site = copy.deepcopy(_allsky.config["site"])
         particle = copy.deepcopy(_allsky.config["particle"])
 
+        __CACHE_PATH = opj(
+            tmp_dir,
+        )
         drw = random.draw_primaries_and_pointings(
             prng=prng,
             run_id=job["run_id"],
@@ -92,12 +95,14 @@ def run_job_in_dir(job, tmp_dir):
         )
 
         for kkk in drw:
-            with rnw.open(opj(paths["stage_dir"], kkk + ".json"), "wt") as f:
+            with rnw.open(
+                opj(job["paths"]["stage_dir"], kkk + ".json"), "wt"
+            ) as f:
                 f.write(json_utils.dumps(drw[kkk], indent=4))
 
     logger.info("ending")
     logger.debug("moving log.json to final path")
-    rnw.move(logger_path + ".tmp", logger_path)
+    rnw.move(job["paths"]["logger_tmp"], job["paths"]["logger"])
     return 1
 
 
@@ -116,9 +121,17 @@ def read_light_field_camera_config(plenoirf_dir, instrument_key):
     )
 
 
+def compile_job(job):
+    job["run_id_str"] = bookkeeping.uid.make_run_id_str(run_id=job["run_id"])
+
+    job["paths"] = make_paths(job=job)
+    return job
+
+
 def make_paths(job):
     paths = {}
     paths["plenoirf_dir"] = job["plenoirf_dir"]
+
     paths["stage_dir"] = opj(
         job["plenoirf_dir"],
         "response",
@@ -127,6 +140,12 @@ def make_paths(job):
         job["particle_key"],
         "stage",
     )
+
+    # logger
+    # ------
+    paths["logger"] = opj(paths["stage_dir"], job["run_id_str"] + "_log.jsonl")
+    paths["logger_tmp"] = paths["logger"] + ".tmp"
+
     paths["magnetic_deflection_allsky"] = opj(
         job["plenoirf_dir"],
         "magnetic_deflection",
@@ -140,6 +159,7 @@ def make_paths(job):
         job["instrument_key"],
         "light_field_geometry",
     )
+
     return paths
 
 

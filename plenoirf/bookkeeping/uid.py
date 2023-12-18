@@ -22,6 +22,11 @@ RUN_ID_FORMAT_STR = "{:0" + str(RUN_ID_NUM_DIGITS) + "d}"
 EVENT_ID_FORMAT_STR = "{:0" + str(EVENT_ID_NUM_DIGITS) + "d}"
 
 
+def make_run_id_str(run_id):
+    assert 0 <= run_id < RUN_ID_UPPER
+    return RUN_ID_FORMAT_STR.format(run_id)
+
+
 def make_uid(run_id, event_id):
     assert 0 <= run_id < RUN_ID_UPPER
     assert 0 <= event_id < EVENT_ID_UPPER
