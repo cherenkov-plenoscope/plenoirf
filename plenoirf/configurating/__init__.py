@@ -48,6 +48,9 @@ def write_default(plenoirf_dir, build_dir):
     with rnw.open(opj(pdir, "config", "sum_trigger.json"), "wt") as f:
         f.write(json_utils.dumps(make_sum_trigger(), indent=4))
 
+    with rnw.open(opj(pdir, "config", "grid.json"), "wt") as f:
+        f.write(json_utils.dumps(make_grid(), indent=4))
+
 
 def make_executables_paths(build_dir="build"):
     return {
@@ -157,4 +160,14 @@ def make_sum_trigger():
             "pixel_radius_rad": np.deg2rad(0.146674),
             "max_number_nearest_lixel_in_pixel": 7,
         },
+    }
+
+
+def make_grid():
+    return {
+        "geometry": {
+            "bin_width_m": 1e2,
+            "num_bins_each_axis": 1024,
+        },
+        "candidate_threshold_num_photons": 10,
     }

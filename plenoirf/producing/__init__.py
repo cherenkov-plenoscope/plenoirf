@@ -19,7 +19,7 @@ from .. import bookkeeping
 from .. import configurating
 from . import random
 from . import sum_trigger
-from . import event_table
+from .. import event_table
 
 
 def make_jobs(production_dir):

@@ -26,6 +26,7 @@ setuptools.setup(
         "plenoirf.bookkeeping",
         "plenoirf.configurating",
         "plenoirf.event_table",
+        "plenoirf.ground_grid",
         "plenoirf.analysis",
         "plenoirf.other_instruments",
         "plenoirf.reconstruction",

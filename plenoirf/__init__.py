@@ -18,6 +18,7 @@ from . import bookkeeping
 from . import producing
 from . import configurating
 from . import event_table
+from . import ground_grid
 
 import os
 from os import path as op
