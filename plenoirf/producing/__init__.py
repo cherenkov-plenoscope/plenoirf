@@ -239,6 +239,11 @@ def compile_paths(job, tmp_dir):
 
 
 def make_pointing_range_for_run(config, prng):
+    """
+    Draws the range in solid angle to point in for this particular run.
+    We limit this run's range to not be the full sky to avoid queyring the
+    entire magnetic_deflection's AllSky solid angle.
+    """
     total_range = acr.pointing_range.PointingRange_from_cone(
         azimuth_rad=0.0,
         zenith_rad=0.0,
