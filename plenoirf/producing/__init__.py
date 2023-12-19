@@ -10,16 +10,20 @@ import magnetic_deflection
 import json_utils
 import json_line_logger
 import merlict_development_kit_python
+import spherical_coordinates
 import atmospheric_cherenkov_response as acr
 import rename_after_writing as rnw
 import sparse_numeric_table as spt
 import corsika_primary as cpw
 
+from .. import outer_telescope_array
 from .. import bookkeeping
 from .. import configurating
+from .. import ground_grid
 from . import random
 from . import sum_trigger
 from .. import event_table
+from .. import tar_append
 
 
 def make_jobs(production_dir):
@@ -112,12 +116,9 @@ def _draw_primaries_and_pointings(job, run, prng, logger):
             run_id=job["run_id"],
             site_particle_magnetic_deflection=_allsky,
             pointing_range=run["pointing_range"],
-            field_of_view_half_angle_rad=(
-                0.5
-                * np.deg2rad(
-                    job["light_field_camera_config"]["max_FoV_diameter_deg"]
-                )
-            ),
+            field_of_view_half_angle_rad=job["instrument"][
+                "field_of_view_half_angle_rad"
+            ],
             num_events=job["num_events"],
         )
         with rnw.open(job["paths"]["cache"]["primary"] + ".json", "wt") as f:
@@ -172,6 +173,10 @@ def compile_job(job, tmp_dir):
         plenoirf_dir=job["paths"]["plenoirf_dir"],
         instrument_key=job["instrument_key"],
     )
+    job["instrument"] = {}
+    job["instrument"]["field_of_view_half_angle_rad"] = 0.5 * (
+        np.deg2rad(job["light_field_camera_config"]["max_FoV_diameter_deg"])
+    )
 
     job["config"] = configurating.read(
         plenoirf_dir=job["paths"]["plenoirf_dir"]
@@ -222,8 +227,10 @@ def compile_paths(job, tmp_dir):
     paths["tmp"]["particle_pools_dat"] = opj(tmp_dir, "particle_pools.dat")
     paths["tmp"]["particle_pools_tar"] = opj(tmp_dir, "particle_pools.tar.gz")
 
-    paths["tmp"]["grid_histogram"] = opj(tmp_dir, "grid.tar")
-    paths["tmp"]["grid_roi_histogram"] = opj(tmp_dir, "grid_roi.tar")
+    paths["tmp"]["ground_grid_intensity"] = opj(tmp_dir, "ground_grid.tar")
+    paths["tmp"]["ground_grid_intensity_roi"] = opj(
+        tmp_dir, "ground_grid_roi.tar"
+    )
 
     paths["tmp"]["corsika_stdout"] = opj(tmp_dir, "corsika.stdout")
     paths["tmp"]["corsika_stderr"] = opj(tmp_dir, "corsika.stderr")
@@ -270,9 +277,9 @@ def _corsika_and_grid(
     with cpw.cherenkov.CherenkovEventTapeWriter(
         path=job["paths"]["tmp"]["cherenkov_pools"]
     ) as evttar, tarfile.open(
-        job["paths"]["tmp"]["grid_histogram"], "w"
+        job["paths"]["tmp"]["ground_grid_intensity"], "w"
     ) as imgtar, tarfile.open(
-        job["paths"]["tmp"]["grid_roi_histogram"], "w"
+        job["paths"]["tmp"]["ground_grid_intensity_roi"], "w"
     ) as imgroitar:
         with cpw.CorsikaPrimary(
             corsika_path=job["config"]["executables"]["corsika_primary_path"],
@@ -296,29 +303,137 @@ def _corsika_and_grid(
                     corsika_primary_steering=run["corsika_primary_steering"],
                 )
 
-                print(uid)
-
-                tabrec["primary"].append_record(
-                    make_primary_record(
-                        uid=uid,
-                        corsika_evth=corsika_evth,
-                        corsika_primary_steering=run[
-                            "corsika_primary_steering"
-                        ],
-                        primary_directions=run["primary_directions"],
-                    )
+                primary_rec = make_primary_record(
+                    uid=uid,
+                    corsika_evth=corsika_evth,
+                    corsika_primary_steering=run["corsika_primary_steering"],
+                    primary_directions=run["primary_directions"],
                 )
+                tabrec["primary"].append_record(primary_rec)
 
-                tabrec["pointing"].append_record(
-                    make_pointing_record(uid=uid, pointings=run["pointings"])
+                pointing_rec = make_pointing_record(
+                    uid=uid, pointings=run["pointings"]
                 )
+                tabrec["pointing"].append_record(pointing_rec)
 
-                tabrec["cherenkovsize"].append_record(
-                    make_cherenkovsize_record(
+                cherenkovsize_rec = make_cherenkovsize_record(
+                    uid=uid,
+                    cherenkov_bunches=cherenkov_bunches,
+                )
+                tabrec["cherenkovsize"].append_record(cherenkovsize_rec)
+
+                cherenkov_pool_median_x_m = 0.0
+                cherenkov_pool_median_y_m = 0.0
+                if cherenkovsize_rec["num_bunches"] > 0:
+                    cherenkovpool_rec = make_cherenkovpool_record(
                         uid=uid,
                         cherenkov_bunches=cherenkov_bunches,
                     )
+                    tabrec["cherenkovpool"].append_record(cherenkovpool_rec)
+                    cherenkov_pool_median_x_m = cherenkovpool_rec["x_median_m"]
+                    cherenkov_pool_median_y_m = cherenkovpool_rec["y_median_m"]
+
+                groundgrid_config = ground_grid.make_ground_grid_config(
+                    bin_width_m=job["config"]["ground_grid"]["geometry"][
+                        "bin_width_m"
+                    ],
+                    num_bins_each_axis=job["config"]["ground_grid"][
+                        "geometry"
+                    ]["num_bins_each_axis"],
+                    cherenkov_pool_median_x_m=cherenkov_pool_median_x_m,
+                    cherenkov_pool_median_y_m=cherenkov_pool_median_y_m,
+                    prng=prng,
                 )
+
+                groundgrid = ground_grid.GroundGrid(
+                    bin_width_m=groundgrid_config["bin_width_m"],
+                    num_bins_each_axis=groundgrid_config["num_bins_each_axis"],
+                    center_x_m=groundgrid_config["center_x_m"],
+                    center_y_m=groundgrid_config["center_y_m"],
+                )
+
+                mask = mask_cherenkov_bunches_in_instruments_field_of_view(
+                    cherenkov_bunches=cherenkov_bunches,
+                    pointing=pointing_rec,
+                    field_of_view_half_angle_rad=job["instrument"][
+                        "field_of_view_half_angle_rad"
+                    ],
+                )
+                cherenkov_bunches = cherenkov_bunches[mask]
+
+                groundgrid_result, groundgrid_debug = ground_grid.assign(
+                    groundgrid=groundgrid,
+                    cherenkov_bunches=cherenkov_bunches,
+                    threshold_num_photons=job["config"]["ground_grid"][
+                        "threshold_num_photons"
+                    ],
+                    prng=prng,
+                )
+
+                groundgrid_rec = make_groundgrid_record(
+                    uid=uid,
+                    groundgrid_config=groundgrid_config,
+                    groundgrid_result=groundgrid_result,
+                    groundgrid=groundgrid,
+                )
+                tabrec["groundgrid"].append_record(groundgrid_rec)
+
+                if groundgrid_result["choice"]:
+                    EventTape_append_event(
+                        evttar=evttar,
+                        corsika_evth=corsika_evth,
+                        groundgrid_choice=groundgrid_result["choice"],
+                    )
+
+                    ImgRoiTar_append(
+                        imgroitar=imgroitar,
+                        uid=uid,
+                        groundgrid_result=groundgrid_result,
+                        groundgrid_debug=groundgrid_debug,
+                    )
+
+                    cherenkovsizepart_rec = make_cherenkovsize_record(
+                        uid=uid,
+                        cherenkov_bunches=groundgrid_result[
+                            "cherenkov_bunches"
+                        ],
+                    )
+                    tabrec["cherenkovsizepart"].append_record(
+                        cherenkovsizepart_rec
+                    )
+
+                    if cherenkovsizepart_rec["num_bunches"] > 0:
+                        cherenkovpoolpart_rec = make_cherenkovpool_record(
+                            uid=uid,
+                            cherenkov_bunches=groundgrid_result[
+                                "cherenkov_bunches"
+                            ],
+                        )
+                        tabrec["cherenkovpoolpart"].append_record(
+                            cherenkovpoolpart_rec
+                        )
+
+                with open(
+                    opj(
+                        job["paths"]["tmp_dir"],
+                        uid["uid_str"] + "_ground_grid.json",
+                    ),
+                    "wt",
+                ) as f:
+                    f.write(json_utils.dumps(groundgrid_result))
+
+                print(uid)
+                print(
+                    "cone cut fraction",
+                    np.sum(mask) / len(mask),
+                    "cutoff",
+                    primary_rec["inner_atmopsheric_magnetic_cutoff"],
+                )
+
+    cpw.particles.dat_to_tape(
+        dat_path=job["paths"]["tmp"]["particle_pools_dat"],
+        tape_path=job["paths"]["tmp"]["particle_pools_tar"],
+    )
 
     return job, run, tabrec
 
@@ -407,5 +522,115 @@ def make_cherenkovsize_record(uid, cherenkov_bunches):
     return rec
 
 
+def make_cherenkovpool_record(uid, cherenkov_bunches):
+    rec = uid["record"].copy()
+    cb = cherenkov_bunches
+    assert cb.shape[0] > 0
+    rec["maximum_asl_m"] = cpw.CM2M * np.median(
+        cb[:, cpw.I.BUNCH.EMISSOION_ALTITUDE_ASL_CM]
+    )
+    rec["wavelength_median_nm"] = np.abs(
+        np.median(cb[:, cpw.I.BUNCH.WAVELENGTH_NM])
+    )
+    rec["cx_median_rad"] = np.median(cb[:, cpw.I.BUNCH.CX_RAD])
+    rec["cy_median_rad"] = np.median(cb[:, cpw.I.BUNCH.CY_RAD])
+    rec["x_median_m"] = cpw.CM2M * np.median(cb[:, cpw.I.BUNCH.X_CM])
+    rec["y_median_m"] = cpw.CM2M * np.median(cb[:, cpw.I.BUNCH.Y_CM])
+    rec["bunch_size_median"] = np.median(cb[:, cpw.I.BUNCH.BUNCH_SIZE_1])
+    return rec
+
+
+def make_groundgrid_record(
+    uid, groundgrid_config, groundgrid_result, groundgrid
+):
+    rec = uid["record"].copy()
+    rec.update(groundgrid_config)
+
+    rec["num_bins_thrown"] = groundgrid["num_bins_thrown"]
+    rec["num_bins_above_threshold"] = groundgrid_result[
+        "num_bins_above_threshold"
+    ]
+    rec["area_thrown_m2"] = groundgrid["area_thrown_m2"]
+
+    rec["num_photons_overflow"] = groundgrid_result["num_photons_overflow"]
+
+    # compare scatter
+    # ---------------
+    scathist = groundgrid_result["scatter_histogram"]
+    num_bins = len(scathist["bin_counts"])
+    assert num_bins == 16
+    for rbin in range(num_bins):
+        rec["scatter_rbin_{:02d}".format(rbin)] = scathist["bin_counts"][rbin]
+    return rec
+
+
 def read_all_cherenkov_bunches(cherenkov_reader):
     return np.vstack([b for b in cherenkov_reader])
+
+
+def mask_cherenkov_bunches_in_instruments_field_of_view(
+    cherenkov_bunches,
+    pointing,
+    field_of_view_half_angle_rad,
+):
+    OVERHEAD = 2.0
+    return mask_cherenkov_bunches_in_cone(
+        cherenkov_bunches_cx=cherenkov_bunches[:, cpw.I.BUNCH.CX_RAD],
+        cherenkov_bunches_cy=cherenkov_bunches[:, cpw.I.BUNCH.CY_RAD],
+        cone_azimuth_rad=pointing["azimuth_rad"],
+        cone_zenith_rad=pointing["zenith_rad"],
+        cone_half_angle_rad=OVERHEAD * field_of_view_half_angle_rad,
+    )
+
+
+def mask_cherenkov_bunches_in_cone(
+    cherenkov_bunches_cx,
+    cherenkov_bunches_cy,
+    cone_half_angle_rad,
+    cone_azimuth_rad,
+    cone_zenith_rad,
+):
+    cone_cx, cone_cy = spherical_coordinates.az_zd_to_cx_cy(
+        azimuth_rad=cone_azimuth_rad,
+        zenith_rad=cone_zenith_rad,
+    )
+    delta_rad = spherical_coordinates.angle_between_cx_cy(
+        cx1=cherenkov_bunches_cx,
+        cy1=cherenkov_bunches_cy,
+        cx2=cone_cx,
+        cy2=cone_cy,
+    )
+    return delta_rad < cone_half_angle_rad
+
+
+def EventTape_append_event(
+    evttar,
+    corsika_evth,
+    groundgrid_choice,
+):
+    evth = corsika_evth.copy()
+    evth[cpw.I.EVTH.NUM_REUSES_OF_CHERENKOV_EVENT] = 1.0
+    evth[cpw.I.EVTH.X_CORE_CM(reuse=1)] = (
+        cpw.M2CM * groundgrid_choice["core_x_m"]
+    )
+    evth[cpw.I.EVTH.Y_CORE_CM(reuse=1)] = (
+        cpw.M2CM * groundgrid_choice["core_y_m"]
+    )
+    evttar.write_evth(evth=evth)
+    evttar.write_payload(payload=groundgrid_choice["cherenkov_bunches"])
+
+
+def ImgRoiTar_append(imgroitar, uid, groundgrid_result, groundgrid_debug):
+    bb = outer_telescope_array.init_binning()
+    roi_array = ground_grid.bin_photon_assignment_to_array_roi(
+        bin_photon_assignment=groundgrid_debug["bin_photon_assignment"],
+        x_bin=groundgrid_result["choice"]["bin_idx_x"],
+        y_bin=groundgrid_result["choice"]["bin_idx_y"],
+        r_bin=bb["num_bins_radius"],
+        dtype=np.float32,
+    )
+    tar_append.tar_append(
+        tarout=imgroitar,
+        filename=uid["uid_str"] + ".f4.gz",
+        filebytes=ground_grid.io.histogram_to_bytes(roi_array),
+    )

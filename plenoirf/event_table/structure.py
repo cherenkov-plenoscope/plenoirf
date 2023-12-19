@@ -7,7 +7,15 @@ def init_table_structure():
     t = collections.OrderedDict()
     t["primary"] = init_primary_level_structure()
     t["pointing"] = init_pointing_level_structure()
+
     t["cherenkovsize"] = init_cherenkovsize_level_structure()
+    t["cherenkovpool"] = init_cherenkovpool_level_structure()
+
+    t["groundgrid"] = init_groundgrid_level_structure()
+
+    t["cherenkovsizepart"] = init_cherenkovsizepart_level_structure()
+    t["cherenkovsizepart"] = init_cherenkovpoolpart_level_structure()
+
     return t
 
 
@@ -120,6 +128,81 @@ def init_cherenkovsize_level_structure():
     return t
 
 
+def init_cherenkovpool_level_structure():
+    t = collections.OrderedDict()
+    t["cx_median_rad"] = {"dtype": "<f8", "comment": ""}
+    t["cy_median_rad"] = {"dtype": "<f8", "comment": ""}
+    t["x_median_m"] = {"dtype": "<f8", "comment": ""}
+    t["y_median_m"] = {"dtype": "<f8", "comment": ""}
+    t["bunch_size_median"] = {"dtype": "<f8", "comment": ""}
+    t["maximum_asl_m"] = {"dtype": "<f8", "comment": ""}
+    t["wavelength_median_nm"] = {"dtype": "<f8", "comment": ""}
+    return t
+
+
+def init_groundgrid_level_structure():
+    t = collections.OrderedDict()
+    # arguments to init GroundGrid
+    t["bin_width_m"] = {"dtype": "<f8", "comment": ""}
+    t["num_bins_each_axis"] = {"dtype": "<i8", "comment": ""}
+
+    t["center_x_m"] = {
+        "dtype": "<f8",
+        "comment": "This is random_shift_x_m + cherenkov_pool_median_x_m.",
+    }
+    t["center_y_m"] = {"dtype": "<f8", "comment": "See center_x_m."}
+
+    t["cherenkov_pool_median_x_m"] = {
+        "dtype": "<f8",
+        "comment": "The median impact of Cherenkov bunches in 'x'."
+        "If there are Cherenkov buncehs, this is taken from "
+        "cherenkovpool.x_median_m. If not, this is zero.",
+    }
+    t["cherenkov_pool_median_y_m"] = {
+        "dtype": "<f8",
+        "comment": "See cherenkov_pool_median_x_m.",
+    }
+
+    t["random_shift_x_m"] = {
+        "dtype": "<f8",
+        "comment": "A random shift of the grid by plus or "
+        "minus half the bin_width_m.",
+    }
+    t["random_shift_y_m"] = {"dtype": "<f8", "comment": ""}
+
+    t["num_bins_thrown"] = {
+        "dtype": "<i8",
+        "comment": "The number of all grid-bins which can collect "
+        "Cherenkov-photons.",
+    }
+    t["num_bins_above_threshold"] = {"dtype": "<i8", "comment": ""}
+    t["area_thrown_m2"] = {"dtype": "<f8", "comment": ""}
+
+    t["num_photons_overflow"] = {
+        "dtype": "<i8",
+        "comment": "Number of Cherenkov bunches which did not hit "
+        "any bins in the grid.",
+    }
+
+    # compare scatter
+    num_scatter_bins = 16
+    for rbin in range(num_scatter_bins):
+        t["scatter_rbin_{:02d}".format(rbin)] = {
+            "dtype": "<u4",
+            "comment": "Number of bins above threshold and within "
+            "a certain range of scatter radii.",
+        }
+    return t
+
+
+def init_cherenkovsizepart_level_structure():
+    return init_cherenkovsize_level_structure()
+
+
+def init_cherenkovpoolpart_level_structure():
+    return init_cherenkovpool_level_structure()
+
+
 """
 STRUCTURE = {}
 STRUCTURE["particlepool"] = {
@@ -190,9 +273,6 @@ STRUCTURE["cherenkovpool"] = {
     "y_median_m": {"dtype": "<f8", "comment": ""},
     "bunch_size_median": {"dtype": "<f8", "comment": ""},
 }
-
-STRUCTURE["cherenkovsizepart"] = STRUCTURE["cherenkovsize"].copy()
-STRUCTURE["cherenkovpoolpart"] = STRUCTURE["cherenkovpool"].copy()
 
 STRUCTURE["core"] = {
     "bin_idx_x": {"dtype": "<i8", "comment": ""},
