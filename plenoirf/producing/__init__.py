@@ -292,24 +292,27 @@ def _corsika_and_grid(
 
                 print(uid)
 
-                primary_record = make_primary_record(
-                    uid=uid,
-                    corsika_evth=corsika_evth,
-                    corsika_primary_steering=run["corsika_primary_steering"],
-                    primary_directions=run["primary_directions"],
+                tabrec["primary"].append_record(
+                    make_primary_record(
+                        uid=uid,
+                        corsika_evth=corsika_evth,
+                        corsika_primary_steering=run[
+                            "corsika_primary_steering"
+                        ],
+                        primary_directions=run["primary_directions"],
+                    )
                 )
-                tabrec["primary"].append_record(primary_record)
 
-                pointing_record = make_pointing_record(
-                    uid=uid, pointings=run["pointings"]
+                tabrec["pointing"].append_record(
+                    make_pointing_record(uid=uid, pointings=run["pointings"])
                 )
-                tabrec["pointing"].append_record(pointing_record)
 
-                cherenkovsize_record = make_cherenkovsize_record(
-                    uid=uid,
-                    cherenkov_bunches=cherenkov_bunches,
+                tabrec["cherenkovsize"].append_record(
+                    make_cherenkovsize_record(
+                        uid=uid,
+                        cherenkov_bunches=cherenkov_bunches,
+                    )
                 )
-                tabrec["cherenkovsize"].append_record(cherenkovsize_record)
 
     return job, run, tabrec
 

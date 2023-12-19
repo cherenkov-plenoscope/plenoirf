@@ -3,7 +3,6 @@ from .version import __version__
 # from . import summary
 # from . import analysis
 # from . import features
-# from . import table
 # from . import instrument_response
 
 
@@ -18,6 +17,7 @@ from . import provenance
 from . import bookkeeping
 from . import producing
 from . import configurating
+from . import event_table
 
 import os
 from os import path as op
