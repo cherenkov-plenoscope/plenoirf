@@ -19,6 +19,7 @@ from .. import bookkeeping
 from .. import configurating
 from . import random
 from . import sum_trigger
+from . import event_table
 
 
 def make_jobs(production_dir):
@@ -79,7 +80,7 @@ def run_job_in_dir(job, tmp_dir):
             logger=logger,
         )
 
-    tabrec = acr.production.table.init_table_dynamicsizerecarray()
+    tabrec = event_table.structure.init_table_dynamicsizerecarray()
 
     with json_line_logger.TimeDelta(logger, "corsika_and_grid"):
         job, run, tabrec = _corsika_and_grid(
