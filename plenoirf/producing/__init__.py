@@ -31,12 +31,6 @@ from . import sum_trigger
 from . import transform_cherenkov_bunches
 
 
-def make_jobs(production_dir):
-    lock = magnetic_deflection.allsky.production.Production(
-        os.path.join(path, "lock")
-    )
-
-
 def make_example_job(
     plenoirf_dir,
     run_id=1337,
@@ -44,6 +38,7 @@ def make_example_job(
     particle_key="electron",
     instrument_key="diag9_default_default",
     num_events=128,
+    max_num_events_in_merlict_run=12,
 ):
     job = {}
     job["run_id"] = run_id
@@ -52,7 +47,7 @@ def make_example_job(
     job["particle_key"] = particle_key
     job["instrument_key"] = instrument_key
     job["num_events"] = num_events
-    job["max_num_events_in_merlict_run"] = 12
+    job["max_num_events_in_merlict_run"] = max_num_events_in_merlict_run
     return job
 
 
