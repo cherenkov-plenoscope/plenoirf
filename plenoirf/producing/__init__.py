@@ -478,6 +478,12 @@ def __corsika_and_grid(
                     )
                     del cherenkov_bunches_in_choice
 
+                    core_rec = make_core_record(
+                        uid=uid,
+                        groundgrid_result_choice=groundgrid_result["choice"],
+                    )
+                    tabrec["core"].append_record(core_rec)
+
                     EventTape_append_event(
                         evttar=evttar,
                         corsika_evth=corsika_evth,
@@ -647,6 +653,13 @@ def make_groundgrid_record(
     assert num_bins == 16
     for rbin in range(num_bins):
         rec["scatter_rbin_{:02d}".format(rbin)] = scathist["bin_counts"][rbin]
+    return rec
+
+
+def make_core_record(uid, groundgrid_result_choice):
+    rec = uid["record"].copy()
+    for key in event_table.init_core_level_structure():
+        rec[key] = groundgrid_result_choice[rec]
     return rec
 
 

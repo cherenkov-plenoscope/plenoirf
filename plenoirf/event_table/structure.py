@@ -16,6 +16,8 @@ def init_table_structure():
     t["cherenkovsizepart"] = init_cherenkovsizepart_level_structure()
     t["cherenkovpoolpart"] = init_cherenkovpoolpart_level_structure()
 
+    t["core"] = init_core_level_structure()
+
     return t
 
 
@@ -203,6 +205,15 @@ def init_cherenkovpoolpart_level_structure():
     return init_cherenkovpool_level_structure()
 
 
+def init_core_level_structure():
+    return {
+        "bin_idx_x": {"dtype": "<i8", "comment": ""},
+        "bin_idx_y": {"dtype": "<i8", "comment": ""},
+        "core_x_m": {"dtype": "<f8", "comment": ""},
+        "core_y_m": {"dtype": "<f8", "comment": ""},
+    }
+
+
 """
 STRUCTURE = {}
 STRUCTURE["particlepool"] = {
@@ -272,13 +283,6 @@ STRUCTURE["cherenkovpool"] = {
     "x_median_m": {"dtype": "<f8", "comment": ""},
     "y_median_m": {"dtype": "<f8", "comment": ""},
     "bunch_size_median": {"dtype": "<f8", "comment": ""},
-}
-
-STRUCTURE["core"] = {
-    "bin_idx_x": {"dtype": "<i8", "comment": ""},
-    "bin_idx_y": {"dtype": "<i8", "comment": ""},
-    "core_x_m": {"dtype": "<f8", "comment": ""},
-    "core_y_m": {"dtype": "<f8", "comment": ""},
 }
 
 STRUCTURE["particlepoolonaperture"] = {
