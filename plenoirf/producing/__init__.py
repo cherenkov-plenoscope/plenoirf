@@ -52,7 +52,7 @@ def make_example_job(
     job["particle_key"] = particle_key
     job["instrument_key"] = instrument_key
     job["num_events"] = num_events
-    job["debug_probability"] = 1e-2
+    job["max_num_events_in_merlict_run"] = 12
     return job
 
 
@@ -124,17 +124,15 @@ def run_job_in_dir(job, tmp_dir):
 
 
 def _draw_primaries_and_pointings(job, run, prng, logger):
-    _allsky = magnetic_deflection.allsky.AllSky(
+    allsky = magnetic_deflection.allsky.AllSky(
         job["paths"]["magnetic_deflection_allsky"]
     )
-    job["site"] = copy.deepcopy(_allsky.config["site"])
-    job["particle"] = copy.deepcopy(_allsky.config["particle"])
 
     if not op.exists(job["paths"]["cache"]["primary"]):
         drw, debug = random.draw_primaries_and_pointings(
             prng=prng,
             run_id=job["run_id"],
-            site_particle_magnetic_deflection=_allsky,
+            site_particle_magnetic_deflection=allsky,
             pointing_range=run["pointing_range"],
             field_of_view_half_angle_rad=job["instrument"][
                 "field_of_view_half_angle_rad"
@@ -193,9 +191,19 @@ def compile_job(job, tmp_dir):
     Items in the job dict are not meant to change!
     It is meant to be read only.
     """
-    job["run_id_str"] = bookkeeping.uid.make_run_id_str(run_id=job["run_id"])
+    assert job["max_num_events_in_merlict_run"] > 0
 
+    job["run_id_str"] = bookkeeping.uid.make_run_id_str(run_id=job["run_id"])
     job["paths"] = compile_paths(job=job, tmp_dir=tmp_dir)
+    job["config"] = configurating.read(
+        plenoirf_dir=job["paths"]["plenoirf_dir"]
+    )
+
+    _allskycfg = json_utils.tree.read(
+        opj(job["paths"]["magnetic_deflection_allsky"], "config")
+    )
+    job["site"] = copy.deepcopy(_allskycfg["site"])
+    job["particle"] = copy.deepcopy(_allskycfg["particle"])
 
     job["light_field_camera_config"] = read_light_field_camera_config(
         plenoirf_dir=job["paths"]["plenoirf_dir"],
@@ -205,9 +213,9 @@ def compile_job(job, tmp_dir):
     job["instrument"]["field_of_view_half_angle_rad"] = 0.5 * (
         np.deg2rad(job["light_field_camera_config"]["max_FoV_diameter_deg"])
     )
-
-    job["config"] = configurating.read(
-        plenoirf_dir=job["paths"]["plenoirf_dir"]
+    job["instrument"]["local_speed_of_light_m_per_s"] = (
+        constants.speed_of_light_in_vacuum_m_per_s()
+        / job["site"]["atmosphere_refractive_index_at_observation_level"]
     )
     return job
 
@@ -252,6 +260,9 @@ def compile_paths(job, tmp_dir):
     paths["tmp"] = {}
 
     paths["tmp"]["cherenkov_pools"] = opj(tmp_dir, "cherenkov_pools.tar")
+    paths["tmp"]["cherenkov_pools_block_fmt"] = opj(
+        tmp_dir, "cherenkov_pools_{block:06d}.tar"
+    )
     paths["tmp"]["particle_pools_dat"] = opj(tmp_dir, "particle_pools.dat")
     paths["tmp"]["particle_pools_tar"] = opj(tmp_dir, "particle_pools.tar.gz")
 
@@ -305,6 +316,35 @@ def make_pointing_range_for_run(config, prng):
 
 
 def _corsika_and_grid(
+    job,
+    run,
+    tabrec,
+    prng,
+    logger,
+):
+    if not op.exists(job["paths"]["tmp"]["cherenkov_pools"]):
+        job, run, tabrec = __corsika_and_grid(
+            job=job,
+            run=run,
+            tabrec=tabrec,
+            prng=prng,
+            logger=logger,
+        )
+
+    cpw.particles.dat_to_tape(
+        dat_path=job["paths"]["tmp"]["particle_pools_dat"],
+        tape_path=job["paths"]["tmp"]["particle_pools_tar"],
+    )
+
+    run["cherenkov_pools"] = event_tape_block_splitter(
+        inpath=job["paths"]["tmp"]["cherenkov_pools"],
+        outpath_block_fmt=job["paths"]["tmp"]["cherenkov_pools_block_fmt"],
+        num_events=job["max_num_events_in_merlict_run"],
+    )
+    return job, run, tabrec
+
+
+def __corsika_and_grid(
     job,
     run,
     tabrec,
@@ -424,25 +464,27 @@ def _corsika_and_grid(
                     ]
                     del cherenkov_bunches_in_fov
 
-                    cherenkov_bunches_in_instrument = transform_cherenkov_bunches.from_obervation_level_to_aperture(
+                    cherenkov_bunches_in_instrument = transform_cherenkov_bunches.from_obervation_level_to_instrument(
                         cherenkov_bunches=cherenkov_bunches_in_choice,
-                        pointing=pointing,
-                        pointing_model=pointing_model,
-                        core_x_m=groundgrid_result["choice"]["core_x_m"],
-                        core_y_m=groundgrid_result["choice"]["core_y_m"],
-                        speed_of_ligth_m_per_s=constants.speed_of_light_in_vacuum_m_per_s(),
+                        instrument_pointing=pointing,
+                        instrument_pointing_model=job["config"]["pointing"][
+                            "model"
+                        ],
+                        instrument_x_m=groundgrid_result["choice"]["core_x_m"],
+                        instrument_y_m=groundgrid_result["choice"]["core_y_m"],
+                        speed_of_ligth_m_per_s=job["instrument"][
+                            "local_speed_of_light_m_per_s"
+                        ],
                     )
                     del cherenkov_bunches_in_choice
 
-                    """
                     EventTape_append_event(
                         evttar=evttar,
                         corsika_evth=corsika_evth,
-                        groundgrid_choice=groundgrid_result["choice"],
-                        pointing=pointing,
-                        pointing_model=job["config"]["pointing"]["model"],
+                        cherenkov_bunches=cherenkov_bunches_in_instrument,
+                        core_x_m=groundgrid_result["choice"]["core_x_m"],
+                        core_y_m=groundgrid_result["choice"]["core_y_m"],
                     )
-                    """
 
                     ImgRoiTar_append(
                         imgroitar=imgroitar,
@@ -453,7 +495,7 @@ def _corsika_and_grid(
 
                     cherenkovsizepart_rec = make_cherenkovsize_record(
                         uid=uid,
-                        cherenkov_bunches=cherenkov_bunches_in_choice,
+                        cherenkov_bunches=cherenkov_bunches_in_instrument,
                     )
                     tabrec["cherenkovsizepart"].append_record(
                         cherenkovsizepart_rec
@@ -462,7 +504,7 @@ def _corsika_and_grid(
                     if cherenkovsizepart_rec["num_bunches"] > 0:
                         cherenkovpoolpart_rec = make_cherenkovpool_record(
                             uid=uid,
-                            cherenkov_bunches=cherenkov_bunches_in_choice,
+                            cherenkov_bunches=cherenkov_bunches_in_instrument,
                         )
                         tabrec["cherenkovpoolpart"].append_record(
                             cherenkovpoolpart_rec
@@ -478,17 +520,6 @@ def _corsika_and_grid(
                     f.write(json_utils.dumps(groundgrid_result))
 
                 print(uid)
-                print(
-                    "cone cut fraction",
-                    np.sum(mask) / len(mask),
-                    "cutoff",
-                    primary_rec["inner_atmopsheric_magnetic_cutoff"],
-                )
-
-    cpw.particles.dat_to_tape(
-        dat_path=job["paths"]["tmp"]["particle_pools_dat"],
-        tape_path=job["paths"]["tmp"]["particle_pools_tar"],
-    )
 
     return job, run, tabrec
 
@@ -658,37 +689,19 @@ def mask_cherenkov_bunches_in_cone(
     return delta_rad < cone_half_angle_rad
 
 
-"""
 def EventTape_append_event(
     evttar,
     corsika_evth,
-    groundgrid_choice,
-    pointing,
-    pointing_model,
+    cherenkov_bunches,
     core_x_m,
     core_y_m,
 ):
-    # header
-    # ------
     evth = corsika_evth.copy()
     evth[cpw.I.EVTH.NUM_REUSES_OF_CHERENKOV_EVENT] = 1.0
-    evth[cpw.I.EVTH.X_CORE_CM(reuse=1)] = (
-        cpw.M2CM * groundgrid_choice["core_x_m"]
-    )
-    evth[cpw.I.EVTH.Y_CORE_CM(reuse=1)] = (
-        cpw.M2CM * groundgrid_choice["core_y_m"]
-    )
+    evth[cpw.I.EVTH.X_CORE_CM(reuse=1)] = cpw.M2CM * core_x_m
+    evth[cpw.I.EVTH.Y_CORE_CM(reuse=1)] = cpw.M2CM * core_y_m
     evttar.write_evth(evth=evth)
-
-    cherenkov_bunches_Taperture = transform_cherenkov_bunches.from_obervation_level_to_aperture(
-        cherenkov_bunches=groundgrid_choice["cherenkov_bunches"],
-        pointing=pointing,
-        pointing_model=pointing_model,
-        speed_of_ligth_m_per_s=constants.speed_of_light_in_vacuum_m_per_s(),
-    )
-
-    evttar.write_payload(payload=cherenkov_bunches_Taperture)
-"""
+    evttar.write_payload(payload=cherenkov_bunches)
 
 
 def ImgRoiTar_append(imgroitar, uid, groundgrid_result, groundgrid_debug):
@@ -726,3 +739,36 @@ def write_draw_primaries_and_pointings_debug(
                 filename=uid_str + "_magnetic_deflection_allsky_query.json.gz",
                 filebytes=dbg_gz_bytes,
             )
+
+
+def event_tape_block_splitter(inpath, outpath_block_fmt, num_events):
+    Writer = cpw.cherenkov.CherenkovEventTapeWriter
+    Reader = cpw.cherenkov.CherenkovEventTapeReader
+    outpaths = {}
+
+    orun = None
+    block = 0
+    event_counter = 0
+    with Reader(inpath) as irun:
+        runh = copy.deepcopy(irun.runh)
+
+        for event in irun:
+            evth, cherenkov_reader = event
+            cherenkov_bunches = read_all_cherenkov_bunches(cherenkov_reader)
+
+            if event_counter % num_events == 0:
+                block += 1
+                if orun is not None:
+                    orun.close()
+                outpaths[block] = opj(outpath_block_fmt.format(block=block))
+                orun = Writer(outpaths[block])
+                orun.write_runh(runh)
+
+            orun.write_evth(evth=evth)
+            orun.write_payload(payload=cherenkov_bunches)
+            event_counter += 1
+
+        if orun is not None:
+            orun.close()
+
+    return outpaths
