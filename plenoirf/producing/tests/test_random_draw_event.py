@@ -18,7 +18,7 @@ def test_dummy():
 
     prng = np.random.Generator(np.random.PCG64(RUN_ID))
 
-    events = plenoirf.producing.random.draw_primaries_and_pointings(
+    events, debug = plenoirf.producing.random.draw_primaries_and_pointings(
         prng=prng,
         run_id=RUN_ID,
         num_events=NUM_EVENTS,

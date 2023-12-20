@@ -14,7 +14,7 @@ def init_table_structure():
     t["groundgrid"] = init_groundgrid_level_structure()
 
     t["cherenkovsizepart"] = init_cherenkovsizepart_level_structure()
-    t["cherenkovsizepart"] = init_cherenkovpoolpart_level_structure()
+    t["cherenkovpoolpart"] = init_cherenkovpoolpart_level_structure()
 
     return t
 

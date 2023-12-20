@@ -16,6 +16,7 @@ from . import other_instruments
 from . import provenance
 from . import bookkeeping
 from . import producing
+from . import debugging
 from . import configurating
 from . import event_table
 from . import ground_grid

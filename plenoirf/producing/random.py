@@ -11,6 +11,7 @@ def draw_primaries_and_pointings(
     pointing_range,
     field_of_view_half_angle_rad,
     num_events,
+    event_ids_for_debug=[],
 ):
     """
     Draw the random distribution of particles to induce showers and emitt
@@ -31,6 +32,8 @@ def draw_primaries_and_pointings(
         Instrument's field-of-view
     num_events : int
         The number of events in the run.
+    event_ids_for_debug : list, array, or set of ints
+        Event ids of which full debug output will be returned.
 
     Returns
     -------
@@ -69,7 +72,7 @@ def draw_primaries_and_pointings(
     # instrument pointings
     # --------------------
     pointings = []
-    for i in range(num_events):
+    for event_idx in range(num_events):
         instrument_pointing = acr.pointing_range.draw_pointing(
             pointing_range=pointing_range,
             prng=prng,
@@ -85,20 +88,23 @@ def draw_primaries_and_pointings(
         particle["population"]["direction"]["scatter_cone_half_angle_deg"]
     )
     primary_directions = []
-    primary_directions_dbg = []
-    for i in range(num_events):
+    debug = {}
+    for event_idx in range(num_events):
+        event_id = event_idx + 1
+
         res, dbg = rnd.draw_particle_direction(
             prng=prng,
             method="grid",
-            azimuth_rad=pointings[i]["azimuth_rad"],
-            zenith_rad=pointings[i]["zenith_rad"],
+            azimuth_rad=pointings[event_idx]["azimuth_rad"],
+            zenith_rad=pointings[event_idx]["zenith_rad"],
             half_angle_rad=field_of_view_half_angle_rad,
-            energy_GeV=energies_GeV[i],
+            energy_GeV=energies_GeV[event_idx],
             shower_spread_half_angle_rad=_shower_spread_half_angle_rad,
             min_num_cherenkov_photons=1e3,
         )
         primary_directions.append(res)
-        primary_directions_dbg.append(dbg)
+        if event_id in event_ids_for_debug:
+            debug[event_id] = {"result": res, "debug": dbg}
 
     i8 = np.int64
     f8 = np.float64
@@ -138,4 +144,4 @@ def draw_primaries_and_pointings(
         for key in ["cutoff", "solid_angle_thrown_sr"]:
             y[key] = x[key]
         out["primary_directions"].append(y)
-    return out
+    return out, debug

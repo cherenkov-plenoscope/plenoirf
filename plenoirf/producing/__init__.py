@@ -5,6 +5,7 @@ import tempfile
 import copy
 import numpy as np
 import tarfile
+import gzip
 
 import magnetic_deflection
 import json_utils
@@ -15,15 +16,19 @@ import atmospheric_cherenkov_response as acr
 import rename_after_writing as rnw
 import sparse_numeric_table as spt
 import corsika_primary as cpw
+import homogeneous_transformation
 
 from .. import outer_telescope_array
 from .. import bookkeeping
 from .. import configurating
 from .. import ground_grid
-from . import random
-from . import sum_trigger
 from .. import event_table
 from .. import tar_append
+from .. import debugging
+from .. import constants
+from . import random
+from . import sum_trigger
+from . import transform_cherenkov_bunches
 
 
 def make_jobs(production_dir):
@@ -71,6 +76,21 @@ def run_job_in_dir(job, tmp_dir):
     prng = np.random.Generator(np.random.PCG64(seed=job["run_id"]))
 
     run = {}
+
+    run["event_ids_for_debug"] = debugging.draw_event_ids_for_debug_output(
+        num_events_in_run=job["num_events"],
+        min_num_events=job["config"]["debug_output"]["run"]["min_num_events"],
+        fraction_of_events=job["config"]["debug_output"]["run"][
+            "fraction_of_events"
+        ],
+        prng=prng,
+    )
+    logger.debug(
+        "event-ids for debugging: {:s}.".format(
+            str(run["event_ids_for_debug"].tolist())
+        )
+    )
+
     logger.debug("drawing run's pointing-range")
     run["pointing_range"] = make_pointing_range_for_run(
         config=job["config"], prng=prng
@@ -111,7 +131,7 @@ def _draw_primaries_and_pointings(job, run, prng, logger):
     job["particle"] = copy.deepcopy(_allsky.config["particle"])
 
     if not op.exists(job["paths"]["cache"]["primary"]):
-        drw = random.draw_primaries_and_pointings(
+        drw, debug = random.draw_primaries_and_pointings(
             prng=prng,
             run_id=job["run_id"],
             site_particle_magnetic_deflection=_allsky,
@@ -120,7 +140,15 @@ def _draw_primaries_and_pointings(job, run, prng, logger):
                 "field_of_view_half_angle_rad"
             ],
             num_events=job["num_events"],
+            event_ids_for_debug=run["event_ids_for_debug"],
         )
+
+        write_draw_primaries_and_pointings_debug(
+            path=job["paths"]["debug"]["draw_primary_and_pointing"],
+            run_id=job["run_id"],
+            debug=debug,
+        )
+
         with rnw.open(job["paths"]["cache"]["primary"] + ".json", "wt") as f:
             f.write(json_utils.dumps(drw, indent=4))
         cpw.steering.write_steerings(
@@ -243,6 +271,15 @@ def compile_paths(job, tmp_dir):
     paths["cache"]["primary"] = opj(
         tmp_dir, job["run_id_str"] + "_corsika_primary_steering.tar"
     )
+
+    # debug output
+    # ------------
+    paths["debug"] = {}
+    paths["debug"]["draw_primary_and_pointing"] = opj(
+        paths["stage_dir"],
+        job["run_id_str"] + "_debug_" + "draw_primary_and_pointing" + ".tar",
+    )
+
     return paths
 
 
@@ -315,6 +352,8 @@ def _corsika_and_grid(
                     uid=uid, pointings=run["pointings"]
                 )
                 tabrec["pointing"].append_record(pointing_rec)
+                _ = pointing_rec.pop("idx")
+                pointing = pointing_rec
 
                 cherenkovsize_rec = make_cherenkovsize_record(
                     uid=uid,
@@ -352,18 +391,19 @@ def _corsika_and_grid(
                     center_y_m=groundgrid_config["center_y_m"],
                 )
 
-                mask = mask_cherenkov_bunches_in_instruments_field_of_view(
+                fov_mask = mask_cherenkov_bunches_in_instruments_field_of_view(
                     cherenkov_bunches=cherenkov_bunches,
-                    pointing=pointing_rec,
+                    pointing=pointing,
                     field_of_view_half_angle_rad=job["instrument"][
                         "field_of_view_half_angle_rad"
                     ],
                 )
-                cherenkov_bunches = cherenkov_bunches[mask]
+                cherenkov_bunches_in_fov = cherenkov_bunches[fov_mask]
+                del cherenkov_bunches
 
                 groundgrid_result, groundgrid_debug = ground_grid.assign(
                     groundgrid=groundgrid,
-                    cherenkov_bunches=cherenkov_bunches,
+                    cherenkov_bunches=cherenkov_bunches_in_fov,
                     threshold_num_photons=job["config"]["ground_grid"][
                         "threshold_num_photons"
                     ],
@@ -379,11 +419,30 @@ def _corsika_and_grid(
                 tabrec["groundgrid"].append_record(groundgrid_rec)
 
                 if groundgrid_result["choice"]:
+                    cherenkov_bunches_in_choice = cherenkov_bunches_in_fov[
+                        groundgrid_result["choice"]["cherenkov_bunches_idxs"]
+                    ]
+                    del cherenkov_bunches_in_fov
+
+                    cherenkov_bunches_in_instrument = transform_cherenkov_bunches.from_obervation_level_to_aperture(
+                        cherenkov_bunches=cherenkov_bunches_in_choice,
+                        pointing=pointing,
+                        pointing_model=pointing_model,
+                        core_x_m=groundgrid_result["choice"]["core_x_m"],
+                        core_y_m=groundgrid_result["choice"]["core_y_m"],
+                        speed_of_ligth_m_per_s=constants.speed_of_light_in_vacuum_m_per_s(),
+                    )
+                    del cherenkov_bunches_in_choice
+
+                    """
                     EventTape_append_event(
                         evttar=evttar,
                         corsika_evth=corsika_evth,
                         groundgrid_choice=groundgrid_result["choice"],
+                        pointing=pointing,
+                        pointing_model=job["config"]["pointing"]["model"],
                     )
+                    """
 
                     ImgRoiTar_append(
                         imgroitar=imgroitar,
@@ -394,9 +453,7 @@ def _corsika_and_grid(
 
                     cherenkovsizepart_rec = make_cherenkovsize_record(
                         uid=uid,
-                        cherenkov_bunches=groundgrid_result[
-                            "cherenkov_bunches"
-                        ],
+                        cherenkov_bunches=cherenkov_bunches_in_choice,
                     )
                     tabrec["cherenkovsizepart"].append_record(
                         cherenkovsizepart_rec
@@ -405,9 +462,7 @@ def _corsika_and_grid(
                     if cherenkovsizepart_rec["num_bunches"] > 0:
                         cherenkovpoolpart_rec = make_cherenkovpool_record(
                             uid=uid,
-                            cherenkov_bunches=groundgrid_result[
-                                "cherenkov_bunches"
-                            ],
+                            cherenkov_bunches=cherenkov_bunches_in_choice,
                         )
                         tabrec["cherenkovpoolpart"].append_record(
                             cherenkovpoolpart_rec
@@ -603,11 +658,18 @@ def mask_cherenkov_bunches_in_cone(
     return delta_rad < cone_half_angle_rad
 
 
+"""
 def EventTape_append_event(
     evttar,
     corsika_evth,
     groundgrid_choice,
+    pointing,
+    pointing_model,
+    core_x_m,
+    core_y_m,
 ):
+    # header
+    # ------
     evth = corsika_evth.copy()
     evth[cpw.I.EVTH.NUM_REUSES_OF_CHERENKOV_EVENT] = 1.0
     evth[cpw.I.EVTH.X_CORE_CM(reuse=1)] = (
@@ -617,7 +679,16 @@ def EventTape_append_event(
         cpw.M2CM * groundgrid_choice["core_y_m"]
     )
     evttar.write_evth(evth=evth)
-    evttar.write_payload(payload=groundgrid_choice["cherenkov_bunches"])
+
+    cherenkov_bunches_Taperture = transform_cherenkov_bunches.from_obervation_level_to_aperture(
+        cherenkov_bunches=groundgrid_choice["cherenkov_bunches"],
+        pointing=pointing,
+        pointing_model=pointing_model,
+        speed_of_ligth_m_per_s=constants.speed_of_light_in_vacuum_m_per_s(),
+    )
+
+    evttar.write_payload(payload=cherenkov_bunches_Taperture)
+"""
 
 
 def ImgRoiTar_append(imgroitar, uid, groundgrid_result, groundgrid_debug):
@@ -634,3 +705,24 @@ def ImgRoiTar_append(imgroitar, uid, groundgrid_result, groundgrid_debug):
         filename=uid["uid_str"] + ".f4.gz",
         filebytes=ground_grid.io.histogram_to_bytes(roi_array),
     )
+
+
+def write_draw_primaries_and_pointings_debug(
+    path,
+    run_id,
+    debug,
+):
+    event_ids_for_debug = sorted(list(debug.keys()))
+    with tarfile.open(path, "w") as tarout:
+        for event_id in event_ids_for_debug:
+            uid_str = bookkeeping.uid.make_uid_str(
+                run_id=run_id, event_id=event_id
+            )
+            dbg_text = json_utils.dumps(debug[event_id], indent=None)
+            dbg_bytes = dbg_text.encode()
+            dbg_gz_bytes = gzip.compress(dbg_bytes)
+            tar_append.tar_append(
+                tarout=tarout,
+                filename=uid_str + "_magnetic_deflection_allsky_query.json.gz",
+                filebytes=dbg_gz_bytes,
+            )

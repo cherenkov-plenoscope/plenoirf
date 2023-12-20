@@ -51,6 +51,9 @@ def write_default(plenoirf_dir, build_dir):
     with rnw.open(opj(pdir, "config", "ground_grid.json"), "wt") as f:
         f.write(json_utils.dumps(make_groundgrid(), indent=4))
 
+    with rnw.open(opj(pdir, "config", "debug_output.json"), "wt") as f:
+        f.write(json_utils.dumps(make_debug_output(), indent=4))
+
 
 def make_executables_paths(build_dir="build"):
     return {
@@ -128,7 +131,7 @@ def make_instruments():
 
 def make_pointing():
     return {
-        "model": "cable_robo_mount",
+        "model": "cable_robot",
         "range": {
             "max_zenith_distance_rad": np.deg2rad(60.0),
             "run_half_angle_rad": np.deg2rad(5.0),
@@ -170,4 +173,13 @@ def make_ground_grid():
             "num_bins_each_axis": 1024,
         },
         "threshold_num_photons": 10,
+    }
+
+
+def make_debug_output():
+    return {
+        "run": {
+            "min_num_events": 1,
+            "fraction_of_events": 1e-2,
+        }
     }

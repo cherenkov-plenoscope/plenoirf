@@ -185,12 +185,7 @@ def draw_random_bin_choice(
     cc["bin_idx_y"] = bin_idx[1]
     cc["core_x_m"] = groundgrid["x_bin"]["centers"][cc["bin_idx_x"]]
     cc["core_y_m"] = groundgrid["y_bin"]["centers"][cc["bin_idx_y"]]
-    bin_photon_mask = np.array(bin_photon_assignment[bin_idx][0])
-
-    cc["cherenkov_bunches"] = cherenkov_bunches[bin_photon_mask, :].copy()
-    cc["cherenkov_bunches"][:, cpw.I.BUNCH.X_CM] -= cpw.M2CM * cc["core_x_m"]
-    cc["cherenkov_bunches"][:, cpw.I.BUNCH.Y_CM] -= cpw.M2CM * cc["core_y_m"]
-
+    cc["cherenkov_bunches_idxs"] = np.array(bin_photon_assignment[bin_idx][0])
     return cc
 
 
@@ -227,11 +222,15 @@ def radii_for_area_power_space(start=1e6, factor=2.0, num_bins=16):
 def bin_photon_assignment_to_array_roi(
     bin_photon_assignment, x_bin, y_bin, r_bin, dtype=np.float32
 ):
+    x_bin = int(x_bin)
+    y_bin = int(y_bin)
+    r_bin = int(r_bin)
     assert r_bin >= 0
     dia = 2 * r_bin + 1
     out = np.zeros(shape=(dia, dia), dtype=dtype)
     for bin_idx in bin_photon_assignment:
-        _x, _y = bin_idx
+        _x = int(bin_idx[0])
+        _y = int(bin_idx[1])
         ox = _x - x_bin + r_bin
         if 0 <= ox < dia:
             oy = _y - y_bin + r_bin
