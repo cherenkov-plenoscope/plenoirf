@@ -17,7 +17,7 @@ from .. import outer_telescope_array
 from .. import tar_append
 
 from . import transform_cherenkov_bunches
-from . import job_json
+from . import job_io
 
 
 def run_job(job, logger):
@@ -25,14 +25,14 @@ def run_job(job, logger):
 
     if os.path.exists(cache_path) and job["cache"]:
         logger.info("corsika_and_grid, read cache")
-        return job_json.read(path=cache_path)
+        return job_io.read(path=cache_path)
     else:
         logger.info("corsika_and_grid, run corsika")
         job = corsika_and_grid(job=job, logger=logger)
 
         if job["cache"]:
             logger.info("corsika_and_grid, write cache")
-            job_json.write(path=cache_path, job=job)
+            job_io.write(path=cache_path, job=job)
 
     """
     job["run"]["cherenkov_pools"] = event_tape_block_splitter(

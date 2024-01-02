@@ -12,7 +12,7 @@ import gzip
 
 from .. import bookkeeping
 from .. import tar_append
-from . import job_json
+from . import job_io
 
 
 def draw_primaries_and_pointings(
@@ -165,7 +165,7 @@ def run_job(job, logger):
 
     if os.path.exists(cache_path) and job["cache"]:
         logger.info("draw_primaries_and_pointings, read cache")
-        return job_json.read(path=cache_path)
+        return job_io.read(path=cache_path)
     else:
         logger.info("draw_primaries_and_pointings, open AllSky")
         allsky = magnetic_deflection.allsky.AllSky(
@@ -194,7 +194,7 @@ def run_job(job, logger):
 
         if job["cache"]:
             logger.info("draw_primaries_and_pointings, write cache")
-            job_json.write(path=cache_path, job=job)
+            job_io.write(path=cache_path, job=job)
 
     return job
 

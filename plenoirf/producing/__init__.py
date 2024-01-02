@@ -25,7 +25,7 @@ from .. import tar_append
 from .. import debugging
 from .. import constants
 
-from . import job_json
+from . import job_io
 from . import sum_trigger
 from . import draw_event_ids_for_debug_output
 from . import draw_primaries_and_pointings
@@ -89,7 +89,7 @@ def run_job_in_dir(job, tmp_dir):
     with jll.TimeDelta(logger, "corsika_and_grid"):
         job = corsika_and_grid.run_job(job=job, logger=logger)
 
-    job_json.write(path=opj(job["paths"]["tmp_dir"], "job.json"), job=job)
+    job_io.write(path=opj(job["paths"]["tmp_dir"], "job.json"), job=job)
 
     logger.info("ending")
     rnw.move(job["paths"]["logger_tmp"], job["paths"]["logger"])
