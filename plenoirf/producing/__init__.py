@@ -26,9 +26,10 @@ from .. import event_table
 from .. import tar_append
 from .. import debugging
 from .. import constants
-from . import random
+
 from . import sum_trigger
 from . import transform_cherenkov_bunches
+from . import draw_primary_and_pointing
 
 
 def make_example_job(
@@ -86,13 +87,12 @@ def run_job_in_dir(job, tmp_dir):
         )
     )
 
-    logger.debug("drawing run's pointing-range")
-    run["pointing_range"] = make_pointing_range_for_run(
-        config=job["config"], prng=prng
-    )
+    with json_line_logger.TimeDelta(logger, "draw_pointing_range"):
+        job, run = draw_pointing_range.run_job(job=job, run=run, prng=prng)
 
-    with json_line_logger.TimeDelta(logger, "draw_primary_and_pointing"):
-        job, run = _draw_primaries_and_pointings(
+
+    with json_line_logger.TimeDelta(logger, "draw_primaries_and_pointings"):
+        job, run = draw_primaries_and_pointings.run_job(
             job=job,
             run=run,
             prng=prng,
@@ -116,53 +116,6 @@ def run_job_in_dir(job, tmp_dir):
     logger.info("ending")
     rnw.move(job["paths"]["logger_tmp"], job["paths"]["logger"])
     return job, run, tabrec
-
-
-def _draw_primaries_and_pointings(job, run, prng, logger):
-    allsky = magnetic_deflection.allsky.AllSky(
-        job["paths"]["magnetic_deflection_allsky"]
-    )
-
-    if not op.exists(job["paths"]["cache"]["primary"]):
-        drw, debug = random.draw_primaries_and_pointings(
-            prng=prng,
-            run_id=job["run_id"],
-            site_particle_magnetic_deflection=allsky,
-            pointing_range=run["pointing_range"],
-            field_of_view_half_angle_rad=job["instrument"][
-                "field_of_view_half_angle_rad"
-            ],
-            num_events=job["num_events"],
-            event_ids_for_debug=run["event_ids_for_debug"],
-        )
-
-        write_draw_primaries_and_pointings_debug(
-            path=job["paths"]["debug"]["draw_primary_and_pointing"],
-            run_id=job["run_id"],
-            debug=debug,
-        )
-
-        with rnw.open(job["paths"]["cache"]["primary"] + ".json", "wt") as f:
-            f.write(json_utils.dumps(drw, indent=4))
-        cpw.steering.write_steerings(
-            path=job["paths"]["cache"]["primary"],
-            runs={job["run_id"]: drw["corsika_primary_steering"]},
-        )
-        with rnw.open(job["paths"]["cache"]["primary"] + ".prng", "wt") as f:
-            f.write(json_utils.dumps(prng.bit_generator.state, indent=4))
-    else:
-        with rnw.open(job["paths"]["cache"]["primary"] + ".json", "rt") as f:
-            drw = json_utils.loads(f.read())
-        _rrr = cpw.steering.read_steerings(
-            path=job["paths"]["cache"]["primary"],
-        )
-        drw["corsika_primary_steering"] = _rrr[job["run_id"]]
-
-        with rnw.open(job["paths"]["cache"]["primary"] + ".prng", "rt") as f:
-            prng.bit_generator.state = json_utils.loads(f.read())
-
-    run.update(drw)
-    return job, run
 
 
 def read_light_field_camera_config(plenoirf_dir, instrument_key):
@@ -287,27 +240,6 @@ def compile_paths(job, tmp_dir):
     )
 
     return paths
-
-
-def make_pointing_range_for_run(config, prng):
-    """
-    Draws the range in solid angle to point in for this particular run.
-    We limit this run's range to not be the full sky to avoid queyring the
-    entire magnetic_deflection's AllSky solid angle.
-    """
-    total_range = acr.pointing_range.PointingRange_from_cone(
-        azimuth_rad=0.0,
-        zenith_rad=0.0,
-        half_angel_rad=config["pointing"]["range"]["max_zenith_distance_rad"],
-    )
-    ptg = acr.pointing_range.draw_pointing(
-        pointing_range=total_range, prng=prng
-    )
-    return acr.pointing_range.PointingRange_from_cone(
-        azimuth_rad=ptg["azimuth_rad"],
-        zenith_rad=ptg["zenith_rad"],
-        half_angel_rad=config["pointing"]["range"]["run_half_angle_rad"],
-    )
 
 
 def _corsika_and_grid(
@@ -728,25 +660,6 @@ def ImgRoiTar_append(imgroitar, uid, groundgrid_result, groundgrid_debug):
     )
 
 
-def write_draw_primaries_and_pointings_debug(
-    path,
-    run_id,
-    debug,
-):
-    event_ids_for_debug = sorted(list(debug.keys()))
-    with tarfile.open(path, "w") as tarout:
-        for event_id in event_ids_for_debug:
-            uid_str = bookkeeping.uid.make_uid_str(
-                run_id=run_id, event_id=event_id
-            )
-            dbg_text = json_utils.dumps(debug[event_id], indent=None)
-            dbg_bytes = dbg_text.encode()
-            dbg_gz_bytes = gzip.compress(dbg_bytes)
-            tar_append.tar_append(
-                tarout=tarout,
-                filename=uid_str + "_magnetic_deflection_allsky_query.json.gz",
-                filebytes=dbg_gz_bytes,
-            )
 
 
 def event_tape_block_splitter(inpath, outpath_block_fmt, num_events):
