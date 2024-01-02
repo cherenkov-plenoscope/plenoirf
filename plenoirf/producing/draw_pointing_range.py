@@ -1,7 +1,7 @@
 import atmospheric_cherenkov_response as acr
 
 
-def work(max_zenith_distance_rad, run_half_angle_rad, prng):
+def draw_pointing_range(max_zenith_distance_rad, run_half_angle_rad, prng):
     """
     Draws the range in solid angle from a an individual run can draw
     pointings from.
@@ -35,11 +35,17 @@ def work(max_zenith_distance_rad, run_half_angle_rad, prng):
     )
 
 
-def run_job(job, run, prng, logger):
-    logger.debug("drawing run's pointing-range")
-    run["pointing_range"] = work(
-        max_zenith_distance_rad=config["pointing"]["range"]["max_zenith_distance_rad"],
-        run_half_angle_rad=config["pointing"]["range"]["run_half_angle_rad"],
-        prng=prng
+def run_job(job):
+    job["logger"].debug("drawing run's pointing-range")
+
+    job["run"]["pointing_range"] = draw_pointing_range(
+        max_zenith_distance_rad=job["config"]["pointing"]["range"][
+            "max_zenith_distance_rad"
+        ],
+        run_half_angle_rad=job["config"]["pointing"]["range"][
+            "run_half_angle_rad"
+        ],
+        prng=job["prng"],
     )
-    return job, run
+
+    return job

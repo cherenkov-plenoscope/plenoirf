@@ -9,7 +9,6 @@ import tarfile
 import gzip
 
 
-
 def draw_primaries_and_pointings(
     prng,
     run_id,
@@ -153,22 +152,22 @@ def draw_primaries_and_pointings(
     return out, debug
 
 
-def run_job(job, run, prng, logger):
+def run_job(job):
     allsky = magnetic_deflection.allsky.AllSky(
         job["paths"]["magnetic_deflection_allsky"]
     )
 
     if not op.exists(job["paths"]["cache"]["primary"]):
-        drw, debug = random.draw_primaries_and_pointings(
-            prng=prng,
+        drw, debug = draw_primaries_and_pointings(
+            prng=job["prng"],
             run_id=job["run_id"],
             site_particle_magnetic_deflection=allsky,
-            pointing_range=run["pointing_range"],
+            pointing_range=job["run"]["pointing_range"],
             field_of_view_half_angle_rad=job["instrument"][
                 "field_of_view_half_angle_rad"
             ],
             num_events=job["num_events"],
-            event_ids_for_debug=run["event_ids_for_debug"],
+            event_ids_for_debug=job["run"]["event_ids_for_debug"],
         )
 
         write_draw_primaries_and_pointings_debug(
@@ -196,8 +195,8 @@ def run_job(job, run, prng, logger):
         with rnw.open(job["paths"]["cache"]["primary"] + ".prng", "rt") as f:
             prng.bit_generator.state = json_utils.loads(f.read())
 
-    run.update(drw)
-    return job, run
+    job["run"].update(drw)
+    return job
 
 
 def write_draw_primaries_and_pointings_debug(
