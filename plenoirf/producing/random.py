@@ -3,6 +3,12 @@ import corsika_primary
 import magnetic_deflection
 import atmospheric_cherenkov_response as acr
 
+import json_utils
+import rename_after_writing as rnw
+import tarfile
+import gzip
+
+
 
 def draw_primaries_and_pointings(
     prng,
@@ -145,3 +151,71 @@ def draw_primaries_and_pointings(
             y[key] = x[key]
         out["primary_directions"].append(y)
     return out, debug
+
+
+def run_job(job, run, prng, logger):
+    allsky = magnetic_deflection.allsky.AllSky(
+        job["paths"]["magnetic_deflection_allsky"]
+    )
+
+    if not op.exists(job["paths"]["cache"]["primary"]):
+        drw, debug = random.draw_primaries_and_pointings(
+            prng=prng,
+            run_id=job["run_id"],
+            site_particle_magnetic_deflection=allsky,
+            pointing_range=run["pointing_range"],
+            field_of_view_half_angle_rad=job["instrument"][
+                "field_of_view_half_angle_rad"
+            ],
+            num_events=job["num_events"],
+            event_ids_for_debug=run["event_ids_for_debug"],
+        )
+
+        write_draw_primaries_and_pointings_debug(
+            path=job["paths"]["debug"]["draw_primary_and_pointing"],
+            run_id=job["run_id"],
+            debug=debug,
+        )
+
+        with rnw.open(job["paths"]["cache"]["primary"] + ".json", "wt") as f:
+            f.write(json_utils.dumps(drw, indent=4))
+        corsika_primary.steering.write_steerings(
+            path=job["paths"]["cache"]["primary"],
+            runs={job["run_id"]: drw["corsika_primary_steering"]},
+        )
+        with rnw.open(job["paths"]["cache"]["primary"] + ".prng", "wt") as f:
+            f.write(json_utils.dumps(prng.bit_generator.state, indent=4))
+    else:
+        with rnw.open(job["paths"]["cache"]["primary"] + ".json", "rt") as f:
+            drw = json_utils.loads(f.read())
+        _rrr = corsika_primary.steering.read_steerings(
+            path=job["paths"]["cache"]["primary"],
+        )
+        drw["corsika_primary_steering"] = _rrr[job["run_id"]]
+
+        with rnw.open(job["paths"]["cache"]["primary"] + ".prng", "rt") as f:
+            prng.bit_generator.state = json_utils.loads(f.read())
+
+    run.update(drw)
+    return job, run
+
+
+def write_draw_primaries_and_pointings_debug(
+    path,
+    run_id,
+    debug,
+):
+    event_ids_for_debug = sorted(list(debug.keys()))
+    with tarfile.open(path, "w") as tarout:
+        for event_id in event_ids_for_debug:
+            uid_str = bookkeeping.uid.make_uid_str(
+                run_id=run_id, event_id=event_id
+            )
+            dbg_text = json_utils.dumps(debug[event_id], indent=None)
+            dbg_bytes = dbg_text.encode()
+            dbg_gz_bytes = gzip.compress(dbg_bytes)
+            tar_append.tar_append(
+                tarout=tarout,
+                filename=uid_str + "_magnetic_deflection_allsky_query.json.gz",
+                filebytes=dbg_gz_bytes,
+            )
