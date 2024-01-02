@@ -31,6 +31,7 @@ from . import draw_event_ids_for_debug_output
 from . import draw_primaries_and_pointings
 from . import draw_pointing_range
 from . import corsika_and_grid
+from . import split_event_tape_into_blocks
 
 
 def make_example_job(
@@ -39,8 +40,8 @@ def make_example_job(
     site_key="chile",
     particle_key="electron",
     instrument_key="diag9_default_default",
-    num_events=128,
-    max_num_events_in_merlict_run=12,
+    num_events=24,
+    max_num_events_in_merlict_run=6,
     cache=True,
 ):
     job = {}
@@ -88,6 +89,9 @@ def run_job_in_dir(job, tmp_dir):
 
     with jll.TimeDelta(logger, "corsika_and_grid"):
         job = corsika_and_grid.run_job(job=job, logger=logger)
+
+    with jll.TimeDelta(logger, "split_event_tape_into_blocks"):
+        job = split_event_tape_into_blocks.run_job(job=job, logger=logger)
 
     job_io.write(path=opj(job["paths"]["tmp_dir"], "job.json"), job=job)
 

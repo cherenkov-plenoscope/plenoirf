@@ -1,6 +1,7 @@
 import corsika_primary as cpw
-from .. import analysis
 import numpy as np
+
+from .. import analysis
 
 
 def populate_particlepool(job, run, tabrec):

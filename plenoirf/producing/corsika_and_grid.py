@@ -9,6 +9,7 @@ import json_utils
 import sparse_numeric_table as spt
 import atmospheric_cherenkov_response as acr
 import spherical_coordinates
+import dynamicsizerecarray
 
 from .. import bookkeeping
 from .. import ground_grid
@@ -32,6 +33,7 @@ def run_job(job, logger):
 
         if job["cache"]:
             logger.info("corsika_and_grid, write cache")
+            _inspect(job=job)
             job_io.write(path=cache_path, job=job)
 
     """
@@ -43,6 +45,15 @@ def run_job(job, logger):
     """
 
     return job
+
+
+def _inspect(job, path=""):
+    for key in job:
+        if isinstance(job[key], dict):
+            _inspect(job=job[key], path=path + "/" + key)
+        else:
+            if isinstance(job[key], dynamicsizerecarray.DynamicSizeRecarray):
+                print(path + "/" + key)
 
 
 def corsika_and_grid(job, logger):
@@ -465,36 +476,3 @@ def ImgTar_append(imgtar, uid, groundgrid, groundgrid_debug):
         filename=uid["uid_str"] + ".f4.gz",
         filebytes=ground_grid.io.histogram_to_bytes(img),
     )
-
-
-def event_tape_block_splitter(inpath, outpath_block_fmt, num_events):
-    Writer = cpw.cherenkov.CherenkovEventTapeWriter
-    Reader = cpw.cherenkov.CherenkovEventTapeReader
-    outpaths = {}
-
-    orun = None
-    block = 0
-    event_counter = 0
-    with Reader(inpath) as irun:
-        runh = copy.deepcopy(irun.runh)
-
-        for event in irun:
-            evth, cherenkov_reader = event
-            cherenkov_bunches = read_all_cherenkov_bunches(cherenkov_reader)
-
-            if event_counter % num_events == 0:
-                block += 1
-                if orun is not None:
-                    orun.close()
-                outpaths[block] = opj(outpath_block_fmt.format(block=block))
-                orun = Writer(outpaths[block])
-                orun.write_runh(runh)
-
-            orun.write_evth(evth=evth)
-            orun.write_payload(payload=cherenkov_bunches)
-            event_counter += 1
-
-        if orun is not None:
-            orun.close()
-
-    return outpaths

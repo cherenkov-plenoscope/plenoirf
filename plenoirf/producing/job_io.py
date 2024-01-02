@@ -15,8 +15,8 @@ def write(path, job):
         with rnw.open(os.path.join(path, "prng.json"), "wt") as f:
             f.write(json_utils.dumps(todict_prng(prng=out.pop("prng"))))
 
-    if "event_table" in out["run"]:
-        event_table = out["run"].pop("event_table")
+    if "event_table" in out:
+        event_table = out.pop("event_table")
         for key in event_table:
             event_table[key] = todict_recarray(event_table[key])
         with rnw.open(os.path.join(path, "event_table.json"), "wt") as f:
@@ -42,17 +42,15 @@ def read(path):
         with open(os.path.join(path, "prng.json"), "rt") as f:
             out["prng"] = fromdict_prng(json_utils.loads(f.read()))
 
-    if "run" not in out:
-        out["run"] = {}
-
     if os.path.exists(os.path.join(path, "event_table.json")):
-        out["run"]["event_table"] = {}
+        out["event_table"] = {}
         with open(os.path.join(path, "event_table.json"), "rt") as f:
             event_table = json_utils.loads(f.read())
         for key in event_table:
-            out["run"]["event_table"][key] = fromdict_recarray(
-                event_table[key]
-            )
+            out["event_table"][key] = fromdict_recarray(event_table[key])
+
+    if "run" not in out:
+        out["run"] = {}
 
     if os.path.exists(os.path.join(path, "corsika_primary_steering.tar")):
         corsika_primary_steerings = corsika_primary.steering.read_steerings(
