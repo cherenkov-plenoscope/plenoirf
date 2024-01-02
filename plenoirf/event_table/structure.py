@@ -206,12 +206,12 @@ def init_cherenkovpoolpart_level_structure():
 
 
 def init_core_level_structure():
-    return {
-        "bin_idx_x": {"dtype": "<i8", "comment": ""},
-        "bin_idx_y": {"dtype": "<i8", "comment": ""},
-        "core_x_m": {"dtype": "<f8", "comment": ""},
-        "core_y_m": {"dtype": "<f8", "comment": ""},
-    }
+    t = {}
+    t["bin_idx_x"] = {"dtype": "<i8", "comment": ""}
+    t["bin_idx_y"] = {"dtype": "<i8", "comment": ""}
+    t["core_x_m"] = {"dtype": "<f8", "comment": ""}
+    t["core_y_m"] = {"dtype": "<f8", "comment": ""}
+    return t
 
 
 """

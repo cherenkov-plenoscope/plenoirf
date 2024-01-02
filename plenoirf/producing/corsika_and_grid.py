@@ -1,33 +1,53 @@
-def run_job(job):
-    if not op.exists(job["paths"]["tmp"]["cherenkov_pools"]):
-        job, run, tabrec = __corsika_and_grid(
-            job=job,
-            run=run,
-            tabrec=tabrec,
-            prng=prng,
-            logger=logger,
-        )
+import os
+from os import path as op
+from os.path import join as opj
+import tarfile
+import numpy as np
 
-    cpw.particles.dat_to_tape(
-        dat_path=job["paths"]["tmp"]["particle_pools_dat"],
-        tape_path=job["paths"]["tmp"]["particle_pools_tar"],
-    )
+import corsika_primary as cpw
+import json_utils
+import sparse_numeric_table as spt
+import atmospheric_cherenkov_response as acr
+import spherical_coordinates
 
-    run["cherenkov_pools"] = event_tape_block_splitter(
+from .. import bookkeeping
+from .. import ground_grid
+from .. import event_table
+from .. import outer_telescope_array
+from .. import tar_append
+
+from . import transform_cherenkov_bunches
+from . import job_json
+
+
+def run_job(job, logger):
+    cache_path = os.path.join(job["paths"]["tmp_dir"], "corsika_and_grid")
+
+    if os.path.exists(cache_path) and job["cache"]:
+        logger.info("corsika_and_grid, read cache")
+        return job_json.read(path=cache_path)
+    else:
+        logger.info("corsika_and_grid, run corsika")
+        job = corsika_and_grid(job=job, logger=logger)
+
+        if job["cache"]:
+            logger.info("corsika_and_grid, write cache")
+            job_json.write(path=cache_path, job=job)
+
+    """
+    job["run"]["cherenkov_pools"] = event_tape_block_splitter(
         inpath=job["paths"]["tmp"]["cherenkov_pools"],
         outpath_block_fmt=job["paths"]["tmp"]["cherenkov_pools_block_fmt"],
         num_events=job["max_num_events_in_merlict_run"],
     )
-    return job, run, tabrec
+    """
+
+    return job
 
 
-def __corsika_and_grid(
-    job,
-    run,
-    tabrec,
-    prng,
-    logger,
-):
+def corsika_and_grid(job, logger):
+    logger.info("corsika_and_grid, start corsika")
+
     with cpw.cherenkov.CherenkovEventTapeWriter(
         path=job["paths"]["tmp"]["cherenkov_pools"]
     ) as evttar, tarfile.open(
@@ -37,11 +57,12 @@ def __corsika_and_grid(
     ) as imgroitar:
         with cpw.CorsikaPrimary(
             corsika_path=job["config"]["executables"]["corsika_primary_path"],
-            steering_dict=run["corsika_primary_steering"],
+            steering_dict=job["run"]["corsika_primary_steering"],
             stdout_path=job["paths"]["tmp"]["corsika_stdout"],
             stderr_path=job["paths"]["tmp"]["corsika_stderr"],
             particle_output_path=job["paths"]["tmp"]["particle_pools_dat"],
         ) as corsika_run:
+            logger.info("corsika_and_grid, corsika is ready")
             evttar.write_runh(runh=corsika_run.runh)
 
             for event_idx, corsika_event in enumerate(corsika_run):
@@ -54,21 +75,28 @@ def __corsika_and_grid(
                 uid = nail_down_event_identity(
                     corsika_evth=corsika_evth,
                     event_idx=event_idx,
-                    corsika_primary_steering=run["corsika_primary_steering"],
+                    corsika_primary_steering=job["run"][
+                        "corsika_primary_steering"
+                    ],
+                )
+                logger.info(
+                    "corsika_and_grid, shower uid {:s}".format(uid["uid_str"])
                 )
 
                 primary_rec = make_primary_record(
                     uid=uid,
                     corsika_evth=corsika_evth,
-                    corsika_primary_steering=run["corsika_primary_steering"],
-                    primary_directions=run["primary_directions"],
+                    corsika_primary_steering=job["run"][
+                        "corsika_primary_steering"
+                    ],
+                    primary_directions=job["run"]["primary_directions"],
                 )
-                tabrec["primary"].append_record(primary_rec)
+                job["event_table"]["primary"].append_record(primary_rec)
 
                 pointing_rec = make_pointing_record(
-                    uid=uid, pointings=run["pointings"]
+                    uid=uid, pointings=job["run"]["pointings"]
                 )
-                tabrec["pointing"].append_record(pointing_rec)
+                job["event_table"]["pointing"].append_record(pointing_rec)
                 _ = pointing_rec.pop("idx")
                 pointing = pointing_rec
 
@@ -76,7 +104,9 @@ def __corsika_and_grid(
                     uid=uid,
                     cherenkov_bunches=cherenkov_bunches,
                 )
-                tabrec["cherenkovsize"].append_record(cherenkovsize_rec)
+                job["event_table"]["cherenkovsize"].append_record(
+                    cherenkovsize_rec
+                )
 
                 cherenkov_pool_median_x_m = 0.0
                 cherenkov_pool_median_y_m = 0.0
@@ -85,7 +115,9 @@ def __corsika_and_grid(
                         uid=uid,
                         cherenkov_bunches=cherenkov_bunches,
                     )
-                    tabrec["cherenkovpool"].append_record(cherenkovpool_rec)
+                    job["event_table"]["cherenkovpool"].append_record(
+                        cherenkovpool_rec
+                    )
                     cherenkov_pool_median_x_m = cherenkovpool_rec["x_median_m"]
                     cherenkov_pool_median_y_m = cherenkovpool_rec["y_median_m"]
 
@@ -98,7 +130,7 @@ def __corsika_and_grid(
                     ]["num_bins_each_axis"],
                     cherenkov_pool_median_x_m=cherenkov_pool_median_x_m,
                     cherenkov_pool_median_y_m=cherenkov_pool_median_y_m,
-                    prng=prng,
+                    prng=job["prng"],
                 )
 
                 groundgrid = ground_grid.GroundGrid(
@@ -124,7 +156,7 @@ def __corsika_and_grid(
                     threshold_num_photons=job["config"]["ground_grid"][
                         "threshold_num_photons"
                     ],
-                    prng=prng,
+                    prng=job["prng"],
                 )
 
                 groundgrid_rec = make_groundgrid_record(
@@ -133,7 +165,7 @@ def __corsika_and_grid(
                     groundgrid_result=groundgrid_result,
                     groundgrid=groundgrid,
                 )
-                tabrec["groundgrid"].append_record(groundgrid_rec)
+                job["event_table"]["groundgrid"].append_record(groundgrid_rec)
 
                 if groundgrid_result["choice"]:
                     cherenkov_bunches_in_choice = cherenkov_bunches_in_fov[
@@ -159,7 +191,7 @@ def __corsika_and_grid(
                         uid=uid,
                         groundgrid_result_choice=groundgrid_result["choice"],
                     )
-                    tabrec["core"].append_record(core_rec)
+                    job["event_table"]["core"].append_record(core_rec)
 
                     EventTape_append_event(
                         evttar=evttar,
@@ -176,11 +208,19 @@ def __corsika_and_grid(
                         groundgrid_debug=groundgrid_debug,
                     )
 
+                    if uid["event_id"] in job["run"]["event_ids_for_debug"]:
+                        ImgTar_append(
+                            imgtar=imgtar,
+                            uid=uid,
+                            groundgrid=groundgrid,
+                            groundgrid_debug=groundgrid_debug,
+                        )
+
                     cherenkovsizepart_rec = make_cherenkovsize_record(
                         uid=uid,
                         cherenkov_bunches=cherenkov_bunches_in_instrument,
                     )
-                    tabrec["cherenkovsizepart"].append_record(
+                    job["event_table"]["cherenkovsizepart"].append_record(
                         cherenkovsizepart_rec
                     )
 
@@ -189,7 +229,7 @@ def __corsika_and_grid(
                             uid=uid,
                             cherenkov_bunches=cherenkov_bunches_in_instrument,
                         )
-                        tabrec["cherenkovpoolpart"].append_record(
+                        job["event_table"]["cherenkovpoolpart"].append_record(
                             cherenkovpoolpart_rec
                         )
 
@@ -202,9 +242,13 @@ def __corsika_and_grid(
                 ) as f:
                     f.write(json_utils.dumps(groundgrid_result))
 
-                print(uid)
+    logger.info("corsika_and_grid, particle output from dat to tar")
+    cpw.particles.dat_to_tape(
+        dat_path=job["paths"]["tmp"]["particle_pools_dat"],
+        tape_path=job["paths"]["tmp"]["particle_pools_tar"],
+    )
 
-    return job, run, tabrec
+    return job
 
 
 def nail_down_event_identity(
@@ -335,8 +379,8 @@ def make_groundgrid_record(
 
 def make_core_record(uid, groundgrid_result_choice):
     rec = uid["record"].copy()
-    for key in event_table.init_core_level_structure():
-        rec[key] = groundgrid_result_choice[rec]
+    for key in event_table.structure.init_core_level_structure():
+        rec[key] = groundgrid_result_choice[key]
     return rec
 
 
@@ -407,6 +451,19 @@ def ImgRoiTar_append(imgroitar, uid, groundgrid_result, groundgrid_debug):
         tarout=imgroitar,
         filename=uid["uid_str"] + ".f4.gz",
         filebytes=ground_grid.io.histogram_to_bytes(roi_array),
+    )
+
+
+def ImgTar_append(imgtar, uid, groundgrid, groundgrid_debug):
+    img = ground_grid.bin_photon_assignment_to_array(
+        bin_photon_assignment=groundgrid_debug["bin_photon_assignment"],
+        num_bins_each_axis=groundgrid["num_bins_each_axis"],
+        dtype=np.float32,
+    )
+    tar_append.tar_append(
+        tarout=imgtar,
+        filename=uid["uid_str"] + ".f4.gz",
+        filebytes=ground_grid.io.histogram_to_bytes(img),
     )
 
 

@@ -2,26 +2,66 @@ import json_utils
 import numpy as np
 import dynamicsizerecarray
 import copy
+import os
+import corsika_primary
+import rename_after_writing as rnw
 
 
-def dumps(job):
+def write(path, job):
     out = copy.deepcopy(job)
-    out["prng"] = todict_prng(prng=out["prng"])
+    os.makedirs(path, exist_ok=True)
 
-    for key in out["event_table"]:
-        out["event_table"][key] = todict_recarray(out["event_table"][key])
+    if "prng" in out:
+        with rnw.open(os.path.join(path, "prng.json"), "wt") as f:
+            f.write(json_utils.dumps(todict_prng(prng=out.pop("prng"))))
 
-    return json_utils.dumps(out)
+    if "event_table" in out["run"]:
+        event_table = out["run"].pop("event_table")
+        for key in event_table:
+            event_table[key] = todict_recarray(event_table[key])
+        with rnw.open(os.path.join(path, "event_table.json"), "wt") as f:
+            f.write(json_utils.dumps(event_table))
+
+    if "corsika_primary_steering" in out["run"]:
+        corsika_primary_steering = out["run"].pop("corsika_primary_steering")
+        corsika_primary.steering.write_steerings(
+            path=os.path.join(path, "corsika_primary_steering.tar"),
+            runs={out["run_id"]: corsika_primary_steering},
+        )
+
+    with rnw.open(os.path.join(path, "job.json"), "wt") as f:
+        f.write(json_utils.dumps(out))
 
 
-def loads(s):
-    job = json_utils.loads(s)
-    job["prng"] = fromdict_prng(prng=job["prng"])
+def read(path):
+    out = {}
+    with open(os.path.join(path, "job.json"), "rt") as f:
+        out = json_utils.loads(f.read())
 
-    for key in job["event_table"]:
-        job["event_table"][key] = fromdict_recarray(job["event_table"][key])
+    if os.path.exists(os.path.join(path, "prng.json")):
+        with open(os.path.join(path, "prng.json"), "rt") as f:
+            out["prng"] = fromdict_prng(json_utils.loads(f.read()))
 
-    return job
+    if "run" not in out:
+        out["run"] = {}
+
+    if os.path.exists(os.path.join(path, "event_table.json")):
+        out["run"]["event_table"] = {}
+        with open(os.path.join(path, "event_table.json"), "rt") as f:
+            event_table = json_utils.loads(f.read())
+        for key in event_table:
+            out["run"]["event_table"][key] = fromdict_recarray(
+                event_table[key]
+            )
+
+    if os.path.exists(os.path.join(path, "corsika_primary_steering.tar")):
+        corsika_primary_steerings = corsika_primary.steering.read_steerings(
+            path=os.path.join(path, "corsika_primary_steering.tar"),
+        )
+        corsika_primary_steering = corsika_primary_steerings[out["run_id"]]
+        out["run"]["corsika_primary_steering"] = corsika_primary_steering
+
+    return out
 
 
 def todict_prng(prng):

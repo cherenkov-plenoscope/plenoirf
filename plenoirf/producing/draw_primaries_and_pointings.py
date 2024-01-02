@@ -2,11 +2,17 @@ import numpy as np
 import corsika_primary
 import magnetic_deflection
 import atmospheric_cherenkov_response as acr
-
+import os
+from os import path as op
+from os.path import join as opj
 import json_utils
 import rename_after_writing as rnw
 import tarfile
 import gzip
+
+from .. import bookkeeping
+from .. import tar_append
+from . import job_json
 
 
 def draw_primaries_and_pointings(
@@ -152,12 +158,21 @@ def draw_primaries_and_pointings(
     return out, debug
 
 
-def run_job(job):
-    allsky = magnetic_deflection.allsky.AllSky(
-        job["paths"]["magnetic_deflection_allsky"]
+def run_job(job, logger):
+    cache_path = os.path.join(
+        job["paths"]["tmp_dir"], "draw_primaries_and_pointings"
     )
 
-    if not op.exists(job["paths"]["cache"]["primary"]):
+    if os.path.exists(cache_path) and job["cache"]:
+        logger.info("draw_primaries_and_pointings, read cache")
+        return job_json.read(path=cache_path)
+    else:
+        logger.info("draw_primaries_and_pointings, open AllSky")
+        allsky = magnetic_deflection.allsky.AllSky(
+            job["paths"]["magnetic_deflection_allsky"]
+        )
+
+        logger.info("draw_primaries_and_pointings, draw primaries")
         drw, debug = draw_primaries_and_pointings(
             prng=job["prng"],
             run_id=job["run_id"],
@@ -169,33 +184,18 @@ def run_job(job):
             num_events=job["num_events"],
             event_ids_for_debug=job["run"]["event_ids_for_debug"],
         )
-
+        job["run"].update(drw)
+        logger.info("draw_primaries_and_pointings, export debug info")
         write_draw_primaries_and_pointings_debug(
             path=job["paths"]["debug"]["draw_primary_and_pointing"],
             run_id=job["run_id"],
             debug=debug,
         )
 
-        with rnw.open(job["paths"]["cache"]["primary"] + ".json", "wt") as f:
-            f.write(json_utils.dumps(drw, indent=4))
-        corsika_primary.steering.write_steerings(
-            path=job["paths"]["cache"]["primary"],
-            runs={job["run_id"]: drw["corsika_primary_steering"]},
-        )
-        with rnw.open(job["paths"]["cache"]["primary"] + ".prng", "wt") as f:
-            f.write(json_utils.dumps(prng.bit_generator.state, indent=4))
-    else:
-        with rnw.open(job["paths"]["cache"]["primary"] + ".json", "rt") as f:
-            drw = json_utils.loads(f.read())
-        _rrr = corsika_primary.steering.read_steerings(
-            path=job["paths"]["cache"]["primary"],
-        )
-        drw["corsika_primary_steering"] = _rrr[job["run_id"]]
+        if job["cache"]:
+            logger.info("draw_primaries_and_pointings, write cache")
+            job_json.write(path=cache_path, job=job)
 
-        with rnw.open(job["paths"]["cache"]["primary"] + ".prng", "rt") as f:
-            prng.bit_generator.state = json_utils.loads(f.read())
-
-    job["run"].update(drw)
     return job
 
 
