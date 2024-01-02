@@ -30,6 +30,7 @@ from .. import constants
 from . import sum_trigger
 from . import transform_cherenkov_bunches
 from . import draw_primary_and_pointing
+from . import draw_pointing_range
 
 
 def make_example_job(
