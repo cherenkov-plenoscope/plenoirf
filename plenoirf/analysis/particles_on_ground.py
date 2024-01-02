@@ -7,11 +7,11 @@ def mask_cherenkov_emission(corsika_particles, corsika_particle_zoo):
     media = corsika_particle_zoo.media_cherenkov_threshold_lorentz_factor
     out = {}
 
-    out["unknown"] = np.zeros(num_particles, dtype=np.int)
+    out["unknown"] = np.zeros(num_particles, dtype=int)
     out["media"] = {}
 
     for medium_key in media:
-        out["media"][medium_key] = np.zeros(num_particles, dtype=np.int)
+        out["media"][medium_key] = np.zeros(num_particles, dtype=int)
 
     for i in range(num_particles):
         particle = corsika_particles[i]

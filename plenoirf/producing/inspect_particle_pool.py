@@ -1,10 +1,12 @@
 import corsika_primary as cpw
 import numpy as np
+import sparse_numeric_table as spt
 
 from .. import analysis
+from .. import bookkeeping
 
 
-def populate_particlepool(job, run, tabrec):
+def run_job(job, logger):
     bin_radius_m = job["config"]["ground_grid"]["geometry"]["bin_width_m"] / 2
 
     corsika_particle_zoo = cpw.particles.identification.Zoo(
@@ -17,16 +19,19 @@ def populate_particlepool(job, run, tabrec):
     )
 
     with cpw.particles.ParticleEventTapeReader(
-        path=job["path"]["tmp"]["particle_pools_tar"]
+        path=job["paths"]["tmp"]["particle_pools_tar"]
     ) as parrun:
         for event_idx, event in enumerate(parrun):
             corsika_evth, parreader = event
 
-            uid = nail_down_event_identity(
+            uid = nail_down_uid(
                 corsika_evth=corsika_evth, job=job, event_idx=event_idx
             )
 
-            core = records_by_uid(records=tabrec["core"], uid=uid)
+            core = record_by_uid(
+                dynamicsizerecarray=job["event_table"]["core"],
+                uid=uid,
+            )
 
             ppp = {spt.IDX: uid}
             ppp["num_water_cherenkov"] = 0
@@ -58,26 +63,25 @@ def populate_particlepool(job, run, tabrec):
                         mask_on_aperture
                     )
 
-            tabrec["particlepool"].append(ppp)
+            job["event_table"]["particlepool"].append_record(ppp)
             if core:
-                tabrec["particlepoolonaperture"].append(aaa)
-    return tabrec
+                job["event_table"]["particlepoolonaperture"].append_record(aaa)
+    return job
 
 
-def nail_down_event_identity(corsika_evth, job, event_idx):
+def nail_down_uid(corsika_evth, job, event_idx):
     run_id = int(corsika_evth[cpw.I.EVTH.RUN_NUMBER])
     assert run_id == job["run_id"]
     event_id = event_idx + 1
     assert event_id == corsika_evth[cpw.I.EVTH.EVENT_NUMBER]
     uid = bookkeeping.uid.make_uid(run_id=run_id, event_id=event_id)
-    uid_str = bookkeeping.uid.make_uid_str(run_id=run_id, event_id=event_id)
+    return uid
 
-    out = {
-        "record": {spt.IDX: uid},
-        "uid": uid,
-        "uid_str": uid_str,
-        "run_id": run_id,
-        "event_id": event_id,
-        "event_idx": event_idx,
-    }
-    return out
+
+def record_by_uid(dynamicsizerecarray, uid):
+    for i in range(len(dynamicsizerecarray)):
+        if dynamicsizerecarray._recarray[spt.IDX][i] == uid:
+            out = {}
+            for name in dynamicsizerecarray._recarray.dtype.names:
+                out[name] = dynamicsizerecarray._recarray[name][i]
+            return out

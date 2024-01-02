@@ -18,6 +18,9 @@ def init_table_structure():
 
     t["core"] = init_core_level_structure()
 
+    t["particlepool"] = init_particlepool_level_structure()
+    t["particlepoolonaperture"] = init_particlepoolonaperture_level_structure()
+
     return t
 
 
@@ -214,26 +217,37 @@ def init_core_level_structure():
     return t
 
 
-"""
-STRUCTURE = {}
-STRUCTURE["particlepool"] = {
-    "num_water_cherenkov": {
+def init_particlepool_level_structure():
+    t = {}
+    t["num_water_cherenkov"] = {
         "dtype": "<i8",
         "comment": "The number of particles which reach the observation-level "
         "and will emitt Cherenkov-light in water",
-    },
-    "num_air_cherenkov": {
+    }
+    t["num_air_cherenkov"] = {
         "dtype": "<i8",
         "comment": "Same as 'num_water_cherenkov' but for the air at the "
         "instruments altitude.",
-    },
-    "num_unknown": {
+    }
+    t["num_unknown"] = {
         "dtype": "<i8",
         "comment": "Particles which are not (yet) in our"
         "corsika-particle-zoo.",
-    },
-}
+    }
+    return t
 
+
+def init_particlepoolonaperture_level_structure():
+    t = {}
+    t["num_air_cherenkov_on_aperture"] = {
+        "dtype": "<i8",
+        "comment": "Same as 'num_air_cherenkov' but also run through the "
+        "instrument's aperture for Cherenkov-light.",
+    }
+    return t
+
+
+"""
 STRUCTURE["grid"] = {
     "num_bins_thrown": {
         "dtype": "<i8",
@@ -285,13 +299,7 @@ STRUCTURE["cherenkovpool"] = {
     "bunch_size_median": {"dtype": "<f8", "comment": ""},
 }
 
-STRUCTURE["particlepoolonaperture"] = {
-    "num_air_cherenkov_on_aperture": {
-        "dtype": "<i8",
-        "comment": "Same as 'num_air_cherenkov' but also run through the "
-        "instrument's aperture for Cherenkov-light.",
-    },
-}
+
 
 STRUCTURE["instrument"] = {
     "start_time_of_exposure_s": {
