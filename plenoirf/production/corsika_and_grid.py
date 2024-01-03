@@ -33,27 +33,9 @@ def run_job(job, logger):
 
         if job["cache"]:
             logger.info("corsika_and_grid, write cache")
-            _inspect(job=job)
             job_io.write(path=cache_path, job=job)
 
-    """
-    job["run"]["cherenkov_pools"] = event_tape_block_splitter(
-        inpath=job["paths"]["tmp"]["cherenkov_pools"],
-        outpath_block_fmt=job["paths"]["tmp"]["cherenkov_pools_block_fmt"],
-        num_events=job["max_num_events_in_merlict_run"],
-    )
-    """
-
     return job
-
-
-def _inspect(job, path=""):
-    for key in job:
-        if isinstance(job[key], dict):
-            _inspect(job=job[key], path=path + "/" + key)
-        else:
-            if isinstance(job[key], dynamicsizerecarray.DynamicSizeRecarray):
-                print(path + "/" + key)
 
 
 def corsika_and_grid(job, logger):
@@ -219,7 +201,7 @@ def corsika_and_grid(job, logger):
                         groundgrid_debug=groundgrid_debug,
                     )
 
-                    if uid["event_id"] in job["run"]["event_ids_for_debug"]:
+                    if uid["uid"] in job["run"]["event_uids_for_debugging"]:
                         ImgTar_append(
                             imgtar=imgtar,
                             uid=uid,

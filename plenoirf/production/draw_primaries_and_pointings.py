@@ -22,7 +22,7 @@ def draw_primaries_and_pointings(
     pointing_range,
     field_of_view_half_angle_rad,
     num_events,
-    event_ids_for_debug=[],
+    event_ids_for_debugging=[],
 ):
     """
     Draw the random distribution of particles to induce showers and emitt
@@ -43,7 +43,7 @@ def draw_primaries_and_pointings(
         Instrument's field-of-view
     num_events : int
         The number of events in the run.
-    event_ids_for_debug : list, array, or set of ints
+    event_ids_for_debugging : list, array, or set of ints
         Event ids of which full debug output will be returned.
 
     Returns
@@ -114,7 +114,7 @@ def draw_primaries_and_pointings(
             min_num_cherenkov_photons=1e3,
         )
         primary_directions.append(res)
-        if event_id in event_ids_for_debug:
+        if event_id in event_ids_for_debugging:
             debug[event_id] = {"result": res, "debug": dbg}
 
     i8 = np.int64
@@ -182,7 +182,9 @@ def run_job(job, logger):
                 "field_of_view_half_angle_rad"
             ],
             num_events=job["num_events"],
-            event_ids_for_debug=job["run"]["event_ids_for_debug"],
+            event_ids_for_debugging=event_uids_to_event_ids(
+                event_uids=job["run"]["event_uids_for_debugging"]
+            ),
         )
         job["run"].update(drw)
         logger.info("draw_primaries_and_pointings, export debug info")
@@ -199,14 +201,22 @@ def run_job(job, logger):
     return job
 
 
+def event_uids_to_event_ids(event_uids):
+    out = []
+    for event_uid in event_uids:
+        _run_id, event_id = bookkeeping.uid.split_uid(uid=event_uid)
+        out.append(event_id)
+    return np.array(out)
+
+
 def write_draw_primaries_and_pointings_debug(
     path,
     run_id,
     debug,
 ):
-    event_ids_for_debug = sorted(list(debug.keys()))
+    event_ids_for_debugging = sorted(list(debug.keys()))
     with tarfile.open(path, "w") as tarout:
-        for event_id in event_ids_for_debug:
+        for event_id in event_ids_for_debugging:
             uid_str = bookkeeping.uid.make_uid_str(
                 run_id=run_id, event_id=event_id
             )

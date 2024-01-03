@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def draw_event_ids_for_debug_output(
+def draw_event_ids_for_debugging(
     num_events_in_run,
     min_num_events,
     fraction_of_events,

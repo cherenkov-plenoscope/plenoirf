@@ -27,7 +27,7 @@ from .. import constants
 
 from . import job_io
 from . import sum_trigger
-from . import draw_event_ids_for_debug_output
+from . import draw_event_uids_for_debugging
 from . import draw_primaries_and_pointings
 from . import draw_pointing_range
 from . import corsika_and_grid
@@ -78,8 +78,8 @@ def run_job_in_dir(job, tmp_dir):
     job["prng"] = np.random.Generator(np.random.PCG64(seed=job["run_id"]))
     job["run"] = {}
 
-    with jll.TimeDelta(logger, "draw_event_ids_for_debug_output"):
-        job = draw_event_ids_for_debug_output.run_job(job=job, logger=logger)
+    with jll.TimeDelta(logger, "draw_event_uids_for_debugging"):
+        job = draw_event_uids_for_debugging.run_job(job=job, logger=logger)
 
     with jll.TimeDelta(logger, "draw_pointing_range"):
         job = draw_pointing_range.run_job(job=job, logger=logger)

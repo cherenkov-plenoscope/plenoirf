@@ -63,7 +63,6 @@ def simulate_hardware(job, block_id):
 
 def make_debug_output(job, block_id):
     uids_in_block = job["run"]["uids_in_cherenkov_pool_blocks"][str(block_id)]
-    for event_id in job["run"]["event_ids_for_debug"]:
-        uid = bookkeeping.uid.make_uid(run_id=job["run_id"], event_id=event_id)
-        if uid in uids_in_block:
-            print("Do some debug I guess?", uid, block_id)
+    for event_uid in job["run"]["event_uids_for_debugging"]:
+        if event_uid in uids_in_block:
+            print("Do some debug I guess?", event_uid, block_id)
