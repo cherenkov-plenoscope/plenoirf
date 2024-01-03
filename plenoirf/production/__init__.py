@@ -98,6 +98,11 @@ def run_job_in_dir(job, tmp_dir):
     with jll.TimeDelta(logger, "inspect_particle_pool"):
         job = inspect_particle_pool.run_job(job=job, logger=logger)
 
+    with jll.TimeDelta(logger, "run blocks"):
+        for block_id_str in job["run"]["uids_in_cherenkov_pool_blocks"]:
+            block_id = int(block_id_str)
+            job = _run_job_block(job=job, block_id=block_id, logger=logger)
+
     job_io.write(path=opj(job["paths"]["tmp_dir"], "job.json"), job=job)
 
     logger.info("ending")
@@ -105,11 +110,14 @@ def run_job_in_dir(job, tmp_dir):
     return job
 
 
-def _run_job_block(job, block_id):
+def _run_job_block(job, block_id, logger):
     with jll.TimeDelta(
         logger, "simulate_hardware_block{:06d}".format(block_id)
     ):
-        job = simulate_hardware.run_job(job=job, logger=logger)
+        job = simulate_hardware.run_job_block(
+            job=job, block_id=block_id, logger=logger
+        )
+    return job
 
 
 def compile_job_paths_and_unique_identity(job, tmp_dir):

@@ -1,6 +1,7 @@
 import json_utils
 import numpy as np
 import rename_after_writing as rnw
+import merlict_development_kit_python as mlidev
 import os
 from os import path as op
 from os.path import join as opj
@@ -53,6 +54,15 @@ def write_default(plenoirf_dir, build_dir):
 
     with rnw.open(opj(pdir, "config", "debug_output.json"), "wt") as f:
         f.write(json_utils.dumps(make_debug_output(), indent=4))
+
+    with rnw.open(
+        opj(pdir, "config", "merlict_plenoscope_propagator_config.json"), "wt"
+    ) as f:
+        f.write(
+            json_utils.dumps(
+                make_merlict_plenoscope_propagator_config(), indent=4
+            )
+        )
 
 
 def make_executables_paths(build_dir="build"):
@@ -183,3 +193,10 @@ def make_debug_output():
             "fraction_of_events": 1e-2,
         }
     }
+
+
+def make_merlict_plenoscope_propagator_config():
+    return mlidev.plenoscope_propagator.make_plenoscope_propagator_config(
+        night_sky_background_ligth_key="nsb_la_palma_2013_benn",
+        photo_electric_converter_key="hamamatsu_r11920_100_05",
+    )
