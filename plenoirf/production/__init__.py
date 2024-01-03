@@ -4,36 +4,29 @@ from os.path import join as opj
 import tempfile
 import copy
 import numpy as np
-import tarfile
-import gzip
 
-import magnetic_deflection
 import json_utils
 import json_line_logger as jll
-import merlict_development_kit_python
-import atmospheric_cherenkov_response as acr
+import merlict_development_kit_python as mlidev
 import rename_after_writing as rnw
-import sparse_numeric_table as spt
-import corsika_primary as cpw
-import homogeneous_transformation
+import plenopy
 
 from .. import bookkeeping
 from .. import configuration
 from .. import ground_grid
 from .. import event_table
-from .. import tar_append
-from .. import debugging
 from .. import constants
 
 from . import job_io
 from . import sum_trigger
 from . import draw_event_uids_for_debugging
-from . import draw_primaries_and_pointings
 from . import draw_pointing_range
+from . import draw_primaries_and_pointings
 from . import corsika_and_grid
 from . import split_event_tape_into_blocks
 from . import inspect_particle_pool
 from . import simulate_hardware
+from . import simulate_loose_trigger
 
 
 def make_example_job(
@@ -92,31 +85,48 @@ def run_job_in_dir(job, tmp_dir):
     with jll.TimeDelta(logger, "corsika_and_grid"):
         job = corsika_and_grid.run_job(job=job, logger=logger)
 
+    with jll.TimeDelta(logger, "inspect_particle_pool"):
+        job = inspect_particle_pool.run_job(job=job, logger=logger)
+
     with jll.TimeDelta(logger, "split_event_tape_into_blocks"):
         job = split_event_tape_into_blocks.run_job(job=job, logger=logger)
 
-    with jll.TimeDelta(logger, "inspect_particle_pool"):
-        job = inspect_particle_pool.run_job(job=job, logger=logger)
+    blk = {}
+    with jll.TimeDelta(logger, "read_geometry"):
+        blk["light_field_geometry"] = plenopy.LightFieldGeometry(
+            path=job["paths"]["light_field_calibration"]
+        )
+        blk["trigger_geometry"] = plenopy.trigger.geometry.read(
+            path=job["paths"]["trigger_geometry"]
+        )
 
     with jll.TimeDelta(logger, "run blocks"):
         for block_id_str in job["run"]["uids_in_cherenkov_pool_blocks"]:
             block_id = int(block_id_str)
-            job = _run_job_block(job=job, block_id=block_id, logger=logger)
-
-    job_io.write(path=opj(job["paths"]["tmp_dir"], "job.json"), job=job)
+            job = _run_job_block(
+                job=job, blk=blk, block_id=block_id, logger=logger
+            )
 
     logger.info("ending")
     rnw.move(job["paths"]["logger_tmp"], job["paths"]["logger"])
     return job
 
 
-def _run_job_block(job, block_id, logger):
+def _run_job_block(job, blk, block_id, logger):
     with jll.TimeDelta(
         logger, "simulate_hardware_block{:06d}".format(block_id)
     ):
         job = simulate_hardware.run_job_block(
             job=job, block_id=block_id, logger=logger
         )
+
+    with jll.TimeDelta(
+        logger, "simulate_loose_trigger_block{:06d}".format(block_id)
+    ):
+        job = simulate_loose_trigger.run_job_block(
+            job=job, block_id=block_id, logger=logger
+        )
+
     return job
 
 
@@ -186,6 +196,11 @@ def compile_job_paths(job, tmp_dir):
         job["instrument_key"],
         "light_field_geometry",
     )
+    paths["trigger_geometry"] = opj(
+        job["plenoirf_dir"],
+        "trigger_geometry",
+        job["instrument_key"],
+    )
 
     # temporary
     # ---------
@@ -216,6 +231,10 @@ def compile_job_paths(job, tmp_dir):
         tmp_dir, "merlict_block{block_id:06d}"
     )
 
+    paths["tmp"]["past_trigger_block_fmt"] = opj(
+        tmp_dir, "past_trigger_block{block_id:06d}"
+    )
+
     # debug output
     # ------------
     paths["debug"] = {}
@@ -228,7 +247,7 @@ def compile_job_paths(job, tmp_dir):
 
 
 def read_light_field_camera_config(plenoirf_dir, instrument_key):
-    return merlict_development_kit_python.plenoscope_propagator.read_plenoscope_geometry(
+    return mlidev.plenoscope_propagator.read_plenoscope_geometry(
         merlict_scenery_path=opj(
             plenoirf_dir,
             "plenoptics",
