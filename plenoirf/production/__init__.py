@@ -18,7 +18,7 @@ import corsika_primary as cpw
 import homogeneous_transformation
 
 from .. import bookkeeping
-from .. import configurating
+from .. import configuration
 from .. import ground_grid
 from .. import event_table
 from .. import tar_append
@@ -112,7 +112,7 @@ def compile_job_paths_and_unique_identity(job, tmp_dir):
 
     job["run_id_str"] = bookkeeping.uid.make_run_id_str(run_id=job["run_id"])
     job["paths"] = compile_job_paths(job=job, tmp_dir=tmp_dir)
-    job["config"] = configurating.read(
+    job["config"] = configuration.read(
         plenoirf_dir=job["paths"]["plenoirf_dir"]
     )
 

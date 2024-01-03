@@ -24,7 +24,7 @@ setuptools.setup(
     packages=[
         "plenoirf",
         "plenoirf.bookkeeping",
-        "plenoirf.configurating",
+        "plenoirf.configuration",
         "plenoirf.event_table",
         "plenoirf.ground_grid",
         "plenoirf.analysis",

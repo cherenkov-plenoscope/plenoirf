@@ -17,7 +17,7 @@ from . import provenance
 from . import bookkeeping
 from . import production
 from . import debugging
-from . import configurating
+from . import configuration
 from . import event_table
 from . import ground_grid
 
@@ -72,8 +72,8 @@ def init(plenoirf_dir, build_dir="build"):
     provenance.gather_and_bumb(
         path=opj(plenoirf_dir, "provenance", "init.tar")
     )
-    configurating.write_default(plenoirf_dir=plenoirf_dir, build_dir=build_dir)
-    config = configurating.read(plenoirf_dir=plenoirf_dir)
+    configuration.write_default(plenoirf_dir=plenoirf_dir, build_dir=build_dir)
+    config = configuration.read(plenoirf_dir=plenoirf_dir)
 
     plenoptics.init(
         work_dir=opj(plenoirf_dir, "plenoptics"),
@@ -89,7 +89,7 @@ def init(plenoirf_dir, build_dir="build"):
         corsika_primary_path=config["executables"]["corsika_primary_path"],
     )
 
-    configurating.version_control.init(plenoirf_dir=plenoirf_dir)
+    configuration.version_control.init(plenoirf_dir=plenoirf_dir)
 
 
 def run(plenoirf_dir, pool, logger=None):
@@ -106,13 +106,13 @@ def run(plenoirf_dir, pool, logger=None):
     if logger is None:
         logger = json_line_logger.LoggerStdout()
 
-    assert configurating.version_control.is_clean(plenoirf_dir=plenoirf_dir)
+    assert configuration.version_control.is_clean(plenoirf_dir=plenoirf_dir)
 
     logger.debug("gather provenance")
     provenance.gather_and_bumb(path=opj(plenoirf_dir, "provenance", "run.tar"))
 
     logger.debug("read config")
-    config = configurating.read(plenoirf_dir=plenoirf_dir)
+    config = configuration.read(plenoirf_dir=plenoirf_dir)
 
     while magnetic_deflection.needs_to_run(
         work_dir=opj(plenoirf_dir, "magnetic_deflection"),
