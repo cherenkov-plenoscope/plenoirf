@@ -33,6 +33,7 @@ from . import draw_pointing_range
 from . import corsika_and_grid
 from . import split_event_tape_into_blocks
 from . import inspect_particle_pool
+from . import simulate_hardware
 
 
 def make_example_job(
@@ -102,6 +103,13 @@ def run_job_in_dir(job, tmp_dir):
     logger.info("ending")
     rnw.move(job["paths"]["logger_tmp"], job["paths"]["logger"])
     return job
+
+
+def _run_job_block(job, block_id):
+    with jll.TimeDelta(
+        logger, "simulate_hardware_block{:06d}".format(block_id)
+    ):
+        job = simulate_hardware.run_job(job=job, logger=logger)
 
 
 def compile_job_paths_and_unique_identity(job, tmp_dir):
@@ -178,7 +186,7 @@ def compile_job_paths(job, tmp_dir):
 
     paths["tmp"]["cherenkov_pools"] = opj(tmp_dir, "cherenkov_pools.tar")
     paths["tmp"]["cherenkov_pools_block_fmt"] = opj(
-        tmp_dir, "cherenkov_pools_{block:06d}.tar"
+        tmp_dir, "cherenkov_pools_block{block_id:06d}.tar"
     )
     paths["tmp"]["particle_pools_dat"] = opj(tmp_dir, "particle_pools.dat")
     paths["tmp"]["particle_pools_tar"] = opj(tmp_dir, "particle_pools.tar.gz")
@@ -190,8 +198,15 @@ def compile_job_paths(job, tmp_dir):
 
     paths["tmp"]["corsika_stdout"] = opj(tmp_dir, "corsika.stdout")
     paths["tmp"]["corsika_stderr"] = opj(tmp_dir, "corsika.stderr")
-    paths["tmp"]["merlict_stdout"] = opj(tmp_dir, "merlict.stdout")
-    paths["tmp"]["merlict_stderr"] = opj(tmp_dir, "merlict.stderr")
+    paths["tmp"]["merlict_stdout_block_fmt"] = opj(
+        tmp_dir, "merlict_block{block_id:06d}.stdout"
+    )
+    paths["tmp"]["merlict_stderr_block_fmt"] = opj(
+        tmp_dir, "merlict_block{block_id:06d}.stderr"
+    )
+    paths["tmp"]["merlict_output_block_fmt"] = opj(
+        tmp_dir, "merlict_block{block_id:06d}"
+    )
 
     # debug output
     # ------------
