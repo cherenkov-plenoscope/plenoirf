@@ -92,10 +92,12 @@ def run_job_in_dir(job, tmp_dir):
         job = split_event_tape_into_blocks.run_job(job=job, logger=logger)
 
     blk = {}
-    with jll.TimeDelta(logger, "read_geometry"):
+    with jll.TimeDelta(logger, "read light_field_calibration"):
         blk["light_field_geometry"] = plenopy.LightFieldGeometry(
             path=job["paths"]["light_field_calibration"]
         )
+
+    with jll.TimeDelta(logger, "read trigger_geometry"):
         blk["trigger_geometry"] = plenopy.trigger.geometry.read(
             path=job["paths"]["trigger_geometry"]
         )
