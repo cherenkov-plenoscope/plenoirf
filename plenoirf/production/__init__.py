@@ -73,7 +73,7 @@ def run_job_in_dir(job, tmp_dir):
     logger.debug("making tmp_dir: {:s}".format(job["paths"]["tmp_dir"]))
     os.makedirs(job["paths"]["tmp_dir"], exist_ok=True)
 
-    logger.debug("initializing prng(seed={:d})".format(job["run_id"]))
+    logger.info("initializing prng(seed={:d})".format(job["run_id"]))
     job["prng"] = np.random.Generator(np.random.PCG64(seed=job["run_id"]))
     job["run"] = {}
 

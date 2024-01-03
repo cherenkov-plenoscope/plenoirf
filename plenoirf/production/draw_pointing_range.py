@@ -36,8 +36,6 @@ def draw_pointing_range(max_zenith_distance_rad, run_half_angle_rad, prng):
 
 
 def run_job(job, logger):
-    logger.debug("drawing run's pointing-range")
-
     job["run"]["pointing_range"] = draw_pointing_range(
         max_zenith_distance_rad=job["config"]["pointing"]["range"][
             "max_zenith_distance_rad"
@@ -47,5 +45,6 @@ def run_job(job, logger):
         ],
         prng=job["prng"],
     )
+    logger.info("draw_pointing_range")
 
     return job

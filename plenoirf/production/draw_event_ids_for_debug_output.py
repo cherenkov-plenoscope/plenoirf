@@ -12,7 +12,7 @@ def run_job(job, logger):
         ],
         prng=job["prng"],
     )
-    logger.debug(
+    logger.info(
         "event-ids for debugging: {:s}.".format(
             str(job["run"]["event_ids_for_debug"].tolist())
         )
