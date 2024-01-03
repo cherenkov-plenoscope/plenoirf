@@ -105,7 +105,7 @@ def test_no_translation_no_pointing():
     instrument_x_m = 0.0
     instrument_y_m = 0.0
 
-    bunches_T = plenoirf.producing.transform_cherenkov_bunches.from_obervation_level_to_instrument(
+    bunches_T = plenoirf.production.transform_cherenkov_bunches.from_obervation_level_to_instrument(
         cherenkov_bunches=bunches,
         instrument_pointing=instrument_pointing,
         instrument_pointing_model=instrument_pointing_model,
@@ -145,7 +145,7 @@ def test_only_pointing():
         ) < np.deg2rad(3.0)
         dt_ns = time_sprad_on_xy_plane_ns(bunches=bunches)
 
-        bunches_T = plenoirf.producing.transform_cherenkov_bunches.from_obervation_level_to_instrument(
+        bunches_T = plenoirf.production.transform_cherenkov_bunches.from_obervation_level_to_instrument(
             cherenkov_bunches=bunches,
             instrument_pointing=instrument_pointing,
             instrument_pointing_model=instrument_pointing_model,
@@ -207,7 +207,7 @@ def test_only_translation():
 
         dt_ns = time_sprad_on_xy_plane_ns(bunches=bunches)
 
-        bunches_T = plenoirf.producing.transform_cherenkov_bunches.from_obervation_level_to_instrument(
+        bunches_T = plenoirf.production.transform_cherenkov_bunches.from_obervation_level_to_instrument(
             cherenkov_bunches=bunches,
             instrument_pointing=instrument_pointing,
             instrument_pointing_model=instrument_pointing_model,
@@ -276,7 +276,7 @@ def test_both_translation_and_pointing():
             ) < np.deg2rad(3.0)
             dt_ns = time_sprad_on_xy_plane_ns(bunches=bunches)
 
-            bunches_T = plenoirf.producing.transform_cherenkov_bunches.from_obervation_level_to_instrument(
+            bunches_T = plenoirf.production.transform_cherenkov_bunches.from_obervation_level_to_instrument(
                 cherenkov_bunches=bunches,
                 instrument_pointing=instrument_pointing,
                 instrument_pointing_model=instrument_pointing_model,
