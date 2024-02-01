@@ -1,4 +1,4 @@
-import pkg_resources
+from importlib import resources as importlib_resources
 import os
 import glob
 import subprocess
@@ -70,8 +70,8 @@ def run_parallel(run_dir, num_threads=6, polling_interval=1):
         out_dict=provenance.make_provenance(),
     )
 
-    script_dir = pkg_resources.resource_filename(
-        "plenoirf", os.path.join("summary", "scripts")
+    script_dir = os.path.join(
+        importlib_resources.files("plenoirf"), "summary", "scripts"
     )
 
     script_names = find_script_names(script_dir=script_dir)

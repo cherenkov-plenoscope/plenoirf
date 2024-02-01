@@ -26,7 +26,7 @@ import tempfile
 import pandas as pd
 import tarfile
 import io
-import pkg_resources
+from importlib import resources as importlib_resources
 
 import json_utils
 import binning_utils
@@ -352,9 +352,13 @@ def _estimate_trigger_geometry_of_plenoscope(
         tss = pl.trigger.geometry.init_summation_statistics(
             trigger_geometry=trigger_geometry
         )
-        plenopy_trigger_script_plot_path = pkg_resources.resource_filename(
-            "plenopy", os.path.join("trigger", "scripts", "plot.py")
+        plenopy_trigger_script_plot_path = os.path.join(
+            importlib_resources.files("plenopy"),
+            "trigger",
+            "scripts",
+            "plot.py",
         )
+
         try:
             logger.info("plotting trigger-geometry")
             subprocess.call(

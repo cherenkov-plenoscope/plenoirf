@@ -4,7 +4,7 @@ import flux_sensitivity
 import numpy as np
 import json_utils
 import plenoirf as irf
-import pkg_resources
+from importlib import resources as importlib_resources
 import binning_utils
 import os
 
@@ -52,11 +52,12 @@ json_utils.write(
 
 # instrument-response-function
 # ----------------------------
-cta_irf_path = pkg_resources.resource_filename(
-    "flux_sensitivity",
-    os.path.join(
-        "tests", "resources", "cta", CTA_IRF_CONFIG["name"] + ".fits.gz"
-    ),
+cta_irf_path = os.path.join(
+    importlib_resources.files("flux_sensitivity"),
+    "tests",
+    "resources",
+    "cta",
+    CTA_IRF_CONFIG["name"] + ".fits.gz",
 )
 
 cta_irf = (

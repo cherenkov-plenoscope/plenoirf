@@ -2,16 +2,18 @@
 import sys
 import plenoirf as irf
 import os
-import pkg_resources
+from importlib import resources as importlib_resources
 import subprocess
 
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-script_path = pkg_resources.resource_filename(
-    "plenoptics",
-    os.path.join("scripts", "plot_beams_statistics.py"),
+script_path = os.path.join(
+    importlib_resources.files("plenoptics"),
+    "scripts",
+    "plot_beams_statistics.py",
 )
+
 subprocess.call(
     [
         "python",

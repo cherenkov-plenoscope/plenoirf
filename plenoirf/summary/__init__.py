@@ -3,7 +3,7 @@ import copy
 from os.path import join as opj
 import pandas
 import numpy as np
-import pkg_resources
+from importlib import resources as importlib_resources
 import subprocess
 import sparse_numeric_table as spt
 import glob
@@ -124,8 +124,8 @@ def run(run_dir):
 
 
 def _make_script_abspaths():
-    script_absdir = pkg_resources.resource_filename(
-        "plenoirf", os.path.join("summary", "scripts")
+    script_absdir = os.path.join(
+        importlib_resources.files("plenoirf"), "summary", "scripts"
     )
     _paths = glob.glob(os.path.join(script_absdir, "*"))
     out = []

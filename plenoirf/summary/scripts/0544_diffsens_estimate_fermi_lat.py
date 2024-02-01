@@ -4,7 +4,6 @@ import flux_sensitivity
 import numpy as np
 import json_utils
 import plenoirf as irf
-import pkg_resources
 import binning_utils
 import os
 
