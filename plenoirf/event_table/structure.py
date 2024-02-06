@@ -21,6 +21,10 @@ def init_table_structure():
     t["particlepool"] = init_particlepool_level_structure()
     t["particlepoolonaperture"] = init_particlepoolonaperture_level_structure()
 
+    t["instrument"] = init_instrument_level_structure()
+    t["trigger"] = init_trigger_level_structure()
+    t["pasttrigger"] = init_pasttrigger_level_structure()
+
     return t
 
 
@@ -247,6 +251,30 @@ def init_particlepoolonaperture_level_structure():
     return t
 
 
+def init_instrument_level_structure():
+    t = {}
+    t["start_time_of_exposure_s"] = {
+        "dtype": "<f8",
+        "comment": "The start-time of the instrument's exposure-window"
+        "relative to the clock in CORSIKA.",
+    }
+    return t
+
+
+def init_trigger_level_structure(num_foci=12):
+    t = {}
+    t["num_cherenkov_pe"] = {"dtype": "<i8", "comment": ""}
+    t["response_pe"] = {"dtype": "<i8", "comment": ""}
+    for nn in range(num_foci):
+        key = "focus_{:02d}_response_pe".format(nn)
+        t[key] = {"dtype": "<i8", "comment": ""}
+    return t
+
+
+def init_pasttrigger_level_structure():
+    return {}  # only the event uid.
+
+
 """
 STRUCTURE["grid"] = {
     "num_bins_thrown": {
@@ -299,13 +327,4 @@ STRUCTURE["cherenkovpool"] = {
     "bunch_size_median": {"dtype": "<f8", "comment": ""},
 }
 
-
-
-STRUCTURE["instrument"] = {
-    "start_time_of_exposure_s": {
-        "dtype": "<f8",
-        "comment": "The start-time of the instrument's exposure-window"
-        "relative to the clock in CORSIKA.",
-    },
-}
 """

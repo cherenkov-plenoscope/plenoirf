@@ -1,4 +1,5 @@
 import os
+import numpy as np
 from os import path as op
 from os.path import join as opj
 
@@ -6,11 +7,12 @@ import plenopy
 import corsika_primary as cpw
 import sparse_numeric_table as spt
 import rename_after_writing as rnw
+import json_utils
 
 from .. import bookkeeping
 
 
-def _run_job_block(job, blk, block_id, logger):
+def run_job_block(job, blk, block_id, logger):
     job = simulate_loose_trigger(
         job=job, blk=blk, block_id=block_id, logger=logger
     )
@@ -22,20 +24,22 @@ def simulate_loose_trigger(
     blk,
     block_id,
     logger,
-    # tabrec,
-    # detector_responses_path,
-    # light_field_geometry,
-    # trigger_geometry,
-    # tmp_dir,
 ):
     # loop over sensor responses
     # --------------------------
-    merlict_run = plenopy.Run(detector_responses_path)
+    merlict_run = plenopy.Run(
+        path=job["paths"]["tmp"]["merlict_output_block_fmt"].format(
+            block_id=block_id,
+        ),
+        light_field_geometry=blk["light_field_geometry"],
+    )
     table_past_trigger = []
-    tmp_past_trigger_dir = op.join(tmp_dir, "past_trigger")
+    tmp_past_trigger_dir = job["paths"]["tmp"][
+        "past_loose_trigger_block_fmt"
+    ].format(
+        block_id=block_id,
+    )
     os.makedirs(tmp_past_trigger_dir, exist_ok=True)
-    RAW_SKIP = int(job["raw_sensor_response"]["skip_num_events"])
-    assert RAW_SKIP > 0
 
     for event in merlict_run:
         # id
@@ -43,15 +47,17 @@ def simulate_loose_trigger(
         cevth = event.simulation_truth.event.corsika_event_header.raw
         run_id = int(cevth[cpw.I.EVTH.RUN_NUMBER])
         event_id = int(cevth[cpw.I.EVTH.EVENT_NUMBER])
-        ide = {spt.IDX: unique.make_uid(run_id=run_id, event_id=event_id)}
+        uidrec = {
+            spt.IDX: bookkeeping.uid.make_uid(run_id=run_id, event_id=event_id)
+        }
 
         # export instrument's time relative to CORSIKA's time
         # ---------------------------------------------------
-        ttabs = ide.copy()
-        ttabs[
+        insrec = uidrec.copy()
+        insrec[
             "start_time_of_exposure_s"
         ] = event.simulation_truth.photon_propagator.nsb_exposure_start_time()
-        tabrec["instrument"].append(ttabs)
+        job["event_table"]["instrument"].append_record(insrec)
 
         # apply loose trigger
         # -------------------
@@ -60,10 +66,10 @@ def simulate_loose_trigger(
             max_response_in_focus_vs_timeslices,
         ) = plenopy.trigger.estimate.first_stage(
             raw_sensor_response=event.raw_sensor_response,
-            light_field_geometry=light_field_geometry,
-            trigger_geometry=trigger_geometry,
+            light_field_geometry=blk["light_field_geometry"],
+            trigger_geometry=blk["trigger_geometry"],
             integration_time_slices=(
-                job["sum_trigger"]["integration_time_slices"]
+                job["config"]["sum_trigger"]["integration_time_slices"]
             ),
         )
 
@@ -79,7 +85,7 @@ def simulate_loose_trigger(
 
         # export trigger-truth
         # --------------------
-        trgtru = ide.copy()
+        trgtru = uidrec.copy()
         trgtru["num_cherenkov_pe"] = int(
             event.simulation_truth.detector.number_air_shower_pulses()
         )
@@ -90,22 +96,25 @@ def simulate_loose_trigger(
             trgtru["focus_{:02d}_response_pe".format(o)] = int(
                 trigger_responses[o]["response_pe"]
             )
-        tabrec["trigger"].append(trgtru)
+        job["event_table"]["trigger"].append_record(trgtru)
 
         # passing loose trigger
         # ---------------------
-        if trgtru["response_pe"] >= job["sum_trigger"]["threshold_pe"]:
-            ptp = ide.copy()
+        if (
+            trgtru["response_pe"]
+            >= job["config"]["sum_trigger"]["threshold_pe"]
+        ):
+            ptp = uidrec.copy()
             ptp["tmp_path"] = event._path
             ptp["unique_id_str"] = unique.UID_FOTMAT_STR.format(ptp[spt.IDX])
             table_past_trigger.append(ptp)
 
-            ptrg = ide.copy()
-            tabrec["pasttrigger"].append(ptrg)
+            patrec = uidrec.copy()
+            job["event_table"]["pasttrigger"].append_record(patrec)
 
             # export past loose trigger
             # -------------------------
-            if ide[spt.IDX] % RAW_SKIP == 0:
+            if uidrec[spt.IDX] in job["run"]["event_uids_for_debugging"]:
                 plenopy.tools.acp_format.compress_event_in_place(
                     ptp["tmp_path"]
                 )
@@ -121,4 +130,4 @@ def simulate_loose_trigger(
                     dst=op.join(job["past_trigger_dir"], final_tarname),
                 )
 
-    return tabrec, table_past_trigger, tmp_past_trigger_dir
+    return job

@@ -126,7 +126,7 @@ def _run_job_block(job, blk, block_id, logger):
         logger, "simulate_loose_trigger_block{:06d}".format(block_id)
     ):
         job = simulate_loose_trigger.run_job_block(
-            job=job, block_id=block_id, logger=logger
+            job=job, blk=blk, block_id=block_id, logger=logger
         )
 
     return job
@@ -233,8 +233,8 @@ def compile_job_paths(job, tmp_dir):
         tmp_dir, "merlict_block{block_id:06d}"
     )
 
-    paths["tmp"]["past_trigger_block_fmt"] = opj(
-        tmp_dir, "past_trigger_block{block_id:06d}"
+    paths["tmp"]["past_loose_trigger_block_fmt"] = opj(
+        tmp_dir, "past_loose_trigger_block{block_id:06d}"
     )
 
     # debug output
