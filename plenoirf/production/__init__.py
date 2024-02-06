@@ -31,12 +31,12 @@ from . import simulate_loose_trigger
 
 def make_example_job(
     plenoirf_dir,
-    run_id=1337,
+    run_id=1234,
     site_key="chile",
-    particle_key="electron",
+    particle_key="gamma",
     instrument_key="diag9_default_default",
-    num_events=24,
-    max_num_events_in_merlict_run=6,
+    num_events=1000,
+    max_num_events_in_merlict_run=100,
     cache=True,
 ):
     job = {}
