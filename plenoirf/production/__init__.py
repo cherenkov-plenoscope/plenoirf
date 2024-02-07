@@ -89,13 +89,12 @@ def run_job_in_dir(job, tmp_dir):
             job=job, logger=logger
         )
 
-    """
     with jll.TimeDelta(logger, "inspect_particle_pool"):
         job = inspect_particle_pool.run_job(job=job, logger=logger)
 
     with jll.TimeDelta(logger, "split_event_tape_into_blocks"):
         job = split_event_tape_into_blocks.run_job(job=job, logger=logger)
-
+    """
     blk = {}
     with jll.TimeDelta(logger, "read light_field_calibration"):
         blk["light_field_geometry"] = plenopy.LightFieldGeometry(

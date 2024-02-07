@@ -1,5 +1,6 @@
 import corsika_primary as cpw
 import numpy as np
+import os
 import sparse_numeric_table as spt
 
 from .. import bookkeeping
@@ -21,7 +22,11 @@ def run_job(job, logger):
     logger.info("inspect_particle_pool, read corsika's particle output")
 
     with cpw.particles.ParticleEventTapeReader(
-        path=job["paths"]["tmp"]["particle_pools_tar"]
+        path=os.path.join(
+            job["paths"]["tmp_dir"],
+            "simulate_shower_and_collect_cherenkov_light_in_grid",
+            "particle_pools.tar.gz",
+        )
     ) as particle_run:
         for event in particle_run:
             corsika_evth, particle_reader = event

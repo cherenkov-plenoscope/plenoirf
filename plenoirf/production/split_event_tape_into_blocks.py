@@ -12,9 +12,21 @@ from .. import bookkeeping
 
 def run_job(job, logger):
     logger.info("split_event_tape_into_blocks, split")
+
+    split_dir = os.path.join(
+        job["paths"]["tmp_dir"], "split_event_tape_into_blocks"
+    )
+    os.makedirs(split_dir, exist_ok=True)
+
     job["run"]["uids_in_cherenkov_pool_blocks"] = split_event_tape_into_blocks(
-        inpath=job["paths"]["tmp"]["cherenkov_pools"],
-        outpath_block_fmt=job["paths"]["tmp"]["cherenkov_pools_block_fmt"],
+        inpath=os.path.join(
+            job["paths"]["tmp_dir"],
+            "simulate_shower_and_collect_cherenkov_light_in_grid",
+            "cherenkov_pools.tar",
+        ),
+        outpath_block_fmt=os.path.join(
+            split_dir, "cherenkov_pools_block-{block_id:06d}.tar"
+        ),
         num_events=job["max_num_events_in_merlict_run"],
     )
 
