@@ -4,7 +4,9 @@ from os import path as op
 from os.path import join as opj
 
 import corsika_primary as cpw
-from .corsika_and_grid import read_all_cherenkov_bunches
+from .simulate_shower_and_collect_cherenkov_light_in_grid import (
+    read_all_cherenkov_bunches,
+)
 from .. import bookkeeping
 
 

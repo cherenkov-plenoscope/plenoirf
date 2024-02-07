@@ -22,7 +22,7 @@ from . import sum_trigger
 from . import draw_event_uids_for_debugging
 from . import draw_pointing_range
 from . import draw_primaries_and_pointings
-from . import corsika_and_grid
+from . import simulate_shower_and_collect_cherenkov_light_in_grid
 from . import split_event_tape_into_blocks
 from . import inspect_particle_pool
 from . import simulate_hardware
@@ -82,8 +82,12 @@ def run_job_in_dir(job, tmp_dir):
 
     job["event_table"] = event_table.structure.init_table_dynamicsizerecarray()
 
-    with jll.TimeDelta(logger, "corsika_and_grid"):
-        job = corsika_and_grid.run_job(job=job, logger=logger)
+    with jll.TimeDelta(
+        logger, "simulate_shower_and_collect_cherenkov_light_in_grid"
+    ):
+        job = simulate_shower_and_collect_cherenkov_light_in_grid.run_job(
+            job=job, logger=logger
+        )
 
     """
     with jll.TimeDelta(logger, "inspect_particle_pool"):

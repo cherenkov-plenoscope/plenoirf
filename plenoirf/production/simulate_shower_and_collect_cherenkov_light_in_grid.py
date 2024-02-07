@@ -21,18 +21,20 @@ from . import job_io
 
 def run_job(job, logger):
     cache_path = os.path.join(
-        job["paths"]["tmp_dir"], "corsika_and_grid", "__job_cache__"
+        job["paths"]["tmp_dir"],
+        "simulate_shower_and_collect_cherenkov_light_in_grid",
+        "__job_cache__",
     )
 
     if os.path.exists(cache_path) and job["cache"]:
-        logger.info("corsika_and_grid, read cache")
+        logger.info("corsika and grid, read cache")
         return job_io.read(path=cache_path)
     else:
-        logger.info("corsika_and_grid, run corsika")
+        logger.info("corsika and grid, run corsika")
         job = corsika_and_grid(job=job, logger=logger)
 
         if job["cache"]:
-            logger.info("corsika_and_grid, write cache")
+            logger.info("corsika and grid, write cache")
             job_io.write(path=cache_path, job=job)
 
     return job
@@ -40,8 +42,11 @@ def run_job(job, logger):
 
 def corsika_and_grid(job, logger):
     opj = os.path.join
-    logger.info("corsika_and_grid, start corsika")
-    corsika_dir = opj(job["paths"]["tmp_dir"], "corsika_and_grid")
+    logger.info("corsika and grid, start corsika")
+    corsika_dir = opj(
+        job["paths"]["tmp_dir"],
+        "simulate_shower_and_collect_cherenkov_light_in_grid",
+    )
     corsika_debug_dir = opj(corsika_dir, "debug")
     os.makedirs(corsika_dir, exist_ok=True)
     os.makedirs(corsika_debug_dir, exist_ok=True)
@@ -60,7 +65,7 @@ def corsika_and_grid(job, logger):
             stderr_path=opj(corsika_dir, "corsika.stderr.txt"),
             particle_output_path=opj(corsika_dir, "particle_pools.dat"),
         ) as corsika_run:
-            logger.info("corsika_and_grid, corsika is ready")
+            logger.info("corsika and grid, corsika is ready")
             evttar.write_runh(runh=corsika_run.runh)
 
             for event_idx, corsika_event in enumerate(corsika_run):
@@ -78,7 +83,7 @@ def corsika_and_grid(job, logger):
                     ],
                 )
                 logger.info(
-                    "corsika_and_grid, shower uid {:s}".format(uid["uid_str"])
+                    "corsika and grid, shower uid {:s}".format(uid["uid_str"])
                 )
 
                 primary_rec = make_primary_record(
@@ -240,7 +245,7 @@ def corsika_and_grid(job, logger):
                 ) as f:
                     f.write(json_utils.dumps(groundgrid_result))
 
-    logger.info("corsika_and_grid, particle output from dat to tar")
+    logger.info("corsika and grid, particle output from dat to tar")
     cpw.particles.dat_to_tape(
         dat_path=opj(corsika_dir, "particle_pools.dat"),
         tape_path=opj(corsika_dir, "particle_pools.tar.gz"),
