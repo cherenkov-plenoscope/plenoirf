@@ -22,7 +22,7 @@ def draw_primaries_and_pointings(
     pointing_range,
     field_of_view_half_angle_rad,
     num_events,
-    event_ids_for_debugging=[],
+    event_uids_for_debugging=[],
 ):
     """
     Draw the random distribution of particles to induce showers and emitt
@@ -43,8 +43,8 @@ def draw_primaries_and_pointings(
         Instrument's field-of-view
     num_events : int
         The number of events in the run.
-    event_ids_for_debugging : list, array, or set of ints
-        Event ids of which full debug output will be returned.
+    event_uids_for_debugging : list, array, or set of ints
+        Event uids of which full debug output will be returned.
 
     Returns
     -------
@@ -59,6 +59,9 @@ def draw_primaries_and_pointings(
     assert num_events > 0
     assert field_of_view_half_angle_rad > 0.0
 
+    i8 = np.int64
+    f8 = np.float64
+
     site = site_particle_magnetic_deflection.config["site"]
     acr.sites.assert_valid(site)
     particle = site_particle_magnetic_deflection.config["particle"]
@@ -72,23 +75,6 @@ def draw_primaries_and_pointings(
     stop_energy_GeV = acr.particles.compile_energy(
         particle["population"]["energy"]["stop_GeV"]
     )
-    energies_GeV = corsika_primary.random.distributions.draw_power_law(
-        prng=prng,
-        lower_limit=start_energy_GeV,
-        upper_limit=stop_energy_GeV,
-        power_slope=particle["population"]["energy"]["power_law_slope"],
-        num_samples=num_events,
-    )
-
-    # instrument pointings
-    # --------------------
-    pointings = []
-    for event_idx in range(num_events):
-        instrument_pointing = acr.pointing_range.draw_pointing(
-            pointing_range=pointing_range,
-            prng=prng,
-        )
-        pointings.append(instrument_pointing)
 
     # primary directions
     # ------------------
@@ -98,27 +84,6 @@ def draw_primaries_and_pointings(
     _shower_spread_half_angle_rad = np.deg2rad(
         particle["population"]["direction"]["scatter_cone_half_angle_deg"]
     )
-    primary_directions = []
-    debug = {}
-    for event_idx in range(num_events):
-        event_id = event_idx + 1
-
-        res, dbg = rnd.draw_particle_direction(
-            prng=prng,
-            method="grid",
-            azimuth_rad=pointings[event_idx]["azimuth_rad"],
-            zenith_rad=pointings[event_idx]["zenith_rad"],
-            half_angle_rad=field_of_view_half_angle_rad,
-            energy_GeV=energies_GeV[event_idx],
-            shower_spread_half_angle_rad=_shower_spread_half_angle_rad,
-            min_num_cherenkov_photons=1e3,
-        )
-        primary_directions.append(res)
-        if event_id in event_ids_for_debugging:
-            debug[event_id] = {"result": res, "debug": dbg}
-
-    i8 = np.int64
-    f8 = np.float64
 
     run = {
         "run_id": i8(run_id),
@@ -134,33 +99,84 @@ def draw_primaries_and_pointings(
         "random_seed": corsika_primary.random.seed.make_simple_seed(run_id),
     }
 
+    # loop
+    energies_GeV = {}
+    pointings = {}
+    primary_directions = {}
+    debug = {}
     primaries = []
-    for e in range(num_events):
+
+    for event_id in np.arange(1, num_events + 1):
+        event_uid_str = bookkeeping.uid.make_uid_str(
+            run_id=run_id, event_id=event_id
+        )
+
+        # energies
+        # --------
+        energies_GeV[
+            event_uid_str
+        ] = corsika_primary.random.distributions.draw_power_law(
+            prng=prng,
+            lower_limit=start_energy_GeV,
+            upper_limit=stop_energy_GeV,
+            power_slope=particle["population"]["energy"]["power_law_slope"],
+            num_samples=1,
+        )[
+            0
+        ]
+
+        # instrument pointings
+        # --------------------
+        pointings[event_uid_str] = acr.pointing_range.draw_pointing(
+            pointing_range=pointing_range,
+            prng=prng,
+        )
+
+        res, dbg = rnd.draw_particle_direction(
+            prng=prng,
+            method="grid",
+            azimuth_rad=pointings[event_uid_str]["azimuth_rad"],
+            zenith_rad=pointings[event_uid_str]["zenith_rad"],
+            half_angle_rad=field_of_view_half_angle_rad,
+            energy_GeV=energies_GeV[event_uid_str],
+            shower_spread_half_angle_rad=_shower_spread_half_angle_rad,
+            min_num_cherenkov_photons=1e3,
+        )
+        primary_directions[event_uid_str] = res
+
+        if int(event_uid_str) in event_uids_for_debugging:
+            debug[event_uid_str] = {"result": res, "debug": dbg}
+
         prm = {}
         prm["particle_id"] = f8(particle["corsika_particle_id"])
-        prm["energy_GeV"] = f8(energies_GeV[e])
-        prm["azimuth_rad"] = f8(primary_directions[e]["particle_azimuth_rad"])
-        prm["zenith_rad"] = f8(primary_directions[e]["particle_zenith_rad"])
+        prm["energy_GeV"] = f8(energies_GeV[event_uid_str])
+        prm["azimuth_rad"] = f8(
+            primary_directions[event_uid_str]["particle_azimuth_rad"]
+        )
+        prm["zenith_rad"] = f8(
+            primary_directions[event_uid_str]["particle_zenith_rad"]
+        )
         prm["depth_g_per_cm2"] = f8(0.0)
         primaries.append(prm)
 
-    corsika_primary_steering = {"run": run, "primaries": primaries}
-
     out = {}
-    out["corsika_primary_steering"] = corsika_primary_steering
+    out["corsika_primary_steering"] = {"run": run, "primaries": primaries}
     out["pointings"] = pointings
-    out["primary_directions"] = []
-    for x in primary_directions:
+    out["primary_directions"] = {}
+
+    for event_uid_str in primary_directions:
         y = {}
         for key in ["cutoff", "solid_angle_thrown_sr"]:
-            y[key] = x[key]
-        out["primary_directions"].append(y)
+            y[key] = primary_directions[event_uid_str][key]
+        out["primary_directions"][event_uid_str] = y
     return out, debug
 
 
 def run_job(job, logger):
     cache_path = os.path.join(
-        job["paths"]["tmp_dir"], "draw_primaries_and_pointings"
+        job["paths"]["tmp_dir"],
+        "draw_primaries_and_pointings",
+        "__job_cache__",
     )
 
     if os.path.exists(cache_path) and job["cache"]:
@@ -173,6 +189,7 @@ def run_job(job, logger):
         )
 
         logger.info("draw_primaries_and_pointings, draw primaries")
+
         drw, debug = draw_primaries_and_pointings(
             prng=job["prng"],
             run_id=job["run_id"],
@@ -182,15 +199,15 @@ def run_job(job, logger):
                 "field_of_view_half_angle_rad"
             ],
             num_events=job["num_events"],
-            event_ids_for_debugging=event_uids_to_event_ids(
-                event_uids=job["run"]["event_uids_for_debugging"]
-            ),
+            event_uids_for_debugging=job["run"]["event_uids_for_debugging"],
         )
+
         job["run"].update(drw)
+
         logger.info("draw_primaries_and_pointings, export debug info")
+
         write_draw_primaries_and_pointings_debug(
             path=job["paths"]["debug"]["draw_primary_and_pointing"],
-            run_id=job["run_id"],
             debug=debug,
         )
 
@@ -201,30 +218,19 @@ def run_job(job, logger):
     return job
 
 
-def event_uids_to_event_ids(event_uids):
-    out = []
-    for event_uid in event_uids:
-        _run_id, event_id = bookkeeping.uid.split_uid(uid=event_uid)
-        out.append(event_id)
-    return np.array(out)
-
-
 def write_draw_primaries_and_pointings_debug(
     path,
-    run_id,
     debug,
 ):
-    event_ids_for_debugging = sorted(list(debug.keys()))
+    event_uid_strs_for_debugging = sorted(list(debug.keys()))
     with tarfile.open(path, "w") as tarout:
-        for event_id in event_ids_for_debugging:
-            uid_str = bookkeeping.uid.make_uid_str(
-                run_id=run_id, event_id=event_id
-            )
-            dbg_text = json_utils.dumps(debug[event_id], indent=None)
+        for event_uid_str in event_uid_strs_for_debugging:
+            dbg_text = json_utils.dumps(debug[event_uid_str], indent=None)
             dbg_bytes = dbg_text.encode()
             dbg_gz_bytes = gzip.compress(dbg_bytes)
             tar_append.tar_append(
                 tarout=tarout,
-                filename=uid_str + "_magnetic_deflection_allsky_query.json.gz",
+                filename=event_uid_str
+                + "_magnetic_deflection_allsky_query.json.gz",
                 filebytes=dbg_gz_bytes,
             )
