@@ -56,3 +56,10 @@ def make_uid_str(run_id=None, event_id=None, uid=None):
 def split_uid_str(s):
     uid = int(s)
     return split_uid(uid)
+
+
+def make_uid_path(run_id, event_id):
+    run_id_str = make_run_id_str(run_id=run_id)
+    event_id_str = make_event_id_str(event_id=event_id)
+    unix_sep = "/"
+    return "{:s}{:s}{:s}".format(run_id_str, unix_sep, event_id_str)

@@ -1,6 +1,4 @@
 import os
-from os import path as op
-from os.path import join as opj
 import tarfile
 import numpy as np
 
@@ -41,21 +39,26 @@ def run_job(job, logger):
 
 
 def corsika_and_grid(job, logger):
+    opj = os.path.join
     logger.info("corsika_and_grid, start corsika")
+    corsika_dir = opj(job["paths"]["tmp_dir"], "corsika_and_grid")
+    corsika_debug_dir = opj(corsika_dir, "debug")
+    os.makedirs(corsika_dir, exist_ok=True)
+    os.makedirs(corsika_debug_dir, exist_ok=True)
 
     with cpw.cherenkov.CherenkovEventTapeWriter(
-        path=job["paths"]["tmp"]["cherenkov_pools"]
+        path=opj(corsika_dir, "cherenkov_pools.tar")
     ) as evttar, tarfile.open(
-        job["paths"]["tmp"]["ground_grid_intensity"], "w"
+        opj(corsika_dir, "ground_grid_intensity.tar"), "w"
     ) as imgtar, tarfile.open(
-        job["paths"]["tmp"]["ground_grid_intensity_roi"], "w"
+        opj(corsika_dir, "ground_grid_intensity_roi.tar"), "w"
     ) as imgroitar:
         with cpw.CorsikaPrimary(
             corsika_path=job["config"]["executables"]["corsika_primary_path"],
             steering_dict=job["run"]["corsika_primary_steering"],
-            stdout_path=job["paths"]["tmp"]["corsika_stdout"],
-            stderr_path=job["paths"]["tmp"]["corsika_stderr"],
-            particle_output_path=job["paths"]["tmp"]["particle_pools_dat"],
+            stdout_path=opj(corsika_dir, "corsika.stdout.txt"),
+            stderr_path=opj(corsika_dir, "corsika.stderr.txt"),
+            particle_output_path=opj(corsika_dir, "particle_pools.dat"),
         ) as corsika_run:
             logger.info("corsika_and_grid, corsika is ready")
             evttar.write_runh(runh=corsika_run.runh)
@@ -230,7 +233,7 @@ def corsika_and_grid(job, logger):
 
                 with open(
                     opj(
-                        job["paths"]["tmp_dir"],
+                        corsika_debug_dir,
                         uid["uid_str"] + "_ground_grid.json",
                     ),
                     "wt",
@@ -239,8 +242,8 @@ def corsika_and_grid(job, logger):
 
     logger.info("corsika_and_grid, particle output from dat to tar")
     cpw.particles.dat_to_tape(
-        dat_path=job["paths"]["tmp"]["particle_pools_dat"],
-        tape_path=job["paths"]["tmp"]["particle_pools_tar"],
+        dat_path=opj(corsika_dir, "particle_pools.dat"),
+        tape_path=opj(corsika_dir, "particle_pools.tar.gz"),
     )
 
     return job
@@ -263,6 +266,9 @@ def nail_down_event_identity(
         "run_id": run_id,
         "event_id": event_id,
         "event_idx": event_idx,
+        "uid_path": bookkeeping.uid.make_uid_path(
+            run_id=run_id, event_id=event_id
+        ),
     }
     return out
 
@@ -444,7 +450,7 @@ def ImgRoiTar_append(imgroitar, uid, groundgrid_result, groundgrid_debug):
     )
     tar_append.tar_append(
         tarout=imgroitar,
-        filename=uid["uid_str"] + ".f4.gz",
+        filename=uid["uid_path"] + ".f4.gz",
         filebytes=ground_grid.io.histogram_to_bytes(roi_array),
     )
 
@@ -457,6 +463,6 @@ def ImgTar_append(imgtar, uid, groundgrid, groundgrid_debug):
     )
     tar_append.tar_append(
         tarout=imgtar,
-        filename=uid["uid_str"] + ".f4.gz",
+        filename=uid["uid_path"] + ".f4.gz",
         filebytes=ground_grid.io.histogram_to_bytes(img),
     )
