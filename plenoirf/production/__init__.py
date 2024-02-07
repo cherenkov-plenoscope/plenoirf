@@ -35,8 +35,8 @@ def make_example_job(
     site_key="chile",
     particle_key="gamma",
     instrument_key="diag9_default_default",
-    num_events=1000,
-    max_num_events_in_merlict_run=100,
+    num_events=100,
+    max_num_events_in_merlict_run=10,
     cache=True,
 ):
     job = {}
@@ -85,6 +85,7 @@ def run_job_in_dir(job, tmp_dir):
     with jll.TimeDelta(logger, "corsika_and_grid"):
         job = corsika_and_grid.run_job(job=job, logger=logger)
 
+    """
     with jll.TimeDelta(logger, "inspect_particle_pool"):
         job = inspect_particle_pool.run_job(job=job, logger=logger)
 
@@ -111,6 +112,7 @@ def run_job_in_dir(job, tmp_dir):
 
     logger.info("ending")
     rnw.move(job["paths"]["logger_tmp"], job["paths"]["logger"])
+    """
     return job
 
 
@@ -207,6 +209,7 @@ def compile_job_paths(job, tmp_dir):
     # temporary
     # ---------
     paths["tmp_dir"] = tmp_dir
+    """
     paths["tmp"] = {}
 
     paths["tmp"]["cherenkov_pools"] = opj(tmp_dir, "cherenkov_pools.tar")
@@ -236,6 +239,7 @@ def compile_job_paths(job, tmp_dir):
     paths["tmp"]["past_loose_trigger_block_fmt"] = opj(
         tmp_dir, "past_loose_trigger_block{block_id:06d}"
     )
+    """
 
     # debug output
     # ------------
