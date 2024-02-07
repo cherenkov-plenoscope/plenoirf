@@ -22,7 +22,9 @@ from . import job_io
 
 
 def run_job(job, logger):
-    cache_path = os.path.join(job["paths"]["tmp_dir"], "corsika_and_grid")
+    cache_path = os.path.join(
+        job["paths"]["tmp_dir"], "corsika_and_grid", "__job_cache__"
+    )
 
     if os.path.exists(cache_path) and job["cache"]:
         logger.info("corsika_and_grid, read cache")
@@ -269,7 +271,7 @@ def make_primary_record(
     uid, corsika_evth, corsika_primary_steering, primary_directions
 ):
     primary = corsika_primary_steering["primaries"][uid["event_idx"]]
-    primary_direction = primary_directions[uid["event_idx"]]
+    primary_direction = primary_directions[uid["uid_str"]]
 
     rec = uid["record"].copy()
     rec["particle_id"] = primary["particle_id"]
@@ -317,7 +319,7 @@ def make_primary_record(
 def make_pointing_record(uid, pointings):
     rec = uid["record"].copy()
     for key in ["azimuth_rad", "zenith_rad"]:
-        rec[key] = pointings[uid["event_idx"]][key]
+        rec[key] = pointings[uid["uid_str"]][key]
     return rec
 
 
