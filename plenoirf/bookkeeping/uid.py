@@ -27,6 +27,11 @@ def make_run_id_str(run_id):
     return RUN_ID_FORMAT_STR.format(run_id)
 
 
+def make_event_id_str(event_id):
+    assert 0 <= event_id < EVENT_ID_UPPER
+    return EVENT_ID_FORMAT_STR.format(event_id)
+
+
 def make_uid(run_id, event_id):
     assert 0 <= run_id < RUN_ID_UPPER
     assert 0 <= event_id < EVENT_ID_UPPER
@@ -39,9 +44,13 @@ def split_uid(uid):
     return run_id, event_id
 
 
-def make_uid_str(run_id, event_id):
-    uid = make_uid(run_id, event_id)
-    return UID_FOTMAT_STR.format(uid)
+def make_uid_str(run_id=None, event_id=None, event_uid=None):
+    if event_uid is None:
+        assert run_id is not None and event_id is not None
+        event_uid = make_uid(run_id, event_id)
+    else:
+        assert run_id is None and event_id is None
+    return UID_FOTMAT_STR.format(event_uid)
 
 
 def split_uid_str(s):
