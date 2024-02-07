@@ -44,13 +44,13 @@ def split_uid(uid):
     return run_id, event_id
 
 
-def make_uid_str(run_id=None, event_id=None, event_uid=None):
-    if event_uid is None:
+def make_uid_str(run_id=None, event_id=None, uid=None):
+    if uid is None:
         assert run_id is not None and event_id is not None
-        event_uid = make_uid(run_id, event_id)
+        uid = make_uid(run_id, event_id)
     else:
         assert run_id is None and event_id is None
-    return UID_FOTMAT_STR.format(event_uid)
+    return UID_FOTMAT_STR.format(uid)
 
 
 def split_uid_str(s):
