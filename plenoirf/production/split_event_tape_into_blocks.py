@@ -13,10 +13,8 @@ from .. import bookkeeping
 def run_job(job, logger):
     logger.info("split_event_tape_into_blocks, split")
 
-    split_dir = os.path.join(
-        job["paths"]["tmp_dir"], "split_event_tape_into_blocks"
-    )
-    os.makedirs(split_dir, exist_ok=True)
+    blocks_dir = os.path.join(job["paths"]["tmp_dir"], "blocks")
+    os.makedirs(blocks_dir, exist_ok=True)
 
     job["run"]["uids_in_cherenkov_pool_blocks"] = split_event_tape_into_blocks(
         inpath=os.path.join(
@@ -25,7 +23,7 @@ def run_job(job, logger):
             "cherenkov_pools.tar",
         ),
         outpath_block_fmt=os.path.join(
-            split_dir, "cherenkov_pools_block-{block_id:06d}.tar"
+            blocks_dir, "{block_id:06d}", "cherenkov_pools.tar"
         ),
         num_events=job["max_num_events_in_merlict_run"],
     )
@@ -60,6 +58,8 @@ def split_event_tape_into_blocks(inpath, outpath_block_fmt, num_events):
                 if orun is not None:
                     orun.close()
                 outpath = opj(outpath_block_fmt.format(block_id=block_id))
+                outdir = os.path.dirname(outpath)
+                os.makedirs(outdir, exist_ok=True)
                 orun = Writer(outpath)
                 orun.write_runh(runh)
                 uid_map[block_id_str] = []

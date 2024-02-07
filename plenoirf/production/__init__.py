@@ -35,8 +35,8 @@ def make_example_job(
     site_key="chile",
     particle_key="gamma",
     instrument_key="diag9_default_default",
-    num_events=100,
-    max_num_events_in_merlict_run=10,
+    num_events=1000,
+    max_num_events_in_merlict_run=100,
     cache=True,
 ):
     job = {}
@@ -94,7 +94,7 @@ def run_job_in_dir(job, tmp_dir):
 
     with jll.TimeDelta(logger, "split_event_tape_into_blocks"):
         job = split_event_tape_into_blocks.run_job(job=job, logger=logger)
-    """
+
     blk = {}
     with jll.TimeDelta(logger, "read light_field_calibration"):
         blk["light_field_geometry"] = plenopy.LightFieldGeometry(
@@ -106,8 +106,14 @@ def run_job_in_dir(job, tmp_dir):
             path=job["paths"]["trigger_geometry"]
         )
 
+    blocks_dir = os.path.join(job["paths"]["tmp_dir"], "blocks")
+    os.makedirs(blocks_dir, exist_ok=True)
+
     with jll.TimeDelta(logger, "run blocks"):
         for block_id_str in job["run"]["uids_in_cherenkov_pool_blocks"]:
+            block_dir = os.path.join(blocks_dir, block_id_str)
+            os.makedirs(block_dir, exist_ok=True)
+
             block_id = int(block_id_str)
             job = _run_job_block(
                 job=job, blk=blk, block_id=block_id, logger=logger
@@ -115,7 +121,7 @@ def run_job_in_dir(job, tmp_dir):
 
     logger.info("ending")
     rnw.move(job["paths"]["logger_tmp"], job["paths"]["logger"])
-    """
+
     return job
 
 

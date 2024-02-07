@@ -9,10 +9,14 @@ from . import job_io
 
 
 def run_job_block(job, block_id, logger):
-    cache_path = opj(
+    block_dir = opj(
         job["paths"]["tmp_dir"],
-        "simulate_hardware_block{block_id:06d}".format(block_id=block_id),
+        "blocks",
+        "{block_id:06d}".format(block_id=block_id),
     )
+    work_dir = opj(block_dir, "simulate_hardware")
+    os.makedirs(work_dir, exist_ok=True)
+    cache_path = os.path.join(work_dir, "__job_cache__")
 
     if os.path.exists(cache_path) and job["cache"]:
         logger.info(
@@ -45,13 +49,12 @@ def simulate_hardware(job, block_id):
                 )
             )
 
+    block_dir = opj(
+        job["paths"]["tmp_dir"], "blocks", "{:06d}".format(block_id)
+    )
     rc = mlidev.plenoscope_propagator.plenoscope_propagator(
-        corsika_run_path=job["paths"]["tmp"][
-            "cherenkov_pools_block_fmt"
-        ].format(block_id=block_id),
-        output_path=job["paths"]["tmp"]["merlict_output_block_fmt"].format(
-            block_id=block_id
-        ),
+        corsika_run_path=opj(block_dir, "cherenkov_pools.tar"),
+        output_path=opj(block_dir, "merlict"),
         light_field_geometry_path=job["paths"]["light_field_calibration"],
         merlict_plenoscope_propagator_path=job["config"]["executables"][
             "merlict_plenoscope_propagator_path"
@@ -59,12 +62,8 @@ def simulate_hardware(job, block_id):
         merlict_plenoscope_propagator_config_path=mlidev_cfg_path,
         random_seed=job["run_id"],
         photon_origins=True,
-        stdout_path=job["paths"]["tmp"]["merlict_stdout_block_fmt"].format(
-            block_id=block_id
-        ),
-        stderr_path=job["paths"]["tmp"]["merlict_stderr_block_fmt"].format(
-            block_id=block_id
-        ),
+        stdout_path=opj(block_dir, "merlict.stdout.txt"),
+        stderr_path=opj(block_dir, "merlict.stderr.txt"),
     )
     assert rc == 0, "Expected merlict's return code to be zero."
 

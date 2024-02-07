@@ -1,7 +1,6 @@
 import os
 import numpy as np
-from os import path as op
-from os.path import join as opj
+import tarfile
 
 import plenopy
 import corsika_primary as cpw
@@ -10,12 +9,34 @@ import rename_after_writing as rnw
 import json_utils
 
 from .. import bookkeeping
+from . import job_io
 
 
 def run_job_block(job, blk, block_id, logger):
-    job = simulate_loose_trigger(
-        job=job, blk=blk, block_id=block_id, logger=logger
+    opj = os.path.join
+    block_dir = opj(
+        job["paths"]["tmp_dir"], "blocks", "{:06d}".format(block_id)
     )
+    work_dir = opj(block_dir, "simulate_loose_trigger")
+    os.makedirs(work_dir, exist_ok=True)
+    cache_path = os.path.join(work_dir, "__job_cache__")
+
+    if os.path.exists(cache_path) and job["cache"]:
+        logger.info(
+            "simulate_hardware block{:06d}, read cache".format(block_id)
+        )
+        return job_io.read(path=cache_path)
+    else:
+        job = simulate_loose_trigger(
+            job=job, blk=blk, block_id=block_id, logger=logger
+        )
+
+        if job["cache"]:
+            logger.info(
+                "simulate_hardware block{:06d}, write cache".format(block_id)
+            )
+            job_io.write(path=cache_path, job=job)
+
     return job
 
 
@@ -25,21 +46,20 @@ def simulate_loose_trigger(
     block_id,
     logger,
 ):
+    opj = os.path.join
+    block_dir = opj(
+        job["paths"]["tmp_dir"], "blocks", "{:06d}".format(block_id)
+    )
+    work_dir = opj(block_dir, "simulate_loose_trigger")
+
     # loop over sensor responses
     # --------------------------
     merlict_run = plenopy.Run(
-        path=job["paths"]["tmp"]["merlict_output_block_fmt"].format(
-            block_id=block_id,
-        ),
+        path=opj(block_dir, "merlict"),
         light_field_geometry=blk["light_field_geometry"],
     )
     table_past_trigger = []
-    tmp_past_trigger_dir = job["paths"]["tmp"][
-        "past_loose_trigger_block_fmt"
-    ].format(
-        block_id=block_id,
-    )
-    os.makedirs(tmp_past_trigger_dir, exist_ok=True)
+    os.makedirs(work_dir, exist_ok=True)
 
     for event in merlict_run:
         # id
@@ -73,11 +93,11 @@ def simulate_loose_trigger(
             ),
         )
 
-        trg_resp_path = op.join(event._path, "refocus_sum_trigger.json")
+        trg_resp_path = opj(event._path, "refocus_sum_trigger.json")
         with rnw.open(trg_resp_path, "wt") as f:
             f.write(json_utils.dumps(trigger_responses, indent=4))
 
-        trg_maxr_path = op.join(
+        trg_maxr_path = opj(
             event._path, "refocus_sum_trigger.focii_x_time_slices.uint32"
         )
         with rnw.open(trg_maxr_path, "wb") as f:
@@ -121,13 +141,14 @@ def simulate_loose_trigger(
                 final_tarname = ptp["unique_id_str"] + ".tar"
                 plenoscope_event_dir_to_tar(
                     event_dir=ptp["tmp_path"],
-                    output_tar_path=op.join(
-                        tmp_past_trigger_dir, final_tarname
-                    ),
-                )
-                rnw.copy(
-                    src=op.join(tmp_past_trigger_dir, final_tarname),
-                    dst=op.join(job["past_trigger_dir"], final_tarname),
+                    output_tar_path=opj(work_dir, final_tarname),
                 )
 
     return job
+
+
+def plenoscope_event_dir_to_tar(event_dir, output_tar_path=None):
+    if output_tar_path is None:
+        output_tar_path = event_dir + ".tar"
+    with tarfile.open(output_tar_path, "w") as tarfout:
+        tarfout.add(event_dir, arcname=".")
