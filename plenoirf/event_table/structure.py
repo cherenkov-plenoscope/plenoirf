@@ -139,13 +139,22 @@ def init_cherenkovsize_level_structure():
 
 def init_cherenkovpool_level_structure():
     t = collections.OrderedDict()
-    t["cx_median_rad"] = {"dtype": "<f8", "comment": ""}
-    t["cy_median_rad"] = {"dtype": "<f8", "comment": ""}
-    t["x_median_m"] = {"dtype": "<f8", "comment": ""}
-    t["y_median_m"] = {"dtype": "<f8", "comment": ""}
-    t["bunch_size_median"] = {"dtype": "<f8", "comment": ""}
-    t["maximum_asl_m"] = {"dtype": "<f8", "comment": ""}
-    t["wavelength_median_nm"] = {"dtype": "<f8", "comment": ""}
+    keys = {}
+    keys["cx"] = "rad"
+    keys["cy"] = "rad"
+    keys["x"] = "m"
+    keys["y"] = "m"
+    keys["z_emission"] = "m"
+    keys["wavelength"] = "m"
+    keys["bunch_size"] = "1"
+
+    for key in keys:
+        for percentile in [16, 50, 84]:
+            tkey = "{:s}_p{:02d}_{:s}".format(key, percentile, keys[key])
+            t[tkey] = {
+                "dtype": "<f8",
+                "comment": "percentile {:d}".format(percentile),
+            }
     return t
 
 

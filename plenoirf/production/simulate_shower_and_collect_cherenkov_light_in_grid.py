@@ -17,6 +17,7 @@ from .. import tar_append
 
 from . import transform_cherenkov_bunches
 from . import job_io
+from . import cherenkov_bunch_storage
 
 
 def run_job(job, logger):
@@ -71,8 +72,13 @@ def corsika_and_grid(job, logger):
             for event_idx, corsika_event in enumerate(corsika_run):
                 corsika_evth, cherenkov_reader = corsika_event
 
-                cherenkov_bunches = read_all_cherenkov_bunches(
-                    cherenkov_reader=cherenkov_reader
+                cherenkov_storage_path = opj(
+                    corsika_dir, "cherenkov_pool_storage.tar"
+                )
+
+                cherenkov_bunch_storage.write(
+                    path=cherenkov_storage_path,
+                    event_tape_cherenkov_reader=cherenkov_reader,
                 )
 
                 uid = nail_down_event_identity(
@@ -82,6 +88,7 @@ def corsika_and_grid(job, logger):
                         "corsika_primary_steering"
                     ],
                 )
+
                 logger.info(
                     "corsika and grid, shower uid {:s}".format(uid["uid_str"])
                 )
@@ -103,26 +110,28 @@ def corsika_and_grid(job, logger):
                 _ = pointing_rec.pop("idx")
                 pointing = pointing_rec
 
-                cherenkovsize_rec = make_cherenkovsize_record(
-                    uid=uid,
-                    cherenkov_bunches=cherenkov_bunches,
+                cherenkovsize_rec = (
+                    cherenkov_bunch_storage.make_cherenkovsize_record(
+                        path=cherenkov_storage_path
+                    )
                 )
+                cherenkovsize_rec.update(uid["record"])
                 job["event_table"]["cherenkovsize"].append_record(
                     cherenkovsize_rec
                 )
 
-                cherenkov_pool_median_x_m = 0.0
-                cherenkov_pool_median_y_m = 0.0
                 if cherenkovsize_rec["num_bunches"] > 0:
-                    cherenkovpool_rec = make_cherenkovpool_record(
-                        uid=uid,
-                        cherenkov_bunches=cherenkov_bunches,
+                    cherenkovpool_rec = (
+                        cherenkov_bunch_storage.make_cherenkovpool_record(
+                            path=cherenkov_storage_path
+                        )
                     )
+                    cherenkovpool_rec.update(uid["record"])
                     job["event_table"]["cherenkovpool"].append_record(
                         cherenkovpool_rec
                     )
-                    cherenkov_pool_median_x_m = cherenkovpool_rec["x_median_m"]
-                    cherenkov_pool_median_y_m = cherenkovpool_rec["y_median_m"]
+                    cherenkov_pool_median_x_m = cherenkovpool_rec["x_p50_m"]
+                    cherenkov_pool_median_y_m = cherenkovpool_rec["y_p50_m"]
 
                 groundgrid_config = ground_grid.make_ground_grid_config(
                     bin_width_m=job["config"]["ground_grid"]["geometry"][
@@ -143,19 +152,21 @@ def corsika_and_grid(job, logger):
                     center_y_m=groundgrid_config["center_y_m"],
                 )
 
-                fov_mask = mask_cherenkov_bunches_in_instruments_field_of_view(
-                    cherenkov_bunches=cherenkov_bunches,
+                cherenkov_storage_infov_path = opj(
+                    corsika_dir, "cherenkov_pool_storage_in_field_of_view.tar"
+                )
+                cherenkov_bunch_storage.cut_in_field_of_view(
+                    in_path=cherenkov_storage_path,
+                    out_path=cherenkov_storage_infov_path,
                     pointing=pointing,
                     field_of_view_half_angle_rad=job["instrument"][
                         "field_of_view_half_angle_rad"
                     ],
                 )
-                cherenkov_bunches_in_fov = cherenkov_bunches[fov_mask]
-                del cherenkov_bunches
 
-                groundgrid_result, groundgrid_debug = ground_grid.assign(
+                groundgrid_result, groundgrid_debug = ground_grid.assign2(
                     groundgrid=groundgrid,
-                    cherenkov_bunches=cherenkov_bunches_in_fov,
+                    cherenkov_bunch_storage_path=cherenkov_storage_infov_path,
                     threshold_num_photons=job["config"]["ground_grid"][
                         "threshold_num_photons"
                     ],
@@ -171,10 +182,14 @@ def corsika_and_grid(job, logger):
                 job["event_table"]["groundgrid"].append_record(groundgrid_rec)
 
                 if groundgrid_result["choice"]:
-                    cherenkov_bunches_in_choice = cherenkov_bunches_in_fov[
-                        groundgrid_result["choice"]["cherenkov_bunches_idxs"]
-                    ]
-                    del cherenkov_bunches_in_fov
+                    cherenkov_bunches_in_choice = (
+                        cherenkov_bunch_storage.read_with_mask(
+                            path=cherenkov_storage_infov_path,
+                            bunch_indices=groundgrid_result["choice"][
+                                "cherenkov_bunches_idxs"
+                            ],
+                        )
+                    )
 
                     cherenkov_bunches_in_instrument = transform_cherenkov_bunches.from_obervation_level_to_instrument(
                         cherenkov_bunches=cherenkov_bunches_in_choice,
@@ -219,19 +234,21 @@ def corsika_and_grid(job, logger):
                             groundgrid_debug=groundgrid_debug,
                         )
 
-                    cherenkovsizepart_rec = make_cherenkovsize_record(
-                        uid=uid,
-                        cherenkov_bunches=cherenkov_bunches_in_instrument,
+                    cherenkovsizepart_rec = (
+                        cherenkov_bunch_storage.make_cherenkovsize_record(
+                            cherenkov_bunches=cherenkov_bunches_in_instrument
+                        )
                     )
+                    cherenkovsizepart_rec.update(uid["record"])
                     job["event_table"]["cherenkovsizepart"].append_record(
                         cherenkovsizepart_rec
                     )
 
                     if cherenkovsizepart_rec["num_bunches"] > 0:
-                        cherenkovpoolpart_rec = make_cherenkovpool_record(
-                            uid=uid,
-                            cherenkov_bunches=cherenkov_bunches_in_instrument,
+                        cherenkovpoolpart_rec = cherenkov_bunch_storage.make_cherenkovpool_record(
+                            cherenkov_bunches=cherenkov_bunches_in_instrument
                         )
+                        cherenkovpoolpart_rec.update(uid["record"])
                         job["event_table"]["cherenkovpoolpart"].append_record(
                             cherenkovpoolpart_rec
                         )

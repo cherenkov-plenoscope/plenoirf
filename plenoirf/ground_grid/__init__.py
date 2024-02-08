@@ -3,6 +3,12 @@ import numpy as np
 import binning_utils
 import corsika_primary as cpw
 import spherical_coordinates
+import tempfile
+import json_utils
+import os
+import subprocess
+import json_line_logger
+
 from . import io
 
 
@@ -75,6 +81,66 @@ def GroundGrid(
     return gg
 
 
+def _make_fake_runh():
+    runh = np.zeros(273, dtype=np.float32)
+    runh[cpw.I.RUNH.MARKER] = cpw.I.RUNH.MARKER_FLOAT32
+    runh[cpw.I.RUNH.RUN_NUMBER] = 1
+    runh[cpw.I.RUNH.NUM_EVENTS] = 1
+    return runh
+
+
+def _make_fake_evth():
+    runh = np.zeros(273, dtype=np.float32)
+    runh[cpw.I.EVTH.MARKER] = cpw.I.EVTH.MARKER_FLOAT32
+    runh[cpw.I.EVTH.RUN_NUMBER] = 1
+    runh[cpw.I.EVTH.EVENT_NUMBER] = 1
+    return runh
+
+
+def assign_cherenkov_bunches2(groundgrid, cherenkov_bunch_storage_path):
+    exe = "/home/relleums/Desktop/starter_kit/merlict/merlict/c89/merlict_c89/build/bin/ground_grid"
+
+    log = json_line_logger.LoggerStdout()
+
+    print("assign start", flush=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        cpath = os.path.join(tmp, "config")
+        opath = os.path.join(tmp, "assignment.jsonl")
+
+        with json_line_logger.TimeDelta(log, "assign write config"):
+            with open(cpath, "wt") as f:
+                for dim in ["x", "y", "z"]:
+                    dimbin = "{:s}_bin".format(dim)
+                    num_edges = 1 + groundgrid[dimbin]["num"]
+                    f.write("{:d}\n".format(num_edges))
+                    for i in range(num_edges):
+                        f.write(
+                            "{:f}\n".format(
+                                1e2 * groundgrid[dimbin]["edges"][i]
+                            )
+                        )
+
+        with json_line_logger.TimeDelta(log, "assign call merlict c89"):
+            rc = subprocess.call(
+                [exe, cherenkov_bunch_storage_path, opath, cpath]
+            )
+            assert rc == 0
+
+        with json_line_logger.TimeDelta(log, "assign read json"):
+            ass = json_utils.lines.read(opath)[0]
+
+        with json_line_logger.TimeDelta(log, "assign convert json"):
+            num_overflow = ass["num_overflow"]
+            bin_photon_assignment = {}
+            for key in ass["assignment"]:
+                xstr, ystr = str.split(key, ",")
+                pay = ass["assignment"][key]
+                bin_idx = (int(xstr), int(ystr))
+                bin_photon_assignment[bin_idx] = (pay["idx"], pay["weight"])
+
+    return bin_photon_assignment, num_overflow
+
+
 def assign_cherenkov_bunches(groundgrid, cherenkov_bunches):
     bin_photon_assignment = {}
     num_overflow = 0
@@ -106,11 +172,53 @@ def assign_cherenkov_bunches(groundgrid, cherenkov_bunches):
                 bin_idx = (overlap["x"][n], overlap["y"][n])
                 if bin_idx in bin_photon_assignment:
                     bin_photon_assignment[bin_idx][0].append(ibunch)
-                    bin_photon_assignment[bin_idx][1].append(cer_w)
+                    bin_photon_assignment[bin_idx][1] += cer_w
                 else:
-                    bin_photon_assignment[bin_idx] = ([ibunch], [cer_w])
+                    bin_photon_assignment[bin_idx] = ([ibunch], cer_w)
 
     return bin_photon_assignment, num_overflow
+
+
+def assign2(
+    groundgrid,
+    cherenkov_bunch_storage_path,
+    threshold_num_photons,
+    prng,
+):
+    bin_photon_assignment, num_photons_overflow = assign_cherenkov_bunches2(
+        groundgrid=groundgrid,
+        cherenkov_bunch_storage_path=cherenkov_bunch_storage_path,
+    )
+
+    bin_idxs_above_threshold = find_bin_idxs_above_or_equal_threshold(
+        bin_photon_assignment=bin_photon_assignment,
+        threshold_num_photons=threshold_num_photons,
+    )
+
+    out = {}
+    out["num_photons_overflow"] = num_photons_overflow
+    out["num_bins_above_threshold"] = len(bin_idxs_above_threshold)
+
+    if out["num_bins_above_threshold"] == 0:
+        out["choice"] = None
+    else:
+        out["choice"] = draw_random_bin_choice(
+            groundgrid=groundgrid,
+            bin_photon_assignment=bin_photon_assignment,
+            bin_idxs_above_threshold=bin_idxs_above_threshold,
+            prng=prng,
+        )
+
+    # compare to classic scatter algorithm as used in the
+    # Cherenkov-Telescpe-Array
+    # ---------------------------------------------------
+    out["scatter_histogram"] = histogram_bins_in_scatter_radius(
+        groundgrid=groundgrid,
+        bin_idxs=bin_idxs_above_threshold,
+    )
+    debug = {}
+    debug["bin_photon_assignment"] = bin_photon_assignment
+    return out, debug
 
 
 def assign(
@@ -138,7 +246,6 @@ def assign(
     else:
         out["choice"] = draw_random_bin_choice(
             groundgrid=groundgrid,
-            cherenkov_bunches=cherenkov_bunches,
             bin_photon_assignment=bin_photon_assignment,
             bin_idxs_above_threshold=bin_idxs_above_threshold,
             prng=prng,
@@ -161,8 +268,8 @@ def find_bin_idxs_above_or_equal_threshold(
 ):
     bin_idxs = []
     for bin_idx in bin_photon_assignment:
-        weights = bin_photon_assignment[bin_idx][1]
-        if np.sum(weights) >= threshold_num_photons:
+        summed_weights = bin_photon_assignment[bin_idx][1]
+        if summed_weights >= threshold_num_photons:
             bin_idxs.append(bin_idx)
     return bin_idxs
 
@@ -173,7 +280,6 @@ def draw_bin_idx(bin_idxs, prng):
 
 def draw_random_bin_choice(
     groundgrid,
-    cherenkov_bunches,
     bin_photon_assignment,
     bin_idxs_above_threshold,
     prng,
@@ -235,7 +341,8 @@ def bin_photon_assignment_to_array_roi(
         if 0 <= ox < dia:
             oy = _y - y_bin + r_bin
             if 0 <= oy < dia:
-                i = np.sum(bin_photon_assignment[bin_idx][1])
+                summed_weights = bin_photon_assignment[bin_idx][1]
+                i = summed_weights
                 out[ox, oy] = i
     return out
 
@@ -247,5 +354,6 @@ def bin_photon_assignment_to_array(
     out = np.zeros(shape=(dia, dia), dtype=dtype)
     for bin_idx in bin_photon_assignment:
         x, y = bin_idx
-        out[x, y] = np.sum(bin_photon_assignment[bin_idx][1])
+        summed_weights = bin_photon_assignment[bin_idx][1]
+        out[x, y] = summed_weights
     return out
