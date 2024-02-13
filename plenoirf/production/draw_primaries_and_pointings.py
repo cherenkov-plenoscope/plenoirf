@@ -9,9 +9,11 @@ import json_utils
 import rename_after_writing as rnw
 import tarfile
 import gzip
+import json_line_logger as jll
 
 from .. import bookkeeping
 from .. import tar_append
+from .. import utils
 from . import job_io
 
 
@@ -22,7 +24,9 @@ def draw_primaries_and_pointings(
     pointing_range,
     field_of_view_half_angle_rad,
     num_events,
+    allsky_query_mode,
     event_uids_for_debugging=[],
+    logger=None,
 ):
     """
     Draw the random distribution of particles to induce showers and emitt
@@ -45,6 +49,8 @@ def draw_primaries_and_pointings(
         The number of events in the run.
     event_uids_for_debugging : list, array, or set of ints
         Event uids of which full debug output will be returned.
+    allsky_query_mode : str
+        Either "cone" or "grid".
 
     Returns
     -------
@@ -52,6 +58,9 @@ def draw_primaries_and_pointings(
         To be given to CORSIKA-primary.
         Describes explicitly how each particle shall be thrown in CORSIKA.
     """
+
+    if logger is None:
+        logger = jll.LoggerStdout()
 
     # assertion checks
     # ----------------
@@ -111,6 +120,11 @@ def draw_primaries_and_pointings(
             run_id=run_id, event_id=event_id
         )
 
+        if utils.is_10th_part_in_current_decade(i=event_id):
+            logger.info(
+                "draw_primaries_and_pointings, uid: {:s}".format(event_uid_str)
+            )
+
         # energies
         # --------
         energies_GeV[
@@ -134,7 +148,7 @@ def draw_primaries_and_pointings(
 
         res, dbg = rnd.draw_particle_direction(
             prng=prng,
-            method="grid",
+            method=allsky_query_mode,
             azimuth_rad=pointings[event_uid_str]["azimuth_rad"],
             zenith_rad=pointings[event_uid_str]["zenith_rad"],
             half_angle_rad=field_of_view_half_angle_rad,
@@ -199,7 +213,11 @@ def run_job(job, logger):
                 "field_of_view_half_angle_rad"
             ],
             num_events=job["num_events"],
+            allsky_query_mode=job["config"]["magnetic_deflection"][
+                "query_mode"
+            ],
             event_uids_for_debugging=job["run"]["event_uids_for_debugging"],
+            logger=logger,
         )
 
         job["run"].update(drw)

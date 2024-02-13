@@ -27,6 +27,7 @@ from . import split_event_tape_into_blocks
 from . import inspect_particle_pool
 from . import simulate_hardware
 from . import simulate_loose_trigger
+from . import classify_cherenkov_photons
 
 
 def make_example_job(
@@ -139,6 +140,15 @@ def _run_job_block(job, blk, block_id, logger):
         job = simulate_loose_trigger.run_job_block(
             job=job, blk=blk, block_id=block_id, logger=logger
         )
+
+    """
+    with jll.TimeDelta(
+        logger, "classify_cherenkov_photons_block{:06d}".format(block_id)
+    ):
+        job = classify_cherenkov_photons.run_job_block(
+            job=job, blk=blk, block_id=block_id, logger=logger
+        )
+    """
 
     return job
 

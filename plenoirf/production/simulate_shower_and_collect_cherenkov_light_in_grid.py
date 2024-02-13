@@ -14,6 +14,7 @@ from .. import ground_grid
 from .. import event_table
 from .. import outer_telescope_array
 from .. import tar_append
+from .. import utils
 
 from . import transform_cherenkov_bunches
 from . import job_io
@@ -89,9 +90,12 @@ def corsika_and_grid(job, logger):
                     ],
                 )
 
-                logger.info(
-                    "corsika and grid, shower uid {:s}".format(uid["uid_str"])
-                )
+                if utils.is_10th_part_in_current_decade(i=uid["event_id"]):
+                    logger.info(
+                        "corsika and grid, shower uid {:s}".format(
+                            uid["uid_str"]
+                        )
+                    )
 
                 primary_rec = make_primary_record(
                     uid=uid,

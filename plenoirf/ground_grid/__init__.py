@@ -100,13 +100,13 @@ def _make_fake_evth():
 def assign_cherenkov_bunches2(groundgrid, cherenkov_bunch_storage_path):
     exe = "/home/relleums/Desktop/starter_kit/merlict/merlict/c89/merlict_c89/build/bin/ground_grid"
 
-    #log = json_line_logger.LoggerStdout()
+    # log = json_line_logger.LoggerStdout()
 
     with tempfile.TemporaryDirectory() as tmp:
         cpath = os.path.join(tmp, "config")
         opath = os.path.join(tmp, "assignment.jsonl")
 
-        #with json_line_logger.TimeDelta(log, "assign write config"):
+        # with json_line_logger.TimeDelta(log, "assign write config"):
         with open(cpath, "wt") as f:
             for dim in ["x", "y", "z"]:
                 dimbin = "{:s}_bin".format(dim)
@@ -114,21 +114,17 @@ def assign_cherenkov_bunches2(groundgrid, cherenkov_bunch_storage_path):
                 f.write("{:d}\n".format(num_edges))
                 for i in range(num_edges):
                     f.write(
-                        "{:f}\n".format(
-                            1e2 * groundgrid[dimbin]["edges"][i]
-                        )
+                        "{:f}\n".format(1e2 * groundgrid[dimbin]["edges"][i])
                     )
 
-        #with json_line_logger.TimeDelta(log, "assign call merlict c89"):
-        rc = subprocess.call(
-            [exe, cherenkov_bunch_storage_path, opath, cpath]
-        )
+        # with json_line_logger.TimeDelta(log, "assign call merlict c89"):
+        rc = subprocess.call([exe, cherenkov_bunch_storage_path, opath, cpath])
         assert rc == 0
 
-        #with json_line_logger.TimeDelta(log, "assign read json"):
+        # with json_line_logger.TimeDelta(log, "assign read json"):
         ass = json_utils.lines.read(opath)[0]
 
-       # with json_line_logger.TimeDelta(log, "assign convert json"):
+        # with json_line_logger.TimeDelta(log, "assign convert json"):
         num_overflow = ass["num_overflow"]
         bin_photon_assignment = {}
         for key in ass["assignment"]:
@@ -148,7 +144,7 @@ def assign_cherenkov_bunches(groundgrid, cherenkov_bunch_storage_path):
     with cpw.cherenkov.CherenkovEventTapeReader(
         path=cherenkov_bunch_storage_path
     ) as _run:
-        _evth, cherenkov_reader  = next(_run)
+        _evth, cherenkov_reader = next(_run)
         for cherenkov_block in cherenkov_reader:
             for bunch in cherenkov_block:
                 cer_x_m = cpw.CM2M * bunch[cpw.I.BUNCH.X_CM]
@@ -161,12 +157,14 @@ def assign_cherenkov_bunches(groundgrid, cherenkov_bunch_storage_path):
 
                 cer_w = bunch[cpw.I.BUNCH.BUNCH_SIZE_1]
 
-                overlap = ray_voxel_overlap.estimate_overlap_of_ray_with_voxels(
-                    support=[cer_x_m, cer_y_m, cer_z_m],
-                    direction=[cer_cx, cer_cy, cer_cz],
-                    x_bin_edges=groundgrid["x_bin"]["edges"],
-                    y_bin_edges=groundgrid["y_bin"]["edges"],
-                    z_bin_edges=groundgrid["z_bin"]["edges"],
+                overlap = (
+                    ray_voxel_overlap.estimate_overlap_of_ray_with_voxels(
+                        support=[cer_x_m, cer_y_m, cer_z_m],
+                        direction=[cer_cx, cer_cy, cer_cz],
+                        x_bin_edges=groundgrid["x_bin"]["edges"],
+                        y_bin_edges=groundgrid["y_bin"]["edges"],
+                        z_bin_edges=groundgrid["z_bin"]["edges"],
+                    )
                 )
 
                 num_overlaps = len(overlap["x"])
@@ -191,15 +189,15 @@ def assign2(
     threshold_num_photons,
     prng,
 ):
-    #log = json_line_logger.LoggerStdout()
-    #log.info("---------start-------------")
-    #with json_line_logger.TimeDelta(log, "py-loop"):
+    # log = json_line_logger.LoggerStdout()
+    # log.info("---------start-------------")
+    # with json_line_logger.TimeDelta(log, "py-loop"):
     #    bin_photon_assignment, num_photons_overflow = assign_cherenkov_bunches(
     #        groundgrid=groundgrid,
     #        cherenkov_bunch_storage_path=cherenkov_bunch_storage_path,
     #    )
 
-    #with json_line_logger.TimeDelta(log, "c-loop"):
+    # with json_line_logger.TimeDelta(log, "c-loop"):
     bin_photon_assignment, num_photons_overflow = assign_cherenkov_bunches2(
         groundgrid=groundgrid,
         cherenkov_bunch_storage_path=cherenkov_bunch_storage_path,
