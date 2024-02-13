@@ -355,31 +355,6 @@ def make_pointing_record(uid, pointings):
     return rec
 
 
-def make_cherenkovsize_record(uid, cherenkov_bunches):
-    rec = uid["record"].copy()
-    rec["num_bunches"] = cherenkov_bunches.shape[0]
-    rec["num_photons"] = np.sum(cherenkov_bunches[:, cpw.I.BUNCH.BUNCH_SIZE_1])
-    return rec
-
-
-def make_cherenkovpool_record(uid, cherenkov_bunches):
-    rec = uid["record"].copy()
-    cb = cherenkov_bunches
-    assert cb.shape[0] > 0
-    rec["maximum_asl_m"] = cpw.CM2M * np.median(
-        cb[:, cpw.I.BUNCH.EMISSOION_ALTITUDE_ASL_CM]
-    )
-    rec["wavelength_median_nm"] = np.abs(
-        np.median(cb[:, cpw.I.BUNCH.WAVELENGTH_NM])
-    )
-    rec["cx_median_rad"] = np.median(cb[:, cpw.I.BUNCH.CX_RAD])
-    rec["cy_median_rad"] = np.median(cb[:, cpw.I.BUNCH.CY_RAD])
-    rec["x_median_m"] = cpw.CM2M * np.median(cb[:, cpw.I.BUNCH.X_CM])
-    rec["y_median_m"] = cpw.CM2M * np.median(cb[:, cpw.I.BUNCH.Y_CM])
-    rec["bunch_size_median"] = np.median(cb[:, cpw.I.BUNCH.BUNCH_SIZE_1])
-    return rec
-
-
 def make_groundgrid_record(
     uid, groundgrid_config, groundgrid_result, groundgrid
 ):
