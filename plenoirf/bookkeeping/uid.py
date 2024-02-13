@@ -9,6 +9,8 @@ thrown particles when estimating the instrument's response-function.
 The UID is related to CORSIKAs scheme of production RUNs and EVENTs within
 the runs.
 """
+import corsika_primary
+
 RUN_ID_NUM_DIGITS = 6
 EVENT_ID_NUM_DIGITS = 6
 UID_NUM_DIGITS = RUN_ID_NUM_DIGITS + EVENT_ID_NUM_DIGITS
@@ -63,3 +65,10 @@ def make_uid_path(run_id, event_id):
     event_id_str = make_event_id_str(event_id=event_id)
     unix_sep = "/"
     return "{:s}{:s}{:s}".format(run_id_str, unix_sep, event_id_str)
+
+
+def make_uid_from_corsika_evth(evth):
+    return make_uid(
+        run_id=int(evth[corsika_primary.I.EVTH.RUN_NUMBER]),
+        event_id=int(evth[corsika_primary.I.EVTH.EVENT_NUMBER]),
+    )
