@@ -269,3 +269,28 @@ def ray_parameter_for_closest_distance_to_point(
 
 def ray_at(ray_support, ray_direction, parameter):
     return ray_support + ray_direction * parameter
+
+
+def is_10th_part_in_current_decade(i):
+    """
+    Can be used to e.g. skip log messages.
+    Motivated by CORSIKA's log.
+
+    Parameters
+    ----------
+    i : int
+        Number to be tested.
+
+    Returns True for:
+        1, 2, 3, 4, 5, 6, 7, 8, 9,
+        10, 20, 30, 40, 50, 60, 70, 80, 90,
+        100, 200, 300, 400, 500, 600, 700, 800, 900,
+        1000, ...
+    else:
+        False
+    """
+    if i <= 0:
+        return True
+    else:
+        m = 10 ** int(np.log10(i))
+        return i % m == 0
