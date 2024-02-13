@@ -120,6 +120,7 @@ def make_magnetic_deflection():
             "num_runs": 192,
             "num_showers_per_run": 1280,
         },
+        "query_mode": "cone",
     }
 
 
