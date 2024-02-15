@@ -20,6 +20,7 @@ from . import debugging
 from . import configuration
 from . import event_table
 from . import ground_grid
+from . import configfile
 
 import os
 from os import path as op
