@@ -23,6 +23,6 @@ def write(config):
 
 def default(merlict_c89_ground_grid_path):
     out = {
-        "ground-grid": os.path.abspath(merlict_c89_ground_grid_path),
+        "ground_grid": os.path.abspath(merlict_c89_ground_grid_path),
     }
     return out
