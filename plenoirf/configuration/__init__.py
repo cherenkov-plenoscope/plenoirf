@@ -19,15 +19,9 @@ def read(plenoirf_dir):
     return cfg
 
 
-def write_default(plenoirf_dir, build_dir):
+def write_default(plenoirf_dir):
     pdir = plenoirf_dir
     os.makedirs(opj(pdir, "config"), exist_ok=False)
-    with rnw.open(opj(pdir, "config", "executables.json"), "wt") as f:
-        f.write(
-            json_utils.dumps(
-                make_executables_paths(build_dir=build_dir), indent=4
-            )
-        )
 
     with rnw.open(opj(pdir, "config", "sites.json"), "wt") as f:
         f.write(json_utils.dumps(make_sites(), indent=4))
@@ -63,31 +57,6 @@ def write_default(plenoirf_dir, build_dir):
                 make_merlict_plenoscope_propagator_config(), indent=4
             )
         )
-
-
-def make_executables_paths(build_dir="build"):
-    return {
-        "corsika_primary_path": opj(
-            build_dir,
-            "corsika",
-            "modified",
-            "corsika-75600",
-            "run",
-            "corsika75600Linux_QGSII_urqmd",
-        ),
-        "merlict_plenoscope_propagator_path": opj(
-            build_dir, "merlict", "merlict-plenoscope-propagation"
-        ),
-        "merlict_plenoscope_calibration_map_path": opj(
-            build_dir, "merlict", "merlict-plenoscope-calibration-map"
-        ),
-        "merlict_plenoscope_calibration_reduce_path": opj(
-            build_dir, "merlict", "merlict-plenoscope-calibration-reduce"
-        ),
-        "merlict_plenoscope_raw_photon_propagation_path": opj(
-            build_dir, "merlict", "merlict-plenoscope-raw-photon-propagation"
-        ),
-    }
 
 
 def make_sites():

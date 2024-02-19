@@ -36,7 +36,7 @@ setuptools.setup(
     ],
     install_requires=[
         "cosmic_fluxes",
-        "corsika_primary",
+        "corsika_primary>=2.2.2",
         "atmospheric_cherenkov_response_cherenkov-plenoscope-project",
         "json_line_logger>=0.0.3",
         "propagate_uncertainties_sebastian-achim-mueller>=0.2.3",
@@ -47,6 +47,7 @@ setuptools.setup(
         "flux_sensitivity_sebastian-achim-mueller>=0.0.1",
         "rename_after_writing",
         "gitpython>=3.1.40",
+        "plenoptics_cherenkov-plenoscope-project>=0.0.8",
     ],
     package_data={"plenoirf": [os.path.join("summary", "scripts", "*")]},
     classifiers=[

@@ -31,7 +31,7 @@ import magnetic_deflection
 import json_line_logger
 
 
-def init(plenoirf_dir, build_dir="build"):
+def init(plenoirf_dir):
     """
     Initializes a directory in where the instrument response function of an
     atmospheric Cherenkov instrument is estimated.
@@ -40,9 +40,6 @@ def init(plenoirf_dir, build_dir="build"):
     ----------
     plenoirf_dir : str
         Path of the new plenoirf directory.
-    build_dir : str
-        Path to the build directory where the CORSIKA and merlict executables
-        are located.
 
     Directory structure
     -------------------
@@ -73,7 +70,7 @@ def init(plenoirf_dir, build_dir="build"):
     provenance.gather_and_bumb(
         path=opj(plenoirf_dir, "provenance", "init.tar")
     )
-    configuration.write_default(plenoirf_dir=plenoirf_dir, build_dir=build_dir)
+    configuration.write_default(plenoirf_dir=plenoirf_dir)
     config = configuration.read(plenoirf_dir=plenoirf_dir)
 
     plenoptics.init(
@@ -87,7 +84,6 @@ def init(plenoirf_dir, build_dir="build"):
         energy_stop_GeV=config["magnetic_deflection"]["energy_stop_GeV"],
         site_keys=config["sites"]["magnetic_deflection"],
         particle_keys=config["particles"],
-        corsika_primary_path=config["executables"]["corsika_primary_path"],
     )
 
     configuration.version_control.init(plenoirf_dir=plenoirf_dir)
