@@ -44,7 +44,7 @@ def write_default(plenoirf_dir):
         f.write(json_utils.dumps(make_sum_trigger(), indent=4))
 
     with rnw.open(opj(pdir, "config", "ground_grid.json"), "wt") as f:
-        f.write(json_utils.dumps(make_groundgrid(), indent=4))
+        f.write(json_utils.dumps(make_ground_grid(), indent=4))
 
     with rnw.open(opj(pdir, "config", "debug_output.json"), "wt") as f:
         f.write(json_utils.dumps(make_debug_output(), indent=4))
