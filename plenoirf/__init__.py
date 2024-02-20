@@ -1,13 +1,13 @@
 from .version import __version__
 
-# from . import summary
+
 # from . import analysis
 # from . import features
 # from . import instrument_response
-
-
 # from . import create_test_tables
 # from . import reconstruction
+
+from . import summary
 from . import utils
 from . import outer_telescope_array
 from . import tar_append
