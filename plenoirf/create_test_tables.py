@@ -322,7 +322,7 @@ def create_dummy_table(
             ]
         ),
     )
-    past_trigger_mask = np.zeros(_pplvl["idx"].shape[0], dtype=np.bool)
+    past_trigger_mask = np.zeros(_pplvl["idx"].shape[0], dtype=bool)
     past_trigger_mask[_past_trigger_ridxs] = 1
 
     # core

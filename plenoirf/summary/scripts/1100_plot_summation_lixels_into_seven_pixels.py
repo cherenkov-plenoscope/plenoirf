@@ -102,11 +102,11 @@ for obj, object_distance in enumerate(object_distances):
     else:
         lixel_to_pixel = json_utils.read(path=cpath)
 
-    colored_lixels = np.zeros(light_field_geometry.number_lixel, dtype=np.bool)
+    colored_lixels = np.zeros(light_field_geometry.number_lixel, dtype=bool)
     for i, pixel_id in enumerate(central_seven_pixel_ids):
         valid_polygons = []
         additional_colored_lixels = np.zeros(
-            light_field_geometry.number_lixel, dtype=np.bool
+            light_field_geometry.number_lixel, dtype=bool
         )
         for j, poly in enumerate(light_field_geometry.lixel_polygons):
             if pixel_id in lixel_to_pixel[j]:

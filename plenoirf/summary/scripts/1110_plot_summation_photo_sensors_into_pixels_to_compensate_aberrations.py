@@ -56,7 +56,7 @@ for pixel in pixels:
     pixel["photosensor_ids"] = np.array(mask)
 
     pixel["photosensor_mask"] = np.zeros(
-        light_field_geometry.number_lixel, dtype=np.bool
+        light_field_geometry.number_lixel, dtype=bool
     )
     pixel["photosensor_mask"][pixel["photosensor_ids"]] = True
 
@@ -152,7 +152,7 @@ fig = fig = seb.figure(style={"rows": 720, "cols": 720, "fontsize": 0.7})
 ax = seb.add_axes(fig=fig, span=[0.16, 0.16, 0.82, 0.82])
 
 overview_photosensor_mask = np.zeros(
-    light_field_geometry.number_lixel, dtype=np.bool
+    light_field_geometry.number_lixel, dtype=bool
 )
 for pixel in pixels:
     overview_photosensor_mask[pixel["photosensor_ids"]] = True
