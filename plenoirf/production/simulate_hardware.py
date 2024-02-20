@@ -56,9 +56,6 @@ def simulate_hardware(job, block_id):
         corsika_run_path=opj(block_dir, "cherenkov_pools.tar"),
         output_path=opj(block_dir, "merlict"),
         light_field_geometry_path=job["paths"]["light_field_calibration"],
-        merlict_plenoscope_propagator_path=job["config"]["executables"][
-            "merlict_plenoscope_propagator_path"
-        ],
         merlict_plenoscope_propagator_config_path=mlidev_cfg_path,
         random_seed=job["run_id"],
         photon_origins=True,

@@ -10,6 +10,7 @@ import subprocess
 import json_line_logger
 
 from . import io
+from .. import configfile
 
 
 def make_ground_grid_config(
@@ -98,7 +99,7 @@ def _make_fake_evth():
 
 
 def assign_cherenkov_bunches2(groundgrid, cherenkov_bunch_storage_path):
-    exe = "/home/relleums/Desktop/starter_kit/merlict/merlict/c89/merlict_c89/build/bin/ground_grid"
+    exe = configfile.read()["ground_grid"]
 
     # log = json_line_logger.LoggerStdout()
 

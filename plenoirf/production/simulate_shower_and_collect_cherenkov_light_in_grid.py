@@ -61,7 +61,6 @@ def corsika_and_grid(job, logger):
         opj(corsika_dir, "ground_grid_intensity_roi.tar"), "w"
     ) as imgroitar:
         with cpw.CorsikaPrimary(
-            corsika_path=job["config"]["executables"]["corsika_primary_path"],
             steering_dict=job["run"]["corsika_primary_steering"],
             stdout_path=opj(corsika_dir, "corsika.stdout.txt"),
             stderr_path=opj(corsika_dir, "corsika.stderr.txt"),
