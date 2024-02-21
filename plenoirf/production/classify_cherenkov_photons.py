@@ -4,34 +4,9 @@ import plenopy as pl
 
 
 def run_job_block(job, blk, block_id, logger):
-    opj = os.path.join
-    block_dir = opj(
-        job["paths"]["work_dir"], "blocks", "{:06d}".format(block_id)
+    job = classify_cherenkov_photons(
+        job=job, blk=blk, block_id=block_id, logger=logger
     )
-    work_dir = opj(block_dir, "classify_cherenkov_photons")
-    os.makedirs(work_dir, exist_ok=True)
-    cache_path = os.path.join(work_dir, "__job_cache__")
-
-    if os.path.exists(cache_path) and job["cache"]:
-        logger.info(
-            "classify_cherenkov_photons block{:06d}, read cache".format(
-                block_id
-            )
-        )
-        return job_io.read(path=cache_path)
-    else:
-        job = classify_cherenkov_photons(
-            job=job, blk=blk, block_id=block_id, logger=logger
-        )
-
-        if job["cache"]:
-            logger.info(
-                "classify_cherenkov_photons block{:06d}, write cache".format(
-                    block_id
-                )
-            )
-            job_io.write(path=cache_path, job=job)
-
     return job
 
 

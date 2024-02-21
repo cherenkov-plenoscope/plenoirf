@@ -193,14 +193,23 @@ def _run_job_block(job, blk, block_id, logger):
             ),
         )
 
-    """
     with jll.TimeDelta(
         logger, "classify_cherenkov_photons_block{:06d}".format(block_id)
     ):
-        job = classify_cherenkov_photons.run_job_block(
-            job=job, blk=blk, block_id=block_id, logger=logger
+        checkpoint.checkpoint(
+            job=job,
+            blk=blk,
+            logger=logger,
+            block_id=block_id,
+            func=classify_cherenkov_photons.run_job_block,
+            cache_path=opj(
+                job["paths"]["work_dir"],
+                "blocks",
+                "{block_id:06d}".format(block_id=block_id),
+                "classify_cherenkov_photons",
+                "__job_cache__",
+            ),
         )
-    """
 
     return job
 
