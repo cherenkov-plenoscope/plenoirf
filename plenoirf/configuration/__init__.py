@@ -46,8 +46,8 @@ def write_default(plenoirf_dir):
     with rnw.open(opj(pdir, "config", "ground_grid.json"), "wt") as f:
         f.write(json_utils.dumps(make_ground_grid(), indent=4))
 
-    with rnw.open(opj(pdir, "config", "debug_output.json"), "wt") as f:
-        f.write(json_utils.dumps(make_debug_output(), indent=4))
+    with rnw.open(opj(pdir, "config", "debugging.json"), "wt") as f:
+        f.write(json_utils.dumps(make_debugging(), indent=4))
 
     with rnw.open(
         opj(pdir, "config", "merlict_plenoscope_propagator_config.json"), "wt"
@@ -156,7 +156,7 @@ def make_ground_grid():
     }
 
 
-def make_debug_output():
+def make_debugging():
     return {
         "run": {
             "min_num_events": 1,

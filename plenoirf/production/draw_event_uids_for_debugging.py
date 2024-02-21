@@ -6,8 +6,8 @@ import numpy as np
 def run_job(job, logger):
     event_ids_for_debugging = debugging.draw_event_ids_for_debugging(
         num_events_in_run=job["num_events"],
-        min_num_events=job["config"]["debug_output"]["run"]["min_num_events"],
-        fraction_of_events=job["config"]["debug_output"]["run"][
+        min_num_events=job["config"]["debugging"]["run"]["min_num_events"],
+        fraction_of_events=job["config"]["debugging"]["run"][
             "fraction_of_events"
         ],
         prng=job["prng"],
