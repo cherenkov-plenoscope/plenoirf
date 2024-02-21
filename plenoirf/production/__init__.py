@@ -262,37 +262,6 @@ def compile_job_paths(job, tmp_dir):
     # temporary
     # ---------
     paths["tmp_dir"] = tmp_dir
-    """
-    paths["tmp"] = {}
-
-    paths["tmp"]["cherenkov_pools"] = opj(tmp_dir, "cherenkov_pools.tar")
-    paths["tmp"]["cherenkov_pools_block_fmt"] = opj(
-        tmp_dir, "cherenkov_pools_block{block_id:06d}.tar"
-    )
-    paths["tmp"]["particle_pools_dat"] = opj(tmp_dir, "particle_pools.dat")
-    paths["tmp"]["particle_pools_tar"] = opj(tmp_dir, "particle_pools.tar.gz")
-
-    paths["tmp"]["ground_grid_intensity"] = opj(tmp_dir, "ground_grid.tar")
-    paths["tmp"]["ground_grid_intensity_roi"] = opj(
-        tmp_dir, "ground_grid_roi.tar"
-    )
-
-    paths["tmp"]["corsika_stdout"] = opj(tmp_dir, "corsika.stdout")
-    paths["tmp"]["corsika_stderr"] = opj(tmp_dir, "corsika.stderr")
-    paths["tmp"]["merlict_stdout_block_fmt"] = opj(
-        tmp_dir, "merlict_block{block_id:06d}.stdout"
-    )
-    paths["tmp"]["merlict_stderr_block_fmt"] = opj(
-        tmp_dir, "merlict_block{block_id:06d}.stderr"
-    )
-    paths["tmp"]["merlict_output_block_fmt"] = opj(
-        tmp_dir, "merlict_block{block_id:06d}"
-    )
-
-    paths["tmp"]["past_loose_trigger_block_fmt"] = opj(
-        tmp_dir, "past_loose_trigger_block{block_id:06d}"
-    )
-    """
 
     # debug output
     # ------------
