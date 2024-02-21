@@ -2,6 +2,7 @@ import json_utils
 import numpy as np
 import rename_after_writing as rnw
 import merlict_development_kit_python as mlidev
+import gamma_ray_reconstruction as gamrec
 import os
 from os import path as op
 from os.path import join as opj
@@ -48,6 +49,14 @@ def write_default(plenoirf_dir):
 
     with rnw.open(opj(pdir, "config", "debugging.json"), "wt") as f:
         f.write(json_utils.dumps(make_debugging(), indent=4))
+
+    with rnw.open(
+        opj(pdir, "config", "cherenkov_classification.json"), "wt"
+    ) as f:
+        f.write(json_utils.dumps(make_cherenkov_classification(), indent=4))
+
+    with rnw.open(opj(pdir, "config", "reconstruction.json"), "wt") as f:
+        f.write(json_utils.dumps(make_reconstruction(), indent=4))
 
     with rnw.open(
         opj(pdir, "config", "merlict_plenoscope_propagator_config.json"), "wt"
@@ -170,3 +179,30 @@ def make_merlict_plenoscope_propagator_config():
         night_sky_background_ligth_key="nsb_la_palma_2013_benn",
         photo_electric_converter_key="hamamatsu_r11920_100_05",
     )
+
+
+def make_cherenkov_classification():
+    return {
+        "region_of_interest": {
+            "time_offset_start_s": -10e-9,
+            "time_offset_stop_s": 10e-9,
+            "direction_radius_deg": 2.0,
+            "object_distance_offsets_m": [
+                4000.0,
+                2000.0,
+                0.0,
+                -2000.0,
+            ],
+        },
+        "min_num_photons": 17,
+        "neighborhood_radius_deg": 0.075,
+        "direction_to_time_mixing_deg_per_s": 0.375e9,
+    }
+
+
+def make_reconstruction():
+    return {
+        "trajectory": gamrec.trajectory.v2020dec04iron0b.config.make_example_config_for_71m_plenoscope(
+            fov_radius_deg=3.25
+        ),
+    }
