@@ -119,7 +119,9 @@ def inspect_cherenkov_pools(
 
                 is_visible = np.logical_and(in_mirror, in_fov)
 
-                thist_ns.assign(x=cherenkov_block[is_visible, cpw.I.BUNCH.TIME_NS])
+                thist_ns.assign(
+                    x=cherenkov_block[is_visible, cpw.I.BUNCH.TIME_NS]
+                )
 
                 total_visible_size += np.sum(
                     cherenkov_block[is_visible, cpw.I.BUNCH.BUNCH_SIZE_1]
@@ -203,7 +205,7 @@ def inspect_cherenkov_pools(
                 # time
                 t50_ns = int(thist_ns.percentile(50))
                 tRnum = 50
-                t_bin_edges = np.arange(t50_ns-tRnum, t50_ns+tRnum)
+                t_bin_edges = np.arange(t50_ns - tRnum, t50_ns + tRnum)
                 tnum = len(t_bin_edges) - 1
                 t_counts = np.zeros(tnum)
                 for tt in range(tnum):
