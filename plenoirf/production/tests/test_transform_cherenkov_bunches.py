@@ -307,3 +307,62 @@ def test_both_translation_and_pointing():
             assert dt_ns > dt_T_ns
 
     assert np.mean(time_spreads_on_instrument_aperture_plane_ns) < 1e-2
+
+
+def test_timing():
+    BUNCH = cpw.I.BUNCH
+    SPEED_OF_LIGTH_M_PER_S = 3e8
+
+    instrument_pointing = {"azimuth_rad": 0.0, "zenith_rad": np.deg2rad(45)}
+    instrument_pointing_model = "cable_robot"
+    instrument_x_m = 0.0
+    instrument_y_m = 0.0
+
+    prng = np.random.Generator(np.random.PCG64(123))
+
+    bunches = draw_cherenkov_bunches_from_point_source(
+        source_azimuth_rad=instrument_pointing["azimuth_rad"],
+        source_zenith_rad=instrument_pointing["zenith_rad"],
+        instrument_sphere_x_m=0.0,
+        instrument_sphere_y_m=0.0,
+        instrument_sphere_radius_m=10.0,
+        prng=prng,
+        speed_of_ligth_m_per_s=SPEED_OF_LIGTH_M_PER_S,
+    )
+
+    # light is coming from pos x
+    assert 40 < np.rad2deg(np.median(bunches[:, BUNCH.CX_RAD])) < 50
+    assert -1 < np.rad2deg(np.median(bunches[:, BUNCH.CY_RAD])) < 1
+
+    mask_neg_x = bunches[:, BUNCH.X_CM] < -5.0
+    time_ns_at_neg_x = np.median(bunches[mask_neg_x, BUNCH.TIME_NS])
+
+    mask_pos_x = bunches[:, BUNCH.X_CM] > 5.0
+    time_ns_at_pos_x = np.median(bunches[mask_pos_x, BUNCH.TIME_NS])
+
+    # light arrives earlier in pos x and later in neg x
+    assert time_ns_at_pos_x < time_ns_at_neg_x
+    assert np.abs(time_ns_at_pos_x - time_ns_at_neg_x) > 15
+
+    # now transform
+    bunches_T = plenoirf.production.transform_cherenkov_bunches.from_obervation_level_to_instrument(
+        cherenkov_bunches=bunches,
+        instrument_pointing=instrument_pointing,
+        instrument_pointing_model=instrument_pointing_model,
+        instrument_x_m=instrument_x_m,
+        instrument_y_m=instrument_y_m,
+        speed_of_ligth_m_per_s=SPEED_OF_LIGTH_M_PER_S,
+    )
+
+    # light is coming from almost z
+    assert -1 < np.rad2deg(np.median(bunches_T[:, BUNCH.CX_RAD])) < 1
+    assert -1 < np.rad2deg(np.median(bunches_T[:, BUNCH.CY_RAD])) < 1
+
+    t_mask_neg_x = bunches_T[:, BUNCH.X_CM] < -5.0
+    t_time_ns_at_neg_x = np.median(bunches_T[t_mask_neg_x, BUNCH.TIME_NS])
+
+    t_mask_pos_x = bunches_T[:, BUNCH.X_CM] > 5.0
+    t_time_ns_at_pos_x = np.median(bunches_T[t_mask_pos_x, BUNCH.TIME_NS])
+
+    # almost no difference in arrival time
+    assert np.abs(t_time_ns_at_pos_x - t_time_ns_at_neg_x) < 0.001
