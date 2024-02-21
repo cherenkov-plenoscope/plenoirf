@@ -202,9 +202,7 @@ def run_job(job, logger):
             "field_of_view_half_angle_rad"
         ],
         num_events=job["num_events"],
-        allsky_query_mode=job["config"]["magnetic_deflection"][
-            "query_mode"
-        ],
+        allsky_query_mode=job["config"]["magnetic_deflection"]["query_mode"],
         event_uids_for_debugging=job["run"]["event_uids_for_debugging"],
         logger=logger,
     )
