@@ -29,6 +29,7 @@ from . import simulate_hardware
 from . import simulate_loose_trigger
 from . import classify_cherenkov_photons
 from . import inspect_cherenkov_pool
+from . import checkpoint
 
 
 def make_example_job(
@@ -92,37 +93,16 @@ def run_job_in_dir(job, work_dir):
         )
 
     with jll.TimeDelta(logger, "inspect_cherenkov_pool"):
-        visible_cherenkov_photon_size = (
-            inspect_cherenkov_pool.inspect_cherenkov_pools(
-                cherenkov_pools_path=os.path.join(
-                    job["paths"]["work_dir"],
-                    "simulate_shower_and_collect_cherenkov_light_in_grid",
-                    "cherenkov_pools.tar",
-                ),
-                aperture_bin_edges=np.linspace(-50, 50, 51),
-                image_bin_edges_rad=np.linspace(
-                    np.deg2rad(-6.5), np.deg2rad(6.5), 51
-                ),
-                time_bin_edges=np.linspace(375e-6, 425e-6, 200),
-                out_dir=os.path.join(
-                    job["paths"]["work_dir"], "inspect_cherenkov_pool"
-                ),
-                field_of_view_center_rad=[0, 0],
-                field_of_view_half_angle_rad=np.deg2rad(6.5 / 2),
-                mirror_center=[0, 0],
-                mirror_radius=35.5,
-                threshold_num_photons=25,
-            )
-        )
-        with rnw.open(
-            os.path.join(
+        job = checkpoint.checkpoint(
+            job=job,
+            logger=logger,
+            func=inspect_cherenkov_pool.run_job,
+            cache_path=opj(
                 job["paths"]["work_dir"],
                 "inspect_cherenkov_pool",
-                "visible_cherenkov_photon_size.json",
+                "__job_cache__",
             ),
-            "wt",
-        ) as f:
-            f.write(json_utils.dumps(visible_cherenkov_photon_size))
+        )
 
     with jll.TimeDelta(logger, "inspect_particle_pool"):
         job = inspect_particle_pool.run_job(job=job, logger=logger)
