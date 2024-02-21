@@ -6,7 +6,7 @@ import plenopy as pl
 def run_job_block(job, blk, block_id, logger):
     opj = os.path.join
     block_dir = opj(
-        job["paths"]["tmp_dir"], "blocks", "{:06d}".format(block_id)
+        job["paths"]["work_dir"], "blocks", "{:06d}".format(block_id)
     )
     work_dir = opj(block_dir, "classify_cherenkov_photons")
     os.makedirs(work_dir, exist_ok=True)
@@ -46,7 +46,7 @@ def classify_cherenkov_photons(
 ):
     opj = os.path.join
     block_dir = opj(
-        job["paths"]["tmp_dir"], "blocks", "{:06d}".format(block_id)
+        job["paths"]["work_dir"], "blocks", "{:06d}".format(block_id)
     )
 
     roi_cfg = job["cherenkov_classification"]["region_of_interest"]

@@ -13,12 +13,12 @@ from .. import bookkeeping
 def run_job(job, logger):
     logger.info("split_event_tape_into_blocks, split")
 
-    blocks_dir = os.path.join(job["paths"]["tmp_dir"], "blocks")
+    blocks_dir = os.path.join(job["paths"]["work_dir"], "blocks")
     os.makedirs(blocks_dir, exist_ok=True)
 
     job["run"]["uids_in_cherenkov_pool_blocks"] = split_event_tape_into_blocks(
         inpath=os.path.join(
-            job["paths"]["tmp_dir"],
+            job["paths"]["work_dir"],
             "simulate_shower_and_collect_cherenkov_light_in_grid",
             "cherenkov_pools.tar",
         ),

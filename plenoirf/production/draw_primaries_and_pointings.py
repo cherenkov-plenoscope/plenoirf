@@ -188,7 +188,7 @@ def draw_primaries_and_pointings(
 
 def run_job(job, logger):
     cache_path = os.path.join(
-        job["paths"]["tmp_dir"],
+        job["paths"]["work_dir"],
         "draw_primaries_and_pointings",
         "__job_cache__",
     )

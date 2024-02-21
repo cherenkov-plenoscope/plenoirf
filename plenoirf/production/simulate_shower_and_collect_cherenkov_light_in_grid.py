@@ -23,7 +23,7 @@ from . import cherenkov_bunch_storage
 
 def run_job(job, logger):
     cache_path = os.path.join(
-        job["paths"]["tmp_dir"],
+        job["paths"]["work_dir"],
         "simulate_shower_and_collect_cherenkov_light_in_grid",
         "__job_cache__",
     )
@@ -46,7 +46,7 @@ def corsika_and_grid(job, logger):
     opj = os.path.join
     logger.info("corsika and grid, start corsika")
     corsika_dir = opj(
-        job["paths"]["tmp_dir"],
+        job["paths"]["work_dir"],
         "simulate_shower_and_collect_cherenkov_light_in_grid",
     )
     corsika_debug_dir = opj(corsika_dir, "debug")

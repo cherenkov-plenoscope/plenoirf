@@ -15,7 +15,7 @@ from . import job_io
 def run_job_block(job, blk, block_id, logger):
     opj = os.path.join
     block_dir = opj(
-        job["paths"]["tmp_dir"], "blocks", "{:06d}".format(block_id)
+        job["paths"]["work_dir"], "blocks", "{:06d}".format(block_id)
     )
     work_dir = opj(block_dir, "simulate_loose_trigger")
     os.makedirs(work_dir, exist_ok=True)
@@ -48,7 +48,7 @@ def simulate_loose_trigger(
 ):
     opj = os.path.join
     block_dir = opj(
-        job["paths"]["tmp_dir"], "blocks", "{:06d}".format(block_id)
+        job["paths"]["work_dir"], "blocks", "{:06d}".format(block_id)
     )
     work_dir = opj(block_dir, "simulate_loose_trigger")
 

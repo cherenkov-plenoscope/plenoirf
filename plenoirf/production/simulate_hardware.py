@@ -10,7 +10,7 @@ from . import job_io
 
 def run_job_block(job, block_id, logger):
     block_dir = opj(
-        job["paths"]["tmp_dir"],
+        job["paths"]["work_dir"],
         "blocks",
         "{block_id:06d}".format(block_id=block_id),
     )
@@ -38,7 +38,7 @@ def run_job_block(job, block_id, logger):
 
 def simulate_hardware(job, block_id):
     mlidev_cfg_path = opj(
-        job["paths"]["tmp_dir"], "merlict_plenoscope_propagator_config.json"
+        job["paths"]["work_dir"], "merlict_plenoscope_propagator_config.json"
     )
     if not os.path.exists(mlidev_cfg_path):
         with rnw.open(mlidev_cfg_path, "wt") as f:
@@ -50,7 +50,7 @@ def simulate_hardware(job, block_id):
             )
 
     block_dir = opj(
-        job["paths"]["tmp_dir"], "blocks", "{:06d}".format(block_id)
+        job["paths"]["work_dir"], "blocks", "{:06d}".format(block_id)
     )
     rc = mlidev.plenoscope_propagator.plenoscope_propagator(
         corsika_run_path=opj(block_dir, "cherenkov_pools.tar"),

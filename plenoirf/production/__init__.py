@@ -54,20 +54,20 @@ def make_example_job(
 
 
 def run_job(job):
-    with tempfile.TemporaryDirectory(suffix="-plenoirf") as tmp_dir:
-        return run_job_in_dir(job=job, tmp_dir=tmp_dir)
+    with tempfile.TemporaryDirectory(suffix="-plenoirf") as work_dir:
+        return run_job_in_dir(job=job, work_dir=work_dir)
 
 
-def run_job_in_dir(job, tmp_dir):
-    job = compile_job_paths_and_unique_identity(job=job, tmp_dir=tmp_dir)
+def run_job_in_dir(job, work_dir):
+    job = compile_job_paths_and_unique_identity(job=job, work_dir=work_dir)
 
     os.makedirs(job["paths"]["stage_dir"], exist_ok=True)
 
     logger = jll.LoggerFile(path=job["paths"]["logger_tmp"])
     logger.info("starting")
 
-    logger.debug("making tmp_dir: {:s}".format(job["paths"]["tmp_dir"]))
-    os.makedirs(job["paths"]["tmp_dir"], exist_ok=True)
+    logger.debug("making work_dir: {:s}".format(job["paths"]["work_dir"]))
+    os.makedirs(job["paths"]["work_dir"], exist_ok=True)
 
     logger.info("initializing prng(seed={:d})".format(job["run_id"]))
     job["prng"] = np.random.Generator(np.random.PCG64(seed=job["run_id"]))
@@ -95,7 +95,7 @@ def run_job_in_dir(job, tmp_dir):
         visible_cherenkov_photon_size = (
             inspect_cherenkov_pool.inspect_cherenkov_pools(
                 cherenkov_pools_path=os.path.join(
-                    job["paths"]["tmp_dir"],
+                    job["paths"]["work_dir"],
                     "simulate_shower_and_collect_cherenkov_light_in_grid",
                     "cherenkov_pools.tar",
                 ),
@@ -105,7 +105,7 @@ def run_job_in_dir(job, tmp_dir):
                 ),
                 time_bin_edges=np.linspace(375e-6, 425e-6, 200),
                 out_dir=os.path.join(
-                    job["paths"]["tmp_dir"], "inspect_cherenkov_pool"
+                    job["paths"]["work_dir"], "inspect_cherenkov_pool"
                 ),
                 field_of_view_center_rad=[0, 0],
                 field_of_view_half_angle_rad=np.deg2rad(6.5 / 2),
@@ -116,7 +116,7 @@ def run_job_in_dir(job, tmp_dir):
         )
         with rnw.open(
             os.path.join(
-                job["paths"]["tmp_dir"],
+                job["paths"]["work_dir"],
                 "inspect_cherenkov_pool",
                 "visible_cherenkov_photon_size.json",
             ),
@@ -141,7 +141,7 @@ def run_job_in_dir(job, tmp_dir):
             path=job["paths"]["trigger_geometry"]
         )
 
-    blocks_dir = os.path.join(job["paths"]["tmp_dir"], "blocks")
+    blocks_dir = os.path.join(job["paths"]["work_dir"], "blocks")
     os.makedirs(blocks_dir, exist_ok=True)
 
     with jll.TimeDelta(logger, "run blocks"):
@@ -187,14 +187,14 @@ def _run_job_block(job, blk, block_id, logger):
     return job
 
 
-def compile_job_paths_and_unique_identity(job, tmp_dir):
+def compile_job_paths_and_unique_identity(job, work_dir):
     """
     Adds static information to the job dict.
     """
     assert job["max_num_events_in_merlict_run"] > 0
 
     job["run_id_str"] = bookkeeping.uid.make_run_id_str(run_id=job["run_id"])
-    job["paths"] = compile_job_paths(job=job, tmp_dir=tmp_dir)
+    job["paths"] = compile_job_paths(job=job, work_dir=work_dir)
     job["config"] = configuration.read(
         plenoirf_dir=job["paths"]["plenoirf_dir"]
     )
@@ -220,7 +220,7 @@ def compile_job_paths_and_unique_identity(job, tmp_dir):
     return job
 
 
-def compile_job_paths(job, tmp_dir):
+def compile_job_paths(job, work_dir):
     paths = {}
     paths["plenoirf_dir"] = job["plenoirf_dir"]
 
@@ -261,7 +261,7 @@ def compile_job_paths(job, tmp_dir):
 
     # temporary
     # ---------
-    paths["tmp_dir"] = tmp_dir
+    paths["work_dir"] = work_dir
 
     # debug output
     # ------------
