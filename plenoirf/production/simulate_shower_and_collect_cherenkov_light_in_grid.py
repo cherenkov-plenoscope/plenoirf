@@ -17,28 +17,11 @@ from .. import tar_append
 from .. import utils
 
 from . import transform_cherenkov_bunches
-from . import job_io
 from . import cherenkov_bunch_storage
 
 
 def run_job(job, logger):
-    cache_path = os.path.join(
-        job["paths"]["work_dir"],
-        "simulate_shower_and_collect_cherenkov_light_in_grid",
-        "__job_cache__",
-    )
-
-    if os.path.exists(cache_path) and job["cache"]:
-        logger.info("corsika and grid, read cache")
-        return job_io.read(path=cache_path)
-    else:
-        logger.info("corsika and grid, run corsika")
-        job = corsika_and_grid(job=job, logger=logger)
-
-        if job["cache"]:
-            logger.info("corsika and grid, write cache")
-            job_io.write(path=cache_path, job=job)
-
+    job = corsika_and_grid(job=job, logger=logger)
     return job
 
 

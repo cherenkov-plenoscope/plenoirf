@@ -14,7 +14,6 @@ import json_line_logger as jll
 from .. import bookkeeping
 from .. import tar_append
 from .. import utils
-from . import job_io
 
 
 def draw_primaries_and_pointings(
@@ -187,51 +186,37 @@ def draw_primaries_and_pointings(
 
 
 def run_job(job, logger):
-    cache_path = os.path.join(
-        job["paths"]["work_dir"],
-        "draw_primaries_and_pointings",
-        "__job_cache__",
+    logger.info("draw_primaries_and_pointings, open AllSky")
+    allsky = magnetic_deflection.allsky.AllSky(
+        job["paths"]["magnetic_deflection_allsky"]
     )
 
-    if os.path.exists(cache_path) and job["cache"]:
-        logger.info("draw_primaries_and_pointings, read cache")
-        return job_io.read(path=cache_path)
-    else:
-        logger.info("draw_primaries_and_pointings, open AllSky")
-        allsky = magnetic_deflection.allsky.AllSky(
-            job["paths"]["magnetic_deflection_allsky"]
-        )
+    logger.info("draw_primaries_and_pointings, draw primaries")
 
-        logger.info("draw_primaries_and_pointings, draw primaries")
+    drw, debug = draw_primaries_and_pointings(
+        prng=job["prng"],
+        run_id=job["run_id"],
+        site_particle_magnetic_deflection=allsky,
+        pointing_range=job["run"]["pointing_range"],
+        field_of_view_half_angle_rad=job["instrument"][
+            "field_of_view_half_angle_rad"
+        ],
+        num_events=job["num_events"],
+        allsky_query_mode=job["config"]["magnetic_deflection"][
+            "query_mode"
+        ],
+        event_uids_for_debugging=job["run"]["event_uids_for_debugging"],
+        logger=logger,
+    )
 
-        drw, debug = draw_primaries_and_pointings(
-            prng=job["prng"],
-            run_id=job["run_id"],
-            site_particle_magnetic_deflection=allsky,
-            pointing_range=job["run"]["pointing_range"],
-            field_of_view_half_angle_rad=job["instrument"][
-                "field_of_view_half_angle_rad"
-            ],
-            num_events=job["num_events"],
-            allsky_query_mode=job["config"]["magnetic_deflection"][
-                "query_mode"
-            ],
-            event_uids_for_debugging=job["run"]["event_uids_for_debugging"],
-            logger=logger,
-        )
+    job["run"].update(drw)
 
-        job["run"].update(drw)
+    logger.info("draw_primaries_and_pointings, export debug info")
 
-        logger.info("draw_primaries_and_pointings, export debug info")
-
-        write_draw_primaries_and_pointings_debug(
-            path=job["paths"]["debug"]["draw_primary_and_pointing"],
-            debug=debug,
-        )
-
-        if job["cache"]:
-            logger.info("draw_primaries_and_pointings, write cache")
-            job_io.write(path=cache_path, job=job)
+    write_draw_primaries_and_pointings_debug(
+        path=job["paths"]["debug"]["draw_primary_and_pointing"],
+        debug=debug,
+    )
 
     return job
 

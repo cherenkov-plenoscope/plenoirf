@@ -81,15 +81,31 @@ def run_job_in_dir(job, work_dir):
         job = draw_pointing_range.run_job(job=job, logger=logger)
 
     with jll.TimeDelta(logger, "draw_primaries_and_pointings"):
-        job = draw_primaries_and_pointings.run_job(job=job, logger=logger)
+        job = checkpoint.checkpoint(
+            job=job,
+            logger=logger,
+            func=draw_primaries_and_pointings.run_job,
+            cache_path=opj(
+                job["paths"]["work_dir"],
+                "draw_primaries_and_pointings",
+                "__job_cache__",
+            ),
+        )
 
     job["event_table"] = event_table.structure.init_table_dynamicsizerecarray()
 
     with jll.TimeDelta(
         logger, "simulate_shower_and_collect_cherenkov_light_in_grid"
     ):
-        job = simulate_shower_and_collect_cherenkov_light_in_grid.run_job(
-            job=job, logger=logger
+        job = checkpoint.checkpoint(
+            job=job,
+            logger=logger,
+            func=simulate_shower_and_collect_cherenkov_light_in_grid.run_job,
+            cache_path=opj(
+                job["paths"]["work_dir"],
+                "simulate_shower_and_collect_cherenkov_light_in_grid",
+                "__job_cache__",
+            ),
         )
 
     with jll.TimeDelta(logger, "inspect_cherenkov_pool"):
