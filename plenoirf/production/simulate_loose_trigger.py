@@ -7,6 +7,7 @@ import corsika_primary as cpw
 import sparse_numeric_table as spt
 import rename_after_writing as rnw
 import json_utils
+import sebastians_matplotlib_addons as sebplt
 
 from .. import bookkeeping
 from . import job_io
@@ -60,6 +61,37 @@ def simulate_loose_trigger(
 
         # apply loose trigger
         # -------------------
+        if True:
+            uid_str = bookkeeping.uid.make_uid_str(
+                run_id=run_id,
+                event_id=event_id,
+            )
+            visible_cherenkov_photon_size = json_utils.read(
+                path=os.path.join(
+                    job["paths"]["work_dir"],
+                    "inspect_cherenkov_pool",
+                    "visible_cherenkov_photon_size.json",
+                )
+            )
+            if visible_cherenkov_photon_size[uid_str] > 100:
+                foci_trigger_image_sequences = (
+                    plenopy.trigger.estimate.estimate_trigger_image_sequences(
+                        raw_sensor_response=event.raw_sensor_response,
+                        light_field_geometry=blk["light_field_geometry"],
+                        trigger_geometry=blk["trigger_geometry"],
+                        integration_time_slices=(
+                            job["config"]["sum_trigger"][
+                                "integration_time_slices"
+                            ]
+                        ),
+                    )
+                )
+
+                plot_foci_trigger_image_sequences(
+                    out_dir=os.path.join(work_dir, "{:06d}".format(event_id)),
+                    foci_trigger_image_sequences=foci_trigger_image_sequences,
+                )
+
         (
             trigger_responses,
             max_response_in_focus_vs_timeslices,
@@ -133,3 +165,35 @@ def plenoscope_event_dir_to_tar(event_dir, output_tar_path=None):
         output_tar_path = event_dir + ".tar"
     with tarfile.open(output_tar_path, "w") as tarfout:
         tarfout.add(event_dir, arcname=".")
+
+
+def plot_foci_trigger_image_sequences(out_dir, foci_trigger_image_sequences):
+    os.makedirs(out_dir, exist_ok=True)
+
+    num_foci, num_time_slices, num_pixel = foci_trigger_image_sequences.shape
+    time_slices_bin_edges = np.arange(num_time_slices + 1)
+    pixel_bin_edges = np.arange(num_pixel + 1)
+    vmax = np.max(foci_trigger_image_sequences)
+    vmin = 0.0
+
+    for focus in range(num_foci):
+        image = foci_trigger_image_sequences[focus]
+
+        fig = sebplt.figure(
+            style={"rows": 720, "cols": 1280, "fontsize": 1}, dpi=240
+        )
+        ax_img = sebplt.add_axes(fig=fig, span=[0.12, 0.12, 0.75, 0.8])
+        ax_cm = sebplt.add_axes(fig=fig, span=[0.9, 0.12, 0.03, 0.8])
+
+        pcm_img = ax_img.pcolormesh(
+            time_slices_bin_edges,
+            pixel_bin_edges,
+            np.transpose(image),
+            cmap="viridis",
+            norm=sebplt.plt_colors.PowerNorm(gamma=1, vmin=vmin, vmax=vmax),
+        )
+
+        sebplt.plt.colorbar(pcm_img, cax=ax_cm, extend="max")
+
+        fig.savefig(os.path.join(out_dir, "{:06d}.jpg".format(focus)))
+        sebplt.close(fig)
