@@ -5,6 +5,7 @@ import copy
 import os
 import corsika_primary
 import rename_after_writing as rnw
+from .. import configuration
 
 
 def write(path, job):
@@ -29,8 +30,11 @@ def write(path, job):
             runs={out["run_id"]: corsika_primary_steering},
         )
 
+    if "config" in out:
+        _ = out["config"]
+
     with rnw.open(os.path.join(path, "job.json"), "wt") as f:
-        f.write(json_utils.dumps(out))
+        f.write(json_utils.dumps(out, indent=4))
 
 
 def read(path):
@@ -59,6 +63,7 @@ def read(path):
         corsika_primary_steering = corsika_primary_steerings[out["run_id"]]
         out["run"]["corsika_primary_steering"] = corsika_primary_steering
 
+    out["config"] = configuration.read(plenoirf_dir=out["plenoirf_dir"])
     return out
 
 
