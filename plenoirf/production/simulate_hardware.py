@@ -8,31 +8,9 @@ import json_utils
 from . import job_io
 
 
-def run_job_block(job, block_id, logger):
-    block_dir = opj(
-        job["paths"]["work_dir"],
-        "blocks",
-        "{block_id:06d}".format(block_id=block_id),
-    )
-    work_dir = opj(block_dir, "simulate_hardware")
-    os.makedirs(work_dir, exist_ok=True)
-    cache_path = os.path.join(work_dir, "__job_cache__")
-
-    if os.path.exists(cache_path) and job["cache"]:
-        logger.info(
-            "simulate_hardware block{:06d}, read cache".format(block_id)
-        )
-        return job_io.read(path=cache_path)
-    else:
-        job = simulate_hardware(job=job, block_id=block_id)
-        make_debug_output(job=job, block_id=block_id)
-
-        if job["cache"]:
-            logger.info(
-                "simulate_hardware block{:06d}, write cache".format(block_id)
-            )
-            job_io.write(path=cache_path, job=job)
-
+def run_job_block(job, blk, block_id, logger):
+    job = simulate_hardware(job=job, block_id=block_id)
+    make_debug_output(job=job, block_id=block_id)
     return job
 
 

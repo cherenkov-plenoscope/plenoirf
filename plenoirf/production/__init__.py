@@ -160,15 +160,37 @@ def _run_job_block(job, blk, block_id, logger):
     with jll.TimeDelta(
         logger, "simulate_hardware_block{:06d}".format(block_id)
     ):
-        job = simulate_hardware.run_job_block(
-            job=job, block_id=block_id, logger=logger
+        checkpoint.checkpoint(
+            job=job,
+            blk=blk,
+            logger=logger,
+            block_id=block_id,
+            func=simulate_hardware.run_job_block,
+            cache_path=opj(
+                job["paths"]["work_dir"],
+                "blocks",
+                "{block_id:06d}".format(block_id=block_id),
+                "inspect_cherenkov_pool",
+                "__job_cache__",
+            ),
         )
 
     with jll.TimeDelta(
         logger, "simulate_loose_trigger_block{:06d}".format(block_id)
     ):
-        job = simulate_loose_trigger.run_job_block(
-            job=job, blk=blk, block_id=block_id, logger=logger
+        checkpoint.checkpoint(
+            job=job,
+            blk=blk,
+            logger=logger,
+            block_id=block_id,
+            func=simulate_loose_trigger.run_job_block,
+            cache_path=opj(
+                job["paths"]["work_dir"],
+                "blocks",
+                "{block_id:06d}".format(block_id=block_id),
+                "simulate_loose_trigger",
+                "__job_cache__",
+            ),
         )
 
     """
