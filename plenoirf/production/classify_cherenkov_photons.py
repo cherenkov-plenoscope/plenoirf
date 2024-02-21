@@ -1,6 +1,8 @@
 import numpy as np
 import os
 import plenopy as pl
+import rename_after_writing as rnw
+from .. import bookkeeping
 
 
 def run_job_block(job, blk, block_id, logger):
@@ -24,12 +26,12 @@ def classify_cherenkov_photons(
         job["paths"]["work_dir"], "blocks", "{:06d}".format(block_id)
     )
 
-    roi_cfg = job["cherenkov_classification"]["region_of_interest"]
-    dbscan_cfg = job["cherenkov_classification"]
+    roi_cfg = job["config"]["cherenkov_classification"]["region_of_interest"]
+    dbscan_cfg = job["config"]["cherenkov_classification"]
 
     with pl.photon_stream.loph.LopfTarWriter(
         path=os.path.join(block_dir, "reconstructed_cherenkov.tar"),
-        uid_num_digits=unique.UID_NUM_DIGITS,
+        uid_num_digits=bookkeeping.uid.UID_NUM_DIGITS,
     ) as cer_phs_run:
         for ptp in table_past_trigger:
             event = pl.Event(
@@ -87,11 +89,4 @@ def classify_cherenkov_photons(
             )
             cer_phs_run.add(uid=ptp[spt.IDX], phs=cer_phs)
 
-    rnw.copy(
-        src=op.join(tmp_dir, "reconstructed_cherenkov.tar"),
-        dst=op.join(
-            job["past_trigger_reconstructed_cherenkov_dir"],
-            _run_id_str(job=job) + "_reconstructed_cherenkov.tar",
-        ),
-    )
     return tabrec
