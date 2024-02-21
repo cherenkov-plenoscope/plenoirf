@@ -170,7 +170,7 @@ def _run_job_block(job, blk, block_id, logger):
                 job["paths"]["work_dir"],
                 "blocks",
                 "{block_id:06d}".format(block_id=block_id),
-                "inspect_cherenkov_pool",
+                "simulate_hardware",
                 "__job_cache__",
             ),
         )
@@ -193,6 +193,7 @@ def _run_job_block(job, blk, block_id, logger):
             ),
         )
 
+    """
     with jll.TimeDelta(
         logger, "classify_cherenkov_photons_block{:06d}".format(block_id)
     ):
@@ -210,6 +211,7 @@ def _run_job_block(job, blk, block_id, logger):
                 "__job_cache__",
             ),
         )
+    """
 
     return job
 
