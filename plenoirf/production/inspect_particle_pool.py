@@ -44,14 +44,14 @@ def run_job(job, logger):
                 aaa = init_particlepoolonaperture_record(uid=uid)
 
             for particle_block in particle_reader:
-                cherenkov_emission_mask = mask_cherenkov_emission(
+                cherenkov_emission_block_mask = mask_cherenkov_emission(
                     corsika_particles=particle_block,
                     corsika_particle_zoo=corsika_particle_zoo,
                 )
 
                 ppp = update_particlepool_record(
                     rec=ppp,
-                    cherenkov_emission_mask=cherenkov_emission_mask,
+                    cherenkov_emission_mask=cherenkov_emission_block_mask,
                 )
 
                 if core:
@@ -61,7 +61,7 @@ def run_job(job, logger):
                     in front of the instrument's aperture.
                     """
                     particles_emitting_in_air = particle_block[
-                        cherenkov_emission_mask["media"]["air"]
+                        cherenkov_emission_block_mask["media"]["air"]
                     ]
 
                     aaa = update_particlepoolonaperture_record(
@@ -169,11 +169,11 @@ def mask_cherenkov_emission(corsika_particles, corsika_particle_zoo):
     media = corsika_particle_zoo.media_cherenkov_threshold_lorentz_factor
     out = {}
 
-    out["unknown"] = np.zeros(num_particles, dtype=int)
+    out["unknown"] = np.zeros(num_particles, dtype=bool)
     out["media"] = {}
 
     for medium_key in media:
-        out["media"][medium_key] = np.zeros(num_particles, dtype=int)
+        out["media"][medium_key] = np.zeros(num_particles, dtype=bool)
 
     for i in range(num_particles):
         particle = corsika_particles[i]
