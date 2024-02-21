@@ -8,6 +8,8 @@ import spherical_coordinates
 import json_utils
 import rename_after_writing as rnw
 
+from . import transform_cherenkov_bunches
+from . import un_bound_histogram
 from .. import bookkeeping
 
 
@@ -59,7 +61,6 @@ def inspect_cherenkov_pools(
     NS_TO_S = 1e-9
     aperture_bin = binning_utils.Binning(aperture_bin_edges)
     image_bin = binning_utils.Binning(image_bin_edges_rad)
-    time_bin = binning_utils.Binning(time_bin_edges)
 
     os.makedirs(out_dir, exist_ok=True)
 
@@ -71,24 +72,17 @@ def inspect_cherenkov_pools(
         for event in tr:
             evth, cherenkov_reader = event
 
+            thist_ns = un_bound_histogram.UnBoundHistogram(bin_width=1.0)
+
             aperture = np.zeros(
                 shape=(aperture_bin["num"], aperture_bin["num"]), dtype=float
             )
             image = np.zeros(
                 shape=(image_bin["num"], image_bin["num"]), dtype=float
             )
-            timeseries = np.zeros(time_bin["num"], dtype=float)
-
             total_visible_size = 0
 
             for cherenkov_block in cherenkov_reader:
-                aperture += np.histogram2d(
-                    CM_TO_M * cherenkov_block[:, cpw.I.BUNCH.X_CM],
-                    CM_TO_M * cherenkov_block[:, cpw.I.BUNCH.Y_CM],
-                    weights=cherenkov_block[:, cpw.I.BUNCH.BUNCH_SIZE_1],
-                    bins=(aperture_bin["edges"], aperture_bin["edges"]),
-                )[0]
-
                 in_mirror = (
                     np.hypot(
                         CM_TO_M * cherenkov_block[:, cpw.I.BUNCH.X_CM],
@@ -96,15 +90,6 @@ def inspect_cherenkov_pools(
                     )
                     <= mirror_radius
                 )
-
-                image += np.histogram2d(
-                    cherenkov_block[in_mirror, cpw.I.BUNCH.CX_RAD],
-                    cherenkov_block[in_mirror, cpw.I.BUNCH.CY_RAD],
-                    weights=cherenkov_block[
-                        in_mirror, cpw.I.BUNCH.BUNCH_SIZE_1
-                    ],
-                    bins=(image_bin["edges"], image_bin["edges"]),
-                )[0]
 
                 in_fov = (
                     spherical_coordinates.angle_between_cx_cy(
@@ -116,15 +101,25 @@ def inspect_cherenkov_pools(
                     <= field_of_view_half_angle_rad
                 )
 
+                aperture += np.histogram2d(
+                    CM_TO_M * cherenkov_block[in_fov, cpw.I.BUNCH.X_CM],
+                    CM_TO_M * cherenkov_block[in_fov, cpw.I.BUNCH.Y_CM],
+                    weights=cherenkov_block[in_fov, cpw.I.BUNCH.BUNCH_SIZE_1],
+                    bins=(aperture_bin["edges"], aperture_bin["edges"]),
+                )[0]
+
+                image += np.histogram2d(
+                    cherenkov_block[in_mirror, cpw.I.BUNCH.CX_RAD],
+                    cherenkov_block[in_mirror, cpw.I.BUNCH.CY_RAD],
+                    weights=cherenkov_block[
+                        in_mirror, cpw.I.BUNCH.BUNCH_SIZE_1
+                    ],
+                    bins=(image_bin["edges"], image_bin["edges"]),
+                )[0]
+
                 is_visible = np.logical_and(in_mirror, in_fov)
 
-                timeseries += np.histogram(
-                    NS_TO_S * cherenkov_block[is_visible, cpw.I.BUNCH.TIME_NS],
-                    weights=cherenkov_block[
-                        is_visible, cpw.I.BUNCH.BUNCH_SIZE_1
-                    ],
-                    bins=time_bin["edges"],
-                )[0]
+                thist_ns.assign(x=cherenkov_block[is_visible, cpw.I.BUNCH.TIME_NS])
 
                 total_visible_size += np.sum(
                     cherenkov_block[is_visible, cpw.I.BUNCH.BUNCH_SIZE_1]
@@ -206,15 +201,26 @@ def inspect_cherenkov_pools(
                     )
 
                 # time
+                t50_ns = int(thist_ns.percentile(50))
+                tRnum = 50
+                t_bin_edges = np.arange(t50_ns-tRnum, t50_ns+tRnum)
+                tnum = len(t_bin_edges) - 1
+                t_counts = np.zeros(tnum)
+                for tt in range(tnum):
+                    t_bin = t_bin_edges[tt]
+                    if t_bin in thist_ns.bins:
+                        t_counts[tt] = thist_ns.bins[t_bin]
+
                 ax_tim.set_title("size: {:f}".format(total_visible_size))
-                ax_tim.set_xlabel("time / s")
+                ax_tim.set_xlabel("time / 1 ns")
                 ax_tim.set_ylabel("intensity / 1")
                 sebplt.ax_add_histogram(
                     ax=ax_tim,
-                    bin_edges=time_bin["edges"],
-                    bincounts=timeseries,
+                    bin_edges=t_bin_edges,
+                    bincounts=t_counts,
                     linestyle="-",
                     linecolor="k",
+                    draw_bin_walls=True,
                 )
                 fig.savefig(os.path.join(out_dir, "{:s}.jpg".format(uid_str)))
                 sebplt.close(fig)
