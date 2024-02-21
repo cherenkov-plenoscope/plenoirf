@@ -126,7 +126,9 @@ def simulate_loose_trigger(
         ):
             ptp = uidrec.copy()
             ptp["tmp_path"] = event._path
-            ptp["unique_id_str"] = unique.UID_FOTMAT_STR.format(ptp[spt.IDX])
+            ptp["uid_str"] = bookkeeping.uid.UID_FOTMAT_STR.format(
+                ptp[spt.IDX]
+            )
             table_past_trigger.append(ptp)
 
             patrec = uidrec.copy()
@@ -138,7 +140,7 @@ def simulate_loose_trigger(
                 plenopy.tools.acp_format.compress_event_in_place(
                     ptp["tmp_path"]
                 )
-                final_tarname = ptp["unique_id_str"] + ".tar"
+                final_tarname = ptp["uid_str"] + ".tar"
                 plenoscope_event_dir_to_tar(
                     event_dir=ptp["tmp_path"],
                     output_tar_path=opj(work_dir, final_tarname),
