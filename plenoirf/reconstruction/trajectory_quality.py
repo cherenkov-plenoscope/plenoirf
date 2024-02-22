@@ -1,4 +1,4 @@
-from .. import table
+from .. import event_table as table
 from .. import analysis
 
 import numpy as np

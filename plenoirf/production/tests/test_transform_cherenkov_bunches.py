@@ -40,7 +40,7 @@ def median_y_m(bunches):
 def median_cx_cy(bunches):
     MOMENTUM_TO_INCIDENT = -1.0
     cx = MOMENTUM_TO_INCIDENT * np.median(bunches[:, cpw.I.BUNCH.UX_1])
-    cx = MOMENTUM_TO_INCIDENT * np.median(bunches[:, cpw.I.BUNCH.VY_1])
+    cy = MOMENTUM_TO_INCIDENT * np.median(bunches[:, cpw.I.BUNCH.VY_1])
     return cx, cy
 
 

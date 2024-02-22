@@ -85,7 +85,7 @@ def make_momentum_direction(cherenkov_bunches):
     ux = cherenkov_bunches[:, cpw.I.BUNCH.UX_1]
     vy = cherenkov_bunches[:, cpw.I.BUNCH.VY_1]
     z = spherical_coordinates.restore_cz(cx=ux, cy=vy)
-    return np.c_[cx, cy, TOWARDS_XY_PLANE * cz]
+    return np.c_[ux, vy, TOWARDS_XY_PLANE * z]
 
 
 def distance_to_reach_xy_plane(cz, z):

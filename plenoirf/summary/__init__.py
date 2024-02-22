@@ -2,7 +2,7 @@
 # import copy
 # from os.path import join as opj
 # import pandas
-# import numpy as np
+import numpy as np
 # from importlib import resources as importlib_resources
 # import subprocess
 # import sparse_numeric_table as spt

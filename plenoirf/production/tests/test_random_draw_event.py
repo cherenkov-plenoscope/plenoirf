@@ -18,13 +18,14 @@ def test_dummy():
 
     prng = np.random.Generator(np.random.PCG64(RUN_ID))
 
-    events, debug = plenoirf.production.random.draw_primaries_and_pointings(
+    events, debug = plenoirf.production.draw_primaries_and_pointings.draw_primaries_and_pointings(
         prng=prng,
         run_id=RUN_ID,
         num_events=NUM_EVENTS,
         field_of_view_half_angle_rad=np.deg2rad(6.5),
         pointing_range=pointing_range,
         site_particle_magnetic_deflection=allsky_deflection,
+        allsky_query_mode="cone",
     )
 
     cps = events["corsika_primary_steering"]

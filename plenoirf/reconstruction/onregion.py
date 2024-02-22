@@ -2,7 +2,7 @@ import numpy as np
 import sparse_numeric_table as spt
 import shapely
 from shapely import geometry as shapely_geometry
-from .. import table as irf_table
+from .. import event_table as irf_table
 
 
 def make_polygon(onregion, num_steps=1000):
