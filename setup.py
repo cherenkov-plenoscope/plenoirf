@@ -35,6 +35,7 @@ setuptools.setup(
         "plenoirf.features",
     ],
     install_requires=[
+        "un_bound_histogram>=0.0.1",
         "cosmic_fluxes",
         "corsika_primary>=2.3.3",
         "atmospheric_cherenkov_response_cherenkov-plenoscope-project",

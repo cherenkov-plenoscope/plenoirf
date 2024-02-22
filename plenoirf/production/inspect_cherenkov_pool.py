@@ -7,9 +7,9 @@ import sebastians_matplotlib_addons as sebplt
 import spherical_coordinates
 import json_utils
 import rename_after_writing as rnw
+import un_bound_histogram
 
 from . import transform_cherenkov_bunches
-from . import un_bound_histogram
 from .. import bookkeeping
 
 

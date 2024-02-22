@@ -1,7 +1,7 @@
 import corsika_primary as cpw
 import numpy as np
 import spherical_coordinates
-from . import un_bound_histogram
+import un_bound_histogram
 
 
 def _make_fake_runh():
