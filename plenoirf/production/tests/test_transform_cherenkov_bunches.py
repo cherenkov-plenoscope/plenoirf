@@ -38,14 +38,14 @@ def median_y_m(bunches):
 
 
 def median_cx_cy(bunches):
-    cx = np.median(bunches[:, cpw.I.BUNCH.CX_RAD])
-    cx = np.median(bunches[:, cpw.I.BUNCH.CY_RAD])
+    MOMENTUM_TO_INCIDENT = -1.0
+    cx = MOMENTUM_TO_INCIDENT * np.median(bunches[:, cpw.I.BUNCH.UX_1])
+    cx = MOMENTUM_TO_INCIDENT * np.median(bunches[:, cpw.I.BUNCH.VY_1])
     return cx, cy
 
 
 def angle_between_bunches_and_pointing(bunches, pointing):
-    ccx = np.median(bunches[:, cpw.I.BUNCH.CX_RAD])
-    ccy = np.median(bunches[:, cpw.I.BUNCH.CY_RAD])
+    ccx, ccy = median_cx_cy(bunches=bunches)
     pcx, pcy = spherical_coordinates.az_zd_to_cx_cy(
         azimuth_rad=pointing["azimuth_rad"],
         zenith_rad=pointing["zenith_rad"],
@@ -59,8 +59,7 @@ def angle_between_bunches_and_pointing(bunches, pointing):
 
 
 def angle_between_bunches_and_zaxis(bunches):
-    ccx = np.median(bunches[:, cpw.I.BUNCH.CX_RAD])
-    ccy = np.median(bunches[:, cpw.I.BUNCH.CY_RAD])
+    ccx, ccy = median_cx_cy(bunches=bunches)
     pcx, pcy = 0.0, 0.0
     return spherical_coordinates.angle_between_cx_cy(
         cx1=ccx,
@@ -217,8 +216,8 @@ def test_only_translation():
         )
 
         I_NOT_EFFECTED = [
-            BUNCH.CX_RAD,
-            BUNCH.CY_RAD,
+            BUNCH.UX_1,
+            BUNCH.VY_1,
             BUNCH.TIME_NS,
             BUNCH.EMISSOION_ALTITUDE_ASL_CM,
             BUNCH.BUNCH_SIZE_1,
@@ -331,8 +330,9 @@ def test_timing():
     )
 
     # light is coming from pos x
-    assert 40 < np.rad2deg(np.median(bunches[:, BUNCH.CX_RAD])) < 50
-    assert -1 < np.rad2deg(np.median(bunches[:, BUNCH.CY_RAD])) < 1
+    bunches_median_cx, bunches_median_cy = median_cx_cy(bunches=bunches)
+    assert 40 < np.rad2deg(bunches_median_cx) < 50
+    assert -1 < np.rad2deg(bunches_median_cy) < 1
 
     mask_neg_x = bunches[:, BUNCH.X_CM] < -5.0
     time_ns_at_neg_x = np.median(bunches[mask_neg_x, BUNCH.TIME_NS])
@@ -355,8 +355,9 @@ def test_timing():
     )
 
     # light is coming from almost z
-    assert -1 < np.rad2deg(np.median(bunches_T[:, BUNCH.CX_RAD])) < 1
-    assert -1 < np.rad2deg(np.median(bunches_T[:, BUNCH.CY_RAD])) < 1
+    bunches_T_median_cx, bunches_T_median_cy = median_cx_cy(bunches=bunches_T)
+    assert -1 < np.rad2deg(bunches_T_median_cx) < 1
+    assert -1 < np.rad2deg(bunches_T_median_cy) < 1
 
     t_mask_neg_x = bunches_T[:, BUNCH.X_CM] < -5.0
     t_time_ns_at_neg_x = np.median(bunches_T[t_mask_neg_x, BUNCH.TIME_NS])

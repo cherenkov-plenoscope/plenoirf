@@ -141,6 +141,8 @@ def assign_cherenkov_bunches(groundgrid, cherenkov_bunch_storage_path):
     bin_photon_assignment = {}
     num_overflow = 0
 
+    MOMENTUM_TO_INCIDENT = -1.0
+
     ibunch = 0
     with cpw.cherenkov.CherenkovEventTapeReader(
         path=cherenkov_bunch_storage_path
@@ -152,8 +154,8 @@ def assign_cherenkov_bunches(groundgrid, cherenkov_bunch_storage_path):
                 cer_y_m = cpw.CM2M * bunch[cpw.I.BUNCH.Y_CM]
                 cer_z_m = 0.0  # by definition of ground / observation-level
 
-                cer_cx = bunch[cpw.I.BUNCH.CX_RAD]
-                cer_cy = bunch[cpw.I.BUNCH.CY_RAD]
+                cer_cx = MOMENTUM_TO_INCIDENT * bunch[cpw.I.BUNCH.UX_1]
+                cer_cy = MOMENTUM_TO_INCIDENT * bunch[cpw.I.BUNCH.VY_1]
                 cer_cz = spherical_coordinates.restore_cz(cx=cer_cx, cy=cer_cy)
 
                 cer_w = bunch[cpw.I.BUNCH.BUNCH_SIZE_1]

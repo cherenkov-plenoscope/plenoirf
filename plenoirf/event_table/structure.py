@@ -140,8 +140,8 @@ def init_cherenkovsize_level_structure():
 def init_cherenkovpool_level_structure():
     t = collections.OrderedDict()
     keys = {}
-    keys["cx"] = "rad"
-    keys["cy"] = "rad"
+    keys["cx"] = "1"
+    keys["cy"] = "1"
     keys["x"] = "m"
     keys["y"] = "m"
     keys["z_emission"] = "m"

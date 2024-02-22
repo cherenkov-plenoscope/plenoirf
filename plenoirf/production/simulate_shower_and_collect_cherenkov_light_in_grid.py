@@ -372,41 +372,6 @@ def read_all_cherenkov_bunches(cherenkov_reader):
     return np.vstack([b for b in cherenkov_reader])
 
 
-def mask_cherenkov_bunches_in_instruments_field_of_view(
-    cherenkov_bunches,
-    pointing,
-    field_of_view_half_angle_rad,
-):
-    OVERHEAD = 2.0
-    return mask_cherenkov_bunches_in_cone(
-        cherenkov_bunches_cx=cherenkov_bunches[:, cpw.I.BUNCH.CX_RAD],
-        cherenkov_bunches_cy=cherenkov_bunches[:, cpw.I.BUNCH.CY_RAD],
-        cone_azimuth_rad=pointing["azimuth_rad"],
-        cone_zenith_rad=pointing["zenith_rad"],
-        cone_half_angle_rad=OVERHEAD * field_of_view_half_angle_rad,
-    )
-
-
-def mask_cherenkov_bunches_in_cone(
-    cherenkov_bunches_cx,
-    cherenkov_bunches_cy,
-    cone_half_angle_rad,
-    cone_azimuth_rad,
-    cone_zenith_rad,
-):
-    cone_cx, cone_cy = spherical_coordinates.az_zd_to_cx_cy(
-        azimuth_rad=cone_azimuth_rad,
-        zenith_rad=cone_zenith_rad,
-    )
-    delta_rad = spherical_coordinates.angle_between_cx_cy(
-        cx1=cherenkov_bunches_cx,
-        cy1=cherenkov_bunches_cy,
-        cx2=cone_cx,
-        cy2=cone_cy,
-    )
-    return delta_rad < cone_half_angle_rad
-
-
 def EventTape_append_event(
     evttar,
     corsika_evth,

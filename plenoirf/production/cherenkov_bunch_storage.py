@@ -85,6 +85,7 @@ def make_cherenkovsize_record(path=None, cherenkov_bunches=None):
 
 def inti_stats():
     ubh = un_bound_histogram.UnBoundHistogram
+    MOMENTUM_TO_INCIDENT = -1.0
     s = {}
     s["x"] = {
         "hist": ubh(bin_width=25e2),
@@ -100,15 +101,15 @@ def inti_stats():
     }
     s["cx"] = {
         "hist": ubh(bin_width=np.deg2rad(0.05)),
-        "column": cpw.I.BUNCH.CX_RAD,
-        "unit": "rad",
-        "factor": 1,
+        "column": cpw.I.BUNCH.UX_1,
+        "unit": "1",
+        "factor": MOMENTUM_TO_INCIDENT,
     }
     s["cy"] = {
         "hist": ubh(bin_width=np.deg2rad(0.05)),
-        "column": cpw.I.BUNCH.CY_RAD,
-        "unit": "rad",
-        "factor": 1,
+        "column": cpw.I.BUNCH.VY_1,
+        "unit": "1",
+        "factor": MOMENTUM_TO_INCIDENT,
     }
     s["z_emission"] = {
         "hist": ubh(bin_width=10e2),
@@ -184,9 +185,12 @@ def mask_cherenkov_bunches_in_instruments_field_of_view(
     field_of_view_half_angle_rad,
 ):
     OVERHEAD = 2.0
+    MOMENTUM_TO_INCIDENT = -1.0
     return mask_cherenkov_bunches_in_cone(
-        cherenkov_bunches_cx=cherenkov_bunches[:, cpw.I.BUNCH.CX_RAD],
-        cherenkov_bunches_cy=cherenkov_bunches[:, cpw.I.BUNCH.CY_RAD],
+        cherenkov_bunches_cx=MOMENTUM_TO_INCIDENT
+        * cherenkov_bunches[:, cpw.I.BUNCH.UX_1],
+        cherenkov_bunches_cy=MOMENTUM_TO_INCIDENT
+        * cherenkov_bunches[:, cpw.I.BUNCH.VY_1],
         cone_azimuth_rad=pointing["azimuth_rad"],
         cone_zenith_rad=pointing["zenith_rad"],
         cone_half_angle_rad=OVERHEAD * field_of_view_half_angle_rad,

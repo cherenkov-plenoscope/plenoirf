@@ -91,10 +91,18 @@ def inspect_cherenkov_pools(
                     <= mirror_radius
                 )
 
+                MOMENTUM_TO_INCIDENT = -1.0
+                cherenkov_block_cx = (
+                    MOMENTUM_TO_INCIDENT * cherenkov_block[:, cpw.I.BUNCH.UX_1]
+                )
+                cherenkov_block_cy = (
+                    MOMENTUM_TO_INCIDENT * cherenkov_block[:, cpw.I.BUNCH.VY_1]
+                )
+
                 in_fov = (
                     spherical_coordinates.angle_between_cx_cy(
-                        cx1=cherenkov_block[:, cpw.I.BUNCH.CX_RAD],
-                        cy1=cherenkov_block[:, cpw.I.BUNCH.CY_RAD],
+                        cx1=cherenkov_block_cx,
+                        cy1=cherenkov_block_cy,
                         cx2=0.0,
                         cy2=0.0,
                     )
@@ -109,8 +117,8 @@ def inspect_cherenkov_pools(
                 )[0]
 
                 image += np.histogram2d(
-                    cherenkov_block[in_mirror, cpw.I.BUNCH.CX_RAD],
-                    cherenkov_block[in_mirror, cpw.I.BUNCH.CY_RAD],
+                    cherenkov_block_cx,
+                    cherenkov_block_cy,
                     weights=cherenkov_block[
                         in_mirror, cpw.I.BUNCH.BUNCH_SIZE_1
                     ],

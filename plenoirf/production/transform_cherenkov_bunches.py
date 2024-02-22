@@ -41,13 +41,10 @@ def from_obervation_level_to_instrument(
 def transform_cherenkov_bunches(
     cherenkov_bunches, homtra_cm, speed_of_ligth_cm_per_ns
 ):
-    INCIDENT_POINTS_AWAY_FROM_XY_PLANE = -1.0
     cer = cherenkov_bunches.copy()
 
     # bunches to rays
-    cer_dir = make_direction_of_incoming_photon_traveling_towards_xy_plane(
-        cherenkov_bunches=cer
-    )
+    cer_dir = make_momentum_direction(cherenkov_bunches=cer)
 
     cer_sup_cm = make_support(cherenkov_bunches=cer)
 
@@ -67,11 +64,9 @@ def transform_cherenkov_bunches(
         t_cer_dir, d_cm[:, np.newaxis]
     )
 
-    t_cer_incident = INCIDENT_POINTS_AWAY_FROM_XY_PLANE * t_cer_dir
-
     # rays to bunches
-    cer[:, cpw.I.BUNCH.CX_RAD] = t_cer_incident[:, 0]
-    cer[:, cpw.I.BUNCH.CY_RAD] = t_cer_incident[:, 1]
+    cer[:, cpw.I.BUNCH.UX_1] = t_cer_dir[:, 0]
+    cer[:, cpw.I.BUNCH.VY_1] = t_cer_dir[:, 1]
     cer[:, cpw.I.BUNCH.X_CM] = t_cer_support_on_aperture_plane_cm[:, 0]
     cer[:, cpw.I.BUNCH.Y_CM] = t_cer_support_on_aperture_plane_cm[:, 1]
     cer[:, cpw.I.BUNCH.TIME_NS] += d_time_ns
@@ -85,14 +80,12 @@ def make_support(cherenkov_bunches):
     return np.c_[x, y, z]
 
 
-def make_direction_of_incoming_photon_traveling_towards_xy_plane(
-    cherenkov_bunches,
-):
+def make_momentum_direction(cherenkov_bunches):
     TOWARDS_XY_PLANE = -1.0
-    cx = cherenkov_bunches[:, cpw.I.BUNCH.CX_RAD]
-    cy = cherenkov_bunches[:, cpw.I.BUNCH.CY_RAD]
-    cz = spherical_coordinates.restore_cz(cx=cx, cy=cy)
-    return TOWARDS_XY_PLANE * np.c_[cx, cy, cz]
+    ux = cherenkov_bunches[:, cpw.I.BUNCH.UX_1]
+    vy = cherenkov_bunches[:, cpw.I.BUNCH.VY_1]
+    z = spherical_coordinates.restore_cz(cx=ux, cy=vy)
+    return np.c_[cx, cy, TOWARDS_XY_PLANE * cz]
 
 
 def distance_to_reach_xy_plane(cz, z):
