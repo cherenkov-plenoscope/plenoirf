@@ -180,15 +180,15 @@ def plot_foci_trigger_image_sequences(out_dir, foci_trigger_image_sequences):
         image = foci_trigger_image_sequences[focus]
 
         fig = sebplt.figure(
-            style={"rows": 720, "cols": 1280, "fontsize": 1}, dpi=240
+            style={"rows": 720, "cols": 2560, "fontsize": 1}, dpi=240
         )
         ax_img = sebplt.add_axes(fig=fig, span=[0.12, 0.12, 0.75, 0.8])
         ax_cm = sebplt.add_axes(fig=fig, span=[0.9, 0.12, 0.03, 0.8])
 
         pcm_img = ax_img.pcolormesh(
-            time_slices_bin_edges,
             pixel_bin_edges,
-            np.transpose(image),
+            time_slices_bin_edges,
+            image,
             cmap="viridis",
             norm=sebplt.plt_colors.PowerNorm(gamma=1, vmin=vmin, vmax=vmax),
         )
