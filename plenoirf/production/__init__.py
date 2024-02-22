@@ -34,7 +34,7 @@ from . import checkpoint
 
 def make_example_job(
     plenoirf_dir,
-    run_id=1234,
+    run_id=1221,
     site_key="chile",
     particle_key="gamma",
     instrument_key="diag9_default_default",
