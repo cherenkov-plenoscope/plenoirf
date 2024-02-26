@@ -294,15 +294,10 @@ def make_primary_record(
     rec["zenith_rad"] = primary["zenith_rad"]
     rec["depth_g_per_cm2"] = primary["depth_g_per_cm2"]
 
-    rec["momentum_x_GeV_per_c"] = corsika_evth[
-        cpw.I.EVTH.PX_MOMENTUM_GEV_PER_C
-    ]
-    rec["momentum_y_GeV_per_c"] = corsika_evth[
-        cpw.I.EVTH.PY_MOMENTUM_GEV_PER_C
-    ]
-    rec["momentum_z_GeV_per_c"] = (
-        -1.0 * corsika_evth[cpw.I.EVTH.PZ_MOMENTUM_GEV_PER_C]
-    )
+    mom = cpw.I.EVTH.get_momentum_vector_GeV_per_c(evth=corsika_evth)
+    rec["momentum_x_GeV_per_c"] = mom[0]
+    rec["momentum_y_GeV_per_c"] = mom[1]
+    rec["momentum_z_GeV_per_c"] = mom[2]
 
     rec["starting_height_asl_m"] = (
         cpw.CM2M * corsika_evth[cpw.I.EVTH.STARTING_HEIGHT_CM]
