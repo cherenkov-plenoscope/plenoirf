@@ -89,10 +89,6 @@ def draw_primaries_and_pointings(
     rnd = magnetic_deflection.allsky.random.Random(
         allsky_deflection=site_particle_magnetic_deflection
     )
-    _shower_spread_half_angle_rad = np.deg2rad(
-        particle["population"]["direction"]["scatter_cone_half_angle_deg"]
-    )
-
     run = {
         "run_id": i8(run_id),
         "event_id_of_first_event": i8(1),
@@ -144,18 +140,49 @@ def draw_primaries_and_pointings(
             pointing_range=pointing_range,
             prng=prng,
         )
-
-        res, dbg = rnd.draw_particle_direction(
-            prng=prng,
-            method=allsky_query_mode,
-            azimuth_rad=pointings[event_uid_str]["azimuth_rad"],
-            zenith_rad=pointings[event_uid_str]["zenith_rad"],
-            half_angle_rad=field_of_view_half_angle_rad,
-            energy_GeV=energies_GeV[event_uid_str],
-            shower_spread_half_angle_rad=_shower_spread_half_angle_rad,
-            min_num_cherenkov_photons=1e3,
+        scatter_cone_half_angle_rad = (
+            acr.particles.get_scatter_cone_half_angle_rad(
+                particle=particle,
+                energy_GeV=energies_GeV[event_uid_str],
+            )
         )
-        primary_directions[event_uid_str] = res
+
+        if energies_GeV[event_uid_str] <= rnd.binning["energy"]["stop"]:
+            res, dbg = rnd.draw_particle_direction(
+                prng=prng,
+                method=allsky_query_mode,
+                azimuth_rad=pointings[event_uid_str]["azimuth_rad"],
+                zenith_rad=pointings[event_uid_str]["zenith_rad"],
+                half_angle_rad=field_of_view_half_angle_rad,
+                energy_GeV=energies_GeV[event_uid_str],
+                shower_spread_half_angle_rad=scatter_cone_half_angle_rad,
+                min_num_cherenkov_photons=1e3,
+            )
+            primary_directions[event_uid_str] = res
+        else:
+            (
+                _az,
+                _zd,
+            ) = corsika_primary.random.distributions.draw_azimuth_zenith_in_viewcone(
+                prng=prng,
+                azimuth_rad=pointings[event_uid_str]["azimuth_rad"],
+                zenith_rad=pointings[event_uid_str]["zenith_rad"],
+                min_scatter_opening_angle_rad=0.0,
+                max_scatter_opening_angle_rad=scatter_cone_half_angle_rad,
+                max_zenith_rad=corsika_primary.MAX_ZENITH_RAD,
+                max_iterations=1000 * 1000,
+            )
+            res = {
+                "cutoff": False,
+                "particle_azimuth_rad": _az,
+                "particle_zenith_rad": _zd,
+                "solid_angle_thrown_sr": solid_angle_utils.cone.intersection_of_two_cones(
+                    half_angle_one_rad=orsika_primary.MAX_ZENITH_RAD,
+                    half_angle_two_rad=scatter_cone_half_angle_rad,
+                    angle_between_cones=pointings[event_uid_str]["zenith_rad"],
+                ),
+            }
+            dbg = {"method": "viewcone"}
 
         if int(event_uid_str) in event_uids_for_debugging:
             debug[event_uid_str] = {"result": res, "debug": dbg}
