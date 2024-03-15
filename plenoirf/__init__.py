@@ -91,7 +91,7 @@ def init(plenoirf_dir):
         energy_stop_GeV=config["magnetic_deflection"]["energy_stop_GeV"],
         energy_num_bins=32,
         energy_power_slope=-1.5,
-        **mdfl.site_particle_organizer.guess_sky_faces_sky_vertices_and_groun_bin_area(
+        **magnetic_deflection.site_particle_organizer.guess_sky_faces_sky_vertices_and_groun_bin_area(
             field_of_view_half_angle_rad=PORTAL_FOV_HALF_ANGLE_RAD,
             mirror_diameter_m=PORTAL_MIRROR_DIAMETER_M,
         ),
