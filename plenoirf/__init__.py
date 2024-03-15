@@ -23,6 +23,7 @@ from . import ground_grid
 from . import configfile
 
 import os
+import numpy as np
 from os import path as op
 from os.path import join as opj
 
