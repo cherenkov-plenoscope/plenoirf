@@ -4,6 +4,7 @@ import rename_after_writing as rnw
 import merlict_development_kit_python as mlidev
 import gamma_ray_reconstruction as gamrec
 import os
+import atmospheric_cherenkov_response
 from os import path as op
 from os.path import join as opj
 
@@ -28,6 +29,8 @@ def write_default(plenoirf_dir):
         f.write(json_utils.dumps(make_sites(), indent=4))
     with rnw.open(opj(pdir, "config", "particles.json"), "wt") as f:
         f.write(json_utils.dumps(make_particles(), indent=4))
+    with rnw.open(opj(pdir, "config", "particles_scatter_cone.json"), "wt") as f:
+        f.write(json_utils.dumps(make_particles_scatter_cone(), indent=4))
 
     with rnw.open(opj(pdir, "config", "magnetic_deflection.json"), "wt") as f:
         f.write(json_utils.dumps(make_magnetic_deflection(), indent=4))
@@ -206,3 +209,11 @@ def make_reconstruction():
             fov_radius_deg=3.25
         ),
     }
+
+
+def make_particles_scatter_cone():
+    acr = atmospheric_cherenkov_response
+    out = {}
+    for particle_key in make_particles():
+        out[particle_key] = acr.particles.scatter_cone(key=particle_key)
+    return out
