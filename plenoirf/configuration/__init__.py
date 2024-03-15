@@ -5,6 +5,7 @@ import merlict_development_kit_python as mlidev
 import gamma_ray_reconstruction as gamrec
 import os
 import atmospheric_cherenkov_response
+import binning_utils
 from os import path as op
 from os.path import join as opj
 
@@ -29,8 +30,13 @@ def write_default(plenoirf_dir):
         f.write(json_utils.dumps(make_sites(), indent=4))
     with rnw.open(opj(pdir, "config", "particles.json"), "wt") as f:
         f.write(json_utils.dumps(make_particles(), indent=4))
-    with rnw.open(opj(pdir, "config", "particles_scatter_cone.json"), "wt") as f:
+    with rnw.open(
+        opj(pdir, "config", "particles_scatter_cone.json"), "wt"
+    ) as f:
         f.write(json_utils.dumps(make_particles_scatter_cone(), indent=4))
+
+    with rnw.open(opj(pdir, "config", "make_energy_range.json"), "wt") as f:
+        f.write(json_utils.dumps(make_energy_range(), indent=4))
 
     with rnw.open(opj(pdir, "config", "magnetic_deflection.json"), "wt") as f:
         f.write(json_utils.dumps(make_magnetic_deflection(), indent=4))
@@ -94,15 +100,43 @@ def make_particles():
 
 
 def make_magnetic_deflection():
-    return {
-        "energy_stop_GeV": 64.0,
-        "num_showers_target": 2 * 1000 * 1000,
-        "run": {
-            "num_runs": 192,
-            "num_showers_per_run": 1280,
-        },
-        "query_mode": "cone",
+    out = {}
+    out["energy_stop_GeV_power10"] = {
+        "decade": 1,
+        "bin": 4,
+        "num_bins_per_decade": 5,
     }
+    out["energy_stop_GeV"] = binning_utils.power10.lower_bin_edge(
+        **out["energy_stop_GeV_power10"]
+    )
+    out["num_showers_target"] = 2 * 1000 * 1000
+    out["run"] = {
+        "num_runs": 192,
+        "num_showers_per_run": 1280,
+    }
+    out["query_mode"] = "cone"
+    return out
+
+
+def make_energy_range():
+    out = {}
+    out["energy_start_GeV_power10"] = {
+        "decade": -1,
+        "bin": 2,
+        "num_bins_per_decade": 5,
+    }
+    out["energy_start_GeV"] = binning_utils.power10.lower_bin_edge(
+        **out["energy_start_GeV_power10"]
+    )
+    out["energy_stop_GeV_power10"] = {
+        "decade": 3,
+        "bin": 2,
+        "num_bins_per_decade": 5,
+    }
+    out["energy_stop_GeV"] = binning_utils.power10.lower_bin_edge(
+        **out["energy_stop_GeV_power10"]
+    )
+    return out
 
 
 def make_plenoptics():

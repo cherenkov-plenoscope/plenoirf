@@ -79,11 +79,21 @@ def init(plenoirf_dir):
         minimal=config["plenoptics"]["minimal"],
     )
 
-    magnetic_deflection.init(
+    PORTAL_MIRROR_DIAMETER_M = 71.0
+    PORTAL_FOV_HALF_ANGLE_RAD = np.deg2rad(3.25)
+
+    magnetic_deflection.site_particle_organizer.init(
         work_dir=opj(plenoirf_dir, "magnetic_deflection"),
-        energy_stop_GeV=config["magnetic_deflection"]["energy_stop_GeV"],
         site_keys=config["sites"]["magnetic_deflection"],
         particle_keys=config["particles"],
+        energy_start_GeV=config["energy_range"]["energy_start_GeV"],
+        energy_stop_GeV=config["magnetic_deflection"]["energy_stop_GeV"],
+        energy_num_bins=32,
+        energy_power_slope=-1.5,
+        **mdfl.site_particle_organizer.guess_sky_faces_sky_vertices_and_groun_bin_area(
+            field_of_view_half_angle_rad=PORTAL_FOV_HALF_ANGLE_RAD,
+            mirror_diameter_m=PORTAL_MIRROR_DIAMETER_M,
+        ),
     )
 
     configuration.version_control.init(plenoirf_dir=plenoirf_dir)
@@ -111,12 +121,12 @@ def run(plenoirf_dir, pool, logger=None):
     logger.debug("read config")
     config = configuration.read(plenoirf_dir=plenoirf_dir)
 
-    while magnetic_deflection.needs_to_run(
+    while magnetic_deflection.site_particle_organizer.needs_to_run(
         work_dir=opj(plenoirf_dir, "magnetic_deflection"),
         num_showers_target=config["magnetic_deflection"]["num_showers_target"],
     ):
         logger.info("Produce more showers in magnetic_deflection.")
-        magnetic_deflection.run(
+        magnetic_deflection.site_particle_organizer.run(
             work_dir=opj(plenoirf_dir, "magnetic_deflection"),
             pool=pool,
             num_runs=config["magnetic_deflection"]["run"]["num_runs"],
