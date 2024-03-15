@@ -35,7 +35,7 @@ def write_default(plenoirf_dir):
     ) as f:
         f.write(json_utils.dumps(make_particles_scatter_cone(), indent=4))
 
-    with rnw.open(opj(pdir, "config", "make_energy_range.json"), "wt") as f:
+    with rnw.open(opj(pdir, "config", "energy_range.json"), "wt") as f:
         f.write(json_utils.dumps(make_energy_range(), indent=4))
 
     with rnw.open(opj(pdir, "config", "magnetic_deflection.json"), "wt") as f:
