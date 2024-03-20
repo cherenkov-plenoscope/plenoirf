@@ -138,6 +138,12 @@ def run(plenoirf_dir, pool, logger=None):
                 "num_showers_target"
             ],
         )
+    logger.info("magnetic_deflection production is complete")
+    if not os.path.exists(opj(plenoirf_dir, "magnetic_deflection", "plot")):
+        magnetic_deflection.site_particle_organizer.run_plot(
+            work_dir=opj(plenoirf_dir, "magnetic_deflection"),
+            pool=pool,
+        )
     logger.info("magnetic_deflection is complete")
 
     plenoptics.run(

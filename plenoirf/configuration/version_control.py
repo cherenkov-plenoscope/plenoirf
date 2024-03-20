@@ -26,11 +26,16 @@ def is_clean(plenoirf_dir):
 
 def _make_plenoirf_dir_gitignore():
     txt = ""
-    txt += "magnetic_deflection/*\n"
-    txt += "!magnetic_deflection/*/*/config\n"
-    txt += "magnetic_deflection/plots\n"
+
+    #  adds magnetic_deflection/**/config
+    txt += "magnetic_deflection/**/stage\n"
+    txt += "magnetic_deflection/**/results\n"
+    txt += "magnetic_deflection/**/production\n"
+    txt += "magnetic_deflection/plot\n"
+
     txt += "plenoptics/*\n"
     txt += "!plenoptics/config\n"
+
     txt += "response\n"
     txt += "trigger_geometry\n"
     txt += "provenance\n"
