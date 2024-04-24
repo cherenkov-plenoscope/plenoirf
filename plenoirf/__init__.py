@@ -27,6 +27,7 @@ import numpy as np
 from os import path as op
 from os.path import join as opj
 
+import plenopy
 import plenoptics
 import magnetic_deflection
 import json_line_logger
@@ -153,23 +154,31 @@ def run(plenoirf_dir, pool, logger=None):
     )
     logger.info("plenoptics is complete")
 
-    logger.info("estimating sum-trigger geometry.")
-    for ikey in config["instruments"]:
-        logger.info("estimating sum-trigger geometry for {:s}".format(ikey))
+    logger.info("estimating trigger_geometry.")
+    makesuredirs(opj(plenoirf_dir, "trigger_geometry"))
+    for instrumnet_key in config["instruments"]:
+        logger.info(
+            "estimating trigger_geometry for {:s}".format(instrumnet_key)
+        )
         production.sum_trigger.make_write_and_plot_sum_trigger_geometry(
-            path=opj(plenoirf_dir, "trigger_geometry", ikey),
+            trigger_geometry_path=opj(
+                plenoirf_dir,
+                "trigger_geometry",
+                instrumnet_key
+                + plenopy.trigger.geometry.suggested_filename_extension(),
+            ),
             sum_trigger_config=config["sum_trigger"],
             light_field_calibration_path=opj(
                 plenoirf_dir,
                 "plenoptics",
                 "instruments",
-                ikey,
+                instrumnet_key,
                 "light_field_geometry",
             ),
             logger=logger,
         )
 
-    logger.info("sum-trigger geometry complete")
+    logger.info("trigger_geometry complete")
 
 
 def makesuredirs(path):

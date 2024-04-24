@@ -1,6 +1,7 @@
 import os
 from os import path as op
 from os.path import join as opj
+import shutil
 import subprocess
 import importlib
 from importlib import resources
@@ -10,7 +11,7 @@ import json_line_logger
 
 
 def make_write_and_plot_sum_trigger_geometry(
-    path,
+    trigger_geometry_path,
     sum_trigger_config,
     light_field_calibration_path,
     logger=None,
@@ -22,8 +23,8 @@ def make_write_and_plot_sum_trigger_geometry(
 
     Parameters
     ----------
-    path : str
-        Path to the output directory where the trigger-geometry is written to.
+    trigger_geometry_path : str
+        Path to the output zipfile where the trigger-geometry is written to.
     sum_trigger_config : dict
         Contains the the geometry of the trigger's image. Also contains the
         objectdistances to focus on.
@@ -36,7 +37,7 @@ def make_write_and_plot_sum_trigger_geometry(
         logger = json_line_logger.LoggerStdout()
 
     logger.info("Estimating trigger-geometry.")
-    if not op.exists(path):
+    if not op.exists(trigger_geometry_path):
         logger.info("read light_field_geometry.")
         light_field_geometry = plenopy.LightFieldGeometry(
             path=light_field_calibration_path
@@ -56,13 +57,26 @@ def make_write_and_plot_sum_trigger_geometry(
             object_distances=sum_trigger_config["object_distances_m"],
         )
 
-        logger.info("write trigger_geometry to {:s}.".format(path))
+        logger.info(
+            "write trigger_geometry to {:s}.".format(trigger_geometry_path)
+        )
         plenopy.trigger.geometry.write(
             trigger_geometry=trigger_geometry,
-            path=path,
+            path=trigger_geometry_path,
         )
 
-        logger.info("plot trigger_geometry.")
-        plenopy.trigger.geometry.plot(path=path)
+        logger.info("plotting trigger_geometry...")
+        try:
+            plots_dir = trigger_geometry_path + ".plots"
+            plenopy.trigger.geometry.plot(
+                trigger_geometry_path=trigger_geometry_path,
+                out_dir=plots_dir,
+            )
+            shutil.make_archive(plots_dir, format="zip", root_dir=plots_dir)
+            shutil.rmtree(plots_dir)
+            logger.info("plotting trigger_geometry done.")
+        except:
+            logger.info("plotting trigger_geometry failed.")
+
     else:
         logger.info("Already done. Nothing to do.")
