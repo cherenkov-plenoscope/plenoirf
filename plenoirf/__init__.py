@@ -31,6 +31,7 @@ import plenopy
 import plenoptics
 import magnetic_deflection
 import json_line_logger
+from binning_utils.power10 import lower_bin_edge as power10_to_GeV
 
 
 def init(plenoirf_dir):
@@ -88,8 +89,12 @@ def init(plenoirf_dir):
         work_dir=opj(plenoirf_dir, "magnetic_deflection"),
         site_keys=config["sites"]["magnetic_deflection"],
         particle_keys=config["particles"],
-        energy_start_GeV=config["energy_range"]["energy_start_GeV"],
-        energy_stop_GeV=config["magnetic_deflection"]["energy_stop_GeV"],
+        energy_start_GeV=power10_to_GeV(
+            config["magnetic_deflection"]["energy_start_GeV_power10"]
+        ),
+        energy_stop_GeV=power10_to_GeV(
+            config["magnetic_deflection"]["energy_stop_GeV_power10"]
+        ),
         energy_num_bins=32,
         energy_power_slope=-1.5,
         **magnetic_deflection.site_particle_organizer.guess_sky_faces_sky_vertices_and_groun_bin_area(

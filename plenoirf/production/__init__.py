@@ -228,11 +228,11 @@ def compile_job_paths_and_unique_identity(job, work_dir):
         plenoirf_dir=job["paths"]["plenoirf_dir"]
     )
 
-    _allskycfg = json_utils.tree.read(
-        opj(job["paths"]["magnetic_deflection_allsky"], "config")
+    _skymap_cfg = json_utils.tree.read(
+        opj(job["paths"]["magnetic_deflection_skymap"], "config")
     )
-    job["site"] = copy.deepcopy(_allskycfg["site"])
-    job["particle"] = copy.deepcopy(_allskycfg["particle"])
+    job["site"] = copy.deepcopy(_skymap_cfg["site"])
+    job["particle"] = copy.deepcopy(_skymap_cfg["particle"])
 
     job["light_field_camera_config"] = read_light_field_camera_config(
         plenoirf_dir=job["paths"]["plenoirf_dir"],
@@ -269,7 +269,7 @@ def compile_job_paths(job, work_dir):
 
     # input
     # -----
-    paths["magnetic_deflection_allsky"] = opj(
+    paths["magnetic_deflection_skymap"] = opj(
         job["plenoirf_dir"],
         "magnetic_deflection",
         job["site_key"],

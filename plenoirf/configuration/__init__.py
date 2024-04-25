@@ -4,8 +4,10 @@ import rename_after_writing as rnw
 import merlict_development_kit_python as mlidev
 import gamma_ray_reconstruction as gamrec
 import os
+import copy
 import atmospheric_cherenkov_response
 import binning_utils
+import solid_angle_utils
 from os import path as op
 from os.path import join as opj
 
@@ -26,55 +28,58 @@ def write_default(plenoirf_dir):
     pdir = plenoirf_dir
     os.makedirs(opj(pdir, "config"), exist_ok=False)
 
-    with rnw.open(opj(pdir, "config", "sites.json"), "wt") as f:
-        f.write(json_utils.dumps(make_sites(), indent=4))
-    with rnw.open(opj(pdir, "config", "particles.json"), "wt") as f:
-        f.write(json_utils.dumps(make_particles(), indent=4))
-    with rnw.open(
-        opj(pdir, "config", "particles_scatter_cone.json"), "wt"
-    ) as f:
-        f.write(json_utils.dumps(make_particles_scatter_cone(), indent=4))
+    def jdumps(o):
+        return jdumps(o, indent=4)
 
-    with rnw.open(opj(pdir, "config", "energy_range.json"), "wt") as f:
-        f.write(json_utils.dumps(make_energy_range(), indent=4))
+    with rnw.open(opj(pdir, "config", "sites.json"), "wt") as f:
+        f.write(jdumps(make_sites()))
+    with rnw.open(opj(pdir, "config", "particles.json"), "wt") as f:
+        f.write(jdumps(make_particles()))
+
+    with rnw.open(
+        opj(pdir, "config", "particles_simulated_energy_distribution.json"),
+        "wt",
+    ) as f:
+        f.write(jdumps(make_particles_simulated_energy_distribution()))
+
+    with rnw.open(
+        opj(pdir, "config", "particles_scatter_solid_angle.json"), "wt"
+    ) as f:
+        f.write(jdumps(make_particles_scatter_solid_angle()))
 
     with rnw.open(opj(pdir, "config", "magnetic_deflection.json"), "wt") as f:
-        f.write(json_utils.dumps(make_magnetic_deflection(), indent=4))
+        f.write(jdumps(make_magnetic_deflection()))
 
     with rnw.open(opj(pdir, "config", "plenoptics.json"), "wt") as f:
-        f.write(json_utils.dumps(make_plenoptics(), indent=4))
+        f.write(jdumps(make_plenoptics()))
 
     with rnw.open(opj(pdir, "config", "instruments.json"), "wt") as f:
-        f.write(json_utils.dumps(make_instruments(), indent=4))
+        f.write(jdumps(make_instruments()))
 
     with rnw.open(opj(pdir, "config", "pointing.json"), "wt") as f:
-        f.write(json_utils.dumps(make_pointing(), indent=4))
+        f.write(jdumps(make_pointing()))
 
     with rnw.open(opj(pdir, "config", "sum_trigger.json"), "wt") as f:
-        f.write(json_utils.dumps(make_sum_trigger(), indent=4))
+        f.write(jdumps(make_sum_trigger()))
 
     with rnw.open(opj(pdir, "config", "ground_grid.json"), "wt") as f:
-        f.write(json_utils.dumps(make_ground_grid(), indent=4))
+        f.write(jdumps(make_ground_grid()))
 
     with rnw.open(opj(pdir, "config", "debugging.json"), "wt") as f:
-        f.write(json_utils.dumps(make_debugging(), indent=4))
+        f.write(jdumps(make_debugging()))
 
     with rnw.open(
         opj(pdir, "config", "cherenkov_classification.json"), "wt"
     ) as f:
-        f.write(json_utils.dumps(make_cherenkov_classification(), indent=4))
+        f.write(jdumps(make_cherenkov_classification()))
 
     with rnw.open(opj(pdir, "config", "reconstruction.json"), "wt") as f:
-        f.write(json_utils.dumps(make_reconstruction(), indent=4))
+        f.write(jdumps(make_reconstruction()))
 
     with rnw.open(
         opj(pdir, "config", "merlict_plenoscope_propagator_config.json"), "wt"
     ) as f:
-        f.write(
-            json_utils.dumps(
-                make_merlict_plenoscope_propagator_config(), indent=4
-            )
-        )
+        f.write(jdumps(make_merlict_plenoscope_propagator_config()))
 
 
 def make_sites():
@@ -101,42 +106,98 @@ def make_particles():
 
 def make_magnetic_deflection():
     out = {}
-    out["energy_stop_GeV_power10"] = {
-        "decade": 1,
-        "bin": 4,
-        "num_bins_per_decade": 5,
-    }
-    out["energy_stop_GeV"] = binning_utils.power10.lower_bin_edge(
-        **out["energy_stop_GeV_power10"]
-    )
-    out["num_showers_target"] = 2 * 1000 * 1000
-    out["run"] = {
-        "num_runs": 192,
-        "num_showers_per_run": 1280,
-    }
-    out["query_mode"] = "cone"
-    return out
-
-
-def make_energy_range():
-    out = {}
     out["energy_start_GeV_power10"] = {
         "decade": -1,
         "bin": 2,
         "num_bins_per_decade": 5,
     }
-    out["energy_start_GeV"] = binning_utils.power10.lower_bin_edge(
-        **out["energy_start_GeV_power10"]
-    )
     out["energy_stop_GeV_power10"] = {
+        "decade": 1,
+        "bin": 4,
+        "num_bins_per_decade": 5,
+    }
+    out["num_showers_target"] = 2 * 1000 * 1000
+    out["run"] = {
+        "num_runs": 192,
+        "num_showers_per_run": 1280,
+    }
+    return out
+
+
+def make_particles_scatter_solid_angle():
+    acr = atmospheric_cherenkov_response
+    out = {}
+    for particle_key in make_particles():
+        cone = acr.particles.scatter_cone(key=particle_key)
+        out[particle_key] = {}
+        out[particle_key]["energy_GeV"] = cone["energy_GeV"]
+        out[particle_key][
+            "solid_angle_sr"
+        ] = solid_angle_utils.cone.solid_angle(
+            half_angle_rad=cone["half_angle_rad"]
+        )
+    return out
+
+
+def make_particles_simulated_energy_distribution():
+    common_energy_stop_GeV_power10 = {
         "decade": 3,
         "bin": 2,
         "num_bins_per_decade": 5,
     }
-    out["energy_stop_GeV"] = binning_utils.power10.lower_bin_edge(
-        **out["energy_stop_GeV_power10"]
-    )
+
+    out = {}
+    for pk in ["gamma", "electron", "proton", "helium"]:
+        out[pk] = {}
+        out[pk]["spectrum"] = {}
+        out[pk]["spectrum"]["type"] = "power_law"
+        out[pk]["spectrum"]["power_slope"] = -1.5
+        out[pk]["energy_stop_GeV_power10"] = copy.deepcopy(
+            common_energy_stop_GeV_power10
+        )
+
+    out["gamma"]["energy_start_GeV_power10"] = {
+        "decade": -1,
+        "bin": 2,
+        "num_bins_per_decade": 5,
+    }
+    out["electron"]["energy_start_GeV_power10"] = {
+        "decade": -1,
+        "bin": 2,
+        "num_bins_per_decade": 5,
+    }
+    out["proton"]["energy_start_GeV_power10"] = {
+        "decade": 0,
+        "bin": 7,
+        "num_bins_per_decade": 10,
+    }
+    out["helium"]["energy_start_GeV_power10"] = {
+        "decade": 1,
+        "bin": 0,
+        "num_bins_per_decade": 5,
+    }
+
+    for pk in out:
+        particle = atmospheric_cherenkov_response.particles.init(pk)
+        asseret_energy_start_GeV_is_valid(
+            particle=particle,
+            energy_start_GeV=binning_utils.power10.lower_bin_edge(
+                **out[pk]["energy_start_GeV_power10"]
+            ),
+        )
     return out
+
+
+def asseret_energy_start_GeV_is_valid(particle, energy_start_GeV):
+    if particle["corsika"]["min_energy_GeV"] is not None:
+        if energy_start_GeV < particle["corsika"]["min_energy_GeV"]:
+            msg = "The energy {:f}GeV is too low for particle '{:s}'. ".format(
+                energy_start_GeV, particle["key"]
+            )
+            msg += "Minimum energy is {:f}GeV.".format(
+                particle["corsika"]["min_energy_GeV"]
+            )
+            raise AssertionError(msg)
 
 
 def make_plenoptics():
@@ -147,7 +208,7 @@ def make_instruments():
     """
     Returns the list of instrumtns which are simulated.
     The instruments here are keys (str) which point to an instrument in
-    the plenoptic package.
+    the plenoptics package.
 
     The Portal Cherenkov plenoscope in its default geometry without
     deformations and without misalignments is called 'diag9_default_default'.
@@ -243,11 +304,3 @@ def make_reconstruction():
             fov_radius_deg=3.25
         ),
     }
-
-
-def make_particles_scatter_cone():
-    acr = atmospheric_cherenkov_response
-    out = {}
-    for particle_key in make_particles():
-        out[particle_key] = acr.particles.scatter_cone(key=particle_key)
-    return out
