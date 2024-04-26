@@ -363,10 +363,6 @@ def make_core_record(uid, groundgrid_result_choice):
     return rec
 
 
-def read_all_cherenkov_bunches(cherenkov_reader):
-    return np.vstack([b for b in cherenkov_reader])
-
-
 def EventTape_append_event(
     evttar,
     corsika_evth,

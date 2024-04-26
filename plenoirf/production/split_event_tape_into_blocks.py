@@ -1,12 +1,10 @@
 import copy
 import os
+import numpy as np
 from os import path as op
 from os.path import join as opj
 
 import corsika_primary as cpw
-from .simulate_shower_and_collect_cherenkov_light_in_grid import (
-    read_all_cherenkov_bunches,
-)
 from .. import bookkeeping
 
 
@@ -73,3 +71,7 @@ def split_event_tape_into_blocks(inpath, outpath_block_fmt, num_events):
             orun.close()
 
     return uid_map
+
+
+def read_all_cherenkov_bunches(cherenkov_reader):
+    return np.vstack([b for b in cherenkov_reader])
