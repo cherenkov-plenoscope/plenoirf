@@ -290,8 +290,19 @@ def make_primary_record(
     rec = uid["record"].copy()
     rec["particle_id"] = primary["particle_id"]
     rec["energy_GeV"] = primary["energy_GeV"]
+
+    # momentum
     rec["phi_rad"] = primary["phi_rad"]
     rec["theta_rad"] = primary["theta_rad"]
+
+    # pointing
+    rec["azimuth_rad"] = spherical_coordinates.corsika.phi_to_az(
+        phi_rad=primary["phi_rad"]
+    )
+    rec["zenith_rad"] = spherical_coordinates.corsika.theta_to_zd(
+        theta_rad=primary["theta_rad"]
+    )
+
     rec["depth_g_per_cm2"] = primary["depth_g_per_cm2"]
 
     mom = cpw.I.EVTH.get_momentum_vector_GeV_per_c(evth=corsika_evth)
