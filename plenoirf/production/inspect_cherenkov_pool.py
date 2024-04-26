@@ -91,12 +91,12 @@ def inspect_cherenkov_pools(
                     <= mirror_radius
                 )
 
-                MOMENTUM_TO_INCIDENT = -1.0
-                cherenkov_block_cx = (
-                    MOMENTUM_TO_INCIDENT * cherenkov_block[:, cpw.I.BUNCH.UX_1]
+                cherenkov_block_cx = spherical_coordinates.corsika.ux_to_cx(
+                    cherenkov_block[:, cpw.I.BUNCH.UX_1]
                 )
-                cherenkov_block_cy = (
-                    MOMENTUM_TO_INCIDENT * cherenkov_block[:, cpw.I.BUNCH.VY_1]
+
+                cherenkov_block_cy = spherical_coordinates.corsika.vy_to_cy(
+                    cherenkov_block[:, cpw.I.BUNCH.VY_1]
                 )
 
                 in_fov = (
@@ -117,8 +117,8 @@ def inspect_cherenkov_pools(
                 )[0]
 
                 image += np.histogram2d(
-                    cherenkov_block_cx,
-                    cherenkov_block_cy,
+                    cherenkov_block_cx[in_mirror],
+                    cherenkov_block_cy[in_mirror],
                     weights=cherenkov_block[
                         in_mirror, cpw.I.BUNCH.BUNCH_SIZE_1
                     ],
@@ -218,8 +218,8 @@ def inspect_cherenkov_pools(
                 t_counts = np.zeros(tnum)
                 for tt in range(tnum):
                     t_bin = t_bin_edges[tt]
-                    if t_bin in thist_ns.bins:
-                        t_counts[tt] = thist_ns.bins[t_bin]
+                    if t_bin in thist_ns.counts:
+                        t_counts[tt] = thist_ns.counts[t_bin]
 
                 ax_tim.set_title("size: {:f}".format(total_visible_size))
                 ax_tim.set_xlabel("time / 1 ns")

@@ -116,137 +116,147 @@ def corsika_and_grid(job, logger):
                     job["event_table"]["cherenkovpool"].append_record(
                         cherenkovpool_rec
                     )
-                    cherenkov_pool_median_x_m = cherenkovpool_rec["x_p50_m"]
-                    cherenkov_pool_median_y_m = cherenkovpool_rec["y_p50_m"]
 
-                groundgrid_config = ground_grid.make_ground_grid_config(
-                    bin_width_m=job["config"]["ground_grid"]["geometry"][
-                        "bin_width_m"
-                    ],
-                    num_bins_each_axis=job["config"]["ground_grid"][
-                        "geometry"
-                    ]["num_bins_each_axis"],
-                    cherenkov_pool_median_x_m=cherenkov_pool_median_x_m,
-                    cherenkov_pool_median_y_m=cherenkov_pool_median_y_m,
-                    prng=job["prng"],
-                )
+                    groundgrid_config = ground_grid.make_ground_grid_config(
+                        bin_width_m=job["config"]["ground_grid"]["geometry"][
+                            "bin_width_m"
+                        ],
+                        num_bins_each_axis=job["config"]["ground_grid"][
+                            "geometry"
+                        ]["num_bins_each_axis"],
+                        cherenkov_pool_median_x_m=cherenkovpool_rec["x_p50_m"],
+                        cherenkov_pool_median_y_m=cherenkovpool_rec["y_p50_m"],
+                        prng=job["prng"],
+                    )
 
-                groundgrid = ground_grid.GroundGrid(
-                    bin_width_m=groundgrid_config["bin_width_m"],
-                    num_bins_each_axis=groundgrid_config["num_bins_each_axis"],
-                    center_x_m=groundgrid_config["center_x_m"],
-                    center_y_m=groundgrid_config["center_y_m"],
-                )
+                    groundgrid = ground_grid.GroundGrid(
+                        bin_width_m=groundgrid_config["bin_width_m"],
+                        num_bins_each_axis=groundgrid_config[
+                            "num_bins_each_axis"
+                        ],
+                        center_x_m=groundgrid_config["center_x_m"],
+                        center_y_m=groundgrid_config["center_y_m"],
+                    )
 
-                cherenkov_storage_infov_path = opj(
-                    corsika_dir, "cherenkov_pool_storage_in_field_of_view.tar"
-                )
-                cherenkov_bunch_storage.cut_in_field_of_view(
-                    in_path=cherenkov_storage_path,
-                    out_path=cherenkov_storage_infov_path,
-                    pointing=pointing,
-                    field_of_view_half_angle_rad=job["instrument"][
-                        "field_of_view_half_angle_rad"
-                    ],
-                )
+                    cherenkov_storage_infov_path = opj(
+                        corsika_dir,
+                        "cherenkov_pool_storage_in_field_of_view.tar",
+                    )
+                    cherenkov_bunch_storage.cut_in_field_of_view(
+                        in_path=cherenkov_storage_path,
+                        out_path=cherenkov_storage_infov_path,
+                        pointing=pointing,
+                        field_of_view_half_angle_rad=job["instrument"][
+                            "field_of_view_half_angle_rad"
+                        ],
+                    )
 
-                groundgrid_result, groundgrid_debug = ground_grid.assign2(
-                    groundgrid=groundgrid,
-                    cherenkov_bunch_storage_path=cherenkov_storage_infov_path,
-                    threshold_num_photons=job["config"]["ground_grid"][
-                        "threshold_num_photons"
-                    ],
-                    prng=job["prng"],
-                )
+                    groundgrid_result, groundgrid_debug = ground_grid.assign2(
+                        groundgrid=groundgrid,
+                        cherenkov_bunch_storage_path=cherenkov_storage_infov_path,
+                        threshold_num_photons=job["config"]["ground_grid"][
+                            "threshold_num_photons"
+                        ],
+                        prng=job["prng"],
+                    )
 
-                groundgrid_rec = make_groundgrid_record(
-                    uid=uid,
-                    groundgrid_config=groundgrid_config,
-                    groundgrid_result=groundgrid_result,
-                    groundgrid=groundgrid,
-                )
-                job["event_table"]["groundgrid"].append_record(groundgrid_rec)
+                    groundgrid_rec = make_groundgrid_record(
+                        uid=uid,
+                        groundgrid_config=groundgrid_config,
+                        groundgrid_result=groundgrid_result,
+                        groundgrid=groundgrid,
+                    )
+                    job["event_table"]["groundgrid"].append_record(
+                        groundgrid_rec
+                    )
 
-                if groundgrid_result["choice"]:
-                    cherenkov_bunches_in_choice = (
-                        cherenkov_bunch_storage.read_with_mask(
-                            path=cherenkov_storage_infov_path,
-                            bunch_indices=groundgrid_result["choice"][
-                                "cherenkov_bunches_idxs"
+                    if groundgrid_result["choice"]:
+                        cherenkov_bunches_in_choice = (
+                            cherenkov_bunch_storage.read_with_mask(
+                                path=cherenkov_storage_infov_path,
+                                bunch_indices=groundgrid_result["choice"][
+                                    "cherenkov_bunches_idxs"
+                                ],
+                            )
+                        )
+
+                        cherenkov_bunches_in_instrument = transform_cherenkov_bunches.from_obervation_level_to_instrument(
+                            cherenkov_bunches=cherenkov_bunches_in_choice,
+                            instrument_pointing=pointing,
+                            instrument_pointing_model=job["config"][
+                                "pointing"
+                            ]["model"],
+                            instrument_x_m=groundgrid_result["choice"][
+                                "core_x_m"
+                            ],
+                            instrument_y_m=groundgrid_result["choice"][
+                                "core_y_m"
+                            ],
+                            speed_of_ligth_m_per_s=job["instrument"][
+                                "local_speed_of_light_m_per_s"
                             ],
                         )
-                    )
+                        del cherenkov_bunches_in_choice
 
-                    cherenkov_bunches_in_instrument = transform_cherenkov_bunches.from_obervation_level_to_instrument(
-                        cherenkov_bunches=cherenkov_bunches_in_choice,
-                        instrument_pointing=pointing,
-                        instrument_pointing_model=job["config"]["pointing"][
-                            "model"
-                        ],
-                        instrument_x_m=groundgrid_result["choice"]["core_x_m"],
-                        instrument_y_m=groundgrid_result["choice"]["core_y_m"],
-                        speed_of_ligth_m_per_s=job["instrument"][
-                            "local_speed_of_light_m_per_s"
-                        ],
-                    )
-                    del cherenkov_bunches_in_choice
-
-                    core_rec = make_core_record(
-                        uid=uid,
-                        groundgrid_result_choice=groundgrid_result["choice"],
-                    )
-                    job["event_table"]["core"].append_record(core_rec)
-
-                    EventTape_append_event(
-                        evttar=evttar,
-                        corsika_evth=corsika_evth,
-                        cherenkov_bunches=cherenkov_bunches_in_instrument,
-                        core_x_m=groundgrid_result["choice"]["core_x_m"],
-                        core_y_m=groundgrid_result["choice"]["core_y_m"],
-                    )
-
-                    ImgRoiTar_append(
-                        imgroitar=imgroitar,
-                        uid=uid,
-                        groundgrid_result=groundgrid_result,
-                        groundgrid_debug=groundgrid_debug,
-                    )
-
-                    if uid["uid"] in job["run"]["event_uids_for_debugging"]:
-                        ImgTar_append(
-                            imgtar=imgtar,
+                        core_rec = make_core_record(
                             uid=uid,
-                            groundgrid=groundgrid,
+                            groundgrid_result_choice=groundgrid_result[
+                                "choice"
+                            ],
+                        )
+                        job["event_table"]["core"].append_record(core_rec)
+
+                        EventTape_append_event(
+                            evttar=evttar,
+                            corsika_evth=corsika_evth,
+                            cherenkov_bunches=cherenkov_bunches_in_instrument,
+                            core_x_m=groundgrid_result["choice"]["core_x_m"],
+                            core_y_m=groundgrid_result["choice"]["core_y_m"],
+                        )
+
+                        ImgRoiTar_append(
+                            imgroitar=imgroitar,
+                            uid=uid,
+                            groundgrid_result=groundgrid_result,
                             groundgrid_debug=groundgrid_debug,
                         )
 
-                    cherenkovsizepart_rec = (
-                        cherenkov_bunch_storage.make_cherenkovsize_record(
+                        if (
+                            uid["uid"]
+                            in job["run"]["event_uids_for_debugging"]
+                        ):
+                            ImgTar_append(
+                                imgtar=imgtar,
+                                uid=uid,
+                                groundgrid=groundgrid,
+                                groundgrid_debug=groundgrid_debug,
+                            )
+
+                        cherenkovsizepart_rec = cherenkov_bunch_storage.make_cherenkovsize_record(
                             cherenkov_bunches=cherenkov_bunches_in_instrument
                         )
-                    )
-                    cherenkovsizepart_rec.update(uid["record"])
-                    job["event_table"]["cherenkovsizepart"].append_record(
-                        cherenkovsizepart_rec
-                    )
-
-                    if cherenkovsizepart_rec["num_bunches"] > 0:
-                        cherenkovpoolpart_rec = cherenkov_bunch_storage.make_cherenkovpool_record(
-                            cherenkov_bunches=cherenkov_bunches_in_instrument
-                        )
-                        cherenkovpoolpart_rec.update(uid["record"])
-                        job["event_table"]["cherenkovpoolpart"].append_record(
-                            cherenkovpoolpart_rec
+                        cherenkovsizepart_rec.update(uid["record"])
+                        job["event_table"]["cherenkovsizepart"].append_record(
+                            cherenkovsizepart_rec
                         )
 
-                with open(
-                    opj(
-                        corsika_debug_dir,
-                        uid["uid_str"] + "_ground_grid.json",
-                    ),
-                    "wt",
-                ) as f:
-                    f.write(json_utils.dumps(groundgrid_result))
+                        if cherenkovsizepart_rec["num_bunches"] > 0:
+                            cherenkovpoolpart_rec = cherenkov_bunch_storage.make_cherenkovpool_record(
+                                cherenkov_bunches=cherenkov_bunches_in_instrument
+                            )
+                            cherenkovpoolpart_rec.update(uid["record"])
+                            job["event_table"][
+                                "cherenkovpoolpart"
+                            ].append_record(cherenkovpoolpart_rec)
+
+                    with open(
+                        opj(
+                            corsika_debug_dir,
+                            uid["uid_str"] + "_ground_grid.json",
+                        ),
+                        "wt",
+                    ) as f:
+                        f.write(json_utils.dumps(groundgrid_result))
 
     logger.info("corsika and grid, particle output from dat to tar")
     cpw.particles.dat_to_tape(
