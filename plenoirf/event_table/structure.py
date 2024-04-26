@@ -64,19 +64,43 @@ def init_table_dynamicsizerecarray(table_structure=None):
 
 def init_primary_level_structure():
     t = collections.OrderedDict()
-    t["particle_id"] = {"dtype": "<i8", "comment": "CORSIKA particle-id"}
-    t["energy_GeV"] = {"dtype": "<f8", "comment": ""}
+    t["particle_id"] = {
+        "dtype": "<i8",
+        "comment": "CORSIKA particle-id to identify the primary particle.",
+    }
+    t["energy_GeV"] = {
+        "dtype": "<f8",
+        "comment": "Energy of primary particle.",
+    }
+    t["theta_rad"] = {
+        "dtype": "<f8",
+        "comment": "Direction of primary particle's momentum. "
+        "CORSIKA's zenith distance angle of the primary particle's momentum.",
+    }
+    t["phi_rad"] = {
+        "dtype": "<f8",
+        "comment": "Direction of primary particle's momentum. "
+        "CORSIKA's azimuth angle w.r.t. to magnetic north of the "
+        "primary particle's momentum.",
+    }
     t["azimuth_rad"] = {
         "dtype": "<f8",
-        "comment": "Direction of the primary particle w.r.t. magnetic north.",
+        "comment": "Pointing direction of the primary particle w.r.t. "
+        "magnetic north.",
     }
     t["zenith_rad"] = {
         "dtype": "<f8",
-        "comment": "Direction of the primary particle.",
+        "comment": "Pointing direction of the primary particle.",
     }
-    t["depth_g_per_cm2"] = {"dtype": "<f8", "comment": ""}
+    t["depth_g_per_cm2"] = {
+        "dtype": "<f8",
+        "comment": "Starting depth of CORSIKA simulation.",
+    }
 
-    t["momentum_x_GeV_per_c"] = {"dtype": "<f8", "comment": ""}
+    t["momentum_x_GeV_per_c"] = {
+        "dtype": "<f8",
+        "comment": "Taken from CORSIKA's eventheader (EVTH).",
+    }
     t["momentum_y_GeV_per_c"] = {"dtype": "<f8", "comment": ""}
     t["momentum_z_GeV_per_c"] = {"dtype": "<f8", "comment": ""}
 
