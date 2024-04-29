@@ -27,9 +27,7 @@ def simulate_loose_trigger(
     logger,
 ):
     opj = os.path.join
-    block_dir = opj(
-        job["paths"]["work_dir"], "blocks", "{:06d}".format(block_id)
-    )
+    block_dir = opj(job["work_dir"], "blocks", "{:06d}".format(block_id))
     work_dir = opj(block_dir, "simulate_loose_trigger")
 
     # loop over sensor responses
@@ -68,7 +66,7 @@ def simulate_loose_trigger(
             )
             visible_cherenkov_photon_size = json_utils.read(
                 path=os.path.join(
-                    job["paths"]["work_dir"],
+                    job["work_dir"],
                     "inspect_cherenkov_pool",
                     "visible_cherenkov_photon_size.json",
                 )

@@ -23,7 +23,7 @@ def run_job(job, logger):
 
     with cpw.particles.ParticleEventTapeReader(
         path=os.path.join(
-            job["paths"]["work_dir"],
+            job["work_dir"],
             "simulate_shower_and_collect_cherenkov_light_in_grid",
             "particle_pools.tar.gz",
         )

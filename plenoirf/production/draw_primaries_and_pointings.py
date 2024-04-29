@@ -222,7 +222,12 @@ def draw_primaries_and_pointings(
 def run_job(job, logger):
     logger.info("draw_primaries_and_pointings, open SkyMap")
     skymap = magnetic_deflection.skymap.SkyMap(
-        work_dir=job["paths"]["magnetic_deflection_skymap"]
+        work_dir=opj(
+            job["plenoirf_dir"],
+            "magnetic_deflection",
+            job["site_key"],
+            job["particle_key"],
+        )
     )
 
     logger.info("draw_primaries_and_pointings, draw primaries")
@@ -249,7 +254,7 @@ def run_job(job, logger):
     logger.info("draw_primaries_and_pointings, export debug info")
 
     write_draw_primaries_and_pointings_debug(
-        path=job["paths"]["debug"]["draw_primary_and_pointing"],
+        path=opj(job["work_dir"], "draw_primary_and_pointing.debug.tar"),
         debug=debug,
     )
 

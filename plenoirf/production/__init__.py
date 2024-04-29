@@ -60,15 +60,29 @@ def run_job(job):
 
 
 def run_job_in_dir(job, work_dir):
+    # important directories
+    # plenoirf_dir / work_dir / stage_dir
+
+    job["work_dir"] = work_dir
+    job["stage_dir"] = opj(
+        job["plenoirf_dir"],
+        "response",
+        job["instrument_key"],
+        job["site_key"],
+        job["particle_key"],
+        "stage",
+    )
+
     job = compile_job_paths_and_unique_identity(job=job, work_dir=work_dir)
 
-    os.makedirs(job["paths"]["stage_dir"], exist_ok=True)
+    os.makedirs(job["stage_dir"], exist_ok=True)
 
-    logger = jll.LoggerFile(path=job["paths"]["logger_tmp"])
+    logger_path = opj(job["stage_dir"], job["run_id_str"] + "_log.jsonl")
+    logger = jll.LoggerFile(path=logger_path + ".part")
     logger.info("starting")
 
-    logger.debug("making work_dir: {:s}".format(job["paths"]["work_dir"]))
-    os.makedirs(job["paths"]["work_dir"], exist_ok=True)
+    logger.debug("making work_dir: {:s}".format(job["work_dir"]))
+    os.makedirs(job["work_dir"], exist_ok=True)
 
     logger.info("initializing prng(seed={:d})".format(job["run_id"]))
     job["prng"] = np.random.Generator(np.random.PCG64(seed=job["run_id"]))
@@ -86,7 +100,7 @@ def run_job_in_dir(job, work_dir):
             logger=logger,
             func=draw_primaries_and_pointings.run_job,
             cache_path=opj(
-                job["paths"]["work_dir"],
+                job["work_dir"],
                 "draw_primaries_and_pointings",
                 "__job_cache__",
             ),
@@ -102,7 +116,7 @@ def run_job_in_dir(job, work_dir):
             logger=logger,
             func=simulate_shower_and_collect_cherenkov_light_in_grid.run_job,
             cache_path=opj(
-                job["paths"]["work_dir"],
+                job["work_dir"],
                 "simulate_shower_and_collect_cherenkov_light_in_grid",
                 "__job_cache__",
             ),
@@ -114,7 +128,7 @@ def run_job_in_dir(job, work_dir):
             logger=logger,
             func=inspect_cherenkov_pool.run_job,
             cache_path=opj(
-                job["paths"]["work_dir"],
+                job["work_dir"],
                 "inspect_cherenkov_pool",
                 "__job_cache__",
             ),
@@ -128,16 +142,30 @@ def run_job_in_dir(job, work_dir):
 
     blk = {}
     with jll.TimeDelta(logger, "read light_field_calibration"):
+        light_field_calibration_path = opj(
+            job["plenoirf_dir"],
+            "plenoptics",
+            "instruments",
+            job["instrument_key"],
+            "light_field_geometry",
+        )
         blk["light_field_geometry"] = plenopy.LightFieldGeometry(
-            path=job["paths"]["light_field_calibration"]
+            path=light_field_calibration_path
         )
 
     with jll.TimeDelta(logger, "read trigger_geometry"):
-        blk["trigger_geometry"] = plenopy.trigger.geometry.read(
-            path=job["paths"]["trigger_geometry"]
+        trigger_geometry_path = opj(
+            job["plenoirf_dir"],
+            "trigger_geometry",
+            job["instrument_key"]
+            + plenopy.trigger.geometry.suggested_filename_extension(),
         )
 
-    blocks_dir = os.path.join(job["paths"]["work_dir"], "blocks")
+        blk["trigger_geometry"] = plenopy.trigger.geometry.read(
+            path=trigger_geometry_path
+        )
+
+    blocks_dir = os.path.join(job["work_dir"], "blocks")
     os.makedirs(blocks_dir, exist_ok=True)
 
     with jll.TimeDelta(logger, "run blocks"):
@@ -151,7 +179,7 @@ def run_job_in_dir(job, work_dir):
             )
 
     logger.info("ending")
-    rnw.move(job["paths"]["logger_tmp"], job["paths"]["logger"])
+    rnw.move(logger_path + ".part", logger_path)
 
     return job
 
@@ -167,7 +195,7 @@ def _run_job_block(job, blk, block_id, logger):
             block_id=block_id,
             func=simulate_hardware.run_job_block,
             cache_path=opj(
-                job["paths"]["work_dir"],
+                job["work_dir"],
                 "blocks",
                 "{block_id:06d}".format(block_id=block_id),
                 "simulate_hardware",
@@ -185,7 +213,7 @@ def _run_job_block(job, blk, block_id, logger):
             block_id=block_id,
             func=simulate_loose_trigger.run_job_block,
             cache_path=opj(
-                job["paths"]["work_dir"],
+                job["work_dir"],
                 "blocks",
                 "{block_id:06d}".format(block_id=block_id),
                 "simulate_loose_trigger",
@@ -204,7 +232,7 @@ def _run_job_block(job, blk, block_id, logger):
             block_id=block_id,
             func=classify_cherenkov_photons.run_job_block,
             cache_path=opj(
-                job["paths"]["work_dir"],
+                job["work_dir"],
                 "blocks",
                 "{block_id:06d}".format(block_id=block_id),
                 "classify_cherenkov_photons",
@@ -223,19 +251,21 @@ def compile_job_paths_and_unique_identity(job, work_dir):
     assert job["max_num_events_in_merlict_run"] > 0
 
     job["run_id_str"] = bookkeeping.uid.make_run_id_str(run_id=job["run_id"])
-    job["paths"] = compile_job_paths(job=job, work_dir=work_dir)
-    job["config"] = configuration.read(
-        plenoirf_dir=job["paths"]["plenoirf_dir"]
-    )
-
+    job["config"] = configuration.read(plenoirf_dir=job["plenoirf_dir"])
     _skymap_cfg = json_utils.tree.read(
-        opj(job["paths"]["magnetic_deflection_skymap"], "config")
+        opj(
+            job["plenoirf_dir"],
+            "magnetic_deflection",
+            job["site_key"],
+            job["particle_key"],
+            "config",
+        )
     )
     job["site"] = copy.deepcopy(_skymap_cfg["site"])
     job["particle"] = copy.deepcopy(_skymap_cfg["particle"])
 
     job["light_field_camera_config"] = read_light_field_camera_config(
-        plenoirf_dir=job["paths"]["plenoirf_dir"],
+        plenoirf_dir=job["plenoirf_dir"],
         instrument_key=job["instrument_key"],
     )
     job["instrument"] = {}
@@ -247,60 +277,6 @@ def compile_job_paths_and_unique_identity(job, work_dir):
         / job["site"]["atmosphere_refractive_index_at_observation_level"]
     )
     return job
-
-
-def compile_job_paths(job, work_dir):
-    paths = {}
-    paths["plenoirf_dir"] = job["plenoirf_dir"]
-
-    paths["stage_dir"] = opj(
-        job["plenoirf_dir"],
-        "response",
-        job["instrument_key"],
-        job["site_key"],
-        job["particle_key"],
-        "stage",
-    )
-
-    # logger
-    # ------
-    paths["logger"] = opj(paths["stage_dir"], job["run_id_str"] + "_log.jsonl")
-    paths["logger_tmp"] = paths["logger"] + ".tmp"
-
-    # input
-    # -----
-    paths["magnetic_deflection_skymap"] = opj(
-        job["plenoirf_dir"],
-        "magnetic_deflection",
-        job["site_key"],
-        job["particle_key"],
-    )
-    paths["light_field_calibration"] = opj(
-        job["plenoirf_dir"],
-        "plenoptics",
-        "instruments",
-        job["instrument_key"],
-        "light_field_geometry",
-    )
-    paths["trigger_geometry"] = opj(
-        job["plenoirf_dir"],
-        "trigger_geometry",
-        job["instrument_key"],
-    )
-
-    # temporary
-    # ---------
-    paths["work_dir"] = work_dir
-
-    # debug output
-    # ------------
-    paths["debug"] = {}
-    paths["debug"]["draw_primary_and_pointing"] = opj(
-        paths["stage_dir"],
-        job["run_id_str"] + "_debug_" + "draw_primary_and_pointing" + ".tar",
-    )
-
-    return paths
 
 
 def read_light_field_camera_config(plenoirf_dir, instrument_key):

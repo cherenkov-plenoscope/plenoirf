@@ -22,9 +22,7 @@ def classify_cherenkov_photons(
     # table_past_trigger,
 ):
     opj = os.path.join
-    block_dir = opj(
-        job["paths"]["work_dir"], "blocks", "{:06d}".format(block_id)
-    )
+    block_dir = opj(job["work_dir"], "blocks", "{:06d}".format(block_id))
 
     roi_cfg = job["config"]["cherenkov_classification"]["region_of_interest"]
     dbscan_cfg = job["config"]["cherenkov_classification"]

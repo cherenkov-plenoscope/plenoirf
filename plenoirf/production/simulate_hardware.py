@@ -16,7 +16,7 @@ def run_job_block(job, blk, block_id, logger):
 
 def simulate_hardware(job, block_id):
     mlidev_cfg_path = opj(
-        job["paths"]["work_dir"], "merlict_plenoscope_propagator_config.json"
+        job["work_dir"], "merlict_plenoscope_propagator_config.json"
     )
     if not os.path.exists(mlidev_cfg_path):
         with rnw.open(mlidev_cfg_path, "wt") as f:
@@ -27,13 +27,20 @@ def simulate_hardware(job, block_id):
                 )
             )
 
-    block_dir = opj(
-        job["paths"]["work_dir"], "blocks", "{:06d}".format(block_id)
+    block_dir = opj(job["work_dir"], "blocks", "{:06d}".format(block_id))
+
+    light_field_geometry_path = opj(
+        job["plenoirf_dir"],
+        "plenoptics",
+        "instruments",
+        job["instrument_key"],
+        "light_field_geometry",
     )
+
     rc = mlidev.plenoscope_propagator.plenoscope_propagator(
         corsika_run_path=opj(block_dir, "cherenkov_pools.tar"),
         output_path=opj(block_dir, "merlict"),
-        light_field_geometry_path=job["paths"]["light_field_calibration"],
+        light_field_geometry_path=light_field_geometry_path,
         merlict_plenoscope_propagator_config_path=mlidev_cfg_path,
         random_seed=job["run_id"],
         photon_origins=True,
