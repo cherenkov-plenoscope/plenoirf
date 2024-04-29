@@ -3,7 +3,7 @@ import numpy as np
 import dynamicsizerecarray
 
 
-def init_table_structure():
+def init_event_table_structure():
     t = collections.OrderedDict()
     t["primary"] = init_primary_level_structure()
     t["pointing"] = init_pointing_level_structure()
@@ -28,7 +28,20 @@ def init_table_structure():
     return t
 
 
-def to_dtype(level_structure, include_index=True):
+def dtypes(table_structure=None, include_index=False):
+    if table_structure is None:
+        table_structure = init_event_table_structure()
+
+    dtypes = {}
+    for level_key in table_structure:
+        dtypes[level_key] = level_structure_to_dtype(
+            level_structure=table_structure[level_key],
+            include_index=include_index,
+        )
+    return dtypes
+
+
+def level_structure_to_dtype(level_structure, include_index=True):
     """
     Returns a list of [(str, str), (str, str), ... ] to
     initialize a numpy recarray.
@@ -48,17 +61,6 @@ def to_dtype(level_structure, include_index=True):
         out.append(("idx", "<u8"))
     for key in level_structure:
         out.append((key, level_structure[key]["dtype"]))
-    return out
-
-
-def init_table_dynamicsizerecarray(table_structure=None):
-    if table_structure is None:
-        table_structure = init_table_structure()
-    out = {}
-    for level in table_structure:
-        out[level] = dynamicsizerecarray.DynamicSizeRecarray(
-            dtype=to_dtype(level_structure=table_structure[level]),
-        )
     return out
 
 
@@ -246,7 +248,7 @@ def init_cherenkovpoolpart_level_structure():
 
 
 def init_core_level_structure():
-    t = {}
+    t = collections.OrderedDict()
     t["bin_idx_x"] = {"dtype": "<i8", "comment": ""}
     t["bin_idx_y"] = {"dtype": "<i8", "comment": ""}
     t["core_x_m"] = {"dtype": "<f8", "comment": ""}
@@ -255,7 +257,7 @@ def init_core_level_structure():
 
 
 def init_particlepool_level_structure():
-    t = {}
+    t = collections.OrderedDict()
     t["num_water_cherenkov"] = {
         "dtype": "<i8",
         "comment": "The number of particles which reach the observation-level "
@@ -275,7 +277,7 @@ def init_particlepool_level_structure():
 
 
 def init_particlepoolonaperture_level_structure():
-    t = {}
+    t = collections.OrderedDict()
     t["num_air_cherenkov_on_aperture"] = {
         "dtype": "<i8",
         "comment": "Same as 'num_air_cherenkov' but also run through the "
@@ -285,7 +287,7 @@ def init_particlepoolonaperture_level_structure():
 
 
 def init_instrument_level_structure():
-    t = {}
+    t = collections.OrderedDict()
     t["start_time_of_exposure_s"] = {
         "dtype": "<f8",
         "comment": "The start-time of the instrument's exposure-window"
@@ -295,7 +297,7 @@ def init_instrument_level_structure():
 
 
 def init_trigger_level_structure(num_foci=12):
-    t = {}
+    t = collections.OrderedDict()
     t["num_cherenkov_pe"] = {"dtype": "<i8", "comment": ""}
     t["response_pe"] = {"dtype": "<i8", "comment": ""}
     for nn in range(num_foci):
@@ -305,7 +307,7 @@ def init_trigger_level_structure(num_foci=12):
 
 
 def init_pasttrigger_level_structure():
-    return {}  # only the event uid.
+    return collections.OrderedDict()  # only the event uid.
 
 
 """

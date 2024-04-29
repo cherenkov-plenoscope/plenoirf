@@ -10,6 +10,7 @@ import json_line_logger as jll
 import merlict_development_kit_python as mlidev
 import rename_after_writing as rnw
 import plenopy
+import sparse_numeric_table
 
 from .. import bookkeeping
 from .. import configuration
@@ -17,7 +18,6 @@ from .. import ground_grid
 from .. import event_table
 from .. import constants
 
-from . import job_io
 from . import sum_trigger
 from . import draw_event_uids_for_debugging
 from . import draw_pointing_range
@@ -106,7 +106,9 @@ def run_job_in_dir(job, work_dir):
             ),
         )
 
-    job["event_table"] = event_table.structure.init_table_dynamicsizerecarray()
+    job["event_table"] = sparse_numeric_table.init(
+        dtypes=event_table.structure.dtypes()
+    )
 
     with jll.TimeDelta(
         logger, "simulate_shower_and_collect_cherenkov_light_in_grid"
