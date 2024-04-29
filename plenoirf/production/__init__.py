@@ -73,7 +73,7 @@ def run_job_in_dir(job, work_dir):
         "stage",
     )
 
-    job = compile_job_paths_and_unique_identity(job=job, work_dir=work_dir)
+    job = read_config_into_job(job=job)
 
     os.makedirs(job["stage_dir"], exist_ok=True)
 
@@ -221,7 +221,6 @@ def _run_job_block(job, blk, block_id, logger):
             ),
         )
 
-    """
     with jll.TimeDelta(
         logger, "classify_cherenkov_photons_block{:06d}".format(block_id)
     ):
@@ -239,12 +238,11 @@ def _run_job_block(job, blk, block_id, logger):
                 "__job_cache__",
             ),
         )
-    """
 
     return job
 
 
-def compile_job_paths_and_unique_identity(job, work_dir):
+def read_config_into_job(job):
     """
     Adds static information to the job dict.
     """
