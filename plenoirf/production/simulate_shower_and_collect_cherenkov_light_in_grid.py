@@ -22,11 +22,11 @@ from . import transform_cherenkov_bunches
 from . import cherenkov_bunch_storage
 
 
-def run_job(job, logger):
+def run(env, logger):
     opj = os.path.join
 
     corsika_and_grid_work_dir = opj(
-        job["work_dir"],
+        env["work_dir"],
         "simulate_shower_and_collect_cherenkov_light_in_grid",
     )
 
@@ -37,22 +37,22 @@ def run_job(job, logger):
     logger.info("corsika and grid: simulating showers ...")
 
     prng = seeding.init_numpy_random_Generator_PCG64_from_path_and_name(
-        path=opj(job["work_dir"], "named_random_seeds.json"),
+        path=opj(env["work_dir"], "named_random_seeds.json"),
         name="simulate_shower_and_collect_cherenkov_light_in_grid",
     )
 
     with open(
-        opj(job["work_dir"], "draw_primary_and_pointing.pkl"), "rb"
+        opj(env["work_dir"], "draw_primary_and_pointing.pkl"), "rb"
     ) as fin:
         dpp = pickle.loads(fin.read())
 
     with open(
-        opj(job["work_dir"], "event_uids_for_debugging.json"), "rt"
+        opj(env["work_dir"], "event_uids_for_debugging.json"), "rt"
     ) as fin:
         event_uids_for_debugging = json_utils.loads(fin.read())
 
     corsika_and_grid(
-        job=job,
+        env=env,
         prng=prng,
         corsika_and_grid_work_dir=corsika_and_grid_work_dir,
         corsika_primary_steering=dpp["corsika_primary_steering"],
@@ -65,7 +65,7 @@ def run_job(job, logger):
 
 
 def corsika_and_grid(
-    job,
+    env,
     prng,
     corsika_and_grid_work_dir,
     corsika_primary_steering,
@@ -128,12 +128,12 @@ def corsika_and_grid(
                     corsika_primary_steering=corsika_primary_steering,
                     primary_directions=primary_directions,
                 )
-                job["event_table"]["primary"].append_record(primary_rec)
+                env["event_table"]["primary"].append_record(primary_rec)
 
                 instrument_pointing_rec = make_instrument_pointing_record(
                     uid=uid, instrument_pointings=instrument_pointings
                 )
-                job["event_table"]["instrument_pointing"].append_record(
+                env["event_table"]["instrument_pointing"].append_record(
                     instrument_pointing_rec
                 )
                 _ = instrument_pointing_rec.pop("idx")
@@ -145,7 +145,7 @@ def corsika_and_grid(
                     )
                 )
                 cherenkovsize_rec.update(uid["record"])
-                job["event_table"]["cherenkovsize"].append_record(
+                env["event_table"]["cherenkovsize"].append_record(
                     cherenkovsize_rec
                 )
 
@@ -156,15 +156,15 @@ def corsika_and_grid(
                         )
                     )
                     cherenkovpool_rec.update(uid["record"])
-                    job["event_table"]["cherenkovpool"].append_record(
+                    env["event_table"]["cherenkovpool"].append_record(
                         cherenkovpool_rec
                     )
 
                     groundgrid_config = ground_grid.make_ground_grid_config(
-                        bin_width_m=job["config"]["ground_grid"]["geometry"][
+                        bin_width_m=env["config"]["ground_grid"]["geometry"][
                             "bin_width_m"
                         ],
-                        num_bins_each_axis=job["config"]["ground_grid"][
+                        num_bins_each_axis=env["config"]["ground_grid"][
                             "geometry"
                         ]["num_bins_each_axis"],
                         cherenkov_pool_median_x_m=cherenkovpool_rec["x_p50_m"],
@@ -189,7 +189,7 @@ def corsika_and_grid(
                         in_path=cherenkov_storage_path,
                         out_path=cherenkov_storage_infov_path,
                         pointing=instrument_pointing,
-                        field_of_view_half_angle_rad=job["instrument"][
+                        field_of_view_half_angle_rad=env["instrument"][
                             "field_of_view_half_angle_rad"
                         ],
                     )
@@ -197,7 +197,7 @@ def corsika_and_grid(
                     groundgrid_result, groundgrid_debug = ground_grid.assign2(
                         groundgrid=groundgrid,
                         cherenkov_bunch_storage_path=cherenkov_storage_infov_path,
-                        threshold_num_photons=job["config"]["ground_grid"][
+                        threshold_num_photons=env["config"]["ground_grid"][
                             "threshold_num_photons"
                         ],
                         prng=prng,
@@ -209,7 +209,7 @@ def corsika_and_grid(
                         groundgrid_result=groundgrid_result,
                         groundgrid=groundgrid,
                     )
-                    job["event_table"]["groundgrid"].append_record(
+                    env["event_table"]["groundgrid"].append_record(
                         groundgrid_rec
                     )
 
@@ -226,7 +226,7 @@ def corsika_and_grid(
                         cherenkov_bunches_in_instrument = transform_cherenkov_bunches.from_obervation_level_to_instrument(
                             cherenkov_bunches=cherenkov_bunches_in_choice,
                             instrument_pointing=instrument_pointing,
-                            instrument_pointing_model=job["config"][
+                            instrument_pointing_model=env["config"][
                                 "pointing"
                             ]["model"],
                             instrument_x_m=groundgrid_result["choice"][
@@ -235,7 +235,7 @@ def corsika_and_grid(
                             instrument_y_m=groundgrid_result["choice"][
                                 "core_y_m"
                             ],
-                            speed_of_ligth_m_per_s=job["instrument"][
+                            speed_of_ligth_m_per_s=env["instrument"][
                                 "local_speed_of_light_m_per_s"
                             ],
                         )
@@ -247,7 +247,7 @@ def corsika_and_grid(
                                 "choice"
                             ],
                         )
-                        job["event_table"]["core"].append_record(core_rec)
+                        env["event_table"]["core"].append_record(core_rec)
 
                         EventTape_append_event(
                             evttar=evttar,
@@ -276,7 +276,7 @@ def corsika_and_grid(
                             cherenkov_bunches=cherenkov_bunches_in_instrument
                         )
                         cherenkovsizepart_rec.update(uid["record"])
-                        job["event_table"]["cherenkovsizepart"].append_record(
+                        env["event_table"]["cherenkovsizepart"].append_record(
                             cherenkovsizepart_rec
                         )
 
@@ -285,7 +285,7 @@ def corsika_and_grid(
                                 cherenkov_bunches=cherenkov_bunches_in_instrument
                             )
                             cherenkovpoolpart_rec.update(uid["record"])
-                            job["event_table"][
+                            env["event_table"][
                                 "cherenkovpoolpart"
                             ].append_record(cherenkovpoolpart_rec)
 
@@ -304,7 +304,7 @@ def corsika_and_grid(
         tape_path=opj(work_dir, "particle_pools.tar.gz"),
     )
 
-    return job
+    return env
 
 
 def nail_down_event_identity(

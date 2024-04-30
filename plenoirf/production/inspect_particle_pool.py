@@ -6,15 +6,15 @@ import sparse_numeric_table as spt
 from .. import bookkeeping
 
 
-def run_job(job, logger):
-    aperture_radius_m = guess_aperture_radius_m(job=job)
+def run(env, logger):
+    aperture_radius_m = guess_aperture_radius_m(env=env)
 
     logger.info("inspect_particle_pool, init corsika particle zoo")
     corsika_particle_zoo = cpw.particles.identification.Zoo(
         media_refractive_indices={
             "water": 1.33,
             "air": cpw.particles.identification.refractive_index_atmosphere(
-                altitude_asl_m=job["site"]["observation_level_asl_m"]
+                altitude_asl_m=env["site"]["observation_level_asl_m"]
             ),
         }
     )
@@ -23,7 +23,7 @@ def run_job(job, logger):
 
     with cpw.particles.ParticleEventTapeReader(
         path=os.path.join(
-            job["work_dir"],
+            env["work_dir"],
             "simulate_shower_and_collect_cherenkov_light_in_grid",
             "particle_pools.tar.gz",
         )
@@ -36,7 +36,7 @@ def run_job(job, logger):
             ppp = init_particlepool_record(uid=uid)
 
             core = record_by_uid(
-                dynamicsizerecarray=job["event_table"]["core"],
+                dynamicsizerecarray=env["event_table"]["core"],
                 uid=uid,
             )
 
@@ -72,14 +72,14 @@ def run_job(job, logger):
                         aperture_radius_m=aperture_radius_m,
                     )
 
-            job["event_table"]["particlepool"].append_record(ppp)
+            env["event_table"]["particlepool"].append_record(ppp)
             if core:
-                job["event_table"]["particlepoolonaperture"].append_record(aaa)
-    return job
+                env["event_table"]["particlepoolonaperture"].append_record(aaa)
+    return env
 
 
-def guess_aperture_radius_m(job):
-    grid_bin_width = job["config"]["ground_grid"]["geometry"]["bin_width_m"]
+def guess_aperture_radius_m(env):
+    grid_bin_width = env["config"]["ground_grid"]["geometry"]["bin_width_m"]
     grid_bin_diagonal = np.sqrt(3) * grid_bin_width
     aperture_radius_m = (1 / 2) * grid_bin_diagonal
     return aperture_radius_m

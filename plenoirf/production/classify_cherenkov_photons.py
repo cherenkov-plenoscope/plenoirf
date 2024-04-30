@@ -5,15 +5,15 @@ import rename_after_writing as rnw
 from .. import bookkeeping
 
 
-def run_job_block(job, blk, block_id, logger):
-    job = classify_cherenkov_photons(
-        job=job, blk=blk, block_id=block_id, logger=logger
+def run_block(env, blk, block_id, logger):
+    env = classify_cherenkov_photons(
+        env=env, blk=blk, block_id=block_id, logger=logger
     )
-    return job
+    return env
 
 
 def classify_cherenkov_photons(
-    job,
+    env,
     blk,
     block_id,
     logger,
@@ -22,10 +22,10 @@ def classify_cherenkov_photons(
     # table_past_trigger,
 ):
     opj = os.path.join
-    block_dir = opj(job["work_dir"], "blocks", "{:06d}".format(block_id))
+    block_dir = opj(env["work_dir"], "blocks", "{:06d}".format(block_id))
 
-    roi_cfg = job["config"]["cherenkov_classification"]["region_of_interest"]
-    dbscan_cfg = job["config"]["cherenkov_classification"]
+    roi_cfg = env["config"]["cherenkov_classification"]["region_of_interest"]
+    dbscan_cfg = env["config"]["cherenkov_classification"]
 
     with pl.photon_stream.loph.LopfTarWriter(
         path=os.path.join(block_dir, "reconstructed_cherenkov.tar"),

@@ -58,33 +58,20 @@ def run_job(job):
 
 
 def run_job_in_dir(job, work_dir):
-    # important directories
-    # plenoirf_dir / work_dir / stage_dir
+    env = compile_environment_for_job(job=job, work_dir=work_dir)
 
-    job["work_dir"] = work_dir
-    job["stage_dir"] = opj(
-        job["plenoirf_dir"],
-        "response",
-        job["instrument_key"],
-        job["site_key"],
-        job["particle_key"],
-        "stage",
-    )
+    os.makedirs(env["stage_dir"], exist_ok=True)
 
-    job = read_config_into_job(job=job)
-
-    os.makedirs(job["stage_dir"], exist_ok=True)
-
-    logger_path = opj(job["stage_dir"], job["run_id_str"] + "_log.jsonl")
+    logger_path = opj(env["stage_dir"], env["run_id_str"] + "_log.jsonl")
     logger = jll.LoggerFile(path=logger_path + ".part")
     logger.info("starting")
 
-    logger.debug("making work_dir: {:s}".format(job["work_dir"]))
-    os.makedirs(job["work_dir"], exist_ok=True)
+    logger.debug("making work_dir: {:s}".format(env["work_dir"]))
+    os.makedirs(env["work_dir"], exist_ok=True)
 
-    logger.info("initializing random seeds (seed={:d})".format(job["run_id"]))
+    logger.info("initializing random seeds (seed={:d})".format(env["run_id"]))
     named_random_seeds = seeding.make_named_random_seeds(
-        run_id=job["run_id"],
+        run_id=env["run_id"],
         names=[
             "draw_event_uids_for_debugging",
             "draw_pointing_range",
@@ -95,18 +82,18 @@ def run_job_in_dir(job, work_dir):
         ],
     )
     seeding.write(
-        path=opj(job["work_dir"], "named_random_seeds.json"),
+        path=opj(env["work_dir"], "named_random_seeds.json"),
         named_random_seeds=named_random_seeds,
     )
 
     with jll.TimeDelta(logger, "draw_event_uids_for_debugging"):
-        draw_event_uids_for_debugging.run_job(job=job, logger=logger)
+        draw_event_uids_for_debugging.run(env=env, logger=logger)
 
     with jll.TimeDelta(logger, "draw_pointing_range"):
-        draw_pointing_range.run_job(job=job, logger=logger)
+        draw_pointing_range.run(env=env, logger=logger)
 
     with jll.TimeDelta(logger, "draw_primaries_and_pointings"):
-        draw_primaries_and_pointings.run_job(job=job, logger=logger)
+        draw_primaries_and_pointings.run(env=env, logger=logger)
 
     job["event_table"] = sparse_numeric_table.init(
         dtypes=event_table.structure.dtypes()
@@ -115,18 +102,18 @@ def run_job_in_dir(job, work_dir):
     with jll.TimeDelta(
         logger, "simulate_shower_and_collect_cherenkov_light_in_grid"
     ):
-        simulate_shower_and_collect_cherenkov_light_in_grid.run_job(
-            job=job, logger=logger
+        simulate_shower_and_collect_cherenkov_light_in_grid.run(
+            env=env, logger=logger
         )
 
     with jll.TimeDelta(logger, "inspect_cherenkov_pool"):
-        inspect_cherenkov_pool.run_job(job=job, logger=logger)
+        inspect_cherenkov_pool.run(env=env, logger=logger)
 
     with jll.TimeDelta(logger, "inspect_particle_pool"):
-        job = inspect_particle_pool.run_job(job=job, logger=logger)
+        job = inspect_particle_pool.run(env=env, logger=logger)
 
     with jll.TimeDelta(logger, "split_event_tape_into_blocks"):
-        job = split_event_tape_into_blocks.run_job(job=job, logger=logger)
+        job = split_event_tape_into_blocks.run(env=env, logger=logger)
 
     blk = {}
     with jll.TimeDelta(logger, "read light_field_calibration"):
@@ -163,7 +150,7 @@ def run_job_in_dir(job, work_dir):
 
             block_id = int(block_id_str)
             job = _run_job_block(
-                job=job, blk=blk, block_id=block_id, logger=logger
+                env=env, blk=blk, block_id=block_id, logger=logger
             )
 
     logger.info("ending")
@@ -177,59 +164,70 @@ def _run_job_block(job, blk, block_id, logger):
         logger, "simulate_hardware_block{:06d}".format(block_id)
     ):
         simulate_hardware.run_job_block(
-            job=job, blk=blk, block_id=block_id, logger=logger
+            env=env, blk=blk, block_id=block_id, logger=logger
         )
 
     with jll.TimeDelta(
         logger, "simulate_loose_trigger_block{:06d}".format(block_id)
     ):
         simulate_loose_trigger.run_job_block(
-            job=job, blk=blk, block_id=block_id, logger=logger
+            env=env, blk=blk, block_id=block_id, logger=logger
         )
 
     with jll.TimeDelta(
         logger, "classify_cherenkov_photons_block{:06d}".format(block_id)
     ):
         classify_cherenkov_photons.run_job_block(
-            job=job, blk=blk, block_id=block_id, logger=logger
+            env=env, blk=blk, block_id=block_id, logger=logger
         )
 
     return job
 
 
-def read_config_into_job(job):
+def compile_environment_for_job(job, work_dir):
     """
     Adds static information to the job dict.
     """
     assert job["max_num_events_in_merlict_run"] > 0
+    env = copy.deepcopy(job)
 
-    job["run_id_str"] = bookkeeping.uid.make_run_id_str(run_id=job["run_id"])
-    job["config"] = configuration.read(plenoirf_dir=job["plenoirf_dir"])
+    env["work_dir"] = work_dir
+    env["stage_dir"] = opj(
+        env["plenoirf_dir"],
+        "response",
+        env["instrument_key"],
+        env["site_key"],
+        env["particle_key"],
+        "stage",
+    )
+
+    env["run_id_str"] = bookkeeping.uid.make_run_id_str(run_id=env["run_id"])
+    env["config"] = configuration.read(plenoirf_dir=env["plenoirf_dir"])
     _skymap_cfg = json_utils.tree.read(
         opj(
-            job["plenoirf_dir"],
+            env["plenoirf_dir"],
             "magnetic_deflection",
-            job["site_key"],
-            job["particle_key"],
+            env["site_key"],
+            env["particle_key"],
             "config",
         )
     )
-    job["site"] = copy.deepcopy(_skymap_cfg["site"])
-    job["particle"] = copy.deepcopy(_skymap_cfg["particle"])
+    env["site"] = copy.deepcopy(_skymap_cfg["site"])
+    env["particle"] = copy.deepcopy(_skymap_cfg["particle"])
 
-    job["light_field_camera_config"] = read_light_field_camera_config(
-        plenoirf_dir=job["plenoirf_dir"],
-        instrument_key=job["instrument_key"],
+    env["light_field_camera_config"] = read_light_field_camera_config(
+        plenoirf_dir=env["plenoirf_dir"],
+        instrument_key=env["instrument_key"],
     )
-    job["instrument"] = {}
-    job["instrument"]["field_of_view_half_angle_rad"] = 0.5 * (
-        np.deg2rad(job["light_field_camera_config"]["max_FoV_diameter_deg"])
+    env["instrument"] = {}
+    env["instrument"]["field_of_view_half_angle_rad"] = 0.5 * (
+        np.deg2rad(env["light_field_camera_config"]["max_FoV_diameter_deg"])
     )
-    job["instrument"]["local_speed_of_light_m_per_s"] = (
+    env["instrument"]["local_speed_of_light_m_per_s"] = (
         constants.speed_of_light_in_vacuum_m_per_s()
-        / job["site"]["atmosphere_refractive_index_at_observation_level"]
+        / env["site"]["atmosphere_refractive_index_at_observation_level"]
     )
-    return job
+    return env
 
 
 def read_light_field_camera_config(plenoirf_dir, instrument_key):

@@ -222,59 +222,59 @@ def draw_primaries_and_pointings(
     return out, debug
 
 
-def run_job(job, logger):
+def run(env, logger):
     logger.info("draw_primaries_and_pointings, open SkyMap")
 
     prng = seeding.init_numpy_random_Generator_PCG64_from_path_and_name(
-        path=opj(job["work_dir"], "named_random_seeds.json"),
+        path=opj(env["work_dir"], "named_random_seeds.json"),
         name="draw_primaries_and_pointings",
     )
 
     skymap = magnetic_deflection.skymap.SkyMap(
         work_dir=opj(
-            job["plenoirf_dir"],
+            env["plenoirf_dir"],
             "magnetic_deflection",
-            job["site_key"],
-            job["particle_key"],
+            env["site_key"],
+            env["particle_key"],
         )
     )
 
     with open(
-        opj(job["work_dir"], "event_uids_for_debugging.json"), "rt"
+        opj(env["work_dir"], "event_uids_for_debugging.json"), "rt"
     ) as fin:
         event_uids_for_debugging = json_utils.loads(fin.read())
 
-    with open(opj(job["work_dir"], "pointing_range.pkl"), "rb") as fin:
+    with open(opj(env["work_dir"], "pointing_range.pkl"), "rb") as fin:
         pointing_range = pickle.loads(fin.read())
 
     logger.info("draw_primaries_and_pointings, draw primaries")
 
     out, debug = draw_primaries_and_pointings(
         prng=prng,
-        run_id=job["run_id"],
+        run_id=env["run_id"],
         site_particle_magnetic_deflection_skymap=skymap,
         pointing_range=pointing_range,
-        energy_distribution=compile_energy_distribution(job=job),
-        scatter_solid_angle_vs_energy=job["config"][
+        energy_distribution=compile_energy_distribution(env=env),
+        scatter_solid_angle_vs_energy=env["config"][
             "particles_scatter_solid_angle"
-        ][job["particle_key"]],
-        field_of_view_half_angle_rad=job["instrument"][
+        ][env["particle_key"]],
+        field_of_view_half_angle_rad=env["instrument"][
             "field_of_view_half_angle_rad"
         ],
-        num_events=job["num_events"],
+        num_events=env["num_events"],
         event_uids_for_debugging=event_uids_for_debugging,
         logger=logger,
     )
 
     logger.info("draw_primaries_and_pointings, export results")
     with rnw.open(
-        opj(job["work_dir"], "draw_primary_and_pointing.pkl"), "wb"
+        opj(env["work_dir"], "draw_primary_and_pointing.pkl"), "wb"
     ) as fout:
         fout.write(pickle.dumps(out))
 
     logger.info("draw_primaries_and_pointings, export debug")
     write_draw_primaries_and_pointings_debug(
-        path=opj(job["work_dir"], "draw_primary_and_pointing.debug.zip"),
+        path=opj(env["work_dir"], "draw_primary_and_pointing.debug.zip"),
         debug=debug,
     )
 
@@ -297,9 +297,9 @@ def write_draw_primaries_and_pointings_debug(
                     fout.write(dbg_gz_bytes)
 
 
-def compile_energy_distribution(job):
-    ene = job["config"]["particles_simulated_energy_distribution"][
-        job["particle_key"]
+def compile_energy_distribution(env):
+    ene = env["config"]["particles_simulated_energy_distribution"][
+        env["particle_key"]
     ]
     out = {}
 
@@ -313,7 +313,7 @@ def compile_energy_distribution(job):
     out["power_slope"] = ene["spectrum"]["power_slope"]
 
     configuration.asseret_energy_start_GeV_is_valid(
-        particle=acr.particles.init(job["particle_key"]),
+        particle=acr.particles.init(env["particle_key"]),
         energy_start_GeV=out["energy_start_GeV"],
     )
     return out

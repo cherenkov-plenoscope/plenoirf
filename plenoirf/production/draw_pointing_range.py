@@ -40,24 +40,24 @@ def draw_pointing_range(max_zenith_distance_rad, run_half_angle_rad, prng):
     )
 
 
-def run_job(job, logger):
+def run(env, logger):
     opj = os.path.join
 
     prng = seeding.init_numpy_random_Generator_PCG64_from_path_and_name(
-        path=opj(job["work_dir"], "named_random_seeds.json"),
+        path=opj(env["work_dir"], "named_random_seeds.json"),
         name="draw_pointing_range",
     )
 
     pointing_range = draw_pointing_range(
-        max_zenith_distance_rad=job["config"]["pointing"]["range"][
+        max_zenith_distance_rad=env["config"]["pointing"]["range"][
             "max_zenith_distance_rad"
         ],
-        run_half_angle_rad=job["config"]["pointing"]["range"][
+        run_half_angle_rad=env["config"]["pointing"]["range"][
             "run_half_angle_rad"
         ],
         prng=prng,
     )
     logger.info("draw_pointing_range")
 
-    with rnw.open(opj(job["work_dir"], "pointing_range.pkl"), "wb") as fout:
+    with rnw.open(opj(env["work_dir"], "pointing_range.pkl"), "wb") as fout:
         fout.write(pickle.dumps(pointing_range))

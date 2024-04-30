@@ -8,24 +8,24 @@ import json_utils
 import os
 
 
-def run_job(job, logger):
+def run(env, logger):
     opj = os.path.join
 
     prng = seeding.init_numpy_random_Generator_PCG64_from_path_and_name(
-        path=opj(job["work_dir"], "named_random_seeds.json"),
+        path=opj(env["work_dir"], "named_random_seeds.json"),
         name="draw_event_uids_for_debugging",
     )
 
     event_ids_for_debugging = debugging.draw_event_ids_for_debugging(
-        num_events_in_run=job["num_events"],
-        min_num_events=job["config"]["debugging"]["run"]["min_num_events"],
-        fraction_of_events=job["config"]["debugging"]["run"][
+        num_events_in_run=env["num_events"],
+        min_num_events=env["config"]["debugging"]["run"]["min_num_events"],
+        fraction_of_events=env["config"]["debugging"]["run"][
             "fraction_of_events"
         ],
         prng=prng,
     )
     event_uids_for_debugging = [
-        bookkeeping.uid.make_uid(run_id=job["run_id"], event_id=event_id)
+        bookkeeping.uid.make_uid(run_id=env["run_id"], event_id=event_id)
         for event_id in event_ids_for_debugging
     ]
 
@@ -34,6 +34,6 @@ def run_job(job, logger):
     )
 
     with rnw.open(
-        opj(job["work_dir"], "event_uids_for_debugging.json"), "wt"
+        opj(env["work_dir"], "event_uids_for_debugging.json"), "wt"
     ) as fout:
         fout.write(json_utils.dumps(event_uids_for_debugging))

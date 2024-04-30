@@ -12,21 +12,21 @@ import sebastians_matplotlib_addons as sebplt
 from .. import bookkeeping
 
 
-def run_job_block(job, blk, block_id, logger):
-    job = simulate_loose_trigger(
-        job=job, blk=blk, block_id=block_id, logger=logger
+def run_block(env, blk, block_id, logger):
+    env = simulate_loose_trigger(
+        env=env, blk=blk, block_id=block_id, logger=logger
     )
-    return job
+    return env
 
 
 def simulate_loose_trigger(
-    job,
+    env,
     blk,
     block_id,
     logger,
 ):
     opj = os.path.join
-    block_dir = opj(job["work_dir"], "blocks", "{:06d}".format(block_id))
+    block_dir = opj(env["work_dir"], "blocks", "{:06d}".format(block_id))
     work_dir = opj(block_dir, "simulate_loose_trigger")
 
     # loop over sensor responses
@@ -54,7 +54,7 @@ def simulate_loose_trigger(
         insrec[
             "start_time_of_exposure_s"
         ] = event.simulation_truth.photon_propagator.nsb_exposure_start_time()
-        job["event_table"]["instrument"].append_record(insrec)
+        env["event_table"]["instrument"].append_record(insrec)
 
         # apply loose trigger
         # -------------------
@@ -65,7 +65,7 @@ def simulate_loose_trigger(
             )
             visible_cherenkov_photon_size = json_utils.read(
                 path=os.path.join(
-                    job["work_dir"],
+                    env["work_dir"],
                     "inspect_cherenkov_pool",
                     "visible_cherenkov_photon_size.json",
                 )
@@ -77,7 +77,7 @@ def simulate_loose_trigger(
                         light_field_geometry=blk["light_field_geometry"],
                         trigger_geometry=blk["trigger_geometry"],
                         integration_time_slices=(
-                            job["config"]["sum_trigger"][
+                            env["config"]["sum_trigger"][
                                 "integration_time_slices"
                             ]
                         ),
@@ -97,7 +97,7 @@ def simulate_loose_trigger(
             light_field_geometry=blk["light_field_geometry"],
             trigger_geometry=blk["trigger_geometry"],
             integration_time_slices=(
-                job["config"]["sum_trigger"]["integration_time_slices"]
+                env["config"]["sum_trigger"]["integration_time_slices"]
             ),
         )
 
@@ -124,13 +124,13 @@ def simulate_loose_trigger(
             trgtru["focus_{:02d}_response_pe".format(o)] = int(
                 trigger_responses[o]["response_pe"]
             )
-        job["event_table"]["trigger"].append_record(trgtru)
+        env["event_table"]["trigger"].append_record(trgtru)
 
         # passing loose trigger
         # ---------------------
         if (
             trgtru["response_pe"]
-            >= job["config"]["sum_trigger"]["threshold_pe"]
+            >= env["config"]["sum_trigger"]["threshold_pe"]
         ):
             ptp = uidrec.copy()
             ptp["tmp_path"] = event._path
@@ -140,11 +140,11 @@ def simulate_loose_trigger(
             table_past_trigger.append(ptp)
 
             patrec = uidrec.copy()
-            job["event_table"]["pasttrigger"].append_record(patrec)
+            env["event_table"]["pasttrigger"].append_record(patrec)
 
             # export past loose trigger
             # -------------------------
-            if uidrec[spt.IDX] in job["run"]["event_uids_for_debugging"]:
+            if uidrec[spt.IDX] in env["run"]["event_uids_for_debugging"]:
                 plenopy.tools.acp_format.compress_event_in_place(
                     ptp["tmp_path"]
                 )
@@ -154,7 +154,7 @@ def simulate_loose_trigger(
                     output_tar_path=opj(work_dir, final_tarname),
                 )
 
-    return job
+    return env
 
 
 def plenoscope_event_dir_to_tar(event_dir, output_tar_path=None):

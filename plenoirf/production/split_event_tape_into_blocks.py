@@ -8,25 +8,25 @@ import corsika_primary as cpw
 from .. import bookkeeping
 
 
-def run_job(job, logger):
+def run(env, logger):
     logger.info("split_event_tape_into_blocks, split")
 
-    blocks_dir = os.path.join(job["work_dir"], "blocks")
+    blocks_dir = os.path.join(env["work_dir"], "blocks")
     os.makedirs(blocks_dir, exist_ok=True)
 
-    job["run"]["uids_in_cherenkov_pool_blocks"] = split_event_tape_into_blocks(
+    env["run"]["uids_in_cherenkov_pool_blocks"] = split_event_tape_into_blocks(
         inpath=os.path.join(
-            job["work_dir"],
+            env["work_dir"],
             "simulate_shower_and_collect_cherenkov_light_in_grid",
             "cherenkov_pools.tar",
         ),
         outpath_block_fmt=os.path.join(
             blocks_dir, "{block_id:06d}", "cherenkov_pools.tar"
         ),
-        num_events=job["max_num_events_in_merlict_run"],
+        num_events=env["max_num_events_in_merlict_run"],
     )
 
-    return job
+    return env
 
 
 def split_event_tape_into_blocks(inpath, outpath_block_fmt, num_events):
