@@ -30,7 +30,6 @@ from . import simulate_hardware
 from . import simulate_loose_trigger
 from . import classify_cherenkov_photons
 from . import inspect_cherenkov_pool
-from . import checkpoint
 
 
 def make_example_job(
@@ -87,7 +86,7 @@ def run_job_in_dir(job, work_dir):
 
     logger.info("initializing random seeds (seed={:d})".format(job["run_id"]))
     named_random_seeds = seeding.make_named_random_seeds(
-        seed=job["run_id"],
+        run_id=job["run_id"],
         names=[
             "draw_event_uids_for_debugging",
             "draw_pointing_range",
@@ -179,55 +178,22 @@ def _run_job_block(job, blk, block_id, logger):
     with jll.TimeDelta(
         logger, "simulate_hardware_block{:06d}".format(block_id)
     ):
-        checkpoint.checkpoint(
-            job=job,
-            blk=blk,
-            logger=logger,
-            block_id=block_id,
-            func=simulate_hardware.run_job_block,
-            cache_path=opj(
-                job["work_dir"],
-                "blocks",
-                "{block_id:06d}".format(block_id=block_id),
-                "simulate_hardware",
-                "__job_cache__",
-            ),
+        simulate_hardware.run_job_block(
+            job=job, blk=blk, block_id=block_id, logger=logger
         )
 
     with jll.TimeDelta(
         logger, "simulate_loose_trigger_block{:06d}".format(block_id)
     ):
-        checkpoint.checkpoint(
-            job=job,
-            blk=blk,
-            logger=logger,
-            block_id=block_id,
-            func=simulate_loose_trigger.run_job_block,
-            cache_path=opj(
-                job["work_dir"],
-                "blocks",
-                "{block_id:06d}".format(block_id=block_id),
-                "simulate_loose_trigger",
-                "__job_cache__",
-            ),
+        simulate_loose_trigger.run_job_block(
+            job=job, blk=blk, block_id=block_id, logger=logger
         )
 
     with jll.TimeDelta(
         logger, "classify_cherenkov_photons_block{:06d}".format(block_id)
     ):
-        checkpoint.checkpoint(
-            job=job,
-            blk=blk,
-            logger=logger,
-            block_id=block_id,
-            func=classify_cherenkov_photons.run_job_block,
-            cache_path=opj(
-                job["work_dir"],
-                "blocks",
-                "{block_id:06d}".format(block_id=block_id),
-                "classify_cherenkov_photons",
-                "__job_cache__",
-            ),
+        classify_cherenkov_photons.run_job_block(
+            job=job, blk=blk, block_id=block_id, logger=logger
         )
 
     return job

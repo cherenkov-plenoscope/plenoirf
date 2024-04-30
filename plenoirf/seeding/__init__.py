@@ -2,16 +2,17 @@ import numpy as np
 import io
 import json_utils
 import rename_after_writing
+import json_line_logger
 
 
-def make_named_random_seeds(seed, names=[]):
+def make_named_random_seeds(run_id, names=[]):
     """
     Assigns random seeds to names baesd on a hash constructed from the name and
     an input seed.
 
     Parameters
     ----------
-    seed : int, numpy.uint64
+    run_id : int, numpy.uint64
         Must be >= 0. The input seed.
     names : list of str
         The names to receive a seed.
@@ -22,16 +23,14 @@ def make_named_random_seeds(seed, names=[]):
         Assings names (str) to seeds (numpy.uint64)
     """
     assert len(names) == len(set(names)), "Expected names to be unique."
-    assert seed >= 0, "Expected seed >= 0."
-    seed = np.uint64(seed)
+    assert run_id >= 0, "Expected run_id >= 0."
 
     out = {}
     for name in names:
-        name_seed = io.BytesIO()
-        name_seed.write(seed.tobytes())
-        name_seed.write(name.encode())
-        name_seed.seek(0)
-        out[name] = hash_PCG64(bytes=name_seed.read())
+        out[name] = make_seed_based_on_run_id_and_name(
+            run_id=run_id,
+            name=name,
+        )
     return out
 
 
@@ -67,3 +66,12 @@ def hash_PCG64(bytes):
 def init_numpy_random_Generator_PCG64_from_path_and_name(path, name):
     named_random_seeds = read(path=path)
     return np.random.Generator(np.random.PCG64(named_random_seeds[name]))
+
+
+def make_seed_based_on_run_id_and_name(run_id, name):
+    run_id = np.uint64(run_id)
+    name_seed = io.BytesIO()
+    name_seed.write(run_id.tobytes())
+    name_seed.write(name.encode())
+    name_seed.seek(0)
+    return hash_PCG64(bytes=name_seed.read())
