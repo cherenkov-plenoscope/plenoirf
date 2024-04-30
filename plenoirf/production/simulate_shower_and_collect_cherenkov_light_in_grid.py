@@ -4,6 +4,7 @@ import numpy as np
 
 import corsika_primary as cpw
 import json_utils
+import pickle
 import sparse_numeric_table as spt
 import atmospheric_cherenkov_response as acr
 import spherical_coordinates
@@ -14,6 +15,7 @@ from .. import ground_grid
 from .. import event_table
 from .. import outer_telescope_array
 from .. import tar_append
+from .. import seeding
 from .. import utils
 
 from . import transform_cherenkov_bunches
@@ -21,42 +23,85 @@ from . import cherenkov_bunch_storage
 
 
 def run_job(job, logger):
-    job = corsika_and_grid(job=job, logger=logger)
-    return job
-
-
-def corsika_and_grid(job, logger):
     opj = os.path.join
-    logger.info("corsika and grid, start corsika")
-    corsika_dir = opj(
+
+    corsika_and_grid_work_dir = opj(
         job["work_dir"],
         "simulate_shower_and_collect_cherenkov_light_in_grid",
     )
-    corsika_debug_dir = opj(corsika_dir, "debug")
-    os.makedirs(corsika_dir, exist_ok=True)
-    os.makedirs(corsika_debug_dir, exist_ok=True)
+
+    if os.path.exists(corsika_and_grid_work_dir):
+        logger.info("corsika and grid: already done.")
+        return
+
+    logger.info("corsika and grid: simulating showers ...")
+
+    prng = seeding.init_numpy_random_Generator_PCG64_from_path_and_name(
+        path=opj(job["work_dir"], "named_random_seeds.json"),
+        name="simulate_shower_and_collect_cherenkov_light_in_grid",
+    )
+
+    with open(
+        opj(job["work_dir"], "draw_primary_and_pointing.pkl"), "rb"
+    ) as fin:
+        dpp = pickle.loads(fin.read())
+
+    with open(
+        opj(job["work_dir"], "event_uids_for_debugging.json"), "rt"
+    ) as fin:
+        event_uids_for_debugging = json_utils.loads(fin.read())
+
+    corsika_and_grid(
+        job=job,
+        prng=prng,
+        corsika_and_grid_work_dir=corsika_and_grid_work_dir,
+        corsika_primary_steering=dpp["corsika_primary_steering"],
+        primary_directions=dpp["primary_directions"],
+        instrument_pointings=dpp["instrument_pointings"],
+        event_uids_for_debugging=event_uids_for_debugging,
+        logger=logger,
+    )
+    logger.info("corsika and grid: simulating showers ... done.")
+
+
+def corsika_and_grid(
+    job,
+    prng,
+    corsika_and_grid_work_dir,
+    corsika_primary_steering,
+    primary_directions,
+    instrument_pointings,
+    event_uids_for_debugging,
+    logger,
+):
+    opj = os.path.join
+    logger.info("corsika and grid: start corsika")
+    work_dir = corsika_and_grid_work_dir
+    debug_dir = opj(work_dir, "debug")
+    os.makedirs(work_dir, exist_ok=True)
+    os.makedirs(debug_dir, exist_ok=True)
 
     with cpw.cherenkov.CherenkovEventTapeWriter(
-        path=opj(corsika_dir, "cherenkov_pools.tar")
+        path=opj(work_dir, "cherenkov_pools.tar")
     ) as evttar, tarfile.open(
-        opj(corsika_dir, "ground_grid_intensity.tar"), "w"
+        opj(work_dir, "ground_grid_intensity.tar"), "w"
     ) as imgtar, tarfile.open(
-        opj(corsika_dir, "ground_grid_intensity_roi.tar"), "w"
+        opj(work_dir, "ground_grid_intensity_roi.tar"), "w"
     ) as imgroitar:
         with cpw.CorsikaPrimary(
-            steering_dict=job["run"]["corsika_primary_steering"],
-            stdout_path=opj(corsika_dir, "corsika.stdout.txt"),
-            stderr_path=opj(corsika_dir, "corsika.stderr.txt"),
-            particle_output_path=opj(corsika_dir, "particle_pools.dat"),
+            steering_dict=corsika_primary_steering,
+            stdout_path=opj(work_dir, "corsika.stdout.txt"),
+            stderr_path=opj(work_dir, "corsika.stderr.txt"),
+            particle_output_path=opj(work_dir, "particle_pools.dat"),
         ) as corsika_run:
-            logger.info("corsika and grid, corsika is ready")
+            logger.info("corsika and grid: corsika is ready")
             evttar.write_runh(runh=corsika_run.runh)
 
             for event_idx, corsika_event in enumerate(corsika_run):
                 corsika_evth, cherenkov_reader = corsika_event
 
                 cherenkov_storage_path = opj(
-                    corsika_dir, "cherenkov_pool_storage.tar"
+                    work_dir, "cherenkov_pool_storage.tar"
                 )
 
                 cherenkov_bunch_storage.write(
@@ -67,14 +112,12 @@ def corsika_and_grid(job, logger):
                 uid = nail_down_event_identity(
                     corsika_evth=corsika_evth,
                     event_idx=event_idx,
-                    corsika_primary_steering=job["run"][
-                        "corsika_primary_steering"
-                    ],
+                    corsika_primary_steering=corsika_primary_steering,
                 )
 
                 if utils.is_10th_part_in_current_decade(i=uid["event_id"]):
                     logger.info(
-                        "corsika and grid, shower uid {:s}".format(
+                        "corsika and grid: shower uid {:s}".format(
                             uid["uid_str"]
                         )
                     )
@@ -82,19 +125,19 @@ def corsika_and_grid(job, logger):
                 primary_rec = make_primary_record(
                     uid=uid,
                     corsika_evth=corsika_evth,
-                    corsika_primary_steering=job["run"][
-                        "corsika_primary_steering"
-                    ],
-                    primary_directions=job["run"]["primary_directions"],
+                    corsika_primary_steering=corsika_primary_steering,
+                    primary_directions=primary_directions,
                 )
                 job["event_table"]["primary"].append_record(primary_rec)
 
-                pointing_rec = make_pointing_record(
-                    uid=uid, pointings=job["run"]["pointings"]
+                instrument_pointing_rec = make_instrument_pointing_record(
+                    uid=uid, instrument_pointings=instrument_pointings
                 )
-                job["event_table"]["pointing"].append_record(pointing_rec)
-                _ = pointing_rec.pop("idx")
-                pointing = pointing_rec
+                job["event_table"]["instrument_pointing"].append_record(
+                    instrument_pointing_rec
+                )
+                _ = instrument_pointing_rec.pop("idx")
+                instrument_pointing = instrument_pointing_rec
 
                 cherenkovsize_rec = (
                     cherenkov_bunch_storage.make_cherenkovsize_record(
@@ -126,7 +169,7 @@ def corsika_and_grid(job, logger):
                         ]["num_bins_each_axis"],
                         cherenkov_pool_median_x_m=cherenkovpool_rec["x_p50_m"],
                         cherenkov_pool_median_y_m=cherenkovpool_rec["y_p50_m"],
-                        prng=job["prng"],
+                        prng=prng,
                     )
 
                     groundgrid = ground_grid.GroundGrid(
@@ -139,13 +182,13 @@ def corsika_and_grid(job, logger):
                     )
 
                     cherenkov_storage_infov_path = opj(
-                        corsika_dir,
+                        work_dir,
                         "cherenkov_pool_storage_in_field_of_view.tar",
                     )
                     cherenkov_bunch_storage.cut_in_field_of_view(
                         in_path=cherenkov_storage_path,
                         out_path=cherenkov_storage_infov_path,
-                        pointing=pointing,
+                        pointing=instrument_pointing,
                         field_of_view_half_angle_rad=job["instrument"][
                             "field_of_view_half_angle_rad"
                         ],
@@ -157,7 +200,7 @@ def corsika_and_grid(job, logger):
                         threshold_num_photons=job["config"]["ground_grid"][
                             "threshold_num_photons"
                         ],
-                        prng=job["prng"],
+                        prng=prng,
                     )
 
                     groundgrid_rec = make_groundgrid_record(
@@ -182,7 +225,7 @@ def corsika_and_grid(job, logger):
 
                         cherenkov_bunches_in_instrument = transform_cherenkov_bunches.from_obervation_level_to_instrument(
                             cherenkov_bunches=cherenkov_bunches_in_choice,
-                            instrument_pointing=pointing,
+                            instrument_pointing=instrument_pointing,
                             instrument_pointing_model=job["config"][
                                 "pointing"
                             ]["model"],
@@ -221,10 +264,7 @@ def corsika_and_grid(job, logger):
                             groundgrid_debug=groundgrid_debug,
                         )
 
-                        if (
-                            uid["uid"]
-                            in job["run"]["event_uids_for_debugging"]
-                        ):
+                        if uid["uid"] in event_uids_for_debugging:
                             ImgTar_append(
                                 imgtar=imgtar,
                                 uid=uid,
@@ -251,17 +291,17 @@ def corsika_and_grid(job, logger):
 
                     with open(
                         opj(
-                            corsika_debug_dir,
+                            debug_dir,
                             uid["uid_str"] + "_ground_grid.json",
                         ),
                         "wt",
                     ) as f:
                         f.write(json_utils.dumps(groundgrid_result))
 
-    logger.info("corsika and grid, particle output from dat to tar")
+    logger.info("corsika and grid: particle output from dat to tar")
     cpw.particles.dat_to_tape(
-        dat_path=opj(corsika_dir, "particle_pools.dat"),
-        tape_path=opj(corsika_dir, "particle_pools.tar.gz"),
+        dat_path=opj(work_dir, "particle_pools.dat"),
+        tape_path=opj(work_dir, "particle_pools.tar.gz"),
     )
 
     return job
@@ -346,10 +386,10 @@ def make_primary_record(
     return rec
 
 
-def make_pointing_record(uid, pointings):
+def make_instrument_pointing_record(uid, instrument_pointings):
     rec = uid["record"].copy()
     for key in ["azimuth_rad", "zenith_rad"]:
-        rec[key] = pointings[uid["uid_str"]][key]
+        rec[key] = instrument_pointings[uid["uid_str"]][key]
     return rec
 
 

@@ -10,7 +10,6 @@ import json_utils
 import sebastians_matplotlib_addons as sebplt
 
 from .. import bookkeeping
-from . import job_io
 
 
 def run_job_block(job, blk, block_id, logger):

@@ -10,14 +10,15 @@ from os import path as op
 from os.path import join as opj
 import json_utils
 import rename_after_writing as rnw
-import tarfile
+import zipfile
 import gzip
+import pickle
 import json_line_logger as jll
 
 from .. import bookkeeping
 from .. import configuration
-from .. import tar_append
 from .. import utils
+from .. import seeding
 
 
 def draw_primaries_and_pointings(
@@ -101,7 +102,7 @@ def draw_primaries_and_pointings(
 
     # loop
     energies_GeV = {}
-    pointings = {}
+    instrument_pointings = {}
     primary_directions = {}
     debug = {}
     primaries = []
@@ -132,7 +133,7 @@ def draw_primaries_and_pointings(
 
         # instrument pointings
         # --------------------
-        pointings[event_uid_str] = acr.pointing_range.draw_pointing(
+        instrument_pointings[event_uid_str] = acr.pointing_range.draw_pointing(
             pointing_range=pointing_range,
             prng=prng,
         )
@@ -147,8 +148,8 @@ def draw_primaries_and_pointings(
 
         if energies_GeV[event_uid_str] <= mag_skymap.binning["energy"]["stop"]:
             res, dbg = mag_skymap.draw(
-                azimuth_rad=pointings[event_uid_str]["azimuth_rad"],
-                zenith_rad=pointings[event_uid_str]["zenith_rad"],
+                azimuth_rad=instrument_pointings[event_uid_str]["azimuth_rad"],
+                zenith_rad=instrument_pointings[event_uid_str]["zenith_rad"],
                 half_angle_rad=field_of_view_half_angle_rad,
                 energy_start_GeV=energies_GeV[event_uid_str] * 0.99,
                 energy_stop_GeV=energies_GeV[event_uid_str] * 1.01,
@@ -166,8 +167,8 @@ def draw_primaries_and_pointings(
                 _zd,
             ) = corsika_primary.random.distributions.draw_azimuth_zenith_in_viewcone(
                 prng=prng,
-                azimuth_rad=pointings[event_uid_str]["azimuth_rad"],
-                zenith_rad=pointings[event_uid_str]["zenith_rad"],
+                azimuth_rad=instrument_pointings[event_uid_str]["azimuth_rad"],
+                zenith_rad=instrument_pointings[event_uid_str]["zenith_rad"],
                 min_scatter_opening_angle_rad=0.0,
                 max_scatter_opening_angle_rad=scatter_cone_half_angle_rad,
                 max_zenith_rad=corsika_primary.MAX_ZENITH_DISTANCE_RAD,
@@ -180,7 +181,9 @@ def draw_primaries_and_pointings(
                 "solid_angle_thrown_sr": solid_angle_utils.cone.intersection_of_two_cones(
                     half_angle_one_rad=corsika_primary.MAX_ZENITH_DISTANCE_RAD,
                     half_angle_two_rad=scatter_cone_half_angle_rad,
-                    angle_between_cones=pointings[event_uid_str]["zenith_rad"],
+                    angle_between_cones=instrument_pointings[event_uid_str][
+                        "zenith_rad"
+                    ],
                 ),
             }
             dbg = {"method": "viewcone"}
@@ -208,7 +211,7 @@ def draw_primaries_and_pointings(
 
     out = {}
     out["corsika_primary_steering"] = {"run": run, "primaries": primaries}
-    out["pointings"] = pointings
+    out["instrument_pointings"] = instrument_pointings
     out["primary_directions"] = {}
 
     for event_uid_str in primary_directions:
@@ -221,6 +224,12 @@ def draw_primaries_and_pointings(
 
 def run_job(job, logger):
     logger.info("draw_primaries_and_pointings, open SkyMap")
+
+    prng = seeding.init_numpy_random_Generator_PCG64_from_path_and_name(
+        path=opj(job["work_dir"], "named_random_seeds.json"),
+        name="draw_primaries_and_pointings",
+    )
+
     skymap = magnetic_deflection.skymap.SkyMap(
         work_dir=opj(
             job["plenoirf_dir"],
@@ -230,13 +239,21 @@ def run_job(job, logger):
         )
     )
 
+    with open(
+        opj(job["work_dir"], "event_uids_for_debugging.json"), "rt"
+    ) as fin:
+        event_uids_for_debugging = json_utils.loads(fin.read())
+
+    with open(opj(job["work_dir"], "pointing_range.pkl"), "rb") as fin:
+        pointing_range = pickle.loads(fin.read())
+
     logger.info("draw_primaries_and_pointings, draw primaries")
 
-    drw, debug = draw_primaries_and_pointings(
-        prng=job["prng"],
+    out, debug = draw_primaries_and_pointings(
+        prng=prng,
         run_id=job["run_id"],
         site_particle_magnetic_deflection_skymap=skymap,
-        pointing_range=job["run"]["pointing_range"],
+        pointing_range=pointing_range,
         energy_distribution=compile_energy_distribution(job=job),
         scatter_solid_angle_vs_energy=job["config"][
             "particles_scatter_solid_angle"
@@ -245,20 +262,21 @@ def run_job(job, logger):
             "field_of_view_half_angle_rad"
         ],
         num_events=job["num_events"],
-        event_uids_for_debugging=job["run"]["event_uids_for_debugging"],
+        event_uids_for_debugging=event_uids_for_debugging,
         logger=logger,
     )
 
-    job["run"].update(drw)
+    logger.info("draw_primaries_and_pointings, export results")
+    with rnw.open(
+        opj(job["work_dir"], "draw_primary_and_pointing.pkl"), "wb"
+    ) as fout:
+        fout.write(pickle.dumps(out))
 
-    logger.info("draw_primaries_and_pointings, export debug info")
-
+    logger.info("draw_primaries_and_pointings, export debug")
     write_draw_primaries_and_pointings_debug(
-        path=opj(job["work_dir"], "draw_primary_and_pointing.debug.tar"),
+        path=opj(job["work_dir"], "draw_primary_and_pointing.debug.zip"),
         debug=debug,
     )
-
-    return job
 
 
 def write_draw_primaries_and_pointings_debug(
@@ -266,17 +284,17 @@ def write_draw_primaries_and_pointings_debug(
     debug,
 ):
     event_uid_strs_for_debugging = sorted(list(debug.keys()))
-    with tarfile.open(path, "w") as tarout:
-        for event_uid_str in event_uid_strs_for_debugging:
-            dbg_text = json_utils.dumps(debug[event_uid_str], indent=None)
-            dbg_bytes = dbg_text.encode()
-            dbg_gz_bytes = gzip.compress(dbg_bytes)
-            tar_append.tar_append(
-                tarout=tarout,
-                filename=event_uid_str
-                + "_magnetic_deflection_skymap_query.json.gz",
-                filebytes=dbg_gz_bytes,
-            )
+    with rnw.open(path, "wb") as fff:
+        with zipfile.ZipFile(fff, "w") as zout:
+            for event_uid_str in event_uid_strs_for_debugging:
+                dbg_text = json_utils.dumps(debug[event_uid_str], indent=None)
+                dbg_bytes = dbg_text.encode()
+                dbg_gz_bytes = gzip.compress(dbg_bytes)
+                name = (
+                    event_uid_str + "_magnetic_deflection_skymap_query.json.gz"
+                )
+                with zout.open(name, "w") as fout:
+                    fout.write(dbg_gz_bytes)
 
 
 def compile_energy_distribution(job):

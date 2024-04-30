@@ -6,7 +6,7 @@ import dynamicsizerecarray
 def init_event_table_structure():
     t = collections.OrderedDict()
     t["primary"] = init_primary_level_structure()
-    t["pointing"] = init_pointing_level_structure()
+    t["instrument_pointing"] = init_instrument_pointing_level_structure()
 
     t["cherenkovsize"] = init_cherenkovsize_level_structure()
     t["cherenkovpool"] = init_cherenkovpool_level_structure()
@@ -141,7 +141,7 @@ def init_primary_level_structure():
     return t
 
 
-def init_pointing_level_structure():
+def init_instrument_pointing_level_structure():
     t = collections.OrderedDict()
     t["azimuth_rad"] = {
         "dtype": "<f8",

@@ -21,6 +21,7 @@ from . import configuration
 from . import event_table
 from . import ground_grid
 from . import configfile
+from . import seeding
 
 import os
 import numpy as np

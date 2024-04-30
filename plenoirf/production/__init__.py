@@ -12,6 +12,7 @@ import rename_after_writing as rnw
 import plenopy
 import sparse_numeric_table
 
+from .. import seeding
 from .. import bookkeeping
 from .. import configuration
 from .. import ground_grid
@@ -84,27 +85,31 @@ def run_job_in_dir(job, work_dir):
     logger.debug("making work_dir: {:s}".format(job["work_dir"]))
     os.makedirs(job["work_dir"], exist_ok=True)
 
-    logger.info("initializing prng(seed={:d})".format(job["run_id"]))
-    job["prng"] = np.random.Generator(np.random.PCG64(seed=job["run_id"]))
-    job["run"] = {}
+    logger.info("initializing random seeds (seed={:d})".format(job["run_id"]))
+    named_random_seeds = seeding.make_named_random_seeds(
+        seed=job["run_id"],
+        names=[
+            "draw_event_uids_for_debugging",
+            "draw_pointing_range",
+            "draw_primaries_and_pointings",
+            "simulate_shower_and_collect_cherenkov_light_in_grid",
+            "inspect_cherenkov_pool",
+            "inspect_particle_pool",
+        ],
+    )
+    seeding.write(
+        path=opj(job["work_dir"], "named_random_seeds.json"),
+        named_random_seeds=named_random_seeds,
+    )
 
     with jll.TimeDelta(logger, "draw_event_uids_for_debugging"):
-        job = draw_event_uids_for_debugging.run_job(job=job, logger=logger)
+        draw_event_uids_for_debugging.run_job(job=job, logger=logger)
 
     with jll.TimeDelta(logger, "draw_pointing_range"):
-        job = draw_pointing_range.run_job(job=job, logger=logger)
+        draw_pointing_range.run_job(job=job, logger=logger)
 
     with jll.TimeDelta(logger, "draw_primaries_and_pointings"):
-        job = checkpoint.checkpoint(
-            job=job,
-            logger=logger,
-            func=draw_primaries_and_pointings.run_job,
-            cache_path=opj(
-                job["work_dir"],
-                "draw_primaries_and_pointings",
-                "__job_cache__",
-            ),
-        )
+        draw_primaries_and_pointings.run_job(job=job, logger=logger)
 
     job["event_table"] = sparse_numeric_table.init(
         dtypes=event_table.structure.dtypes()
@@ -113,28 +118,12 @@ def run_job_in_dir(job, work_dir):
     with jll.TimeDelta(
         logger, "simulate_shower_and_collect_cherenkov_light_in_grid"
     ):
-        job = checkpoint.checkpoint(
-            job=job,
-            logger=logger,
-            func=simulate_shower_and_collect_cherenkov_light_in_grid.run_job,
-            cache_path=opj(
-                job["work_dir"],
-                "simulate_shower_and_collect_cherenkov_light_in_grid",
-                "__job_cache__",
-            ),
+        simulate_shower_and_collect_cherenkov_light_in_grid.run_job(
+            job=job, logger=logger
         )
 
     with jll.TimeDelta(logger, "inspect_cherenkov_pool"):
-        job = checkpoint.checkpoint(
-            job=job,
-            logger=logger,
-            func=inspect_cherenkov_pool.run_job,
-            cache_path=opj(
-                job["work_dir"],
-                "inspect_cherenkov_pool",
-                "__job_cache__",
-            ),
-        )
+        inspect_cherenkov_pool.run_job(job=job, logger=logger)
 
     with jll.TimeDelta(logger, "inspect_particle_pool"):
         job = inspect_particle_pool.run_job(job=job, logger=logger)

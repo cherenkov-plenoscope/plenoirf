@@ -33,6 +33,7 @@ setuptools.setup(
         "plenoirf.production",
         "plenoirf.summary",
         "plenoirf.features",
+        "plenoirf.seeding",
     ],
     install_requires=[
         "un_bound_histogram>=0.0.1",

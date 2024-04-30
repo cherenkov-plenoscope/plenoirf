@@ -1,4 +1,9 @@
 import atmospheric_cherenkov_response as acr
+import pickle
+import os
+import rename_after_writing as rnw
+
+from .. import seeding
 
 
 def draw_pointing_range(max_zenith_distance_rad, run_half_angle_rad, prng):
@@ -36,15 +41,23 @@ def draw_pointing_range(max_zenith_distance_rad, run_half_angle_rad, prng):
 
 
 def run_job(job, logger):
-    job["run"]["pointing_range"] = draw_pointing_range(
+    opj = os.path.join
+
+    prng = seeding.init_numpy_random_Generator_PCG64_from_path_and_name(
+        path=opj(job["work_dir"], "named_random_seeds.json"),
+        name="draw_pointing_range",
+    )
+
+    pointing_range = draw_pointing_range(
         max_zenith_distance_rad=job["config"]["pointing"]["range"][
             "max_zenith_distance_rad"
         ],
         run_half_angle_rad=job["config"]["pointing"]["range"][
             "run_half_angle_rad"
         ],
-        prng=job["prng"],
+        prng=prng,
     )
     logger.info("draw_pointing_range")
 
-    return job
+    with rnw.open(opj(job["work_dir"], "pointing_range.pkl"), "wb") as fout:
+        fout.write(pickle.dumps(pointing_range))

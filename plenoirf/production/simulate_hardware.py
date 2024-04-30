@@ -5,7 +5,6 @@ from os.path import join as opj
 import merlict_development_kit_python as mlidev
 import rename_after_writing as rnw
 import json_utils
-from . import job_io
 
 
 def run_job_block(job, blk, block_id, logger):
