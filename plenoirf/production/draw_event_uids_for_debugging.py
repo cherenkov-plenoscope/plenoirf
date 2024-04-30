@@ -6,16 +6,18 @@ import numpy as np
 import rename_after_writing as rnw
 import json_utils
 import os
+from os.path import join as opj
 
 
-def run(env, logger):
-    opj = os.path.join
+def run(env, seed, logger):
+    result_path = opj(env["work_dir"], "event_uids_for_debugging.json")
+    if os.path.exists(result_path):
+        logger.info("draw_pointing_range: already exists")
+        return
 
-    prng = seeding.init_numpy_random_Generator_PCG64_from_path_and_name(
-        path=opj(env["work_dir"], "named_random_seeds.json"),
-        name="draw_event_uids_for_debugging",
-    )
+    logger.info("draw_event_uids_for_debugging: ...")
 
+    prng = np.random.Generator(np.random.PCG64(seed))
     event_ids_for_debugging = debugging.draw_event_ids_for_debugging(
         num_events_in_run=env["num_events"],
         min_num_events=env["config"]["debugging"]["run"]["min_num_events"],
@@ -30,10 +32,12 @@ def run(env, logger):
     ]
 
     logger.info(
-        "event uids for debugging: {:s}.".format(str(event_uids_for_debugging))
+        "draw_event_uids_for_debugging: {:s}.".format(
+            str(event_uids_for_debugging)
+        )
     )
 
-    with rnw.open(
-        opj(env["work_dir"], "event_uids_for_debugging.json"), "wt"
-    ) as fout:
+    with rnw.open(result_path, "wt") as fout:
         fout.write(json_utils.dumps(event_uids_for_debugging))
+
+    logger.info("draw_event_uids_for_debugging: ... done.")

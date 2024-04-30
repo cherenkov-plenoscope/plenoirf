@@ -75,3 +75,67 @@ def make_seed_based_on_run_id_and_name(run_id, name):
     name_seed.write(name.encode())
     name_seed.seek(0)
     return hash_PCG64(bytes=name_seed.read())
+
+
+class Section:
+    """
+    A seeding section makes the random seed for a given section of a production
+    run. The see is based on the run's run_id and the name of a module.
+    It is expected that within the context of a Section, functions from this
+    module are executed and are provided the random seed of this Section.
+
+    Secondary, a section logs the time that it takes to run it.
+
+    Fields
+    ------
+    module : module
+        The module / class which's name got hashed into the seed.
+    seed : numpy.uint64
+        The random seed for this section.
+    name : str
+        The module's name plus a potential extension (block_id)
+    """
+
+    def __init__(self, run_id, module, block_id=None, logger=None):
+        """
+        Parameters
+        ----------
+        run_id : int
+            The production run's run_id. The value limited due to CORSIKA.
+            In a production run, CORSIKA is called once and uses the run_id
+            as its seed.
+        module : module / class
+            A python module or class with attribute ``__name__``.
+            The module's name will be hashed together with the run_id in order
+            to provide the seed.
+        """
+        self.run_id = run_id
+        self.module = module
+        self.logger = json_line_logger.LoggerStdout_if_logger_is_None(
+            logger=logger
+        )
+        self.name = self.module.__name__
+        self.block_id = block_id
+        if self.block_id:
+            self.name += ".block{:06d}".format(self.block_id)
+
+        self.time_delta = json_line_logger.TimeDelta(
+            logger=self.logger,
+            name=self.name,
+        )
+        self.seed = make_seed_based_on_run_id_and_name(
+            run_id=self.run_id,
+            name=self.name,
+        )
+        self.logger.info(
+            "Section: name: '{:s}', run_id: {:d}, seed: {:d}".format(
+                self.name, self.run_id, self.seed
+            )
+        )
+
+    def __enter__(self):
+        self.time_delta.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.time_delta.__exit__()

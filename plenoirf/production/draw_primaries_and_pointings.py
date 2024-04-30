@@ -222,14 +222,14 @@ def draw_primaries_and_pointings(
     return out, debug
 
 
-def run(env, logger):
-    logger.info("draw_primaries_and_pointings, open SkyMap")
+def run(env, seed, logger):
+    result_path = opj(env["work_dir"], "draw_primary_and_pointing.pkl")
+    if os.path.exists(result_path):
+        return
 
-    prng = seeding.init_numpy_random_Generator_PCG64_from_path_and_name(
-        path=opj(env["work_dir"], "named_random_seeds.json"),
-        name="draw_primaries_and_pointings",
-    )
+    prng = np.random.Generator(np.random.PCG64(seed))
 
+    logger.info("draw_primaries_and_pointings: open SkyMap")
     skymap = magnetic_deflection.skymap.SkyMap(
         work_dir=opj(
             env["plenoirf_dir"],
@@ -267,9 +267,7 @@ def run(env, logger):
     )
 
     logger.info("draw_primaries_and_pointings, export results")
-    with rnw.open(
-        opj(env["work_dir"], "draw_primary_and_pointing.pkl"), "wb"
-    ) as fout:
+    with rnw.open(result_path, "wb") as fout:
         fout.write(pickle.dumps(out))
 
     logger.info("draw_primaries_and_pointings, export debug")

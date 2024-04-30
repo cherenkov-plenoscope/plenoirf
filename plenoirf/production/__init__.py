@@ -7,6 +7,7 @@ import numpy as np
 
 import json_utils
 import json_line_logger as jll
+from json_line_logger import TimeDelta
 import merlict_development_kit_python as mlidev
 import rename_after_writing as rnw
 import plenopy
@@ -69,54 +70,37 @@ def run_job_in_dir(job, work_dir):
     logger.debug("making work_dir: {:s}".format(env["work_dir"]))
     os.makedirs(env["work_dir"], exist_ok=True)
 
-    logger.info("initializing random seeds (seed={:d})".format(env["run_id"]))
-    named_random_seeds = seeding.make_named_random_seeds(
-        run_id=env["run_id"],
-        names=[
-            "draw_event_uids_for_debugging",
-            "draw_pointing_range",
-            "draw_primaries_and_pointings",
-            "simulate_shower_and_collect_cherenkov_light_in_grid",
-            "inspect_cherenkov_pool",
-            "inspect_particle_pool",
-        ],
-    )
-    seeding.write(
-        path=opj(env["work_dir"], "named_random_seeds.json"),
-        named_random_seeds=named_random_seeds,
-    )
+    run_id = env["run_id"]
 
-    with jll.TimeDelta(logger, "draw_event_uids_for_debugging"):
-        draw_event_uids_for_debugging.run(env=env, logger=logger)
+    with seeding.Section(run_id, draw_event_uids_for_debugging, logger) as sec:
+        sec.module.run(env=env, seed=sec.seed, logger=logger)
 
-    with jll.TimeDelta(logger, "draw_pointing_range"):
-        draw_pointing_range.run(env=env, logger=logger)
+    with seeding.Section(run_id, draw_pointing_range, logger) as sec:
+        sec.module.run(env=env, seed=sec.seed, logger=logger)
 
-    with jll.TimeDelta(logger, "draw_primaries_and_pointings"):
-        draw_primaries_and_pointings.run(env=env, logger=logger)
+    with seeding.Section(run_id, draw_primaries_and_pointings, logger) as sec:
+        sec.module.run(env=env, seed=sec.seed, logger=logger)
 
-    job["event_table"] = sparse_numeric_table.init(
+    env["event_table"] = sparse_numeric_table.init(
         dtypes=event_table.structure.dtypes()
     )
 
-    with jll.TimeDelta(
-        logger, "simulate_shower_and_collect_cherenkov_light_in_grid"
-    ):
-        simulate_shower_and_collect_cherenkov_light_in_grid.run(
-            env=env, logger=logger
-        )
+    with seeding.Section(
+        run_id, simulate_shower_and_collect_cherenkov_light_in_grid, logger
+    ) as sec:
+        sec.module.run(env=env, seed=sec.seed, logger=logger)
 
-    with jll.TimeDelta(logger, "inspect_cherenkov_pool"):
-        inspect_cherenkov_pool.run(env=env, logger=logger)
+    with seeding.Section(run_id, inspect_cherenkov_pool, logger) as sec:
+        sec.module.run(env=env, seed=sec.seed, logger=logger)
 
-    with jll.TimeDelta(logger, "inspect_particle_pool"):
-        job = inspect_particle_pool.run(env=env, logger=logger)
+    with seeding.Section(run_id, inspect_particle_pool, logger) as sec:
+        sec.module.run(env=env, seed=sec.seed, logger=logger)
 
-    with jll.TimeDelta(logger, "split_event_tape_into_blocks"):
-        job = split_event_tape_into_blocks.run(env=env, logger=logger)
+    with seeding.Section(run_id, split_event_tape_into_blocks, logger) as sec:
+        sec.module.run(env=env, seed=sec.seed, logger=logger)
 
     blk = {}
-    with jll.TimeDelta(logger, "read light_field_calibration"):
+    with TimeDelta(logger, "read light_field_calibration"):
         light_field_calibration_path = opj(
             job["plenoirf_dir"],
             "plenoptics",
@@ -128,7 +112,7 @@ def run_job_in_dir(job, work_dir):
             path=light_field_calibration_path
         )
 
-    with jll.TimeDelta(logger, "read trigger_geometry"):
+    with TimeDelta(logger, "read trigger_geometry"):
         trigger_geometry_path = opj(
             job["plenoirf_dir"],
             "trigger_geometry",
@@ -143,7 +127,7 @@ def run_job_in_dir(job, work_dir):
     blocks_dir = os.path.join(job["work_dir"], "blocks")
     os.makedirs(blocks_dir, exist_ok=True)
 
-    with jll.TimeDelta(logger, "run blocks"):
+    with TimeDelta(logger, "run blocks"):
         for block_id_str in job["run"]["uids_in_cherenkov_pool_blocks"]:
             block_dir = os.path.join(blocks_dir, block_id_str)
             os.makedirs(block_dir, exist_ok=True)
@@ -160,21 +144,19 @@ def run_job_in_dir(job, work_dir):
 
 
 def _run_job_block(job, blk, block_id, logger):
-    with jll.TimeDelta(
-        logger, "simulate_hardware_block{:06d}".format(block_id)
-    ):
+    with TimeDelta(logger, "simulate_hardware_block{:06d}".format(block_id)):
         simulate_hardware.run_job_block(
             env=env, blk=blk, block_id=block_id, logger=logger
         )
 
-    with jll.TimeDelta(
+    with TimeDelta(
         logger, "simulate_loose_trigger_block{:06d}".format(block_id)
     ):
         simulate_loose_trigger.run_job_block(
             env=env, blk=blk, block_id=block_id, logger=logger
         )
 
-    with jll.TimeDelta(
+    with TimeDelta(
         logger, "classify_cherenkov_photons_block{:06d}".format(block_id)
     ):
         classify_cherenkov_photons.run_job_block(
@@ -243,3 +225,16 @@ def read_light_field_camera_config(plenoirf_dir, instrument_key):
             "scenery.json",
         )
     )
+
+
+class TimeDeltaModuleName:
+    def __init__(self, logger, module):
+        self.module = module
+        self.time_delta = TimeDelta(logger=logger, name=self.module.__name__)
+
+    def __enter__(self):
+        self.time_delta.__enter__()
+        return self.module
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.time_delta.__exit__()
