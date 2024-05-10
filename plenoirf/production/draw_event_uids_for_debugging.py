@@ -1,21 +1,20 @@
 from .. import debugging
 from .. import bookkeeping
-from .. import seeding
 
 import numpy as np
-import rename_after_writing as rnw
+import rename_after_writing
 import json_utils
 import os
-from os.path import join as opj
 
 
 def run(env, seed, logger):
+    opj = os.path.join
+    logger.info(__name__ + ": start ...")
+
     result_path = opj(env["work_dir"], "event_uids_for_debugging.json")
     if os.path.exists(result_path):
-        logger.info("draw_pointing_range: already exists")
+        logger.info(__name__ + ": already done. skip computation.")
         return
-
-    logger.info("draw_event_uids_for_debugging: ...")
 
     prng = np.random.Generator(np.random.PCG64(seed))
     event_ids_for_debugging = debugging.draw_event_ids_for_debugging(
@@ -31,13 +30,7 @@ def run(env, seed, logger):
         for event_id in event_ids_for_debugging
     ]
 
-    logger.info(
-        "draw_event_uids_for_debugging: {:s}.".format(
-            str(event_uids_for_debugging)
-        )
-    )
-
-    with rnw.open(result_path, "wt") as fout:
+    with rename_after_writing.open(result_path, "wt") as fout:
         fout.write(json_utils.dumps(event_uids_for_debugging))
 
-    logger.info("draw_event_uids_for_debugging: ... done.")
+    logger.info(__name__ + ": ... done.")

@@ -6,7 +6,7 @@ import copy
 import numpy as np
 
 import json_utils
-import json_line_logger as jll
+import json_line_logger
 from json_line_logger import TimeDelta
 import merlict_development_kit_python as mlidev
 import rename_after_writing as rnw
@@ -64,7 +64,7 @@ def run_job_in_dir(job, work_dir):
     os.makedirs(env["stage_dir"], exist_ok=True)
 
     logger_path = opj(env["stage_dir"], env["run_id_str"] + "_log.jsonl")
-    logger = jll.LoggerFile(path=logger_path + ".part")
+    logger = json_line_logger.LoggerFile(path=logger_path + ".part")
     logger.info("starting")
 
     logger.debug("making work_dir: {:s}".format(env["work_dir"]))
@@ -72,32 +72,86 @@ def run_job_in_dir(job, work_dir):
 
     run_id = env["run_id"]
 
-    with seeding.Section(run_id, draw_event_uids_for_debugging, logger) as sec:
-        sec.module.run(env=env, seed=sec.seed, logger=logger)
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=draw_event_uids_for_debugging,
+        logger=logger,
+    ) as sec:
+        sec.module.run(
+            env=env,
+            seed=sec.seed,
+            logger=logger,
+        )
 
-    with seeding.Section(run_id, draw_pointing_range, logger) as sec:
-        sec.module.run(env=env, seed=sec.seed, logger=logger)
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=draw_pointing_range,
+        logger=logger,
+    ) as sec:
+        sec.module.run(
+            env=env,
+            seed=sec.seed,
+            logger=logger,
+        )
 
-    with seeding.Section(run_id, draw_primaries_and_pointings, logger) as sec:
-        sec.module.run(env=env, seed=sec.seed, logger=logger)
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=draw_primaries_and_pointings,
+        logger=logger,
+    ) as sec:
+        sec.module.run(
+            env=env,
+            seed=sec.seed,
+            logger=logger,
+        )
 
     env["event_table"] = sparse_numeric_table.init(
         dtypes=event_table.structure.dtypes()
     )
 
-    with seeding.Section(
-        run_id, simulate_shower_and_collect_cherenkov_light_in_grid, logger
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=simulate_shower_and_collect_cherenkov_light_in_grid,
+        logger=logger,
     ) as sec:
-        sec.module.run(env=env, seed=sec.seed, logger=logger)
+        sec.module.run(
+            env=env,
+            seed=sec.seed,
+            logger=logger,
+        )
 
-    with seeding.Section(run_id, inspect_cherenkov_pool, logger) as sec:
-        sec.module.run(env=env, seed=sec.seed, logger=logger)
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=inspect_cherenkov_pool,
+        logger=logger,
+    ) as sec:
+        sec.module.run(
+            env=env,
+            seed=sec.seed,
+            logger=logger,
+        )
 
-    with seeding.Section(run_id, inspect_particle_pool, logger) as sec:
-        sec.module.run(env=env, seed=sec.seed, logger=logger)
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=inspect_particle_pool,
+        logger=logger,
+    ) as sec:
+        sec.module.run(
+            env=env,
+            seed=sec.seed,
+            logger=logger,
+        )
 
-    with seeding.Section(run_id, split_event_tape_into_blocks, logger) as sec:
-        sec.module.run(env=env, seed=sec.seed, logger=logger)
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=split_event_tape_into_blocks,
+        logger=logger,
+    ) as sec:
+        sec.module.run(
+            env=env,
+            seed=sec.seed,
+            logger=logger,
+        )
 
     blk = {}
     with TimeDelta(logger, "read light_field_calibration"):
@@ -127,43 +181,59 @@ def run_job_in_dir(job, work_dir):
     blocks_dir = os.path.join(job["work_dir"], "blocks")
     os.makedirs(blocks_dir, exist_ok=True)
 
-    with TimeDelta(logger, "run blocks"):
-        for block_id_str in job["run"]["uids_in_cherenkov_pool_blocks"]:
-            block_dir = os.path.join(blocks_dir, block_id_str)
-            os.makedirs(block_dir, exist_ok=True)
+    for block_id_str in job["run"]["uids_in_cherenkov_pool_blocks"]:
+        block_dir = os.path.join(blocks_dir, block_id_str)
+        os.makedirs(block_dir, exist_ok=True)
 
-            block_id = int(block_id_str)
-            job = _run_job_block(
-                env=env, blk=blk, block_id=block_id, logger=logger
-            )
+        block_id = int(block_id_str)
+        run_job_block(env=env, blk=blk, block_id=block_id, logger=logger)
 
     logger.info("ending")
     rnw.move(logger_path + ".part", logger_path)
 
-    return job
+    return 1
 
 
-def _run_job_block(job, blk, block_id, logger):
-    with TimeDelta(logger, "simulate_hardware_block{:06d}".format(block_id)):
-        simulate_hardware.run_job_block(
+def run_job_block(env, blk, block_id, logger):
+    run_id = env["run_id"]
+
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=simulate_hardware,
+        block_id=block_id,
+        logger=logger,
+    ) as sec:
+        sec.module.run_job_block(
+            env=env,
+            blk=blk,
+            block_id=block_id,
+            logger=logger,
+        )
+
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=simulate_loose_trigger,
+        block_id=block_id,
+        logger=logger,
+    ) as sec:
+        sec.module.run_job_block(
+            env=env,
+            blk=blk,
+            block_id=block_id,
+            logger=logger,
+        )
+
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=classify_cherenkov_photons,
+        block_id=block_id,
+        logger=logger,
+    ) as sec:
+        sec.module.run_job_block(
             env=env, blk=blk, block_id=block_id, logger=logger
         )
 
-    with TimeDelta(
-        logger, "simulate_loose_trigger_block{:06d}".format(block_id)
-    ):
-        simulate_loose_trigger.run_job_block(
-            env=env, blk=blk, block_id=block_id, logger=logger
-        )
-
-    with TimeDelta(
-        logger, "classify_cherenkov_photons_block{:06d}".format(block_id)
-    ):
-        classify_cherenkov_photons.run_job_block(
-            env=env, blk=blk, block_id=block_id, logger=logger
-        )
-
-    return job
+    return 1
 
 
 def compile_environment_for_job(job, work_dir):
