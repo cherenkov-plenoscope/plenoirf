@@ -34,6 +34,7 @@ setuptools.setup(
         "plenoirf.summary",
         "plenoirf.features",
         "plenoirf.seeding",
+        "plenoirf.logging",
     ],
     install_requires=[
         "xmltodict",
