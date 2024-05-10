@@ -22,32 +22,34 @@ from . import transform_cherenkov_bunches
 from . import cherenkov_bunch_storage
 
 
-def run(env, logger):
+def run(env, seed, logger):
     opj = os.path.join
+    logger.info(__name__ + ": start ...")
 
-    corsika_and_grid_work_dir = opj(
-        env["work_dir"],
-        "simulate_shower_and_collect_cherenkov_light_in_grid",
-    )
+    corsika_and_grid_work_dir = opj(env["work_dir"], __name__)
 
     if os.path.exists(corsika_and_grid_work_dir):
-        logger.info("corsika and grid: already done.")
+        logger.info(__name__ + ": already done. skip computation.")
         return
 
-    logger.info("corsika and grid: simulating showers ...")
-
-    prng = seeding.init_numpy_random_Generator_PCG64_from_path_and_name(
-        path=opj(env["work_dir"], "named_random_seeds.json"),
-        name="simulate_shower_and_collect_cherenkov_light_in_grid",
-    )
+    logger.info(__name__ + ": simulating showers ...")
+    prng = np.random.Generator(np.random.PCG64(seed))
 
     with open(
-        opj(env["work_dir"], "draw_primary_and_pointing.pkl"), "rb"
+        opj(
+            env["work_dir"],
+            "plenoirf.production.draw_primary_and_pointing.pkl",
+        ),
+        "rb",
     ) as fin:
         dpp = pickle.loads(fin.read())
 
     with open(
-        opj(env["work_dir"], "event_uids_for_debugging.json"), "rt"
+        opj(
+            env["work_dir"],
+            "plenoirf.production.event_uids_for_debugging.json",
+        ),
+        "rt",
     ) as fin:
         event_uids_for_debugging = json_utils.loads(fin.read())
 
@@ -61,7 +63,7 @@ def run(env, logger):
         event_uids_for_debugging=event_uids_for_debugging,
         logger=logger,
     )
-    logger.info("corsika and grid: simulating showers ... done.")
+    logger.info(__name__ + ": ... done.")
 
 
 def corsika_and_grid(
@@ -75,7 +77,7 @@ def corsika_and_grid(
     logger,
 ):
     opj = os.path.join
-    logger.info("corsika and grid: start corsika")
+    logger.info(__name__ + ": start corsika")
     work_dir = corsika_and_grid_work_dir
     debug_dir = opj(work_dir, "debug")
     os.makedirs(work_dir, exist_ok=True)
@@ -94,7 +96,7 @@ def corsika_and_grid(
             stderr_path=opj(work_dir, "corsika.stderr.txt"),
             particle_output_path=opj(work_dir, "particle_pools.dat"),
         ) as corsika_run:
-            logger.info("corsika and grid: corsika is ready")
+            logger.info(__name__ + ": corsika is ready")
             evttar.write_runh(runh=corsika_run.runh)
 
             for event_idx, corsika_event in enumerate(corsika_run):
@@ -117,9 +119,7 @@ def corsika_and_grid(
 
                 if utils.is_10th_part_in_current_decade(i=uid["event_id"]):
                     logger.info(
-                        "corsika and grid: shower uid {:s}".format(
-                            uid["uid_str"]
-                        )
+                        __name__ + ": shower uid {:s}".format(uid["uid_str"])
                     )
 
                 primary_rec = make_primary_record(
@@ -298,7 +298,7 @@ def corsika_and_grid(
                     ) as f:
                         f.write(json_utils.dumps(groundgrid_result))
 
-    logger.info("corsika and grid: particle output from dat to tar")
+    logger.info(__name__ + ": convert particle output from .dat to .tar")
     cpw.particles.dat_to_tape(
         dat_path=opj(work_dir, "particle_pools.dat"),
         tape_path=opj(work_dir, "particle_pools.tar.gz"),
