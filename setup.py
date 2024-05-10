@@ -36,6 +36,7 @@ setuptools.setup(
         "plenoirf.seeding",
     ],
     install_requires=[
+        "xmltodict",
         "un_bound_histogram>=0.0.1",
         "cosmic_fluxes",
         "corsika_primary>=2.3.3",

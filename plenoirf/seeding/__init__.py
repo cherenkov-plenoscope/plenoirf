@@ -3,46 +3,8 @@ import io
 import json_utils
 import rename_after_writing
 import json_line_logger
-
-
-def make_named_random_seeds(run_id, names=[]):
-    """
-    Assigns random seeds to names baesd on a hash constructed from the name and
-    an input seed.
-
-    Parameters
-    ----------
-    run_id : int, numpy.uint64
-        Must be >= 0. The input seed.
-    names : list of str
-        The names to receive a seed.
-
-    Returns
-    -------
-    seeds : dict
-        Assings names (str) to seeds (numpy.uint64)
-    """
-    assert len(names) == len(set(names)), "Expected names to be unique."
-    assert run_id >= 0, "Expected run_id >= 0."
-
-    out = {}
-    for name in names:
-        out[name] = make_seed_based_on_run_id_and_name(
-            run_id=run_id,
-            name=name,
-        )
-    return out
-
-
-def write(path, named_random_seeds):
-    with rename_after_writing.open(path, "wt") as fout:
-        fout.write(json_utils.dumps(named_random_seeds, indent=4))
-
-
-def read(path):
-    with open(path, "rt") as fout:
-        named_random_seeds = json_utils.loads(fout.read())
-    return named_random_seeds
+import xmltodict
+import copy
 
 
 def hash_PCG64(bytes):
@@ -63,21 +25,18 @@ def hash_PCG64(bytes):
     return np.frombuffer(prng.bytes(8), dtype=np.uint64)[0]
 
 
-def init_numpy_random_Generator_PCG64_from_path_and_name(path, name):
-    named_random_seeds = read(path=path)
-    return np.random.Generator(np.random.PCG64(named_random_seeds[name]))
-
-
-def make_seed_based_on_run_id_and_name(run_id, name):
+def make_seed_based_on_run_id_and_name(run_id, name, block_id=0):
     run_id = np.uint64(run_id)
+    block_id = np.uint64(block_id)
     name_seed = io.BytesIO()
     name_seed.write(run_id.tobytes())
+    name_seed.write(block_id.tobytes())
     name_seed.write(name.encode())
     name_seed.seek(0)
     return hash_PCG64(bytes=name_seed.read())
 
 
-class Section:
+class SeedSection:
     """
     A seeding section makes the random seed for a given section of a production
     run. The see is based on the run's run_id and the name of a module.
@@ -96,7 +55,7 @@ class Section:
         The module's name plus a potential extension (block_id)
     """
 
-    def __init__(self, run_id, module, block_id=None, logger=None):
+    def __init__(self, run_id, module, block_id=0, logger=None):
         """
         Parameters
         ----------
@@ -116,26 +75,57 @@ class Section:
         )
         self.name = self.module.__name__
         self.block_id = block_id
-        if self.block_id:
-            self.name += ".block{:06d}".format(self.block_id)
 
-        self.time_delta = json_line_logger.TimeDelta(
-            logger=self.logger,
-            name=self.name,
-        )
         self.seed = make_seed_based_on_run_id_and_name(
-            run_id=self.run_id,
-            name=self.name,
-        )
-        self.logger.info(
-            "Section: name: '{:s}', run_id: {:d}, seed: {:d}".format(
-                self.name, self.run_id, self.seed
-            )
+            run_id=self.run_id, name=self.name, block_id=self.block_id
         )
 
     def __enter__(self):
-        self.time_delta.__enter__()
+        msg = self.format_log_message(
+            name=self.name,
+            run_id=self.run_id,
+            block_id=self.block_id,
+            seed=self.seed,
+            status="enter",
+        )
+        self.logger.info(msg)
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.time_delta.__exit__()
+        msg = self.format_log_message(
+            name=self.name,
+            run_id=self.run_id,
+            block_id=self.block_id,
+            seed=self.seed,
+            status="exit",
+        )
+        self.logger.info(msg)
+
+    @staticmethod
+    def parse_log_message(log_message):
+        o = xmltodict.parse(log_message)["SeedSection"]
+        out = {}
+        out["name"] = o["@name"]
+        out["run_id"] = int(o["@run_id"])
+        out["block_id"] = int(o["@block_id"])
+        out["seed"] = int(o["@seed"])
+        out["status"] = o["@status"]
+        return out
+
+    @staticmethod
+    def parse_json_lines_log_entry(log_entry):
+        out = copy.deepcopy(log_entry)
+        out["m"] = SeedSection.parse_log_message(log_message=out["m"])
+        return out
+
+    @staticmethod
+    def format_log_message(name, run_id, block_id, seed, status):
+        s = ""
+        s += "<SeedSection"
+        s += " name='{:s}'".format(name)
+        s += " run_id='{:d}'".format(run_id)
+        s += " block_id='{:d}'".format(block_id)
+        s += " seed='{:d}'".format(seed)
+        s += " status='{:s}'".format(status)
+        s += "/>"
+        return s
