@@ -1,8 +1,7 @@
 import atmospheric_cherenkov_response as acr
 import pickle
 import os
-from os.path import join as opj
-import rename_after_writing as rnw
+import rename_after_writing
 
 
 def draw_pointing_range(max_zenith_distance_rad, run_half_angle_rad, prng):
@@ -40,12 +39,13 @@ def draw_pointing_range(max_zenith_distance_rad, run_half_angle_rad, prng):
 
 
 def run(env, seed, logger):
-    result_path = opj(env["work_dir"], "pointing_range.pkl")
-    if os.path.exists(result_path):
-        logger.info("draw_pointing_range: already exists")
-        return
+    opj = os.path.join
+    logger.info(__name__ + ": start ...")
 
-    logger.info("draw_pointing_range: ...")
+    result_path = opj(env["work_dir"], __name__ + ".pkl")
+    if os.path.exists(result_path):
+        logger.info(__name__ + ": already done. skip computation.")
+        return
 
     prng = np.random.Generator(np.random.PCG64(seed))
     pointing_range = draw_pointing_range(
@@ -58,7 +58,7 @@ def run(env, seed, logger):
         prng=prng,
     )
 
-    with rnw.open(result_path, "wb") as fout:
+    with rename_after_writing.open(result_path, "wb") as fout:
         fout.write(pickle.dumps(pointing_range))
 
-    logger.info("draw_pointing_range: ... done.")
+    logger.info(__name__ + ": ... done.")

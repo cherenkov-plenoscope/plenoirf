@@ -11,7 +11,7 @@ def run(env, seed, logger):
     opj = os.path.join
     logger.info(__name__ + ": start ...")
 
-    result_path = opj(env["work_dir"], "event_uids_for_debugging.json")
+    result_path = opj(env["work_dir"], __name__ + ".json")
     if os.path.exists(result_path):
         logger.info(__name__ + ": already done. skip computation.")
         return

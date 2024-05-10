@@ -6,19 +6,16 @@ import corsika_primary
 import magnetic_deflection
 import atmospheric_cherenkov_response as acr
 import os
-from os import path as op
-from os.path import join as opj
 import json_utils
 import rename_after_writing as rnw
 import zipfile
 import gzip
 import pickle
-import json_line_logger as jll
+import json_line_logger
 
 from .. import bookkeeping
 from .. import configuration
 from .. import utils
-from .. import seeding
 
 
 def draw_primaries_and_pointings(
@@ -66,9 +63,7 @@ def draw_primaries_and_pointings(
         Describes explicitly how each particle shall be thrown in CORSIKA.
     """
     mag_skymap = site_particle_magnetic_deflection_skymap
-
-    if logger is None:
-        logger = jll.LoggerStdout()
+    logger = json_line_logger.LoggerStdout_if_None(logger=logger)
 
     # assertion checks
     # ----------------
@@ -223,13 +218,16 @@ def draw_primaries_and_pointings(
 
 
 def run(env, seed, logger):
-    result_path = opj(env["work_dir"], "draw_primary_and_pointing.pkl")
+    opj = os.path.join
+    logger.info(__name__ + ": start ...")
+
+    result_path = opj(env["work_dir"], __name__ + ".pkl")
     if os.path.exists(result_path):
         return
 
     prng = np.random.Generator(np.random.PCG64(seed))
 
-    logger.info("draw_primaries_and_pointings: open SkyMap")
+    logger.info(__name__ + ": open SkyMap")
     skymap = magnetic_deflection.skymap.SkyMap(
         work_dir=opj(
             env["plenoirf_dir"],
@@ -240,15 +238,20 @@ def run(env, seed, logger):
     )
 
     with open(
-        opj(env["work_dir"], "event_uids_for_debugging.json"), "rt"
+        opj(
+            env["work_dir"],
+            "plenoirf.production.event_uids_for_debugging.json",
+        ),
+        "rt",
     ) as fin:
         event_uids_for_debugging = json_utils.loads(fin.read())
 
-    with open(opj(env["work_dir"], "pointing_range.pkl"), "rb") as fin:
+    with open(
+        opj(env["work_dir"], "plenoirf.production.pointing_range.pkl"), "rb"
+    ) as fin:
         pointing_range = pickle.loads(fin.read())
 
-    logger.info("draw_primaries_and_pointings, draw primaries")
-
+    logger.info(__name__ + ": drawing")
     out, debug = draw_primaries_and_pointings(
         prng=prng,
         run_id=env["run_id"],
@@ -266,15 +269,17 @@ def run(env, seed, logger):
         logger=logger,
     )
 
-    logger.info("draw_primaries_and_pointings, export results")
+    logger.info(__name__ + ": exporting results.")
     with rnw.open(result_path, "wb") as fout:
         fout.write(pickle.dumps(out))
 
-    logger.info("draw_primaries_and_pointings, export debug")
+    logger.info(__name__ + ": exporting debug.")
     write_draw_primaries_and_pointings_debug(
-        path=opj(env["work_dir"], "draw_primary_and_pointing.debug.zip"),
+        path=opj(env["work_dir"], __name__ + ".debug.zip"),
         debug=debug,
     )
+
+    logger.info(__name__ + ": ... done.")
 
 
 def write_draw_primaries_and_pointings_debug(
