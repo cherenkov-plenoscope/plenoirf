@@ -63,7 +63,7 @@ def draw_primaries_and_pointings(
         Describes explicitly how each particle shall be thrown in CORSIKA.
     """
     mag_skymap = site_particle_magnetic_deflection_skymap
-    logger = json_line_logger.LoggerStdout_if_None(logger=logger)
+    logger = json_line_logger.LoggerStdout_if_logger_is_None(logger=logger)
 
     # assertion checks
     # ----------------
@@ -108,9 +108,7 @@ def draw_primaries_and_pointings(
         )
 
         if utils.is_10th_part_in_current_decade(i=event_id):
-            logger.info(
-                "draw_primaries_and_pointings, uid: {:s}".format(event_uid_str)
-            )
+            logger.info(__name__ + ": uid={:s}".format(event_uid_str))
 
         # energies
         # --------
@@ -240,14 +238,15 @@ def run(env, seed, logger):
     with open(
         opj(
             env["work_dir"],
-            "plenoirf.production.event_uids_for_debugging.json",
+            "plenoirf.production.draw_event_uids_for_debugging.json",
         ),
         "rt",
     ) as fin:
         event_uids_for_debugging = json_utils.loads(fin.read())
 
     with open(
-        opj(env["work_dir"], "plenoirf.production.pointing_range.pkl"), "rb"
+        opj(env["work_dir"], "plenoirf.production.draw_pointing_range.pkl"),
+        "rb",
     ) as fin:
         pointing_range = pickle.loads(fin.read())
 

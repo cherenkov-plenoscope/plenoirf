@@ -1,6 +1,7 @@
 import atmospheric_cherenkov_response as acr
 import pickle
 import os
+import numpy as np
 import rename_after_writing
 
 

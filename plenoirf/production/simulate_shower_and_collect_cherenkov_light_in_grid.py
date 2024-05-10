@@ -38,7 +38,7 @@ def run(env, seed, logger):
     with open(
         opj(
             env["work_dir"],
-            "plenoirf.production.draw_primary_and_pointing.pkl",
+            "plenoirf.production.draw_primaries_and_pointings.pkl",
         ),
         "rb",
     ) as fin:
@@ -47,7 +47,7 @@ def run(env, seed, logger):
     with open(
         opj(
             env["work_dir"],
-            "plenoirf.production.event_uids_for_debugging.json",
+            "plenoirf.production.draw_event_uids_for_debugging.json",
         ),
         "rt",
     ) as fin:
