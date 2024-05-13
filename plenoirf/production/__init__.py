@@ -105,10 +105,6 @@ def run_job_in_dir(job, work_dir):
             logger=logger,
         )
 
-    env["event_table"] = sparse_numeric_table.init(
-        dtypes=event_table.structure.dtypes()
-    )
-
     with seeding.SeedSection(
         run_id=run_id,
         module=simulate_shower_and_collect_cherenkov_light_in_grid,
@@ -127,7 +123,6 @@ def run_job_in_dir(job, work_dir):
     ) as sec:
         sec.module.run(
             env=env,
-            seed=sec.seed,
             logger=logger,
         )
 
@@ -138,7 +133,6 @@ def run_job_in_dir(job, work_dir):
     ) as sec:
         sec.module.run(
             env=env,
-            seed=sec.seed,
             logger=logger,
         )
 
@@ -149,17 +143,16 @@ def run_job_in_dir(job, work_dir):
     ) as sec:
         sec.module.run(
             env=env,
-            seed=sec.seed,
             logger=logger,
         )
 
     blk = {}
     with TimeDelta(logger, "read light_field_calibration"):
         light_field_calibration_path = opj(
-            job["plenoirf_dir"],
+            env["plenoirf_dir"],
             "plenoptics",
             "instruments",
-            job["instrument_key"],
+            env["instrument_key"],
             "light_field_geometry",
         )
         blk["light_field_geometry"] = plenopy.LightFieldGeometry(
@@ -168,20 +161,16 @@ def run_job_in_dir(job, work_dir):
 
     with TimeDelta(logger, "read trigger_geometry"):
         trigger_geometry_path = opj(
-            job["plenoirf_dir"],
+            env["plenoirf_dir"],
             "trigger_geometry",
-            job["instrument_key"]
+            env["instrument_key"]
             + plenopy.trigger.geometry.suggested_filename_extension(),
         )
-
         blk["trigger_geometry"] = plenopy.trigger.geometry.read(
             path=trigger_geometry_path
         )
 
-    blocks_dir = os.path.join(job["work_dir"], "blocks")
-    os.makedirs(blocks_dir, exist_ok=True)
-
-    for block_id_str in job["run"]["uids_in_cherenkov_pool_blocks"]:
+    for block_id_str in env["run"]["uids_in_cherenkov_pool_blocks"]:
         block_dir = os.path.join(blocks_dir, block_id_str)
         os.makedirs(block_dir, exist_ok=True)
 

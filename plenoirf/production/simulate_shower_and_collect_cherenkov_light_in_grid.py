@@ -17,6 +17,7 @@ from .. import outer_telescope_array
 from .. import tar_append
 from .. import seeding
 from .. import utils
+from .. import event_table
 
 from . import transform_cherenkov_bunches
 from . import cherenkov_bunch_storage
@@ -53,9 +54,20 @@ def run(env, seed, logger):
     ) as fin:
         event_uids_for_debugging = json_utils.loads(fin.read())
 
-    corsika_and_grid(
+    evttab = {}
+    evttab = event_table.add_empty_level(evttab, "primary")
+    evttab = event_table.add_empty_level(evttab, "instrument_pointing")
+    evttab = event_table.add_empty_level(evttab, "cherenkovsize")
+    evttab = event_table.add_empty_level(evttab, "cherenkovpool")
+    evttab = event_table.add_empty_level(evttab, "groundgrid")
+    evttab = event_table.add_empty_level(evttab, "core")
+    evttab = event_table.add_empty_level(evttab, "cherenkovsizepart")
+    evttab = event_table.add_empty_level(evttab, "cherenkovpoolpart")
+
+    evttab = corsika_and_grid(
         env=env,
         prng=prng,
+        evttab=evttab,
         corsika_and_grid_work_dir=corsika_and_grid_work_dir,
         corsika_primary_steering=dpp["corsika_primary_steering"],
         primary_directions=dpp["primary_directions"],
@@ -63,12 +75,19 @@ def run(env, seed, logger):
         event_uids_for_debugging=event_uids_for_debugging,
         logger=logger,
     )
+
+    event_table.write_all_levels_to_path(
+        evttab=evttab,
+        path=os.path.join(corsika_and_grid_work_dir, "event_table.tar"),
+    )
+
     logger.info(__name__ + ": ... done.")
 
 
 def corsika_and_grid(
     env,
     prng,
+    evttab,
     corsika_and_grid_work_dir,
     corsika_primary_steering,
     primary_directions,
@@ -128,12 +147,12 @@ def corsika_and_grid(
                     corsika_primary_steering=corsika_primary_steering,
                     primary_directions=primary_directions,
                 )
-                env["event_table"]["primary"].append_record(primary_rec)
+                evttab["primary"].append_record(primary_rec)
 
                 instrument_pointing_rec = make_instrument_pointing_record(
                     uid=uid, instrument_pointings=instrument_pointings
                 )
-                env["event_table"]["instrument_pointing"].append_record(
+                evttab["instrument_pointing"].append_record(
                     instrument_pointing_rec
                 )
                 _ = instrument_pointing_rec.pop("idx")
@@ -145,9 +164,7 @@ def corsika_and_grid(
                     )
                 )
                 cherenkovsize_rec.update(uid["record"])
-                env["event_table"]["cherenkovsize"].append_record(
-                    cherenkovsize_rec
-                )
+                evttab["cherenkovsize"].append_record(cherenkovsize_rec)
 
                 if cherenkovsize_rec["num_bunches"] > 0:
                     cherenkovpool_rec = (
@@ -156,9 +173,7 @@ def corsika_and_grid(
                         )
                     )
                     cherenkovpool_rec.update(uid["record"])
-                    env["event_table"]["cherenkovpool"].append_record(
-                        cherenkovpool_rec
-                    )
+                    evttab["cherenkovpool"].append_record(cherenkovpool_rec)
 
                     groundgrid_config = ground_grid.make_ground_grid_config(
                         bin_width_m=env["config"]["ground_grid"]["geometry"][
@@ -209,9 +224,7 @@ def corsika_and_grid(
                         groundgrid_result=groundgrid_result,
                         groundgrid=groundgrid,
                     )
-                    env["event_table"]["groundgrid"].append_record(
-                        groundgrid_rec
-                    )
+                    evttab["groundgrid"].append_record(groundgrid_rec)
 
                     if groundgrid_result["choice"]:
                         cherenkov_bunches_in_choice = (
@@ -247,7 +260,7 @@ def corsika_and_grid(
                                 "choice"
                             ],
                         )
-                        env["event_table"]["core"].append_record(core_rec)
+                        evttab["core"].append_record(core_rec)
 
                         EventTape_append_event(
                             evttar=evttar,
@@ -276,7 +289,7 @@ def corsika_and_grid(
                             cherenkov_bunches=cherenkov_bunches_in_instrument
                         )
                         cherenkovsizepart_rec.update(uid["record"])
-                        env["event_table"]["cherenkovsizepart"].append_record(
+                        evttab["cherenkovsizepart"].append_record(
                             cherenkovsizepart_rec
                         )
 
@@ -285,9 +298,9 @@ def corsika_and_grid(
                                 cherenkov_bunches=cherenkov_bunches_in_instrument
                             )
                             cherenkovpoolpart_rec.update(uid["record"])
-                            env["event_table"][
-                                "cherenkovpoolpart"
-                            ].append_record(cherenkovpoolpart_rec)
+                            evttab["cherenkovpoolpart"].append_record(
+                                cherenkovpoolpart_rec
+                            )
 
                     with open(
                         opj(
@@ -304,7 +317,7 @@ def corsika_and_grid(
         tape_path=opj(work_dir, "particle_pools.tar.gz"),
     )
 
-    return env
+    return evttab
 
 
 def nail_down_event_identity(

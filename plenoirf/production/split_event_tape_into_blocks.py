@@ -1,32 +1,37 @@
 import copy
 import os
 import numpy as np
-from os import path as op
-from os.path import join as opj
-
+import json_utils
 import corsika_primary as cpw
+
 from .. import bookkeeping
 
 
 def run(env, logger):
-    logger.info("split_event_tape_into_blocks, split")
+    opj = os.path.join
+    logger.info(__name__ + ": start ...")
 
-    blocks_dir = os.path.join(env["work_dir"], "blocks")
-    os.makedirs(blocks_dir, exist_ok=True)
+    sub_work_dir = os.path.join(env["work_dir"], __name__)
 
-    env["run"]["uids_in_cherenkov_pool_blocks"] = split_event_tape_into_blocks(
+    if os.path.exists(sub_work_dir):
+        logger.info(__name__ + ": already done. skip computation.")
+
+    os.makedirs(sub_work_dir)
+    uid_map = split_event_tape_into_blocks(
         inpath=os.path.join(
             env["work_dir"],
-            "simulate_shower_and_collect_cherenkov_light_in_grid",
+            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
             "cherenkov_pools.tar",
         ),
         outpath_block_fmt=os.path.join(
-            blocks_dir, "{block_id:06d}", "cherenkov_pools.tar"
+            sub_work_dir, "{block_id:06d}", "cherenkov_pools.tar"
         ),
         num_events=env["max_num_events_in_merlict_run"],
     )
+    with rnw.open(os.path.join(sub_work_dir, "uids_in_cherenkov_pool_blocks.json"), "wt") as fout:
+        fout.write(json_utils.dumps(uid_map))
 
-    return env
+    logger.info(__name__ + ": ... done.")
 
 
 def split_event_tape_into_blocks(inpath, outpath_block_fmt, num_events):

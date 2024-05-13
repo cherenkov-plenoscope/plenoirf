@@ -4,12 +4,49 @@ import os
 import sparse_numeric_table as spt
 
 from .. import bookkeeping
+from .. import event_table
 
 
 def run(env, logger):
+    opj = os.path.join
+    logger.info(__name__ + ": start ...")
+
+    sub_work_dir = opj(env["work_dir"], __name__)
+
+    if os.path.exists(sub_work_dir):
+        logger.info(__name__ + ": already done. skip computation.")
+        return
+
+    evttab = {}
+    evttab = event_table.add_levels_from_path(
+        evttab=evttab,
+        path=os.path.join(
+            env["work_dir"],
+            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "event_table.tar",
+        ),
+    )
+    evttab = event_table.add_empty_level(
+        evttab=evttab, level_key="particlepool"
+    )
+    evttab = event_table.add_empty_level(
+        evttab=evttab, level_key="particlepoolonaperture"
+    )
+
+    evttab = inspect_particle_pool(evttab=evttab, env=env, logger=logger)
+
+    os.makedirs(sub_work_dir)
+    event_table.write_certain_levels_to_path(
+        evttab=evttab,
+        path=os.path.join(sub_work_dir, "event_table.tar"),
+        level_keys=["particlepool", "particlepoolonaperture"],
+    )
+
+
+def inspect_particle_pool(evttab, env, logger):
     aperture_radius_m = guess_aperture_radius_m(env=env)
 
-    logger.info("inspect_particle_pool, init corsika particle zoo")
+    logger.info(__name__ + "init corsika particle zoo")
     corsika_particle_zoo = cpw.particles.identification.Zoo(
         media_refractive_indices={
             "water": 1.33,
@@ -19,12 +56,12 @@ def run(env, logger):
         }
     )
 
-    logger.info("inspect_particle_pool, read corsika's particle output")
+    logger.info(__name__ + "read corsika's particle output")
 
     with cpw.particles.ParticleEventTapeReader(
         path=os.path.join(
             env["work_dir"],
-            "simulate_shower_and_collect_cherenkov_light_in_grid",
+            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
             "particle_pools.tar.gz",
         )
     ) as particle_run:
@@ -36,7 +73,7 @@ def run(env, logger):
             ppp = init_particlepool_record(uid=uid)
 
             core = record_by_uid(
-                dynamicsizerecarray=env["event_table"]["core"],
+                dynamicsizerecarray=evttab["core"],
                 uid=uid,
             )
 
@@ -72,10 +109,11 @@ def run(env, logger):
                         aperture_radius_m=aperture_radius_m,
                     )
 
-            env["event_table"]["particlepool"].append_record(ppp)
+            evttab["particlepool"].append_record(ppp)
             if core:
-                env["event_table"]["particlepoolonaperture"].append_record(aaa)
-    return env
+                evttab["particlepoolonaperture"].append_record(aaa)
+
+    return evttab
 
 
 def guess_aperture_radius_m(env):

@@ -1,6 +1,5 @@
 import collections
 import numpy as np
-import dynamicsizerecarray
 
 
 def init_event_table_structure():
