@@ -136,6 +136,9 @@ def run_job_in_dir(job, work_dir):
             logger=logger,
         )
 
+    blk = {}
+    blk["blocks_dir"] = os.path.join(env["work_dir"], "blocks")
+
     with seeding.SeedSection(
         run_id=run_id,
         module=split_event_tape_into_blocks,
@@ -146,7 +149,12 @@ def run_job_in_dir(job, work_dir):
             logger=logger,
         )
 
-    blk = {}
+    _blkp = os.path.join(
+        env["work_dir"], "blocks", "uids_in_cherenkov_pool_blocks.json"
+    )
+    with open(_blkp, "rt") as fin:
+        blk["uids_in_cherenkov_pool_blocks"] = json_utils.loads(fin.read())
+
     with TimeDelta(logger, "read light_field_calibration"):
         light_field_calibration_path = opj(
             env["plenoirf_dir"],
@@ -170,12 +178,11 @@ def run_job_in_dir(job, work_dir):
             path=trigger_geometry_path
         )
 
-    for block_id_str in env["run"]["uids_in_cherenkov_pool_blocks"]:
-        block_dir = os.path.join(blocks_dir, block_id_str)
-        os.makedirs(block_dir, exist_ok=True)
-
-        block_id = int(block_id_str)
-        run_job_block(env=env, blk=blk, block_id=block_id, logger=logger)
+    for block_id_str in blk["uids_in_cherenkov_pool_blocks"]:
+        block_dir = os.path.join(env["work_dir"], "blocks", block_id_str)
+        run_job_block(
+            env=env, blk=blk, block_id=int(block_id_str), logger=logger
+        )
 
     logger.info("ending")
     rnw.move(logger_path + ".part", logger_path)
@@ -192,7 +199,7 @@ def run_job_block(env, blk, block_id, logger):
         block_id=block_id,
         logger=logger,
     ) as sec:
-        sec.module.run_job_block(
+        sec.module.run_block(
             env=env,
             blk=blk,
             block_id=block_id,
@@ -205,7 +212,7 @@ def run_job_block(env, blk, block_id, logger):
         block_id=block_id,
         logger=logger,
     ) as sec:
-        sec.module.run_job_block(
+        sec.module.run_block(
             env=env,
             blk=blk,
             block_id=block_id,
@@ -218,7 +225,7 @@ def run_job_block(env, blk, block_id, logger):
         block_id=block_id,
         logger=logger,
     ) as sec:
-        sec.module.run_job_block(
+        sec.module.run_block(
             env=env, blk=blk, block_id=block_id, logger=logger
         )
 

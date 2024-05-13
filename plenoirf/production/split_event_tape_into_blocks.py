@@ -3,20 +3,25 @@ import os
 import numpy as np
 import json_utils
 import corsika_primary as cpw
+import rename_after_writing as rnw
 
 from .. import bookkeeping
 
 
 def run(env, logger):
-    opj = os.path.join
     logger.info(__name__ + ": start ...")
 
-    sub_work_dir = os.path.join(env["work_dir"], __name__)
+    blocks_dir = os.path.join(env["work_dir"], "blocks")
+    os.makedirs(blocks_dir, exist_ok=True)
 
-    if os.path.exists(sub_work_dir):
+    result_path = os.path.join(
+        blocks_dir, "uids_in_cherenkov_pool_blocks.json"
+    )
+
+    if os.path.exists(result_path):
         logger.info(__name__ + ": already done. skip computation.")
+        return
 
-    os.makedirs(sub_work_dir)
     uid_map = split_event_tape_into_blocks(
         inpath=os.path.join(
             env["work_dir"],
@@ -24,11 +29,11 @@ def run(env, logger):
             "cherenkov_pools.tar",
         ),
         outpath_block_fmt=os.path.join(
-            sub_work_dir, "{block_id:06d}", "cherenkov_pools.tar"
+            blocks_dir, "{block_id:06d}", "cherenkov_pools.tar"
         ),
         num_events=env["max_num_events_in_merlict_run"],
     )
-    with rnw.open(os.path.join(sub_work_dir, "uids_in_cherenkov_pool_blocks.json"), "wt") as fout:
+    with rnw.open(result_path, "wt") as fout:
         fout.write(json_utils.dumps(uid_map))
 
     logger.info(__name__ + ": ... done.")
@@ -50,7 +55,7 @@ def split_event_tape_into_blocks(inpath, outpath_block_fmt, num_events):
         for event in irun:
             evth, cherenkov_reader = event
             cherenkov_bunches = read_all_cherenkov_bunches(cherenkov_reader)
-            uid = bookkeeping.uid.make_uid(
+            uid_str = bookkeeping.uid.make_uid_str(
                 run_id=int(evth[cpw.I.EVTH.RUN_NUMBER]),
                 event_id=int(evth[cpw.I.EVTH.EVENT_NUMBER]),
             )
@@ -60,14 +65,16 @@ def split_event_tape_into_blocks(inpath, outpath_block_fmt, num_events):
                 block_id_str = "{:06d}".format(block_id)
                 if orun is not None:
                     orun.close()
-                outpath = opj(outpath_block_fmt.format(block_id=block_id))
+                outpath = os.path.join(
+                    outpath_block_fmt.format(block_id=block_id)
+                )
                 outdir = os.path.dirname(outpath)
                 os.makedirs(outdir, exist_ok=True)
                 orun = Writer(outpath)
                 orun.write_runh(runh)
                 uid_map[block_id_str] = []
 
-            uid_map[block_id_str].append(uid)
+            uid_map[block_id_str].append(uid_str)
             orun.write_evth(evth=evth)
             orun.write_payload(payload=cherenkov_bunches)
             event_counter += 1

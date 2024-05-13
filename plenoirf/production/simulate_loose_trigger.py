@@ -10,19 +10,81 @@ import json_utils
 import sebastians_matplotlib_addons as sebplt
 
 from .. import bookkeeping
+from .. import event_table
 
 
 def run_block(env, blk, block_id, logger):
-    env = simulate_loose_trigger(
-        env=env, blk=blk, block_id=block_id, logger=logger
+    opj = os.path.join
+    logger.info(__name__ + ": start ...")
+
+    block_dir = opj(env["work_dir"], "blocks", "{:06d}".format(block_id))
+    sub_work_dir = opj(block_dir, "simulate_loose_trigger")
+
+    if os.path.exists(sub_work_dir):
+        logger.info(__name__ + ": already done. skip computation.")
+        return
+
+    event_uids_for_debugging = json_utils.read(
+        path=os.path.join(
+            env["work_dir"],
+            "plenoirf.production.draw_event_uids_for_debugging.json",
+        )
     )
-    return env
+    visible_cherenkov_photon_size = json_utils.read(
+        path=os.path.join(
+            env["work_dir"],
+            "plenoirf.production.inspect_cherenkov_pool",
+            "visible_cherenkov_photon_size.json",
+        )
+    )
+
+    evttab = {}
+    evttab = event_table.add_levels_from_path(
+        evttab=evttab,
+        path=opj(
+            env["work_dir"],
+            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "event_table.tar",
+        ),
+    )
+    evttab = event_table.add_levels_from_path(
+        evttab=evttab,
+        path=opj(
+            env["work_dir"],
+            "plenoirf.production.inspect_particle_pool",
+            "event_table.tar",
+        ),
+    )
+    evttab = event_table.add_empty_level(evttab, "instrument")
+    evttab = event_table.add_empty_level(evttab, "trigger")
+    evttab = event_table.add_empty_level(evttab, "pasttrigger")
+
+    evttab = simulate_loose_trigger(
+        env=env,
+        blk=blk,
+        block_id=block_id,
+        evttab=evttab,
+        event_uids_for_debugging=event_uids_for_debugging,
+        visible_cherenkov_photon_size=visible_cherenkov_photon_size,
+        logger=logger,
+    )
+
+    event_table.write_certain_levels_to_path(
+        evttab=evttab,
+        path=opj(sub_work_dir, "event_table.tar"),
+        level_keys=["instrument", "trigger", "pasttrigger"],
+    )
+
+    logger.info(__name__ + ": ... done.")
 
 
 def simulate_loose_trigger(
     env,
     blk,
     block_id,
+    evttab,
+    event_uids_for_debugging,
+    visible_cherenkov_photon_size,
     logger,
 ):
     opj = os.path.join
@@ -54,7 +116,7 @@ def simulate_loose_trigger(
         insrec[
             "start_time_of_exposure_s"
         ] = event.simulation_truth.photon_propagator.nsb_exposure_start_time()
-        env["event_table"]["instrument"].append_record(insrec)
+        evttab["instrument"].append_record(insrec)
 
         # apply loose trigger
         # -------------------
@@ -62,13 +124,6 @@ def simulate_loose_trigger(
             uid_str = bookkeeping.uid.make_uid_str(
                 run_id=run_id,
                 event_id=event_id,
-            )
-            visible_cherenkov_photon_size = json_utils.read(
-                path=os.path.join(
-                    env["work_dir"],
-                    "inspect_cherenkov_pool",
-                    "visible_cherenkov_photon_size.json",
-                )
             )
             if visible_cherenkov_photon_size[uid_str] > 100:
                 foci_trigger_image_sequences = (
@@ -124,7 +179,7 @@ def simulate_loose_trigger(
             trgtru["focus_{:02d}_response_pe".format(o)] = int(
                 trigger_responses[o]["response_pe"]
             )
-        env["event_table"]["trigger"].append_record(trgtru)
+        evttab["trigger"].append_record(trgtru)
 
         # passing loose trigger
         # ---------------------
@@ -140,11 +195,11 @@ def simulate_loose_trigger(
             table_past_trigger.append(ptp)
 
             patrec = uidrec.copy()
-            env["event_table"]["pasttrigger"].append_record(patrec)
+            evttab["pasttrigger"].append_record(patrec)
 
             # export past loose trigger
             # -------------------------
-            if uidrec[spt.IDX] in env["run"]["event_uids_for_debugging"]:
+            if uidrec[spt.IDX] in event_uids_for_debugging:
                 plenopy.tools.acp_format.compress_event_in_place(
                     ptp["tmp_path"]
                 )
@@ -154,7 +209,7 @@ def simulate_loose_trigger(
                     output_tar_path=opj(work_dir, final_tarname),
                 )
 
-    return env
+    return evttab
 
 
 def plenoscope_event_dir_to_tar(event_dir, output_tar_path=None):

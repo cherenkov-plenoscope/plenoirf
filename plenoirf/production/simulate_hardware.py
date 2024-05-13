@@ -1,32 +1,29 @@
 import os
-from os import path as op
-from os.path import join as opj
-
 import merlict_development_kit_python as mlidev
 import rename_after_writing as rnw
 import json_utils
+import numpy as np
+import corsika_primary as cpw
+import tarfile
+
+from .. import bookkeeping
 
 
 def run_block(env, blk, block_id, logger):
-    env = simulate_hardware(env=env, block_id=block_id)
-    make_debug_output(env=env, block_id=block_id)
-    return env
+    opj = os.path.join
+    logger.info(__name__ + ": start ...")
 
+    block_dir = opj(env["work_dir"], "blocks", "{:06d}".format(block_id))
+    output_path = opj(block_dir, "merlict")
 
-def simulate_hardware(env, block_id):
+    if os.path.exists(output_path):
+        logger.info(__name__ + ": already done. skip computation.")
+        return
+
     mlidev_cfg_path = opj(
         env["work_dir"], "merlict_plenoscope_propagator_config.json"
     )
-    if not os.path.exists(mlidev_cfg_path):
-        with rnw.open(mlidev_cfg_path, "wt") as f:
-            f.write(
-                json_utils.dumps(
-                    env["config"]["merlict_plenoscope_propagator_config"],
-                    indent=4,
-                )
-            )
-
-    block_dir = opj(env["work_dir"], "blocks", "{:06d}".format(block_id))
+    write_mlidev_config(env=env, path=mlidev_cfg_path)
 
     light_field_geometry_path = opj(
         env["plenoirf_dir"],
@@ -38,7 +35,7 @@ def simulate_hardware(env, block_id):
 
     rc = mlidev.plenoscope_propagator.plenoscope_propagator(
         corsika_run_path=opj(block_dir, "cherenkov_pools.tar"),
-        output_path=opj(block_dir, "merlict"),
+        output_path=output_path,
         light_field_geometry_path=light_field_geometry_path,
         merlict_plenoscope_propagator_config_path=mlidev_cfg_path,
         random_seed=env["run_id"],
@@ -48,12 +45,80 @@ def simulate_hardware(env, block_id):
     )
     assert rc == 0, "Expected merlict's return code to be zero."
 
-    return env
+    logger.info(__name__ + ": make debug output.")
+
+    make_debug_output(env=env, blk=blk, block_id=block_id, logger=logger)
+    logger.info(__name__ + ": ... done.")
 
 
-def make_debug_output(env, block_id):
+def write_mlidev_config(env, path):
+    if not os.path.exists(path):
+        with rnw.open(path, "wt") as f:
+            f.write(
+                json_utils.dumps(
+                    env["config"]["merlict_plenoscope_propagator_config"],
+                    indent=4,
+                )
+            )
+
+
+def make_debug_output(env, blk, block_id, logger):
+    with open(
+        os.path.join(
+            env["work_dir"],
+            "plenoirf.production.draw_event_uids_for_debugging.json",
+        ),
+        "rt",
+    ) as fin:
+        event_uids_for_debugging = json_utils.loads(fin.read())
+
     block_id_str = "{:06d}".format(block_id)
-    uids_in_block = env["run"]["uids_in_cherenkov_pool_blocks"][block_id_str]
-    for event_uid in env["run"]["event_uids_for_debugging"]:
-        if event_uid in uids_in_block:
-            print("Do some debug I guess?", event_uid, block_id)
+    debug_out_path = os.path.join(
+        env["work_dir"], "debugging.merlict_events.tar"
+    )
+    event_uid_strs_in_block = blk["uids_in_cherenkov_pool_blocks"][
+        block_id_str
+    ]
+
+    for ii, event_uid_str in enumerate(event_uid_strs_in_block):
+        merlict_event_id = ii + 1
+        event_uid = int(event_uid_str)
+        if event_uid in event_uids_for_debugging:
+            logger.info(
+                __name__
+                + " exporting merlict uid:{:s} for debugging.".format(
+                    event_uid_str
+                )
+            )
+            merlict_event_path = os.path.join(
+                env["work_dir"],
+                "blocks",
+                block_id_str,
+                "merlict",
+                "{:d}".format(merlict_event_id),
+            )
+
+            assert_merlict_event_has_uid(
+                merlict_event_path=merlict_event_path,
+                event_uid=event_uid,
+            )
+
+            with tarfile.open(debug_out_path, mode="a") as tarfout:
+                tarfout.add(
+                    name=merlict_event_path,
+                    arcname=bookkeeping.uid.make_uid_str(uid=event_uid),
+                    recursive=True,
+                )
+
+
+def assert_merlict_event_has_uid(merlict_event_path, event_uid):
+    evth_path = os.path.join(
+        merlict_event_path, "simulation_truth", "corsika_event_header.bin"
+    )
+    with open(evth_path, "rb") as fin:
+        corsika_evth = np.frombuffer(fin.read(), dtype=np.float32)
+    event_uid_from_evth = bookkeeping.uid.make_uid(
+        run_id=int(corsika_evth[cpw.I.EVTH.RUN_NUMBER]),
+        event_id=int(corsika_evth[cpw.I.EVTH.EVENT_NUMBER]),
+    )
+    assert event_uid == event_uid_from_evth
