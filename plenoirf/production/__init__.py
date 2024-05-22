@@ -291,16 +291,3 @@ def read_light_field_camera_config(plenoirf_dir, instrument_key):
             "scenery.json",
         )
     )
-
-
-class TimeDeltaModuleName:
-    def __init__(self, logger, module):
-        self.module = module
-        self.time_delta = TimeDelta(logger=logger, name=self.module.__name__)
-
-    def __enter__(self):
-        self.time_delta.__enter__()
-        return self.module
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.time_delta.__exit__()
