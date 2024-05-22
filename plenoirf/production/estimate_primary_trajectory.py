@@ -2,6 +2,7 @@ import gamma_ray_reconstruction as gamrec
 import numpy as np
 import os
 import sparse_numeric_table as snt
+import plenopy
 from .. import bookkeeping
 from .. import event_table
 from . import simulate_hardware
@@ -66,7 +67,9 @@ def estimate_primary_trajectory(
         column_key="image_smallest_ellipse_object_distance",
     )
 
-    run = pl.photon_stream.loph.LopfTarReader(reconstructed_cherenkov_path)
+    run = plenopy.photon_stream.loph.LopfTarReader(
+        reconstructed_cherenkov_path
+    )
 
     for event in run:
         uid, loph_record = event

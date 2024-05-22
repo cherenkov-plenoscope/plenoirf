@@ -3,6 +3,7 @@ import os
 import plenopy as pl
 import rename_after_writing as rnw
 import corsika_primary as cpw
+import sparse_numeric_table as snt
 from .. import bookkeeping
 from .. import event_table
 from . import simulate_hardware
@@ -33,7 +34,12 @@ def run_block(env, blk, block_id, logger):
     )
     evttab = event_table.add_empty_level(evttab, "cherenkovclassification")
 
+    print("len pasttrigger: ", len(evttab["pasttrigger"]))
+    if len(evttab["pasttrigger"]):
+        print("first pasttrigger: ", evttab["pasttrigger"][0][snt.IDX])
+
     evttab = classify_cherenkov_photons(
+        evttab=evttab,
         config_cherenkov_classification_region_of_interest=env["config"][
             "cherenkov_classification"
         ]["region_of_interest"],
@@ -45,7 +51,6 @@ def run_block(env, blk, block_id, logger):
         event_uid_strs_in_block=blk["event_uid_strs_in_block"][block_id_str],
         block_id=block_id,
         block_dir=block_dir,
-        evttab=evttab,
         logger=logger,
     )
 
@@ -59,6 +64,7 @@ def run_block(env, blk, block_id, logger):
 
 
 def classify_cherenkov_photons(
+    evttab,
     config_cherenkov_classification_region_of_interest,
     config_cherenkov_classification,
     light_field_geometry,
@@ -66,7 +72,6 @@ def classify_cherenkov_photons(
     event_uid_strs_in_block,
     block_id,
     block_dir,
-    evttab,
     logger,
 ):
     opj = os.path.join
@@ -80,6 +85,7 @@ def classify_cherenkov_photons(
     ) as cer_phs_run:
         for ptp in evttab["pasttrigger"]:
             event_uid = ptp[snt.IDX]
+            print("pasttrigger event_uid", event_uid)
 
             merlict_event_id = simulate_hardware.make_merlict_event_id(
                 event_uid=event_uid,
@@ -147,6 +153,7 @@ def classify_cherenkov_photons(
                 raw_sensor_response=event.raw_sensor_response,
                 cherenkov_photon_ids=cherenkov_photons.photon_ids,
             )
+            print("cer_phs_run.add event_uid", event_uid)
             cer_phs_run.add(uid=event_uid, phs=cer_phs)
 
     return evttab
