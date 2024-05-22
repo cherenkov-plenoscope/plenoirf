@@ -63,6 +63,7 @@ def run_block(env, blk, block_id, logger):
         env=env,
         blk=blk,
         block_id=block_id,
+        work_dir=sub_work_dir,
         evttab=evttab,
         event_uids_for_debugging=event_uids_for_debugging,
         visible_cherenkov_photon_size=visible_cherenkov_photon_size,
@@ -82,6 +83,7 @@ def simulate_loose_trigger(
     env,
     blk,
     block_id,
+    work_dir,
     evttab,
     event_uids_for_debugging,
     visible_cherenkov_photon_size,
@@ -89,7 +91,6 @@ def simulate_loose_trigger(
 ):
     opj = os.path.join
     block_dir = opj(env["work_dir"], "blocks", "{:06d}".format(block_id))
-    work_dir = opj(block_dir, "simulate_loose_trigger")
 
     # loop over sensor responses
     # --------------------------

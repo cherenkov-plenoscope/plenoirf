@@ -150,10 +150,10 @@ def run_job_in_dir(job, work_dir):
         )
 
     _blkp = os.path.join(
-        env["work_dir"], "blocks", "uids_in_cherenkov_pool_blocks.json"
+        env["work_dir"], "blocks", "event_uid_strs_in_block.json"
     )
     with open(_blkp, "rt") as fin:
-        blk["uids_in_cherenkov_pool_blocks"] = json_utils.loads(fin.read())
+        blk["event_uid_strs_in_block"] = json_utils.loads(fin.read())
 
     with TimeDelta(logger, "read light_field_calibration"):
         light_field_calibration_path = opj(
@@ -178,7 +178,7 @@ def run_job_in_dir(job, work_dir):
             path=trigger_geometry_path
         )
 
-    for block_id_str in blk["uids_in_cherenkov_pool_blocks"]:
+    for block_id_str in blk["event_uid_strs_in_block"]:
         block_dir = os.path.join(env["work_dir"], "blocks", block_id_str)
         run_job_block(
             env=env, blk=blk, block_id=int(block_id_str), logger=logger

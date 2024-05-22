@@ -2,7 +2,9 @@ import numpy as np
 import os
 import plenopy as pl
 import rename_after_writing as rnw
+import corsika_primary as cpw
 from .. import bookkeeping
+from .. import event_table
 
 
 def run_block(env, blk, block_id, logger):
@@ -15,6 +17,8 @@ def run_block(env, blk, block_id, logger):
     if os.path.exists(sub_work_dir):
         logger.info(__name__ + ": already done. skip computation.")
         return
+
+    os.makedirs(sub_work_dir)
 
     evttab = {}
     evttab = event_table.add_levels_from_path(
@@ -61,6 +65,13 @@ def make_merlict_event_id(event_uid, event_uid_strs_in_block):
     assert False
 
 
+def assert_plenopy_event_has_uid(event, event_uid):
+    r = event.simulation_truth.corsika_event_header[cpw.I.EVTH.RUN_NUMBER]
+    e = event.simulation_truth.corsika_event_header[cpw.I.EVTH.EVENT_NUMBER]
+    actual_event_uid = bookkeeping.uid.make_uid(run_id=r, event_id=e)
+    assert actual_event_uid == event_uid
+
+
 def classify_cherenkov_photons(
     config_cherenkov_classification_region_of_interest,
     config_cherenkov_classification,
@@ -71,9 +82,6 @@ def classify_cherenkov_photons(
     block_dir,
     evttab,
     logger,
-    # tabrec,
-    # tmp_dir,
-    # table_past_trigger,
 ):
     opj = os.path.join
 
@@ -98,6 +106,8 @@ def classify_cherenkov_photons(
                 path=event_path,
                 light_field_geometry=light_field_geometry,
             )
+            assert_plenopy_event_has_uid(event=event, event_uid=event_uid)
+
             trigger_responses = pl.trigger.io.read_trigger_response_from_path(
                 path=os.path.join(event._path, "refocus_sum_trigger.json")
             )

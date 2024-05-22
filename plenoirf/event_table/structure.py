@@ -309,6 +309,15 @@ def init_pasttrigger_level_structure():
     return collections.OrderedDict()  # only the event uid.
 
 
+def init_cherenkovclassification_level_structure():
+    t = collections.OrderedDict()
+    t["num_true_positives"] = {"dtype": "<i8", "comment": ""}
+    t["num_false_negatives"] = {"dtype": "<i8", "comment": ""}
+    t["num_false_positives"] = {"dtype": "<i8", "comment": ""}
+    t["num_true_negatives"] = {"dtype": "<i8", "comment": ""}
+    return t
+
+
 """
 STRUCTURE["grid"] = {
     "num_bins_thrown": {

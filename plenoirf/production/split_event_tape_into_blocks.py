@@ -14,9 +14,7 @@ def run(env, logger):
     blocks_dir = os.path.join(env["work_dir"], "blocks")
     os.makedirs(blocks_dir, exist_ok=True)
 
-    result_path = os.path.join(
-        blocks_dir, "uids_in_cherenkov_pool_blocks.json"
-    )
+    result_path = os.path.join(blocks_dir, "event_uid_strs_in_block.json")
 
     if os.path.exists(result_path):
         logger.info(__name__ + ": already done. skip computation.")

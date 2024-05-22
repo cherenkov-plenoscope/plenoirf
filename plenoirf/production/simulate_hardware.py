@@ -76,9 +76,7 @@ def make_debug_output(env, blk, block_id, logger):
     debug_out_path = os.path.join(
         env["work_dir"], "debugging.merlict_events.tar"
     )
-    event_uid_strs_in_block = blk["uids_in_cherenkov_pool_blocks"][
-        block_id_str
-    ]
+    event_uid_strs_in_block = blk["event_uid_strs_in_block"][block_id_str]
 
     for ii, event_uid_str in enumerate(event_uid_strs_in_block):
         merlict_event_id = ii + 1
