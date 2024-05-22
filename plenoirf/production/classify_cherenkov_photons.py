@@ -6,42 +6,104 @@ from .. import bookkeeping
 
 
 def run_block(env, blk, block_id, logger):
-    env = classify_cherenkov_photons(
-        env=env, blk=blk, block_id=block_id, logger=logger
+    opj = os.path.join
+    logger.info(__name__ + ": start ...")
+
+    block_dir = opj(env["work_dir"], "blocks", "{:06d}".format(block_id))
+    sub_work_dir = opj(block_dir, __name__)
+
+    if os.path.exists(sub_work_dir):
+        logger.info(__name__ + ": already done. skip computation.")
+        return
+
+    evttab = {}
+    evttab = event_table.add_levels_from_path(
+        evttab=evttab,
+        path=opj(
+            block_dir,
+            "plenoirf.production.simulate_loose_trigger",
+            "event_table.tar",
+        ),
     )
-    return env
+    evttab = event_table.add_empty_level(evttab, "cherenkovclassification")
+
+    evttab = classify_cherenkov_photons(
+        config_cherenkov_classification_region_of_interest=env["config"][
+            "cherenkov_classification"
+        ]["region_of_interest"],
+        config_cherenkov_classification=env["config"][
+            "cherenkov_classification"
+        ],
+        light_field_geometry=blk["light_field_geometry"],
+        trigger_geometry=blk["trigger_geometry"],
+        event_uid_strs_in_block=blk["event_uid_strs_in_block"],
+        block_id=block_id,
+        block_dir=block_dir,
+        evttab=evttab,
+        logger=logger,
+    )
+
+    event_table.write_certain_levels_to_path(
+        evttab=evttab,
+        path=opj(sub_work_dir, "event_table.tar"),
+        level_keys=["cherenkovclassification"],
+    )
+
+    logger.info(__name__ + ": ... done.")
+
+
+def make_merlict_event_id(event_uid, event_uid_strs_in_block):
+    for ii, i_event_uid_str in enumerate(event_uid_strs_in_block):
+        merlict_event_id = ii + 1
+        i_event_uid = int(i_event_uid_str)
+        if i_event_uid == event_uid:
+            return merlict_event_id
+    assert False
 
 
 def classify_cherenkov_photons(
-    env,
-    blk,
+    config_cherenkov_classification_region_of_interest,
+    config_cherenkov_classification,
+    light_field_geometry,
+    trigger_geometry,
+    event_uid_strs_in_block,
     block_id,
+    block_dir,
+    evttab,
     logger,
     # tabrec,
     # tmp_dir,
     # table_past_trigger,
 ):
     opj = os.path.join
-    block_dir = opj(env["work_dir"], "blocks", "{:06d}".format(block_id))
 
-    roi_cfg = env["config"]["cherenkov_classification"]["region_of_interest"]
-    dbscan_cfg = env["config"]["cherenkov_classification"]
+    roi_cfg = config_cherenkov_classification_region_of_interest
+    dbscan_cfg = config_cherenkov_classification
 
     with pl.photon_stream.loph.LopfTarWriter(
         path=os.path.join(block_dir, "reconstructed_cherenkov.tar"),
         uid_num_digits=bookkeeping.uid.UID_NUM_DIGITS,
     ) as cer_phs_run:
-        for ptp in table_past_trigger:
+        for event_uid in evttab["pasttrigger"]:
+            merlict_event_id = make_merlict_event_id(
+                event_uid=event_uid,
+                event_uid_strs_in_block=event_uid_strs_in_block,
+            )
+
+            event_path = opj(
+                block_dir, "merlict", "{:d}".format(merlict_event_id)
+            )
+
             event = pl.Event(
-                path=ptp["tmp_path"],
-                light_field_geometry=blk["light_field_geometry"],
+                path=event_path,
+                light_field_geometry=light_field_geometry,
             )
             trigger_responses = pl.trigger.io.read_trigger_response_from_path(
                 path=os.path.join(event._path, "refocus_sum_trigger.json")
             )
             roi = pl.trigger.region_of_interest.from_trigger_response(
                 trigger_response=trigger_responses,
-                trigger_geometry=blk["trigger_geometry"],
+                trigger_geometry=trigger_geometry,
                 time_slice_duration=event.raw_sensor_response[
                     "time_slice_duration"
                 ],
@@ -77,7 +139,7 @@ def classify_cherenkov_photons(
                 photon_ids_cherenkov=cherenkov_photons.photon_ids,
             )
             crcl[spt.IDX] = ptp[spt.IDX]
-            tabrec["cherenkovclassification"].append(crcl)
+            evttab["cherenkovclassification"].append_record(crcl)
 
             # export reconstructed Cherenkov photons
             # --------------------------------------
@@ -87,4 +149,4 @@ def classify_cherenkov_photons(
             )
             cer_phs_run.add(uid=ptp[spt.IDX], phs=cer_phs)
 
-    return tabrec
+    return evttab

@@ -18,7 +18,7 @@ def run_block(env, blk, block_id, logger):
     logger.info(__name__ + ": start ...")
 
     block_dir = opj(env["work_dir"], "blocks", "{:06d}".format(block_id))
-    sub_work_dir = opj(block_dir, "simulate_loose_trigger")
+    sub_work_dir = opj(block_dir, __name__)
 
     if os.path.exists(sub_work_dir):
         logger.info(__name__ + ": already done. skip computation.")
@@ -140,7 +140,7 @@ def simulate_loose_trigger(
                 )
 
                 plot_foci_trigger_image_sequences(
-                    out_dir=os.path.join(work_dir, "{:06d}".format(event_id)),
+                    out_dir=os.path.join(work_dir, uid_str),
                     foci_trigger_image_sequences=foci_trigger_image_sequences,
                 )
 
