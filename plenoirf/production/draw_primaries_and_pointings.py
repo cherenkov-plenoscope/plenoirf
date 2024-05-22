@@ -244,11 +244,13 @@ def run(env, seed, logger):
     ) as fin:
         event_uids_for_debugging = json_utils.loads(fin.read())
 
-    with open(
-        opj(env["work_dir"], "plenoirf.production.draw_pointing_range.pkl"),
-        "rb",
-    ) as fin:
-        pointing_range = pickle.loads(fin.read())
+    pointing_range = acr.pointing_range.PointingRange_from_cone(
+        azimuth_rad=0.0,
+        zenith_rad=0.0,
+        half_angel_rad=env["config"]["pointing"]["range"][
+            "max_zenith_distance_rad"
+        ],
+    )
 
     logger.info(__name__ + ": drawing")
     out, debug = draw_primaries_and_pointings(

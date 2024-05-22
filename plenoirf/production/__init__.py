@@ -23,7 +23,6 @@ from .. import constants
 
 from . import sum_trigger
 from . import draw_event_uids_for_debugging
-from . import draw_pointing_range
 from . import draw_primaries_and_pointings
 from . import simulate_shower_and_collect_cherenkov_light_in_grid
 from . import split_event_tape_into_blocks
@@ -78,17 +77,6 @@ def run_job_in_dir(job, work_dir):
     with seeding.SeedSection(
         run_id=run_id,
         module=draw_event_uids_for_debugging,
-        logger=logger,
-    ) as sec:
-        sec.module.run(
-            env=env,
-            seed=sec.seed,
-            logger=logger,
-        )
-
-    with seeding.SeedSection(
-        run_id=run_id,
-        module=draw_pointing_range,
         logger=logger,
     ) as sec:
         sec.module.run(

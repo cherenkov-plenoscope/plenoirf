@@ -220,8 +220,7 @@ def make_pointing():
     return {
         "model": "cable_robot",
         "range": {
-            "max_zenith_distance_rad": np.deg2rad(60.0),
-            "run_half_angle_rad": np.deg2rad(5.0),
+            "max_zenith_distance_rad": np.deg2rad(45.0),
         },
     }
 
