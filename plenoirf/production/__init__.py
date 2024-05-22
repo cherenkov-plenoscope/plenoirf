@@ -12,6 +12,7 @@ import merlict_development_kit_python as mlidev
 import rename_after_writing as rnw
 import plenopy
 import sparse_numeric_table
+import gamma_ray_reconstruction as gamrec
 
 from .. import seeding
 from .. import bookkeeping
@@ -31,6 +32,8 @@ from . import simulate_hardware
 from . import simulate_loose_trigger
 from . import classify_cherenkov_photons
 from . import inspect_cherenkov_pool
+from . import extract_features_from_light_field
+from . import estimate_primary_trajectory
 
 
 def make_example_job(
@@ -167,6 +170,13 @@ def run_job_in_dir(job, work_dir):
             path=light_field_calibration_path
         )
 
+    with TimeDelta(logger, "make light_field_calibration addon"):
+        blk[
+            "light_field_geometry_addon"
+        ] = plenopy.features.make_light_field_geometry_addon(
+            light_field_geometry=blk["light_field_geometry"]
+        )
+
     with TimeDelta(logger, "read trigger_geometry"):
         trigger_geometry_path = opj(
             env["plenoirf_dir"],
@@ -176,6 +186,23 @@ def run_job_in_dir(job, work_dir):
         )
         blk["trigger_geometry"] = plenopy.trigger.geometry.read(
             path=trigger_geometry_path
+        )
+
+    with TimeDelta(logger, "init trajectory reconstruction config"):
+        blk["trajectory_reconstruction"] = {}
+        blk["trajectory_reconstruction"][
+            "fuzzy_config"
+        ] = gamrec.trajectory.v2020nov12fuzzy0.config.compile_user_config(
+            user_config=env["config"]["reconstruction"]["trajectory"][
+                "fuzzy_method"
+            ]
+        )
+        blk["trajectory_reconstruction"][
+            "model_fit_config"
+        ] = gamrec.trajectory.v2020dec04iron0b.config.compile_user_config(
+            user_config=env["config"]["reconstruction"]["trajectory"][
+                "core_axis_fit"
+            ]
         )
 
     for block_id_str in blk["event_uid_strs_in_block"]:
@@ -222,6 +249,26 @@ def run_job_block(env, blk, block_id, logger):
     with seeding.SeedSection(
         run_id=run_id,
         module=classify_cherenkov_photons,
+        block_id=block_id,
+        logger=logger,
+    ) as sec:
+        sec.module.run_block(
+            env=env, blk=blk, block_id=block_id, logger=logger
+        )
+
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=extract_features_from_light_field,
+        block_id=block_id,
+        logger=logger,
+    ) as sec:
+        sec.module.run_block(
+            env=env, blk=blk, seed=sec.seed, block_id=block_id, logger=logger
+        )
+
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=estimate_primary_trajectory,
         block_id=block_id,
         logger=logger,
     ) as sec:

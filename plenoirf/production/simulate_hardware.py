@@ -120,3 +120,22 @@ def assert_merlict_event_has_uid(merlict_event_path, event_uid):
         event_id=int(corsika_evth[cpw.I.EVTH.EVENT_NUMBER]),
     )
     assert event_uid == event_uid_from_evth
+
+
+def make_merlict_event_id(event_uid, event_uid_strs_in_block):
+    for ii, i_event_uid_str in enumerate(event_uid_strs_in_block):
+        merlict_event_id = ii + 1
+        i_event_uid = int(i_event_uid_str)
+        if i_event_uid == event_uid:
+            return merlict_event_id
+    assert False
+
+
+def assert_plenopy_event_has_uid(event, event_uid):
+    evth = event.simulation_truth.event.corsika_event_header.raw
+    r = int(evth[cpw.I.EVTH.RUN_NUMBER])
+    e = int(evth[cpw.I.EVTH.EVENT_NUMBER])
+    actual_event_uid = bookkeeping.uid.make_uid(run_id=r, event_id=e)
+    assert (
+        actual_event_uid == event_uid
+    ), "Actual {:d} vs expected {:d}".format(actual_event_uid, event_uid)

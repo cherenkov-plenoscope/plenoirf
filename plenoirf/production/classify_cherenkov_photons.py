@@ -5,13 +5,15 @@ import rename_after_writing as rnw
 import corsika_primary as cpw
 from .. import bookkeeping
 from .. import event_table
+from . import simulate_hardware
 
 
 def run_block(env, blk, block_id, logger):
     opj = os.path.join
     logger.info(__name__ + ": start ...")
 
-    block_dir = opj(env["work_dir"], "blocks", "{:06d}".format(block_id))
+    block_id_str = "{:06d}".format(block_id)
+    block_dir = opj(env["work_dir"], "blocks", block_id_str)
     sub_work_dir = opj(block_dir, __name__)
 
     if os.path.exists(sub_work_dir):
@@ -40,7 +42,7 @@ def run_block(env, blk, block_id, logger):
         ],
         light_field_geometry=blk["light_field_geometry"],
         trigger_geometry=blk["trigger_geometry"],
-        event_uid_strs_in_block=blk["event_uid_strs_in_block"],
+        event_uid_strs_in_block=blk["event_uid_strs_in_block"][block_id_str],
         block_id=block_id,
         block_dir=block_dir,
         evttab=evttab,
@@ -54,22 +56,6 @@ def run_block(env, blk, block_id, logger):
     )
 
     logger.info(__name__ + ": ... done.")
-
-
-def make_merlict_event_id(event_uid, event_uid_strs_in_block):
-    for ii, i_event_uid_str in enumerate(event_uid_strs_in_block):
-        merlict_event_id = ii + 1
-        i_event_uid = int(i_event_uid_str)
-        if i_event_uid == event_uid:
-            return merlict_event_id
-    assert False
-
-
-def assert_plenopy_event_has_uid(event, event_uid):
-    r = event.simulation_truth.corsika_event_header[cpw.I.EVTH.RUN_NUMBER]
-    e = event.simulation_truth.corsika_event_header[cpw.I.EVTH.EVENT_NUMBER]
-    actual_event_uid = bookkeeping.uid.make_uid(run_id=r, event_id=e)
-    assert actual_event_uid == event_uid
 
 
 def classify_cherenkov_photons(
@@ -92,8 +78,10 @@ def classify_cherenkov_photons(
         path=os.path.join(block_dir, "reconstructed_cherenkov.tar"),
         uid_num_digits=bookkeeping.uid.UID_NUM_DIGITS,
     ) as cer_phs_run:
-        for event_uid in evttab["pasttrigger"]:
-            merlict_event_id = make_merlict_event_id(
+        for ptp in evttab["pasttrigger"]:
+            event_uid = ptp[snt.IDX]
+
+            merlict_event_id = simulate_hardware.make_merlict_event_id(
                 event_uid=event_uid,
                 event_uid_strs_in_block=event_uid_strs_in_block,
             )
@@ -106,7 +94,9 @@ def classify_cherenkov_photons(
                 path=event_path,
                 light_field_geometry=light_field_geometry,
             )
-            assert_plenopy_event_has_uid(event=event, event_uid=event_uid)
+            simulate_hardware.assert_plenopy_event_has_uid(
+                event=event, event_uid=event_uid
+            )
 
             trigger_responses = pl.trigger.io.read_trigger_response_from_path(
                 path=os.path.join(event._path, "refocus_sum_trigger.json")
@@ -148,7 +138,7 @@ def classify_cherenkov_photons(
                 pulse_origins=event.simulation_truth.detector.pulse_origins,
                 photon_ids_cherenkov=cherenkov_photons.photon_ids,
             )
-            crcl[spt.IDX] = ptp[spt.IDX]
+            crcl[spt.IDX] = event_uid
             evttab["cherenkovclassification"].append_record(crcl)
 
             # export reconstructed Cherenkov photons
@@ -157,6 +147,6 @@ def classify_cherenkov_photons(
                 raw_sensor_response=event.raw_sensor_response,
                 cherenkov_photon_ids=cherenkov_photons.photon_ids,
             )
-            cer_phs_run.add(uid=ptp[spt.IDX], phs=cer_phs)
+            cer_phs_run.add(uid=event_uid, phs=cer_phs)
 
     return evttab
