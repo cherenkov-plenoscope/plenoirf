@@ -85,8 +85,6 @@ def classify_cherenkov_photons(
     ) as cer_phs_run:
         for ptp in evttab["pasttrigger"]:
             event_uid = ptp[snt.IDX]
-            print("pasttrigger event_uid", event_uid)
-
             merlict_event_id = simulate_hardware.make_merlict_event_id(
                 event_uid=event_uid,
                 event_uid_strs_in_block=event_uid_strs_in_block,
@@ -100,10 +98,10 @@ def classify_cherenkov_photons(
                 path=event_path,
                 light_field_geometry=light_field_geometry,
             )
+
             simulate_hardware.assert_plenopy_event_has_uid(
                 event=event, event_uid=event_uid
             )
-
             trigger_responses = pl.trigger.io.read_trigger_response_from_path(
                 path=os.path.join(event._path, "refocus_sum_trigger.json")
             )
@@ -136,7 +134,7 @@ def classify_cherenkov_photons(
                 ],
             )
             pl.classify.write_dense_photon_ids_to_event(
-                event_path=op.abspath(event._path),
+                event_path=os.path.abspath(event._path),
                 photon_ids=cherenkov_photons.photon_ids,
                 settings=roi_settings,
             )
@@ -153,7 +151,6 @@ def classify_cherenkov_photons(
                 raw_sensor_response=event.raw_sensor_response,
                 cherenkov_photon_ids=cherenkov_photons.photon_ids,
             )
-            print("cer_phs_run.add event_uid", event_uid)
             cer_phs_run.add(uid=event_uid, phs=cer_phs)
 
     return evttab
