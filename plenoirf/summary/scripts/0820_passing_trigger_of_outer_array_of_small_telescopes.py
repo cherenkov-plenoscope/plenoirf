@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import sys
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import sebastians_matplotlib_addons as seb
 import os
 import copy

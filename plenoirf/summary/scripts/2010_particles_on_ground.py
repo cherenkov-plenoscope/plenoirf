@@ -2,7 +2,7 @@
 import sys
 import numpy as np
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import glob
 import json_utils
@@ -38,7 +38,7 @@ RRR = {}
 for sk in ["chile"]:  # SITES:
     RRR[sk] = {}
     for pk in ["proton"]:  # PARTICLES:
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -48,7 +48,7 @@ for sk in ["chile"]:  # SITES:
             ),
         )
 
-        particlepool = spt.cut_level_on_indices(
+        particlepool = snt.cut_level_on_indices(
             level=event_table["particlepool"],
             indices=passing_trigger[sk][pk]["idx"],
         )

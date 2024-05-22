@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import sys
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import numpy as np
 import sebastians_matplotlib_addons as seb
@@ -41,7 +41,7 @@ tables = {}
 for sk in SITES:
     tables[sk] = {}
     for pk in PARTICLES:
-        _table = spt.read(
+        _table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -52,14 +52,14 @@ for sk in SITES:
             structure=irf.table.STRUCTURE,
         )
 
-        idx_common = spt.intersection(
+        idx_common = snt.intersection(
             [
                 passing_trigger[sk][pk]["idx"],
                 passing_quality[sk][pk]["idx"],
             ]
         )
 
-        tables[sk][pk] = spt.cut_and_sort_table_on_indices(
+        tables[sk][pk] = snt.cut_and_sort_table_on_indices(
             table=_table,
             common_indices=idx_common,
             level_keys=["primary", "features"],

@@ -3,7 +3,7 @@ import sys
 import copy
 import plenoirf as irf
 import confusion_matrix
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import pandas
 import numpy as np
@@ -66,7 +66,7 @@ def align_on_idx(input_idx, input_values, target_idxs):
 for sk in SITES:
     os.makedirs(os.path.join(pa["out_dir"], sk), exist_ok=True)
     for pk in PARTICLES:
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -77,7 +77,7 @@ for sk in SITES:
             structure=irf.table.STRUCTURE,
         )
 
-        idx_valid = spt.intersection(
+        idx_valid = snt.intersection(
             [
                 passing_trigger[sk][pk]["idx"],
                 passing_quality[sk][pk]["idx"],
@@ -86,7 +86,7 @@ for sk in SITES:
             ]
         )
 
-        valid_event_table = spt.cut_and_sort_table_on_indices(
+        valid_event_table = snt.cut_and_sort_table_on_indices(
             table=event_table,
             common_indices=idx_valid,
         )

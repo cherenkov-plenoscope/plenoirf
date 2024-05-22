@@ -1,5 +1,5 @@
 import numpy as np
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 
 
 def make_mask(
@@ -52,7 +52,7 @@ def make_indices(
         threshold,
         modus,
     )
-    return trigger_table[spt.IDX][mask]
+    return trigger_table[snt.IDX][mask]
 
 
 def make_trigger_modus_str(analysis_trigger, production_trigger):

@@ -5,7 +5,7 @@ import propagate_uncertainties
 import numpy as np
 import magnetic_deflection as mdfl
 import spherical_coordinates
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import plenoirf as irf
 import copy
 import sebastians_matplotlib_addons as seb
@@ -58,7 +58,7 @@ for sk in SITES:
     for pk in PARTICLES:
         o[sk][pk] = {}
 
-        evttab = spt.read(
+        evttab = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -69,8 +69,8 @@ for sk in SITES:
             structure=irf.table.STRUCTURE,
         )
 
-        passed_trigger = spt.make_mask_of_right_in_left(
-            left_indices=evttab["primary"][spt.IDX],
+        passed_trigger = snt.make_mask_of_right_in_left(
+            left_indices=evttab["primary"][snt.IDX],
             right_indices=passing_trigger[sk][pk]["idx"],
         )
 

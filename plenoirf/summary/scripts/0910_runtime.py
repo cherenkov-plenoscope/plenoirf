@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import json_utils
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import sebastians_matplotlib_addons as seb
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -37,7 +37,7 @@ def _num_events_in_runs(event_table, level_key, run_ids, key):
     for run_id in run_ids:
         num_events_in_run[run_id] = 0
     event_run_ids, _ = irf.unique.split_uid(
-        uid=event_table[level_key][spt.IDX]
+        uid=event_table[level_key][snt.IDX]
     )
     for event_run_id in event_run_ids:
         try:
@@ -181,7 +181,7 @@ for sk in SITES:
         if os.path.exists(extended_runtime_path):
             extended_runtime_table = read_csv_records(extended_runtime_path)
         else:
-            event_table = spt.read(
+            event_table = snt.read(
                 path=os.path.join(
                     pa["run_dir"],
                     "event_table",

@@ -2,7 +2,7 @@
 import sys
 import numpy as np
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import json_utils
 
@@ -19,7 +19,7 @@ for sk in irf_config["config"]["sites"]:
         site_particle_dir = os.path.join(pa["out_dir"], sk, pk)
         os.makedirs(site_particle_dir, exist_ok=True)
 
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"], "event_table", sk, pk, "event_table.tar"
             ),
@@ -50,7 +50,7 @@ for sk in irf_config["config"]["sites"]:
                     "Quality of reconstructed trajectory. "
                     "0 is worst, 1 is best."
                 ),
-                spt.IDX: event_frame[spt.IDX],
+                snt.IDX: event_frame[snt.IDX],
                 "unit": "1",
                 "quality": quality,
             },
@@ -59,7 +59,7 @@ for sk in irf_config["config"]["sites"]:
         # apply cut
         # ---------
         mask = quality >= sum_config["quality"]["min_trajectory_quality"]
-        idx_passed = event_frame[spt.IDX][mask]
+        idx_passed = event_frame[snt.IDX][mask]
 
         json_utils.write(
             path=os.path.join(site_particle_dir, "idx.json"),

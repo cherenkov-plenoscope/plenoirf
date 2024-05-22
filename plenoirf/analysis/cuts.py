@@ -1,4 +1,4 @@
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import spherical_coordinates
 import numpy as np
 
@@ -18,7 +18,7 @@ def cut_primary_direction_within_angle(
         )
     )
     inside = delta_deg <= radial_angle_deg
-    idxs_inside = primary_table[spt.IDX][inside]
+    idxs_inside = primary_table[snt.IDX][inside]
     return idxs_inside
 
 
@@ -31,7 +31,7 @@ def cut_quality(
     # size
     # ----
     mask_sufficient_size = ft["num_photons"] >= min_reconstructed_photons
-    idxs_sufficient_size = ft[spt.IDX][mask_sufficient_size]
+    idxs_sufficient_size = ft[snt.IDX][mask_sufficient_size]
 
     # leakage
     # -------
@@ -40,6 +40,6 @@ def cut_quality(
         / ft["num_photons"]
     )
     mask_acceptable_leakage = relative_leakage <= max_relative_leakage
-    idxs_acceptable_leakage = ft[spt.IDX][mask_acceptable_leakage]
+    idxs_acceptable_leakage = ft[snt.IDX][mask_acceptable_leakage]
 
-    return spt.intersection([idxs_sufficient_size, idxs_acceptable_leakage])
+    return snt.intersection([idxs_sufficient_size, idxs_acceptable_leakage])

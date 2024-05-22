@@ -4,7 +4,7 @@ import tarfile
 
 import plenopy
 import corsika_primary as cpw
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import rename_after_writing as rnw
 import json_utils
 import sebastians_matplotlib_addons as sebplt
@@ -108,7 +108,7 @@ def simulate_loose_trigger(
         run_id = int(cevth[cpw.I.EVTH.RUN_NUMBER])
         event_id = int(cevth[cpw.I.EVTH.EVENT_NUMBER])
         uidrec = {
-            spt.IDX: bookkeeping.uid.make_uid(run_id=run_id, event_id=event_id)
+            snt.IDX: bookkeeping.uid.make_uid(run_id=run_id, event_id=event_id)
         }
 
         # export instrument's time relative to CORSIKA's time
@@ -191,7 +191,7 @@ def simulate_loose_trigger(
             ptp = uidrec.copy()
             ptp["tmp_path"] = event._path
             ptp["uid_str"] = bookkeeping.uid.UID_FOTMAT_STR.format(
-                ptp[spt.IDX]
+                ptp[snt.IDX]
             )
             table_past_trigger.append(ptp)
 
@@ -200,7 +200,7 @@ def simulate_loose_trigger(
 
             # export past loose trigger
             # -------------------------
-            if uidrec[spt.IDX] in event_uids_for_debugging:
+            if uidrec[snt.IDX] in event_uids_for_debugging:
                 plenopy.tools.acp_format.compress_event_in_place(
                     ptp["tmp_path"]
                 )

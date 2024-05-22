@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import atmospheric_cherenkov_response
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import json_utils
 import magnetic_deflection as mdfl
@@ -47,7 +47,7 @@ for sk in SITES:
 
         os.makedirs(sk_pk_dir, exist_ok=True)
 
-        shower_table = spt.read(
+        shower_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -67,8 +67,8 @@ for sk in SITES:
         total_num_grid_cells = shower_table["grid"]["num_bins_thrown"]
         idx_detected = passing_trigger[sk][pk]["idx"]
 
-        mask_shower_passed_trigger = spt.make_mask_of_right_in_left(
-            left_indices=shower_table["primary"][spt.IDX],
+        mask_shower_passed_trigger = snt.make_mask_of_right_in_left(
+            left_indices=shower_table["primary"][snt.IDX],
             right_indices=idx_detected,
         )
         """
@@ -104,18 +104,18 @@ for sk in SITES:
             mask_shower_within_max_scatter = (
                 shower_table_scatter_angle_deg <= max_scatter_angle_deg
             )
-            idx_showers_within_max_scatter = shower_table["primary"][spt.IDX][
+            idx_showers_within_max_scatter = shower_table["primary"][snt.IDX][
                 mask_shower_within_max_scatter
             ]
 
-            S_shower_table = spt.cut_and_sort_table_on_indices(
+            S_shower_table = snt.cut_and_sort_table_on_indices(
                 table=shower_table,
                 common_indices=idx_showers_within_max_scatter,
                 level_keys=["primary", "grid"],
             )
 
-            S_mask_shower_detected = spt.make_mask_of_right_in_left(
-                left_indices=S_shower_table["primary"][spt.IDX],
+            S_mask_shower_detected = snt.make_mask_of_right_in_left(
+                left_indices=S_shower_table["primary"][snt.IDX],
                 right_indices=passing_trigger[sk][pk]["idx"],
             )
 

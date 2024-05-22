@@ -2,7 +2,7 @@
 import sys
 import numpy as np
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import plenopy as pl
 import sebastians_matplotlib_addons as seb
@@ -64,13 +64,13 @@ for sk in irf_config["config"]["sites"]:
     site_particle_dir = os.path.join(pa["out_dir"], sk, pk)
     os.makedirs(site_particle_dir, exist_ok=True)
 
-    event_table = spt.read(
+    event_table = snt.read(
         path=os.path.join(
             pa["run_dir"], "event_table", sk, pk, "event_table.tar"
         ),
         structure=irf.table.STRUCTURE,
     )
-    idx_valid = spt.intersection(
+    idx_valid = snt.intersection(
         [
             passing_trigger[sk][pk]["idx"],
             passing_quality[sk][pk]["idx"],
@@ -78,7 +78,7 @@ for sk in irf_config["config"]["sites"]:
             reconstructed_energy[sk][pk][mk]["idx"],
         ]
     )
-    event_table = spt.cut_and_sort_table_on_indices(
+    event_table = snt.cut_and_sort_table_on_indices(
         table=event_table,
         common_indices=idx_valid,
     )

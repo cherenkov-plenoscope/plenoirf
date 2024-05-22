@@ -2,7 +2,7 @@
 import sys
 import numpy as np
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import plenopy as pl
 import gamma_ray_reconstruction as gamrec
@@ -110,16 +110,16 @@ for sk in SITES:
         pk_dir = os.path.join(sk_dir, pk)
         os.makedirs(pk_dir, exist_ok=True)
 
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"], "event_table", sk, pk, "event_table.tar"
             ),
             structure=irf.table.STRUCTURE,
         )
-        common_idx = spt.intersection(
+        common_idx = snt.intersection(
             [passing_trigger[sk][pk]["idx"], passing_quality[sk][pk]["idx"]]
         )
-        events_truth = spt.cut_and_sort_table_on_indices(
+        events_truth = snt.cut_and_sort_table_on_indices(
             event_table,
             common_indices=common_idx,
             level_keys=[
@@ -178,7 +178,7 @@ for sk in SITES:
             if event_off_deg > 2.5:
                 continue
 
-            event_truth = spt.cut_and_sort_table_on_indices(
+            event_truth = snt.cut_and_sort_table_on_indices(
                 events_truth,
                 common_indices=np.array([airshower_id]),
             )

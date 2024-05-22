@@ -3,7 +3,7 @@ import sys
 import os
 from os.path import join as opj
 import numpy as np
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import plenoirf as irf
 import sebastians_matplotlib_addons as seb
 import json_utils
@@ -42,7 +42,7 @@ for sk in SITES:
         site_particle_dir = opj(pa["out_dir"], sk, pk)
         os.makedirs(site_particle_dir, exist_ok=True)
 
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -54,8 +54,8 @@ for sk in SITES:
         )
 
         for tm in trigger_modi:
-            mask_pasttrigger = spt.make_mask_of_right_in_left(
-                left_indices=event_table["trigger"][spt.IDX],
+            mask_pasttrigger = snt.make_mask_of_right_in_left(
+                left_indices=event_table["trigger"][snt.IDX],
                 right_indices=trigger_modi[tm][sk][pk]["idx"],
             )
 

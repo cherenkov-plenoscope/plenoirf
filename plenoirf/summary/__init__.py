@@ -6,7 +6,8 @@ import numpy as np
 
 # from importlib import resources as importlib_resources
 # import subprocess
-# import sparse_numeric_table as spt
+import sparse_numeric_table as snt
+
 # import glob
 # import json_utils
 # import atmospheric_cherenkov_response
@@ -149,7 +150,7 @@ def _estimate_num_events_past_trigger(run_dir, irf_config):
     num_events_past_trigger = 10 * 1000
     for site_key in irf_config["config"]["sites"]:
         for particle_key in irf_config["config"]["particles"]:
-            event_table = spt.read(
+            event_table = snt.read(
                 path=os.path.join(
                     run_dir,
                     "event_table",
@@ -446,7 +447,7 @@ def read_train_test_frame(
     sk = site_key
     pk = particle_key
 
-    airshower_table = spt.read(
+    airshower_table = snt.read(
         path=os.path.join(
             run_dir,
             "event_table",
@@ -457,7 +458,7 @@ def read_train_test_frame(
         structure=table.STRUCTURE,
     )
 
-    airshower_table["transformed_features"] = spt.read(
+    airshower_table["transformed_features"] = snt.read(
         path=os.path.join(
             transformed_features_dir,
             sk,
@@ -485,18 +486,18 @@ def read_train_test_frame(
 
     out = {}
     for kk in ["test", "train"]:
-        idxs_valid_kk = spt.intersection(
+        idxs_valid_kk = snt.intersection(
             [
                 idxs_triggered,
                 idxs_quality,
                 train_test[sk][pk][kk],
             ]
         )
-        table_kk = spt.cut_and_sort_table_on_indices(
+        table_kk = snt.cut_and_sort_table_on_indices(
             table=airshower_table,
             common_indices=idxs_valid_kk,
             level_keys=level_keys,
         )
-        out[kk] = spt.make_rectangular_DataFrame(table_kk)
+        out[kk] = snt.make_rectangular_DataFrame(table_kk)
 
     return out

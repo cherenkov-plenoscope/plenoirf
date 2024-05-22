@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import sys
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import numpy as np
 import sebastians_matplotlib_addons as seb
@@ -85,7 +85,7 @@ for sk in SITES:
         thrown_spectrum["rates"][sk][pk] = {}
         energy_ranges[sk][pk] = {}
 
-        _table = spt.read(
+        _table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",

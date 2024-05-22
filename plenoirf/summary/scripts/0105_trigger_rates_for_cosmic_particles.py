@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import propagate_uncertainties as pru
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import cosmic_fluxes
 import os
 import json_utils

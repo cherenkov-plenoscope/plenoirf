@@ -2,7 +2,7 @@
 import sys
 import copy
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import json_utils
 
@@ -16,7 +16,7 @@ os.makedirs(pa["out_dir"], exist_ok=True)
 
 for site_key in irf_config["config"]["sites"]:
     for particle_key in irf_config["config"]["particles"]:
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",

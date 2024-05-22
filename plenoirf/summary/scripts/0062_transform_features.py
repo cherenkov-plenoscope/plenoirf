@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import sys
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import pandas
 import numpy as np
@@ -36,7 +36,7 @@ ft_trafo = {}
 for sk in SITES:
     ft_trafo[sk] = {}
     for pk in ["gamma"]:
-        _table = spt.read(
+        _table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -47,7 +47,7 @@ for sk in SITES:
             structure=irf.table.STRUCTURE,
         )
 
-        features = spt.cut_table_on_indices(
+        features = snt.cut_table_on_indices(
             table=_table,
             common_indices=train_test[sk][pk]["train"],
             level_keys=["features"],
@@ -71,7 +71,7 @@ for sk in SITES:
     for pk in PARTICLES:
         transformed_features[sk][pk] = {}
 
-        features = spt.read(
+        features = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -81,7 +81,7 @@ for sk in SITES:
             ),
             structure=irf.table.STRUCTURE,
         )["features"]
-        transformed_features[sk][pk][spt.IDX] = np.array(features[spt.IDX])
+        transformed_features[sk][pk][snt.IDX] = np.array(features[snt.IDX])
 
         for fk in ALL_FEATURES:
             if fk in ORIGINAL_FEATURES:
@@ -96,8 +96,8 @@ for sk in SITES:
         site_particle_dir = os.path.join(pa["out_dir"], sk, pk)
         os.makedirs(site_particle_dir, exist_ok=True)
 
-        out_table = spt.dict_to_recarray(transformed_features[sk][pk])
-        spt.write(
+        out_table = snt.dict_to_recarray(transformed_features[sk][pk])
+        snt.write(
             path=os.path.join(site_particle_dir, "transformed_features.tar"),
             table={"transformed_features": out_table},
             structure=irf.features.TRANSFORMED_FEATURE_STRUCTURE,

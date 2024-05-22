@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import sys
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import sklearn
 import json_utils
@@ -23,7 +23,7 @@ for sk in SITES:
         site_dir = os.path.join(pa["out_dir"], sk)
         os.makedirs(site_dir, exist_ok=True)
 
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -35,7 +35,7 @@ for sk in SITES:
         )
 
         train_idxs, test_idxs = sklearn.model_selection.train_test_split(
-            event_table["primary"][spt.IDX],
+            event_table["primary"][snt.IDX],
             test_size=test_size,
             random_state=summary_random_seed,
         )

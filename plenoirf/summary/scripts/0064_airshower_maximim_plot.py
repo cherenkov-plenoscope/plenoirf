@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import sys
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import confusion_matrix
 import os
 from os.path import join as opj
@@ -45,7 +45,7 @@ distance_bin_edges = np.geomspace(5e3, 25e3, num_bins + 1)
 
 for sk in SITES:
     for pk in PARTICLES:
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -56,14 +56,14 @@ for sk in SITES:
             structure=irf.table.STRUCTURE,
         )
 
-        idx_common = spt.intersection(
+        idx_common = snt.intersection(
             [
                 passing_trigger[sk][pk]["idx"],
                 passing_quality[sk][pk]["idx"],
             ]
         )
 
-        table = spt.cut_and_sort_table_on_indices(
+        table = snt.cut_and_sort_table_on_indices(
             table=event_table,
             common_indices=idx_common,
             level_keys=[

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import sys
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import pandas
 import numpy as np
@@ -89,7 +89,7 @@ def read_event_frame(
     sk = site_key
     pk = particle_key
 
-    airshower_table = spt.read(
+    airshower_table = snt.read(
         path=os.path.join(
             run_dir,
             "event_table",
@@ -100,7 +100,7 @@ def read_event_frame(
         structure=irf.table.STRUCTURE,
     )
 
-    airshower_table["transformed_features"] = spt.read(
+    airshower_table["transformed_features"] = snt.read(
         path=os.path.join(
             transformed_features_dir,
             sk,
@@ -117,7 +117,7 @@ def read_event_frame(
 
     out = {}
     for kk in ["test", "train"]:
-        idxs_valid_kk = spt.intersection(
+        idxs_valid_kk = snt.intersection(
             [
                 passing_trigger[sk][pk]["idx"],
                 passing_quality[sk][pk]["idx"],
@@ -125,12 +125,12 @@ def read_event_frame(
                 train_test[sk][pk][kk],
             ]
         )
-        table_kk = spt.cut_and_sort_table_on_indices(
+        table_kk = snt.cut_and_sort_table_on_indices(
             table=airshower_table,
             common_indices=idxs_valid_kk,
             level_keys=level_keys,
         )
-        out[kk] = spt.make_rectangular_DataFrame(table_kk)
+        out[kk] = snt.make_rectangular_DataFrame(table_kk)
 
     return out
 

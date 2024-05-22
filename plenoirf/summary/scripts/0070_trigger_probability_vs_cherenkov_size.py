@@ -4,7 +4,7 @@ import plenoirf as irf
 import os
 import numpy as np
 from os.path import join as opj
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -27,7 +27,7 @@ for site_key in irf_config["config"]["sites"]:
         site_particle_dir = opj(pa["out_dir"], site_key, particle_key)
         os.makedirs(site_particle_dir, exist_ok=True)
 
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -40,8 +40,8 @@ for site_key in irf_config["config"]["sites"]:
 
         key = "trigger_probability_vs_cherenkov_size"
 
-        mask_pasttrigger = spt.make_mask_of_right_in_left(
-            left_indices=event_table["trigger"][spt.IDX],
+        mask_pasttrigger = snt.make_mask_of_right_in_left(
+            left_indices=event_table["trigger"][snt.IDX],
             right_indices=passing_trigger[site_key][particle_key]["idx"],
         )
 

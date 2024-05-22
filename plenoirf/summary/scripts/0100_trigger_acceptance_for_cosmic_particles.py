@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import atmospheric_cherenkov_response
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import json_utils
 
@@ -40,7 +40,7 @@ for sk in SITES:
 
         os.makedirs(site_particle_dir, exist_ok=True)
 
-        diffuse_particle_table = spt.read(
+        diffuse_particle_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -62,7 +62,7 @@ for sk in SITES:
             )
         )
 
-        point_particle_table = spt.cut_table_on_indices(
+        point_particle_table = snt.cut_table_on_indices(
             table=diffuse_particle_table,
             common_indices=idx_possible_onregion,
         )
@@ -82,8 +82,8 @@ for sk in SITES:
                 threshold=threshold,
                 modus=trigger_modus,
             )
-            mask_detected = spt.make_mask_of_right_in_left(
-                left_indices=point_particle_table["primary"][spt.IDX],
+            mask_detected = snt.make_mask_of_right_in_left(
+                left_indices=point_particle_table["primary"][snt.IDX],
                 right_indices=idx_detected,
             )
             (
@@ -139,8 +139,8 @@ for sk in SITES:
                 threshold=threshold,
                 modus=trigger_modus,
             )
-            mask_detected = spt.make_mask_of_right_in_left(
-                left_indices=diffuse_particle_table["primary"][spt.IDX],
+            mask_detected = snt.make_mask_of_right_in_left(
+                left_indices=diffuse_particle_table["primary"][snt.IDX],
                 right_indices=idx_detected,
             )
             (

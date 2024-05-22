@@ -3,7 +3,7 @@ import sys
 import os
 from os.path import join as opj
 import numpy as np
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import plenoirf as irf
 import sebastians_matplotlib_addons as seb
 import json_utils
@@ -81,7 +81,7 @@ for sk in SITES:
             list(detected_grid_histograms.keys())
         )
 
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -92,7 +92,7 @@ for sk in SITES:
             structure=irf.table.STRUCTURE,
         )
 
-        detected_events = spt.cut_table_on_indices(
+        detected_events = snt.cut_table_on_indices(
             table=event_table,
             common_indices=idx_passed_trigger_and_in_debug_output,
             level_keys=[
@@ -116,7 +116,7 @@ for sk in SITES:
             if particle_counter >= MAX_NUM_PARTICLES:
                 break
 
-            shower_table = spt.cut_table_on_indices(
+            shower_table = snt.cut_table_on_indices(
                 table=detected_events,
                 common_indices=[shower_idx],
                 level_keys=[

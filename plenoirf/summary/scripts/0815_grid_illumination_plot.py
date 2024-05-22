@@ -3,7 +3,7 @@ import sys
 import os
 from os.path import join as opj
 import numpy as np
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import plenoirf as irf
 import sebastians_matplotlib_addons as seb
 import json_utils
@@ -58,7 +58,7 @@ for sk in SITES:
             list(detected_grid_histograms.keys())
         )
 
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -69,7 +69,7 @@ for sk in SITES:
             structure=irf.table.STRUCTURE,
         )
 
-        detected_events = spt.cut_table_on_indices(
+        detected_events = snt.cut_table_on_indices(
             table=event_table,
             common_indices=idx_passed_trigger_and_in_debug_output,
             level_keys=[
@@ -95,7 +95,7 @@ for sk in SITES:
                 detected_events["primary"]["energy_GeV"] > energy_GeV_start,
                 detected_events["primary"]["energy_GeV"] <= energy_GeV_stop,
             )
-            idx_energy_range = detected_events["primary"][energy_mask][spt.IDX]
+            idx_energy_range = detected_events["primary"][energy_mask][snt.IDX]
             grid_intensity = np.zeros(
                 (num_grid_bins_on_edge, num_grid_bins_on_edge)
             )

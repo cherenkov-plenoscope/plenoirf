@@ -144,7 +144,7 @@ def classify_cherenkov_photons(
                 pulse_origins=event.simulation_truth.detector.pulse_origins,
                 photon_ids_cherenkov=cherenkov_photons.photon_ids,
             )
-            crcl[spt.IDX] = event_uid
+            crcl[snt.IDX] = event_uid
             evttab["cherenkovclassification"].append_record(crcl)
 
             # export reconstructed Cherenkov photons

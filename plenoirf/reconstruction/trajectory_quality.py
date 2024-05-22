@@ -3,15 +3,15 @@ from .. import analysis
 
 import numpy as np
 import airshower_template_generator as atg
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 
 
 def make_rectangular_table(event_table, plenoscope_pointing):
-    tab = spt.cut_and_sort_table_on_indices(
+    tab = snt.cut_and_sort_table_on_indices(
         table=event_table,
-        common_indices=event_table["reconstructed_trajectory"][spt.IDX],
+        common_indices=event_table["reconstructed_trajectory"][snt.IDX],
     )
-    df = spt.make_rectangular_DataFrame(tab)
+    df = snt.make_rectangular_DataFrame(tab)
 
     cx, cy = analysis.gamma_direction.momentum_to_cx_cy_wrt_aperture(
         momentum_x_GeV_per_c=df["primary/momentum_x_GeV_per_c"],

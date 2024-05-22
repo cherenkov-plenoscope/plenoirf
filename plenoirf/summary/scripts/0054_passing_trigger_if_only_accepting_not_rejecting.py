@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import sys
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import json_utils
 import numpy as np
@@ -32,7 +32,7 @@ for sk in irf_config["config"]["sites"]:
         sk_pk_dir = os.path.join(pa["out_dir"], sk, pk)
         os.makedirs(sk_pk_dir, exist_ok=True)
 
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",

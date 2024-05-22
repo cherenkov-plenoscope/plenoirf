@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import sys
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import sebastians_matplotlib_addons as seb
 import os
 import copy
@@ -50,7 +50,7 @@ for sk in SITES:
     for pk in PARTICLES:
         pv[sk][pk] = {}
 
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -73,7 +73,7 @@ for sk in SITES:
                 )
             )
 
-            pleno_table = spt.cut_table_on_indices(
+            pleno_table = snt.cut_table_on_indices(
                 table=event_table,
                 common_indices=passing_plenoscope_trigger[sk][pk]["idx"],
                 level_keys=[
@@ -81,7 +81,7 @@ for sk in SITES:
                 ],
             )
 
-            veto_table = spt.cut_table_on_indices(
+            veto_table = snt.cut_table_on_indices(
                 table=event_table,
                 common_indices=passing_plenoscope_and_not_array,
                 level_keys=[

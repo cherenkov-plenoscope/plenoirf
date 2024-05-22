@@ -2,7 +2,7 @@
 import sys
 import numpy as np
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import pandas
 import plenopy as pl
@@ -53,7 +53,7 @@ for sk in SITES:
     tds[sk] = {}
     for pk in ["gamma"]:
         tds[sk][pk] = {}
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -64,15 +64,15 @@ for sk in SITES:
             structure=irf.table.STRUCTURE,
         )
 
-        valid_idx = spt.intersection(
+        valid_idx = snt.intersection(
             [
-                passing_trigger[sk][pk][spt.IDX],
-                passing_quality[sk][pk][spt.IDX],
-                passing_trajectory_quality[sk][pk][spt.IDX],
+                passing_trigger[sk][pk][snt.IDX],
+                passing_quality[sk][pk][snt.IDX],
+                passing_trajectory_quality[sk][pk][snt.IDX],
             ]
         )
 
-        event_table = spt.cut_table_on_indices(
+        event_table = snt.cut_table_on_indices(
             table=event_table,
             common_indices=valid_idx,
             level_keys=[
@@ -85,7 +85,7 @@ for sk in SITES:
             ],
         )
 
-        et = spt.make_rectangular_DataFrame(event_table).to_records()
+        et = snt.make_rectangular_DataFrame(event_table).to_records()
 
         tds[sk][pk]["true_wrt_corsika_wrt_collection_plane_s"] = []
         tds[sk][pk]["reco_simple_wrt_corsika_wrt_collection_plane_s"] = []

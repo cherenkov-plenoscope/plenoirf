@@ -2,7 +2,7 @@
 import sys
 import numpy as np
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import pandas
 import plenopy as pl
@@ -197,20 +197,20 @@ for sk in irf_config["config"]["sites"]:
         site_particle_dir = os.path.join(pa["out_dir"], sk, pk)
         os.makedirs(site_particle_dir, exist_ok=True)
 
-        _event_table = spt.read(
+        _event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"], "event_table", sk, pk, "event_table.tar"
             ),
             structure=irf.table.STRUCTURE,
         )
-        idx_common = spt.intersection(
+        idx_common = snt.intersection(
             [
                 passing_trigger[sk][pk]["idx"],
                 passing_quality[sk][pk]["idx"],
                 passing_trajectory_quality[sk][pk]["idx"],
             ]
         )
-        _event_table = spt.cut_and_sort_table_on_indices(
+        _event_table = snt.cut_and_sort_table_on_indices(
             table=_event_table,
             common_indices=idx_common,
         )

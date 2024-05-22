@@ -6,7 +6,7 @@ import scipy
 import os
 import numpy as np
 import json_utils
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import sebastians_matplotlib_addons as seb
 import glob
 import tempfile
@@ -267,7 +267,7 @@ for sk in ["namibia"]:
         print("===", sk, pk, "===")
 
         print("- read event_table")
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 sk_pk_dir,
                 "event_table.tar",
@@ -304,7 +304,7 @@ for sk in ["namibia"]:
                 print(uid, "no full output avaiable")
                 continue
 
-            event_core = spt.cut_and_sort_table_on_indices(
+            event_core = snt.cut_and_sort_table_on_indices(
                 table=event_table,
                 common_indices=np.array([uid]),
                 level_keys=["core"],

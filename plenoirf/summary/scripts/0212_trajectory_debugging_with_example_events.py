@@ -2,7 +2,7 @@
 import sys
 import numpy as np
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import plenopy as pl
 import gamma_ray_reconstruction as gamrec
@@ -72,16 +72,16 @@ for sk in irf_config["config"]["sites"]:
     for pk in irf_config["config"]["particles"]:
         truth_by_index[sk][pk] = {}
 
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"], "event_table", sk, pk, "event_table.tar"
             ),
             structure=irf.table.STRUCTURE,
         )
-        common_idx = spt.intersection(
+        common_idx = snt.intersection(
             [passing_trigger[sk][pk]["idx"], passing_quality[sk][pk]["idx"]]
         )
-        all_truth = spt.cut_and_sort_table_on_indices(
+        all_truth = snt.cut_and_sort_table_on_indices(
             event_table,
             common_indices=common_idx,
             level_keys=[
@@ -109,7 +109,7 @@ for sk in irf_config["config"]["sites"]:
         )
 
         for ii in range(all_truth["primary"].shape[0]):
-            airshower_id = all_truth["primary"][spt.IDX][ii]
+            airshower_id = all_truth["primary"][snt.IDX][ii]
             truth_by_index[sk][pk][airshower_id] = {
                 "cx": true_cx[ii],
                 "cy": true_cy[ii],
@@ -124,7 +124,7 @@ axes_style = {"spines": [], "axes": ["x", "y"], "grid": True}
 def read_shower_maximum_object_distance(
     site_key, particle_key, key="image_smallest_ellipse_object_distance"
 ):
-    event_table = spt.read(
+    event_table = snt.read(
         path=os.path.join(
             pa["run_dir"],
             "event_table",
@@ -135,7 +135,7 @@ def read_shower_maximum_object_distance(
         structure=irf.table.STRUCTURE,
     )
 
-    return spt.get_column_as_dict_by_index(
+    return snt.get_column_as_dict_by_index(
         table=event_table, level_key="features", column_key=key
     )
 

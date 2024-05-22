@@ -5,7 +5,7 @@ from os.path import join as opj
 import numpy as np
 import magnetic_deflection as mdfl
 import spherical_coordinates
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import plenoirf as irf
 import sebastians_matplotlib_addons as seb
 import json_utils
@@ -41,7 +41,7 @@ for site_key in irf_config["config"]["sites"]:
 
         # read
         # ----
-        event_table = spt.read(
+        event_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -54,8 +54,8 @@ for site_key in irf_config["config"]["sites"]:
 
         # summarize
         # ---------
-        mask_triggered = spt.make_mask_of_right_in_left(
-            left_indices=event_table["primary"][spt.IDX],
+        mask_triggered = snt.make_mask_of_right_in_left(
+            left_indices=event_table["primary"][snt.IDX],
             right_indices=passing_trigger[site_key][particle_key]["idx"],
         )
         (primary_cx, primary_cy) = spherical_coordinates.az_zd_to_cx_cy(

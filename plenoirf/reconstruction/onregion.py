@@ -1,5 +1,5 @@
 import numpy as np
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import shapely
 from shapely import geometry as shapely_geometry
 from .. import event_table as irf_table

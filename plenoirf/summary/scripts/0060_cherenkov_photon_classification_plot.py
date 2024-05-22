@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import os
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 from os.path import join as opj
 import sebastians_matplotlib_addons as seb
 import json_utils
@@ -46,7 +46,7 @@ for sk in irf_config["config"]["sites"]:
 
         site_particle_prefix = "{:s}_{:s}".format(sk, pk)
 
-        event_table = spt.read(
+        event_table = snt.read(
             path=opj(
                 pa["run_dir"],
                 "event_table",
@@ -57,14 +57,14 @@ for sk in irf_config["config"]["sites"]:
             structure=irf.table.STRUCTURE,
         )
 
-        idx_common = spt.intersection(
+        idx_common = snt.intersection(
             [
                 passing_trigger[sk][pk]["idx"],
                 passing_quality[sk][pk]["idx"],
             ]
         )
 
-        mrg_chc_fts = spt.cut_and_sort_table_on_indices(
+        mrg_chc_fts = snt.cut_and_sort_table_on_indices(
             table=event_table,
             common_indices=idx_common,
             level_keys=["primary", "trigger", CHCL, "features"],

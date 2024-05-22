@@ -2,7 +2,7 @@
 import sys
 import numpy as np
 import plenoirf as irf
-import sparse_numeric_table as spt
+import sparse_numeric_table as snt
 import os
 import json_utils
 
@@ -42,7 +42,7 @@ for sk in SITES:
         ),
     }
     for pk in PARTICLES:
-        airshower_table = spt.read(
+        airshower_table = snt.read(
             path=os.path.join(
                 pa["run_dir"],
                 "event_table",
@@ -55,11 +55,11 @@ for sk in SITES:
 
         # The true num of Cherenkov-photons in the light-field-sequence must be
         # below a critical threshold.
-        idx_nsb = airshower_table["trigger"][spt.IDX][
+        idx_nsb = airshower_table["trigger"][snt.IDX][
             airshower_table["trigger"]["num_cherenkov_pe"]
             <= MAX_CHERENKOV_IN_NSB_PE
         ]
-        nsb_table = spt.cut_level_on_indices(
+        nsb_table = snt.cut_level_on_indices(
             level=airshower_table["trigger"],
             indices=idx_nsb,
         )
