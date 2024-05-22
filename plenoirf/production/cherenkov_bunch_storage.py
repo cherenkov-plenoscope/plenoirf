@@ -184,7 +184,7 @@ def mask_cherenkov_bunches_in_instruments_field_of_view(
     pointing,
     field_of_view_half_angle_rad,
 ):
-    OVERHEAD = 2.0
+    OVERHEAD = 1.25
     MOMENTUM_TO_INCIDENT = -1.0
     return mask_cherenkov_bunches_in_cone(
         cherenkov_bunches_cx=MOMENTUM_TO_INCIDENT
