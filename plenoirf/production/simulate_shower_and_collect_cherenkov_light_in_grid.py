@@ -81,6 +81,19 @@ def run(env, seed, logger):
         path=os.path.join(corsika_and_grid_work_dir, "event_table.tar"),
     )
 
+    logger.info(__name__ + ": remove temporary cherenkov_pool_storage files.")
+    cherenkov_pool_storage_in_fov_path = opj(
+        corsika_and_grid_work_dir,
+        "cherenkov_pool_storage_in_field_of_view.tar",
+    )
+    if os.path.exists(cherenkov_pool_storage_in_fov_path):
+        os.remove(cherenkov_pool_storage_in_fov_path)
+    cherenkov_pool_storage_path = opj(
+        corsika_and_grid_work_dir, "cherenkov_pool_storage.tar"
+    )
+    if os.path.exists(cherenkov_pool_storage_path):
+        os.remove(cherenkov_pool_storage_path)
+
     logger.info(__name__ + ": ... done.")
 
 
