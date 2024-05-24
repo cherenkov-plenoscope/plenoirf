@@ -1,8 +1,8 @@
 import os
-from os import path as op
 from os.path import join as opj
 import tempfile
 import copy
+import shutil
 import numpy as np
 
 import json_utils
@@ -198,13 +198,13 @@ def run_job_in_dir(job, work_dir):
     # ----------------------------------------
     with TimeDelta(logger, "estimate size of block-environment 'blk'."):
         blk_size_bytes = debugging.estimate_memory_size_in_bytes_of_anything(
-            nything=blk
+            anything=blk
         )
         logger.info("<blk size_bytes='{:d}'/>".format(blk_size_bytes))
 
     with TimeDelta(logger, "estimate size of environment 'env'."):
         env_size_bytes = debugging.estimate_memory_size_in_bytes_of_anything(
-            nything=env
+            anything=env
         )
         logger.info("<env size_bytes='{:d}'/>".format(env_size_bytes))
     with open(opj(env["work_dir"], "memory_usage.json"), "wt") as fout:

@@ -34,10 +34,6 @@ def run_block(env, blk, block_id, logger):
     )
     evttab = event_table.add_empty_level(evttab, "cherenkovclassification")
 
-    print("len pasttrigger: ", len(evttab["pasttrigger"]))
-    if len(evttab["pasttrigger"]):
-        print("first pasttrigger: ", evttab["pasttrigger"][0][snt.IDX])
-
     evttab = classify_cherenkov_photons(
         evttab=evttab,
         config_cherenkov_classification_region_of_interest=env["config"][
