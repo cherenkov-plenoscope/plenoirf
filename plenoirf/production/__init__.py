@@ -225,99 +225,99 @@ def run_job_in_dir(job, work_dir):
         with open(opj(env["work_dir"], "disk_usage.json", "wt")) as fout:
             fout.write(json_utils.dumps(disk_usage, indent=4))
 
-    logger.info("ending")
-    json_line_logger.shutdown(logger=logger)
-    rnw.move(logger_path + ".part", logger_path)
-
     # collect output
     # ==============
+    logger.info("Collecting results in output file.")
 
     # bundle event_table
     # ------------------
-    evttab = {}
-    evttab = event_table.add_levels_from_path(
-        evttab=evttab,
-        path=opj(
-            env["work_dir"],
-            "plenoirf.simulate_shower_and_collect_cherenkov_light_in_grid",
-            "event_table.tar",
-        ),
-    )
-    evttab = event_table.add_levels_from_path(
-        evttab=evttab,
-        path=opj(
-            env["work_dir"],
-            "plenoirf.production.inspect_particle_pool",
-            "event_table.tar",
-        ),
-    )
-    for block_id_str in blk["event_uid_strs_in_block"]:
-        evttab = event_table.append_to_levels_from_path(
+    with TimeDelta(logger, "bundling event_table.tar"):
+        evttab = {}
+        evttab = event_table.add_levels_from_path(
             evttab=evttab,
             path=opj(
                 env["work_dir"],
-                "blocks",
-                block_id_str,
-                "plenoirf.production.simulate_loose_trigger",
+                "plenoirf.simulate_shower_and_collect_cherenkov_light_in_grid",
                 "event_table.tar",
             ),
         )
-        evttab = event_table.append_to_levels_from_path(
+        evttab = event_table.add_levels_from_path(
             evttab=evttab,
             path=opj(
                 env["work_dir"],
-                "blocks",
-                block_id_str,
-                "plenoirf.production.classify_cherenkov_photons",
+                "plenoirf.production.inspect_particle_pool",
                 "event_table.tar",
             ),
         )
-        evttab = event_table.append_to_levels_from_path(
+        for block_id_str in blk["event_uid_strs_in_block"]:
+            evttab = event_table.append_to_levels_from_path(
+                evttab=evttab,
+                path=opj(
+                    env["work_dir"],
+                    "blocks",
+                    block_id_str,
+                    "plenoirf.production.simulate_loose_trigger",
+                    "event_table.tar",
+                ),
+            )
+            evttab = event_table.append_to_levels_from_path(
+                evttab=evttab,
+                path=opj(
+                    env["work_dir"],
+                    "blocks",
+                    block_id_str,
+                    "plenoirf.production.classify_cherenkov_photons",
+                    "event_table.tar",
+                ),
+            )
+            evttab = event_table.append_to_levels_from_path(
+                evttab=evttab,
+                path=opj(
+                    env["work_dir"],
+                    "blocks",
+                    block_id_str,
+                    "plenoirf.production.extract_features_from_light_field",
+                    "event_table.tar",
+                ),
+            )
+            evttab = event_table.append_to_levels_from_path(
+                evttab=evttab,
+                path=opj(
+                    env["work_dir"],
+                    "blocks",
+                    block_id_str,
+                    "plenoirf.production.estimate_primary_trajectory",
+                    "event_table.tar",
+                ),
+            )
+        event_table.write_all_levels_to_path(
             evttab=evttab,
-            path=opj(
-                env["work_dir"],
-                "blocks",
-                block_id_str,
-                "plenoirf.production.extract_features_from_light_field",
-                "event_table.tar",
-            ),
+            path=opj(env["work_dir"], "event_table.tar"),
         )
-        evttab = event_table.append_to_levels_from_path(
-            evttab=evttab,
-            path=opj(
-                env["work_dir"],
-                "blocks",
-                block_id_str,
-                "plenoirf.production.estimate_primary_trajectory",
-                "event_table.tar",
-            ),
-        )
-    event_table.write_all_levels_to_path(
-        evttab=evttab,
-        path=opj(env["work_dir"], "event_table.tar"),
-    )
 
     # bundle reconstructed cherenkov light (loph)
     # -------------------------------------------
-    loph_in_paths = []
-    for block_id_str in blk["event_uid_strs_in_block"]:
-        loph_in_path = opj(
-            env["work_dir"],
-            "blocks",
-            block_id_str,
-            "reconstructed_cherenkov.tar",
-        )
-        loph_in_paths.append(loph_in_path)
+    with TimeDelta(logger, "bundling reconstructed_cherenkov.tar"):
+        loph_in_paths = []
+        for block_id_str in blk["event_uid_strs_in_block"]:
+            loph_in_path = opj(
+                env["work_dir"],
+                "blocks",
+                block_id_str,
+                "reconstructed_cherenkov.tar",
+            )
+            loph_in_paths.append(loph_in_path)
 
-    plenopy.photon_stream.loph.concatenate_tars(
-        in_paths=loph_in_paths,
-        out_path=opj(env["work_dir"], "reconstructed_cherenkov.tar"),
-    )
+        plenopy.photon_stream.loph.concatenate_tars(
+            in_paths=loph_in_paths,
+            out_path=opj(env["work_dir"], "reconstructed_cherenkov.tar"),
+        )
 
     # write output file
     # -----------------
-    result_path = opj(env["stage_dir"], env["run_id_str"])
+    result_path = opj(env["stage_dir"], env["run_id_str"] + ".zip")
     with zipfile.ZipFile(file=result_path) as zout:
+        logger.info("Writing results to {:s}.".format(result_path))
         zip_write_gz(
             zout,
             opj(env["work_dir"], "event_table.tar"),
@@ -359,10 +359,9 @@ def run_job_in_dir(job, work_dir):
             zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
         )
 
-        # log and debugging
-        # -----------------
-        zip_write_gz(zout, logger_path, opj(env["run_id_str"], "log.jsonl.gz"))
-
+        # debugging
+        # ---------
+        logger.info("Writing debugging to {:s}.".format(result_path))
         base = "plenoirf.production.draw_event_uids_for_debugging.json"
         zip_write_gz(
             zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
@@ -422,6 +421,13 @@ def run_job_in_dir(job, work_dir):
         zip_write(
             zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
         )
+
+        # log file
+        # --------
+        logger.info("shuting down logger.")
+        json_line_logger.shutdown(logger=logger)
+        rnw.move(logger_path + ".part", logger_path)
+        zip_write_gz(zout, logger_path, opj(env["run_id_str"], "log.jsonl.gz"))
 
     rnw.move(
         result_path,
