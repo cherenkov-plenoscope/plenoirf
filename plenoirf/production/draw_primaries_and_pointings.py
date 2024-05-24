@@ -219,10 +219,11 @@ def run(env, seed, logger):
     opj = os.path.join
     logger.info(__name__ + ": start ...")
 
-    result_path = opj(env["work_dir"], __name__ + ".pkl")
-    if os.path.exists(result_path):
+    sub_work_dir = opj(env["work_dir"], __name__)
+    if os.path.exists(sub_work_dir):
         return
 
+    os.makedirs(sub_work_dir)
     prng = np.random.Generator(np.random.PCG64(seed))
 
     logger.info(__name__ + ": open SkyMap")
@@ -271,22 +272,16 @@ def run(env, seed, logger):
     )
 
     logger.info(__name__ + ": exporting results.")
-    with rnw.open(result_path, "wb") as fout:
+    with rnw.open(opj(sub_work_dir, "result.pkl"), "wb") as fout:
         fout.write(pickle.dumps(out))
 
     logger.info(__name__ + ": exporting debug.")
-    write_draw_primaries_and_pointings_debug(
-        path=opj(env["work_dir"], __name__ + ".debug.zip"),
-        debug=debug,
-    )
+    write_debug(path=opj(sub_work_dir, ".debug.zip"), debug=debug)
 
     logger.info(__name__ + ": ... done.")
 
 
-def write_draw_primaries_and_pointings_debug(
-    path,
-    debug,
-):
+def write_debug(path, debug):
     event_uid_strs_for_debugging = sorted(list(debug.keys()))
     with rnw.open(path, "wb") as fff:
         with zipfile.ZipFile(fff, "w") as zout:

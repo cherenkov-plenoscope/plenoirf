@@ -39,7 +39,8 @@ def run(env, seed, logger):
     with open(
         opj(
             env["work_dir"],
-            "plenoirf.production.draw_primaries_and_pointings.pkl",
+            "plenoirf.production.draw_primaries_and_pointings",
+            "result.pkl",
         ),
         "rb",
     ) as fin:
