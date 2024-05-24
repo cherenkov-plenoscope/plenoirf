@@ -276,7 +276,7 @@ def run(env, seed, logger):
         fout.write(pickle.dumps(out))
 
     logger.info(__name__ + ": exporting debug.")
-    write_debug(path=opj(sub_work_dir, ".debug.zip"), debug=debug)
+    write_debug(path=opj(sub_work_dir, "debug.zip"), debug=debug)
 
     logger.info(__name__ + ": ... done.")
 
