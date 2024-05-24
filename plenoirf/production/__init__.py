@@ -66,7 +66,7 @@ def run_job_in_dir(job, work_dir):
 
     os.makedirs(env["stage_dir"], exist_ok=True)
 
-    logger_path = opj(env["stage_dir"], env["run_id_str"] + "_log.jsonl")
+    logger_path = opj(env["stage_dir"], env["run_id_str"] + ".log.jsonl")
     logger = json_line_logger.LoggerFile(path=logger_path + ".part")
     logger.info("starting")
 
@@ -203,10 +203,13 @@ def run_job_in_dir(job, work_dir):
         logger.info("<blk size_bytes='{:d}'/>".format(blk_size_bytes))
 
     with TimeDelta(logger, "estimate size of environment 'env'."):
-        blk_size_bytes = debugging.estimate_memory_size_in_bytes_of_anything(
+        env_size_bytes = debugging.estimate_memory_size_in_bytes_of_anything(
             nything=env
         )
-        logger.info("<env size_bytes='{:d}'/>".format(blk_size_bytes))
+        logger.info("<env size_bytes='{:d}'/>".format(env_size_bytes))
+    with open(opj(env["work_dir"], "memory_usage.json"), "wt") as fout:
+        _out = {"env": env_size_bytes, "blk": blk_size_bytes}
+        fout.write(json_utils.dumps(_out))
 
     # loop over blocks
     # ----------------
@@ -219,16 +222,224 @@ def run_job_in_dir(job, work_dir):
         disk_usage = debugging.estimate_disk_usage_in_bytes(
             path=env["work_dir"]
         )
-        with gzip.open(
-            opj(env["work_dir"], "disk_usage.json.gz", "wt")
-        ) as fout:
+        with open(opj(env["work_dir"], "disk_usage.json", "wt")) as fout:
             fout.write(json_utils.dumps(disk_usage, indent=4))
 
     logger.info("ending")
     json_line_logger.shutdown(logger=logger)
     rnw.move(logger_path + ".part", logger_path)
 
+    # collect output
+    # ==============
+
+    # bundle event_table
+    # ------------------
+    evttab = {}
+    evttab = event_table.add_levels_from_path(
+        evttab=evttab,
+        path=opj(
+            env["work_dir"],
+            "plenoirf.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "event_table.tar",
+        ),
+    )
+    evttab = event_table.add_levels_from_path(
+        evttab=evttab,
+        path=opj(
+            env["work_dir"],
+            "plenoirf.production.inspect_particle_pool",
+            "event_table.tar",
+        ),
+    )
+    for block_id_str in blk["event_uid_strs_in_block"]:
+        evttab = event_table.append_to_levels_from_path(
+            evttab=evttab,
+            path=opj(
+                env["work_dir"],
+                "blocks",
+                block_id_str,
+                "plenoirf.production.simulate_loose_trigger",
+                "event_table.tar",
+            ),
+        )
+        evttab = event_table.append_to_levels_from_path(
+            evttab=evttab,
+            path=opj(
+                env["work_dir"],
+                "blocks",
+                block_id_str,
+                "plenoirf.production.classify_cherenkov_photons",
+                "event_table.tar",
+            ),
+        )
+        evttab = event_table.append_to_levels_from_path(
+            evttab=evttab,
+            path=opj(
+                env["work_dir"],
+                "blocks",
+                block_id_str,
+                "plenoirf.production.extract_features_from_light_field",
+                "event_table.tar",
+            ),
+        )
+        evttab = event_table.append_to_levels_from_path(
+            evttab=evttab,
+            path=opj(
+                env["work_dir"],
+                "blocks",
+                block_id_str,
+                "plenoirf.production.estimate_primary_trajectory",
+                "event_table.tar",
+            ),
+        )
+    event_table.write_all_levels_to_path(
+        evttab=evttab,
+        path=opj(env["work_dir"], "event_table.tar"),
+    )
+
+    # bundle reconstructed cherenkov light (loph)
+    # -------------------------------------------
+    loph_in_paths = []
+    for block_id_str in blk["event_uid_strs_in_block"]:
+        loph_in_path = opj(
+            env["work_dir"],
+            "blocks",
+            block_id_str,
+            "reconstructed_cherenkov.tar",
+        )
+        loph_in_paths.append(loph_in_path)
+
+    plenopy.photon_stream.loph.concatenate_tars(
+        in_paths=loph_in_paths,
+        out_path=opj(env["work_dir"], "reconstructed_cherenkov.tar"),
+    )
+
+    # write output file
+    # -----------------
+    result_path = opj(env["stage_dir"], env["run_id_str"])
+    with zipfile.ZipFile(file=result_path) as zout:
+        zip_write_gz(
+            zout,
+            opj(env["work_dir"], "event_table.tar"),
+            opj(env["run_id_str"], "event_table.tar" + ".gz"),
+        )
+        zip_write_gz(
+            zout,
+            opj(env["work_dir"], "reconstructed_cherenkov.tar"),
+            opj(env["run_id_str"], "reconstructed_cherenkov.tar"),
+        )
+        base = opj(
+            "plenoirf.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "cherenkov_pools.tar",
+        )
+        zip_write_gz(
+            zout,
+            opj(env["work_dir"], base),
+            opj(env["run_id_str"], base + ".gz"),
+        )
+        base = opj(
+            "plenoirf.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "particle_pools.tar.gz",
+        )
+        zip_write(
+            zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
+        )
+        base = opj(
+            "plenoirf.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "ground_grid_intensity.tar",
+        )
+        zip_write(
+            zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
+        )
+        base = opj(
+            "plenoirf.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "ground_grid_intensity_roi.tar",
+        )
+        zip_write(
+            zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
+        )
+
+        # log and debugging
+        # -----------------
+        zip_write_gz(zout, logger_path, opj(env["run_id_str"], "log.jsonl.gz"))
+
+        base = "plenoirf.production.draw_event_uids_for_debugging.json"
+        zip_write_gz(
+            zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
+        )
+        zip_write_gz(
+            zout,
+            opj(env["work_dir"], "blocks", "event_uid_strs_in_block.json"),
+            opj(env["run_id_str"], "blocks", "event_uid_strs_in_block.json"),
+        )
+        zip_write_gz(
+            zout,
+            opj(env["work_dir"], "memory_usage.json"),
+            opj(env["run_id_str"], "memory_usage.json" + ".gz"),
+        )
+        zip_write_gz(
+            zout,
+            opj(env["work_dir"], "disk_usage.json"),
+            opj(env["run_id_str"], "disk_usage.json" + ".gz"),
+        )
+        base = opj(
+            "plenoirf.production.inspect_cherenkov_pool",
+            "visible_cherenkov_photon_size.json",
+        )
+        zip_write_gz(
+            zout,
+            opj(env["work_dir"], base),
+            opj(env["run_id_str"], base + ".gz"),
+        )
+
+        for ext in ["stdout", "stderr"]:
+            base = opj(
+                "plenoirf.simulate_shower_and_collect_cherenkov_light_in_grid",
+                "corsika.{:s}.txt".format(ext),
+            )
+            zip_write_gz(
+                zout,
+                opj(env["work_dir"], base),
+                opj(env["run_id_str"], base + ".gz"),
+            )
+
+        for block_id_str in blk["event_uid_strs_in_block"]:
+            for ext in ["stdout", "stderr"]:
+                base = opj(
+                    "blocks",
+                    block_id_str,
+                    "merlict.{:s}.txt".format(ext),
+                )
+                zip_write_gz(
+                    zout,
+                    opj(env["work_dir"], base),
+                    opj(env["run_id_str"], base + ".gz"),
+                )
+
+        base = "plenoirf.production.draw_primaries_and_pointings.debug.zip"
+        zip_write(
+            zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
+        )
+
+    rnw.move(
+        result_path,
+        opj(env["stage_dir"], "{:s}.zip".format(env["run_id_str"])),
+    )
+    os.remove(logger_path)
+
     return 1
+
+
+def zip_write_gz(zout, inpath, outpath):
+    with zout.open(outpath) as fout:
+        with open(inpath, "rb") as fin:
+            fout.write(gzip.compress(fin.read()))
+
+
+def zip_write(zout, inpath, outpath):
+    with zout.open(outpath) as fout:
+        with open(inpath, "rb") as fin:
+            fout.write(fin.read())
 
 
 def run_job_block(env, blk, block_id, logger):

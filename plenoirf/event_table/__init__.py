@@ -23,6 +23,13 @@ def add_levels_from_path(evttab, path):
     return evttab
 
 
+def append_to_levels_from_path(evttab, path):
+    add = snt.read(path=path)
+    for level_key in add:
+        evttab[level_key].append_recarray(add[level_key].to_recarray())
+    return evttab
+
+
 def write_certain_levels_to_path(evttab, path, level_keys):
     out = {}
     for level_key in level_keys:
