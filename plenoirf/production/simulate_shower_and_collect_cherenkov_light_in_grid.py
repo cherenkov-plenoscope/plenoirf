@@ -1,6 +1,7 @@
 import os
 import tarfile
 import numpy as np
+import gzip
 
 import corsika_primary as cpw
 import json_utils
@@ -223,7 +224,10 @@ def corsika_and_grid(
                         ],
                     )
 
-                    groundgrid_result, groundgrid_debug = ground_grid.assign2(
+                    (
+                        groundgrid_result,
+                        groundgrid_histogram,
+                    ) = ground_grid.assign3(
                         groundgrid=groundgrid,
                         cherenkov_bunch_storage_path=cherenkov_storage_infov_path,
                         threshold_num_photons=env["config"]["ground_grid"][
@@ -242,12 +246,27 @@ def corsika_and_grid(
 
                     if groundgrid_result["choice"]:
                         cherenkov_bunches_in_choice = (
-                            cherenkov_bunch_storage.read_with_mask(
+                            cherenkov_bunch_storage.read_sphere(
                                 path=cherenkov_storage_infov_path,
-                                bunch_indices=groundgrid_result["choice"][
-                                    "cherenkov_bunches_idxs"
+                                sphere_obs_level_x_m=groundgrid_result[
+                                    "choice"
+                                ]["core_x_m"],
+                                sphere_obs_level_y_m=groundgrid_result[
+                                    "choice"
+                                ]["core_y_m"],
+                                sphere_radius_m=groundgrid[
+                                    "bin_smallest_enclosing_radius_m"
                                 ],
                             )
+                        )
+
+                        assert_expected_num_photons_in_choice(
+                            threshold_num_photons=env["config"]["ground_grid"][
+                                "threshold_num_photons"
+                            ],
+                            groundgrid_result=groundgrid_result,
+                            groundgrid_histogram=groundgrid_histogram,
+                            cherenkov_bunches_in_choice=cherenkov_bunches_in_choice,
                         )
 
                         cherenkov_bunches_in_instrument = transform_cherenkov_bunches.from_obervation_level_to_instrument(
@@ -288,15 +307,14 @@ def corsika_and_grid(
                             imgroitar=imgroitar,
                             uid=uid,
                             groundgrid_result=groundgrid_result,
-                            groundgrid_debug=groundgrid_debug,
+                            groundgrid_histogram=groundgrid_histogram,
                         )
 
                         if uid["uid"] in event_uids_for_debugging:
                             ImgTar_append(
                                 imgtar=imgtar,
                                 uid=uid,
-                                groundgrid=groundgrid,
-                                groundgrid_debug=groundgrid_debug,
+                                groundgrid_histogram=groundgrid_histogram,
                             )
 
                         cherenkovsizepart_rec = cherenkov_bunch_storage.make_cherenkovsize_record(
@@ -432,8 +450,6 @@ def make_groundgrid_record(
     ]
     rec["area_thrown_m2"] = groundgrid["area_thrown_m2"]
 
-    rec["num_photons_overflow"] = groundgrid_result["num_photons_overflow"]
-
     # compare scatter
     # ---------------
     scathist = groundgrid_result["scatter_histogram"]
@@ -466,30 +482,50 @@ def EventTape_append_event(
     evttar.write_payload(payload=cherenkov_bunches)
 
 
-def ImgRoiTar_append(imgroitar, uid, groundgrid_result, groundgrid_debug):
+def ImgRoiTar_append(imgroitar, uid, groundgrid_result, groundgrid_histogram):
     bb = outer_telescope_array.init_binning()
-    roi_array = ground_grid.bin_photon_assignment_to_array_roi(
-        bin_photon_assignment=groundgrid_debug["bin_photon_assignment"],
-        x_bin=groundgrid_result["choice"]["bin_idx_x"],
-        y_bin=groundgrid_result["choice"]["bin_idx_y"],
-        r_bin=bb["num_bins_radius"],
-        dtype=np.float32,
+
+    dyn_roi = dynamicsizerecarray.DynamicSizeRecarray(
+        dtype=ground_grid.make_histogram2d_dtype()
     )
+    for entry in groundgrid_histogram:
+        dx = entry["x_bin"] - groundgrid_result["choice"]["bin_idx_x"]
+        dy = entry["y_bin"] - groundgrid_result["choice"]["bin_idx_y"]
+        if abs(dx <= 12) and abs(dy <= 12):
+            dyn_roi.append_recarray(entry)
+    roi = dyn_roi.to_recarray()
+
     tar_append.tar_append(
         tarout=imgroitar,
-        filename=uid["uid_path"] + ".f4.gz",
-        filebytes=ground_grid.io.histogram_to_bytes(roi_array),
+        filename=uid["uid_path"] + ".i4_i4_f8.gz",
+        filebytes=gzip.compress(roi.tobytes()),
     )
 
 
-def ImgTar_append(imgtar, uid, groundgrid, groundgrid_debug):
-    img = ground_grid.bin_photon_assignment_to_array(
-        bin_photon_assignment=groundgrid_debug["bin_photon_assignment"],
-        num_bins_each_axis=groundgrid["num_bins_each_axis"],
-        dtype=np.float32,
-    )
+def ImgTar_append(imgtar, uid, groundgrid_histogram):
     tar_append.tar_append(
         tarout=imgtar,
-        filename=uid["uid_path"] + ".f4.gz",
-        filebytes=ground_grid.io.histogram_to_bytes(img),
+        filename=uid["uid_path"] + ".i4_i4_f8.gz",
+        filebytes=gzip.compress(groundgrid_histogram.tobytes()),
+    )
+
+
+def assert_expected_num_photons_in_choice(
+    threshold_num_photons,
+    groundgrid_result,
+    groundgrid_histogram,
+    cherenkov_bunches_in_choice,
+):
+    num_photons_in_choice = float(threshold_num_photons)
+    for entry in groundgrid_histogram:
+        if (
+            entry["x_bin"] == groundgrid_result["choice"]["bin_idx_x"]
+            and entry["y_bin"] == groundgrid_result["choice"]["bin_idx_y"]
+        ):
+            num_photons_in_choice = entry["weight_photons"]
+
+    assert (
+        cherenkov_bunches_in_choice.shape[0] > num_photons_in_choice
+    ), "Expected at least {:f} photons in sphere.".format(
+        num_photons_in_choice
     )

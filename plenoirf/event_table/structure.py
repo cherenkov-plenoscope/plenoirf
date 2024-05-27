@@ -221,12 +221,6 @@ def init_groundgrid_level_structure():
     t["num_bins_above_threshold"] = {"dtype": "<i8", "comment": ""}
     t["area_thrown_m2"] = {"dtype": "<f8", "comment": ""}
 
-    t["num_photons_overflow"] = {
-        "dtype": "<i8",
-        "comment": "Number of Cherenkov bunches which did not hit "
-        "any bins in the grid.",
-    }
-
     # compare scatter
     num_scatter_bins = 16
     for rbin in range(num_scatter_bins):

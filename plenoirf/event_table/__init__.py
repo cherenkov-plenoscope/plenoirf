@@ -26,7 +26,13 @@ def add_levels_from_path(evttab, path):
 def append_to_levels_from_path(evttab, path):
     add = snt.read(path=path)
     for level_key in add:
-        evttab[level_key].append_recarray(add[level_key].to_recarray())
+        add_level_recarray = add[level_key].to_recarray()
+        if level_key in evttab:
+            evttab[level_key].append_recarray(add_level_recarray)
+        else:
+            evttab[level_key] = dynamicsizerecarray.DynamicSizeRecarray(
+                recarray=add_level_recarray
+            )
     return evttab
 
 

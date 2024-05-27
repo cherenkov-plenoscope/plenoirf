@@ -2,6 +2,7 @@ import corsika_primary as cpw
 import numpy as np
 import spherical_coordinates
 import un_bound_histogram
+import dynamicsizerecarray
 
 
 def _make_fake_runh():
@@ -59,6 +60,45 @@ def read_with_mask(path, bunch_indices):
                 ii += cherenkov_block.shape[0]
 
     return outblock
+
+
+def read_sphere(
+    path, sphere_obs_level_x_m, sphere_obs_level_y_m, sphere_radius_m
+):
+    sphere_obs_level_x_cm = 1e2 * sphere_obs_level_x_m
+    sphere_obs_level_y_cm = 1e2 * sphere_obs_level_y_m
+    sphere_radius_cm = 1e2 * sphere_radius_m
+
+    BUNCH = cpw.I.BUNCH
+
+    dyn_out = dynamicsizerecarray.DynamicSizeRecarray(dtype=BUNCH.DTYPE)
+
+    with cpw.cherenkov.CherenkovEventTapeReader(path=path) as tr:
+        for event in tr:
+            evth, cherenkov_reader = event
+            for cherenkov_block in cherenkov_reader:
+                mask = mask_cherenkov_bunches_hit_sphere(
+                    cherenkov_bunches_ux=cherenkov_block[:, BUNCH.UX_1],
+                    cherenkov_bunches_vy=cherenkov_block[:, BUNCH.VY_1],
+                    cherenkov_bunches_x=cherenkov_block[:, BUNCH.X_CM],
+                    cherenkov_bunches_y=cherenkov_block[:, BUNCH.Y_CM],
+                    sphere_x=sphere_obs_level_x_cm,
+                    sphere_y=sphere_obs_level_y_cm,
+                    sphere_radius=sphere_radius_cm,
+                )
+                out_block = cherenkov_block[mask]
+                block_recarray = np.frombuffer(
+                    out_block.tobytes(),
+                    dtype=BUNCH.DTYPE,
+                )
+                dyn_out.append_recarray(block_recarray)
+
+    buff = dyn_out.to_recarray().tobytes()
+    raw_out = np.frombuffer(buff, dtype="f4")
+    ooo = raw_out.reshape(
+        (len(raw_out) // BUNCH.NUM_FLOAT32, BUNCH.NUM_FLOAT32)
+    )
+    return ooo
 
 
 def make_cherenkovsize_record(path=None, cherenkov_bunches=None):
@@ -215,3 +255,48 @@ def mask_cherenkov_bunches_in_cone(
         cy2=cone_cy,
     )
     return delta_rad < cone_half_angle_rad
+
+
+def mask_cherenkov_bunches_hit_sphere(
+    cherenkov_bunches_ux,
+    cherenkov_bunches_vy,
+    cherenkov_bunches_x,
+    cherenkov_bunches_y,
+    sphere_x,
+    sphere_y,
+    sphere_radius,
+):
+    dir_x = cherenkov_bunches_ux
+    dir_y = cherenkov_bunches_vy
+    dir_z = spherical_coordinates.restore_cz(cx=dir_x, cy=dir_y)
+
+    support_x = cherenkov_bunches_x
+    support_y = cherenkov_bunches_y
+    support_z = np.zeros(len(support_x))
+
+    point_x = sphere_x
+    point_y = sphere_y
+    point_z = 0.0
+
+    point_dot_dir = (point_x * dir_x) + (
+        point_y * dir_y
+    )  # + (point_z * dir_z)
+    support_dot_dir = (support_x * dir_x) + (
+        support_y * dir_y
+    )  # + (support_z * dir_z)
+
+    parameter = point_dot_dir - support_dot_dir
+
+    cl_x = support_x + parameter * dir_x
+    cl_y = support_y + parameter * dir_y
+    cl_z = support_z + parameter * dir_z
+
+    delta_x2 = (cl_x - point_x) ** 2
+    delta_y2 = (cl_y - point_y) ** 2
+    delta_z2 = (cl_z - point_z) ** 2
+
+    delta_norm_2 = delta_x2 + delta_y2 + delta_z2
+    sphere_radius_2 = sphere_radius**2
+
+    ray_hits_sphere = delta_norm_2 <= sphere_radius_2
+    return ray_hits_sphere

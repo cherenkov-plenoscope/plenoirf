@@ -4,6 +4,8 @@ import tempfile
 import copy
 import shutil
 import numpy as np
+import zipfile
+import gzip
 
 import json_utils
 import json_line_logger
@@ -222,7 +224,7 @@ def run_job_in_dir(job, work_dir):
         disk_usage = debugging.estimate_disk_usage_in_bytes(
             path=env["work_dir"]
         )
-        with open(opj(env["work_dir"], "disk_usage.json", "wt")) as fout:
+        with open(opj(env["work_dir"], "disk_usage.json"), "wt") as fout:
             fout.write(json_utils.dumps(disk_usage, indent=4))
 
     # collect output
@@ -237,7 +239,7 @@ def run_job_in_dir(job, work_dir):
             evttab=evttab,
             path=opj(
                 env["work_dir"],
-                "plenoirf.simulate_shower_and_collect_cherenkov_light_in_grid",
+                "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
                 "event_table.tar",
             ),
         )
@@ -316,20 +318,20 @@ def run_job_in_dir(job, work_dir):
     # write output file
     # -----------------
     result_path = opj(env["stage_dir"], env["run_id_str"] + ".zip")
-    with zipfile.ZipFile(file=result_path) as zout:
+    with zipfile.ZipFile(file=result_path, mode="w") as zout:
         logger.info("Writing results to {:s}.".format(result_path))
         zip_write_gz(
             zout,
             opj(env["work_dir"], "event_table.tar"),
             opj(env["run_id_str"], "event_table.tar" + ".gz"),
         )
-        zip_write_gz(
+        zip_write(
             zout,
             opj(env["work_dir"], "reconstructed_cherenkov.tar"),
             opj(env["run_id_str"], "reconstructed_cherenkov.tar"),
         )
         base = opj(
-            "plenoirf.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
             "cherenkov_pools.tar",
         )
         zip_write_gz(
@@ -338,21 +340,21 @@ def run_job_in_dir(job, work_dir):
             opj(env["run_id_str"], base + ".gz"),
         )
         base = opj(
-            "plenoirf.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
             "particle_pools.tar.gz",
         )
         zip_write(
             zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
         )
         base = opj(
-            "plenoirf.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
             "ground_grid_intensity.tar",
         )
         zip_write(
             zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
         )
         base = opj(
-            "plenoirf.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
             "ground_grid_intensity_roi.tar",
         )
         zip_write(
@@ -366,7 +368,7 @@ def run_job_in_dir(job, work_dir):
         zip_write_gz(
             zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
         )
-        zip_write_gz(
+        zip_write(
             zout,
             opj(env["work_dir"], "blocks", "event_uid_strs_in_block.json"),
             opj(env["run_id_str"], "blocks", "event_uid_strs_in_block.json"),
@@ -393,7 +395,7 @@ def run_job_in_dir(job, work_dir):
 
         for ext in ["stdout", "stderr"]:
             base = opj(
-                "plenoirf.simulate_shower_and_collect_cherenkov_light_in_grid",
+                "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
                 "corsika.{:s}.txt".format(ext),
             )
             zip_write_gz(
@@ -439,13 +441,13 @@ def run_job_in_dir(job, work_dir):
 
 
 def zip_write_gz(zout, inpath, outpath):
-    with zout.open(outpath) as fout:
+    with zout.open(outpath, mode="w") as fout:
         with open(inpath, "rb") as fin:
             fout.write(gzip.compress(fin.read()))
 
 
 def zip_write(zout, inpath, outpath):
-    with zout.open(outpath) as fout:
+    with zout.open(outpath, mode="w") as fout:
         with open(inpath, "rb") as fin:
             fout.write(fin.read())
 
@@ -514,11 +516,15 @@ def run_job_block(env, blk, block_id, logger):
         env["work_dir"], "blocks", "{:06d}".format(block_id)
     )
     merlict_events_path = os.path.join(block_dir, "merlict")
-    if os.path.exists(merlict_events_path):
+    if os.path.isdir(merlict_events_path):
         logger.info(
             "removing merlict events: '{:s}'".format(merlict_events_path)
         )
         shutil.rmtree(merlict_events_path)
+
+    # make a dummy file to trick merlict into thinking it is already done.
+    with open(merlict_events_path, "wt") as fout:
+        pass
 
     return 1
 
