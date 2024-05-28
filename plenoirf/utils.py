@@ -3,6 +3,7 @@ import propagate_uncertainties as pru
 import binning_utils
 import datetime
 import io
+import os
 import scipy.interpolate
 import json_utils
 import warnings
@@ -294,3 +295,12 @@ def is_10th_part_in_current_decade(i):
     else:
         m = 10 ** int(np.log10(i))
         return i % m == 0
+
+
+def zipfile_write_dir_recursively(zipfile, filename, arcname):
+    for root, dirs, files in os.walk(filename):
+        for file in files:
+            fname = os.path.join(root, file)
+            relname = os.path.relpath(os.path.join(root, file), filename)
+            aname = os.path.join(arcname, relname)
+            zipfile.write(filename=fname, arcname=aname)

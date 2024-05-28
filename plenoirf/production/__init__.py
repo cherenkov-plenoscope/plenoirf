@@ -405,7 +405,7 @@ def run_job_in_dir(job, work_dir):
             opj(env["work_dir"], base),
             opj(env["run_id_str"], base + ".gz"),
         )
-        base = "merlict_events.debug.tar"
+        base = "merlict_events.debug.zip"
         zip_write_gz(
             zout,
             opj(env["work_dir"], base),

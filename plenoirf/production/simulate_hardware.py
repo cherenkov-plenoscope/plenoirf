@@ -7,6 +7,7 @@ import corsika_primary as cpw
 import tarfile
 
 from .. import bookkeeping
+from .. import utils
 
 
 def run_block(env, blk, block_id, logger):
@@ -73,7 +74,7 @@ def make_debug_output(env, blk, block_id, logger):
         event_uids_for_debugging = json_utils.loads(fin.read())
 
     block_id_str = "{:06d}".format(block_id)
-    debug_out_path = os.path.join(env["work_dir"], "merlict_events.debug.tar")
+    debug_out_path = os.path.join(env["work_dir"], "merlict_events.debug.zip")
     event_uid_strs_in_block = blk["event_uid_strs_in_block"][block_id_str]
 
     for ii, event_uid_str in enumerate(event_uid_strs_in_block):
@@ -99,11 +100,11 @@ def make_debug_output(env, blk, block_id, logger):
                 event_uid=event_uid,
             )
 
-            with tarfile.open(debug_out_path, mode="a") as tarfout:
-                tarfout.add(
-                    name=merlict_event_path,
+            with zipfile.ZipFile(file=debug_out_path, mode="a") as zout:
+                utils.zipfile_write_dir_recursively(
+                    zipfile=zout,
+                    filename=merlict_event_path,
                     arcname=bookkeeping.uid.make_uid_str(uid=event_uid),
-                    recursive=True,
                 )
 
 
