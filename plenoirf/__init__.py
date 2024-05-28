@@ -29,6 +29,7 @@ import numpy as np
 from os import path as op
 from os.path import join as opj
 import glob
+import random
 
 import plenopy
 import plenoptics
@@ -109,7 +110,7 @@ def init(plenoirf_dir):
     configuration.version_control.init(plenoirf_dir=plenoirf_dir)
 
 
-def run(plenoirf_dir, pool, logger=None):
+def run(plenoirf_dir, pool, logger=None, num_runs=None):
     """
     Run all simulations.
 
@@ -188,6 +189,17 @@ def run(plenoirf_dir, pool, logger=None):
 
     logger.info("trigger_geometry complete")
 
+    logger.info("Populating the instrument response function")
+    jobs = population_make_jobs(plenoirf_dir=plenoirf_dir, config=config)
+    logger.info("A total of {:d} jobs is missing".format(len(jobs)))
+    jobs = random.shuffle(jobs)
+
+    if num_runs is not None:
+        logger.info("Limiting number of jobs to {:d}".format(num_runs))
+        jobs = jobs[0:num_runs]
+
+    results = pool.map(production.run_job, jobs)
+
 
 def makesuredirs(path):
     os.makedirs(path, exist_ok=True)
@@ -203,8 +215,9 @@ def find_run_ids(template_path):
     return run_ids
 
 
-def population_make_jobs(plenoirf_dir):
-    config = configuration.read(plenoirf_dir)
+def population_make_jobs(plenoirf_dir, config=None):
+    if config is None:
+        config = configuration.read(plenoirf_dir)
 
     target = config["population_target"]
     part = config["population_partitioning"]
