@@ -16,6 +16,7 @@ import plenopy
 import sparse_numeric_table
 import gamma_ray_reconstruction as gamrec
 
+from .. import provenance
 from .. import debugging
 from .. import seeding
 from .. import bookkeeping
@@ -78,6 +79,11 @@ def run_job_in_dir(job, work_dir):
     os.makedirs(env["work_dir"], exist_ok=True)
 
     run_id = env["run_id"]
+
+    with TimeDelta(logger, "gather provenance"):
+        gather_and_export_provenance(
+            path=opj(env["work_dir"], "provenance.json"),
+        )
 
     with seeding.SeedSection(
         run_id=run_id,
@@ -366,6 +372,11 @@ def run_job_in_dir(job, work_dir):
         # debugging
         # ---------
         logger.info("Writing debugging to {:s}.".format(result_path))
+        zip_write_gz(
+            zout,
+            opj(env["work_dir"], "provenance.json"),
+            opj(env["run_id_str"], "provenance.json.gz"),
+        )
         base = "plenoirf.production.draw_event_uids_for_debugging.json"
         zip_write_gz(
             zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
@@ -590,3 +601,9 @@ def read_light_field_camera_config(plenoirf_dir, instrument_key):
             "scenery.json",
         )
     )
+
+
+def gather_and_export_provenance(path):
+    prov = plenoirf.provenance.make_provenance()
+    with open(path, "wt") as fout:
+        fout.write(json_utils.dumps(prov))
