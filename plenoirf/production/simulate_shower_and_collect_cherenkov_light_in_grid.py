@@ -5,6 +5,7 @@ import gzip
 
 import corsika_primary as cpw
 import json_utils
+from json_line_logger import xml
 import pickle
 import sparse_numeric_table as snt
 import atmospheric_cherenkov_response as acr

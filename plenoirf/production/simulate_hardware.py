@@ -5,7 +5,7 @@ import json_utils
 import numpy as np
 import plenopy
 import corsika_primary as cpw
-import tarfile
+import zipfile
 
 from .. import bookkeeping
 from .. import utils
