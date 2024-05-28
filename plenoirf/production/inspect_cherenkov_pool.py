@@ -40,7 +40,7 @@ def run(env, logger):
         mirror_center=[0, 0],
         mirror_radius=35.5,
         threshold_num_photons=25,
-        write_figures=job["debugging_figures"],
+        write_figures=env["debugging_figures"],
     )
     with rnw.open(
         os.path.join(out_dir, "visible_cherenkov_photon_size.json"), "wt"

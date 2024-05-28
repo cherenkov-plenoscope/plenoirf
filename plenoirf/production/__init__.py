@@ -610,6 +610,6 @@ def read_light_field_camera_config(plenoirf_dir, instrument_key):
 
 
 def gather_and_export_provenance(path):
-    prov = plenoirf.provenance.make_provenance()
+    prov = provenance.make_provenance()
     with open(path, "wt") as fout:
         fout.write(json_utils.dumps(prov))

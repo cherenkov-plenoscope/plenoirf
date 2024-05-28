@@ -68,7 +68,7 @@ def run_block(env, blk, block_id, logger):
         event_uids_for_debugging=event_uids_for_debugging,
         visible_cherenkov_photon_size=visible_cherenkov_photon_size,
         logger=logger,
-        write_figures=job["debugging_figures"],
+        write_figures=env["debugging_figures"],
     )
 
     event_table.write_certain_levels_to_path(
