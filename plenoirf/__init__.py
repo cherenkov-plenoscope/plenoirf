@@ -192,7 +192,7 @@ def run(plenoirf_dir, pool, logger=None, num_runs=None):
     logger.info("Populating the instrument response function")
     jobs = population_make_jobs(plenoirf_dir=plenoirf_dir, config=config)
     logger.info("A total of {:d} jobs is missing".format(len(jobs)))
-    jobs = random.shuffle(jobs)
+    random.shuffle(jobs)
 
     if num_runs is not None:
         logger.info("Limiting number of jobs to {:d}".format(num_runs))
