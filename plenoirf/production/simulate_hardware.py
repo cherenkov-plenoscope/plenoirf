@@ -73,9 +73,7 @@ def make_debug_output(env, blk, block_id, logger):
         event_uids_for_debugging = json_utils.loads(fin.read())
 
     block_id_str = "{:06d}".format(block_id)
-    debug_out_path = os.path.join(
-        env["work_dir"], "debugging.merlict_events.tar"
-    )
+    debug_out_path = os.path.join(env["work_dir"], "merlict_events.debug.tar")
     event_uid_strs_in_block = blk["event_uid_strs_in_block"][block_id_str]
 
     for ii, event_uid_str in enumerate(event_uid_strs_in_block):

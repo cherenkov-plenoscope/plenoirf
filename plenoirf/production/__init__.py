@@ -340,15 +340,6 @@ def run_job_in_dir(job, work_dir):
         )
         base = opj(
             "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
-            "cherenkov_pools.debug.tar",
-        )
-        zip_write_gz(
-            zout,
-            opj(env["work_dir"], base),
-            opj(env["run_id_str"], base + ".gz"),
-        )
-        base = opj(
-            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
             "particle_pools.tar.gz",
         )
         zip_write(
@@ -400,6 +391,21 @@ def run_job_in_dir(job, work_dir):
             "plenoirf.production.inspect_cherenkov_pool",
             "visible_cherenkov_photon_size.json",
         )
+        zip_write_gz(
+            zout,
+            opj(env["work_dir"], base),
+            opj(env["run_id_str"], base + ".gz"),
+        )
+        base = opj(
+            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "cherenkov_pools.debug.tar",
+        )
+        zip_write_gz(
+            zout,
+            opj(env["work_dir"], base),
+            opj(env["run_id_str"], base + ".gz"),
+        )
+        base = "merlict_events.debug.tar"
         zip_write_gz(
             zout,
             opj(env["work_dir"], base),
