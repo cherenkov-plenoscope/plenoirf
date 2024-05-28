@@ -81,6 +81,14 @@ def write_default(plenoirf_dir):
     ) as f:
         f.write(jdumps(make_merlict_plenoscope_propagator_config()))
 
+    with rnw.open(opj(pdir, "config", "population_target.json"), "wt") as f:
+        f.write(jdumps(make_population_target()))
+
+    with rnw.open(
+        opj(pdir, "config", "population_partitioning.json"), "wt"
+    ) as f:
+        f.write(jdumps(make_population_partitioning()))
+
 
 def make_sites():
     out = {
@@ -102,6 +110,16 @@ def compile_sites(sites):
 
 def make_particles():
     return ["gamma", "electron", "proton", "helium"]
+
+
+def _suggested_ratio_of_thrown_particle_types():
+    o = {"gamma": 35, "electron": 15, "proton": 40, "helium": 10}
+    s = 0
+    for key in o:
+        s += o[key]
+    for key in o:
+        o[key] /= s
+    return o
 
 
 def make_magnetic_deflection():
@@ -303,3 +321,30 @@ def make_reconstruction():
             fov_radius_deg=3.25
         ),
     }
+
+
+def make_population_partitioning():
+    o = {}
+    o["num_showers_per_corsika_run"] = 1000
+
+    # adds about 10MB per event to the temporary directory.
+    o["num_showers_per_merlict_run"] = 50
+    return o
+
+
+def make_population_target():
+    o = {}
+    sugg = _suggested_ratio_of_thrown_particle_types()
+
+    num_per_site_and_instrument = 4 * 1e6
+    for ikey in make_instruments():
+        o[ikey] = {}
+        for skey in make_sites()["instruemnt_response"]:
+            o[ikey][skey] = {}
+            for pkey in make_particles():
+                o[ikey][skey][pkey] = {
+                    "num_showers_thrown": int(
+                        sugg[pkey] * num_per_site_and_instrument
+                    )
+                }
+    return o

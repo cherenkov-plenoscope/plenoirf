@@ -28,6 +28,7 @@ import os
 import numpy as np
 from os import path as op
 from os.path import join as opj
+import glob
 
 import plenopy
 import plenoptics
@@ -190,3 +191,102 @@ def run(plenoirf_dir, pool, logger=None):
 
 def makesuredirs(path):
     os.makedirs(path, exist_ok=True)
+
+
+def find_run_ids(template_path):
+    run_ids = []
+    for path in glob.glob(template_path):
+        basename = os.path.basename(path)
+        run_id_str = basename[0 : bookkeeping.uid.RUN_ID_NUM_DIGITS]
+        run_id = int(run_id_str)
+        run_ids.append(run_id)
+    return run_ids
+
+
+def population_make_jobs(plenoirf_dir):
+    config = configuration.read(plenoirf_dir)
+
+    target = config["population_target"]
+    part = config["population_partitioning"]
+
+    jobs = []
+    for instrument_key in target:
+        for site_key in target[instrument_key]:
+            for particle_key in target[instrument_key][site_key]:
+                shower_target = target[instrument_key][site_key][particle_key][
+                    "num_showers_thrown"
+                ]
+                num_runs = shower_target / part["num_showers_per_corsika_run"]
+                num_runs = int(np.ceil(num_runs))
+
+                jobs += _make_missing_jobs_instrument_site_particle(
+                    plenoirf_dir=plenoirf_dir,
+                    config=config,
+                    instrument_key=instrument_key,
+                    site_key=site_key,
+                    particle_key=particle_key,
+                    run_id_stop=num_runs,
+                )
+    return jobs
+
+
+def _make_missing_jobs_instrument_site_particle(
+    plenoirf_dir,
+    config,
+    instrument_key,
+    site_key,
+    particle_key,
+    run_id_stop,
+):
+    p = config["population_partitioning"]
+
+    run_ids = _make_missing_run_ids_instrument_site_particle(
+        plenoirf_dir=plenoirf_dir,
+        instrument_key=instrument_key,
+        site_key=site_key,
+        particle_key=particle_key,
+        run_id_stop=run_id_stop,
+    )
+    run_ids = sorted(run_ids)
+
+    jobs = []
+    for run_id in run_ids:
+        job = {}
+        job["run_id"] = run_id
+        job["plenoirf_dir"] = plenoirf_dir
+        job["site_key"] = site_key
+        job["particle_key"] = particle_key
+        job["instrument_key"] = instrument_key
+        job["num_events"] = p["num_showers_per_corsika_run"]
+        job["max_num_events_in_merlict_run"] = p["num_showers_per_merlict_run"]
+        job["debugging_figures"] = False
+        jobs.append(job)
+    return jobs
+
+
+def _make_missing_run_ids_instrument_site_particle(
+    plenoirf_dir,
+    instrument_key,
+    site_key,
+    particle_key,
+    run_id_stop,
+):
+    existing_run_ids = find_run_ids(
+        template_path=os.path.join(
+            plenoirf_dir,
+            "response",
+            instrument_key,
+            site_key,
+            particle_key,
+            "stage",
+            "*.zip",
+        )
+    )
+    existing_run_ids = set(existing_run_ids)
+
+    missing_run_ids = []
+    for run_id in np.arange(bookkeeping.uid.RUN_ID_LOWER, run_id_stop):
+        if run_id not in existing_run_ids:
+            missing_run_ids.append(run_id)
+
+    return missing_run_ids

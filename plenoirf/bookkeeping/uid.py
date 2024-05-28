@@ -15,7 +15,10 @@ RUN_ID_NUM_DIGITS = 6
 EVENT_ID_NUM_DIGITS = 6
 UID_NUM_DIGITS = RUN_ID_NUM_DIGITS + EVENT_ID_NUM_DIGITS
 
+RUN_ID_LOWER = 1
 RUN_ID_UPPER = 10**RUN_ID_NUM_DIGITS
+
+EVENT_ID_LOWER = 1
 EVENT_ID_UPPER = 10**EVENT_ID_NUM_DIGITS
 
 UID_FOTMAT_STR = "{:0" + str(UID_NUM_DIGITS) + "d}"
@@ -24,19 +27,27 @@ RUN_ID_FORMAT_STR = "{:0" + str(RUN_ID_NUM_DIGITS) + "d}"
 EVENT_ID_FORMAT_STR = "{:0" + str(EVENT_ID_NUM_DIGITS) + "d}"
 
 
+def assert_run_id(run_id):
+    assert RUN_ID_LOWER <= run_id < RUN_ID_UPPER
+
+
+def assert_event_id(event_id):
+    assert EVENT_ID_LOWER <= event_id < EVENT_ID_UPPER
+
+
 def make_run_id_str(run_id):
-    assert 0 <= run_id < RUN_ID_UPPER
+    assert_run_id(run_id)
     return RUN_ID_FORMAT_STR.format(run_id)
 
 
 def make_event_id_str(event_id):
-    assert 0 <= event_id < EVENT_ID_UPPER
+    assert_event_id(event_id)
     return EVENT_ID_FORMAT_STR.format(event_id)
 
 
 def make_uid(run_id, event_id):
-    assert 0 <= run_id < RUN_ID_UPPER
-    assert 0 <= event_id < EVENT_ID_UPPER
+    assert_run_id(run_id)
+    assert_event_id(event_id)
     return RUN_ID_UPPER * run_id + event_id
 
 
