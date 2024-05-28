@@ -94,10 +94,10 @@ def init(plenoirf_dir):
         site_keys=config["sites"]["magnetic_deflection"],
         particle_keys=config["particles"],
         energy_start_GeV=power10_to_GeV(
-            config["magnetic_deflection"]["energy_start_GeV_power10"]
+            **config["magnetic_deflection"]["energy_start_GeV_power10"]
         ),
         energy_stop_GeV=power10_to_GeV(
-            config["magnetic_deflection"]["energy_stop_GeV_power10"]
+            **config["magnetic_deflection"]["energy_stop_GeV_power10"]
         ),
         energy_num_bins=32,
         energy_power_slope=-1.5,

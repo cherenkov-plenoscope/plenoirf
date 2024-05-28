@@ -29,7 +29,7 @@ def write_default(plenoirf_dir):
     os.makedirs(opj(pdir, "config"), exist_ok=False)
 
     def jdumps(o):
-        return jdumps(o, indent=4)
+        return json_utils.dumps(o, indent=4)
 
     with rnw.open(opj(pdir, "config", "sites.json"), "wt") as f:
         f.write(jdumps(make_sites()))
