@@ -137,7 +137,19 @@ def init_primary_level_structure():
         "no primary direction which can produce Cherenkov light at a "
         "given direction.",
     }
+    t["draw_primary_direction_method"] = {
+        "dtype": "<i8",
+        "comment": ""
+        "1: METHOD_SKYMAP_VALID (i.e. cutoff == False), "
+        "3: METHOD_SKYMAP_CUTOFF_FALLBACK_FULL_SKY (i.e. cutoff == True), "
+        "10: METHOD_VIEWCONE when energy is large enough.",
+    }
     return t
+
+
+METHOD_SKYMAP_VALID = 1
+METHOD_SKYMAP_CUTOFF_FALLBACK_FULL_SKY = 3
+METHOD_VIEWCONE = 10
 
 
 def init_instrument_pointing_level_structure():

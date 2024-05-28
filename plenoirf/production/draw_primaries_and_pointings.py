@@ -182,6 +182,7 @@ def draw_primaries_and_pointings(
             dbg = {"method": "viewcone"}
 
         primary_directions[event_uid_str] = res
+        primary_directions[event_uid_str]["method"] = dbg["method"]
 
         if int(event_uid_str) in event_uids_for_debugging:
             debug[event_uid_str] = {"result": res, "debug": dbg}
@@ -209,7 +210,7 @@ def draw_primaries_and_pointings(
 
     for event_uid_str in primary_directions:
         y = {}
-        for key in ["cutoff", "solid_angle_thrown_sr"]:
+        for key in ["cutoff", "solid_angle_thrown_sr", "method"]:
             y[key] = primary_directions[event_uid_str][key]
         out["primary_directions"][event_uid_str] = y
     return out, debug

@@ -517,6 +517,23 @@ def make_primary_record(
     rec["solid_angle_thrown_sr"] = primary_direction["solid_angle_thrown_sr"]
     rec["inner_atmopsheric_magnetic_cutoff"] = primary_direction["cutoff"]
 
+    pd = primary_direction
+
+    if pd["method"] == "magnetic_deflection_skymap" and not pd["cutoff"]:
+        res[
+            "draw_primary_direction_method"
+        ] = event_table.structure.METHOD_SKYMAP_VALID
+    elif pd["method"] == "magnetic_deflection_skymap" and pd["cutoff"]:
+        res[
+            "draw_primary_direction_method"
+        ] = event_table.structure.METHOD_SKYMAP_CUTOFF_FALLBACK_FULL_SKY
+    elif pd["method"] == "viewcone":
+        res[
+            "draw_primary_direction_method"
+        ] = event_table.structure.METHOD_VIEWCONE
+    else:
+        raise AssertionError("Can not assign draw_primary_direction_method")
+
     return rec
 
 

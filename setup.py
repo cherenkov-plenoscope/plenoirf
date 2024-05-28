@@ -53,6 +53,7 @@ setuptools.setup(
         "gitpython>=3.1.40",
         "plenoptics_cherenkov-plenoscope-project>=0.0.8",
         "gamma_ray_reconstruction_cherenkov-plenoscope-project>=0.0.5",
+        "magnetic_deflection_cherenkov-plenoscope-project>=0.14.10",
     ],
     package_data={"plenoirf": [os.path.join("summary", "scripts", "*")]},
     classifiers=[
