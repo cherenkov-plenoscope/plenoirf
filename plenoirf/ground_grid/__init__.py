@@ -172,23 +172,6 @@ def draw_bin_idx(bin_idxs, prng):
     return bin_idxs[prng.choice(a=len(bin_idxs))]
 
 
-def draw_random_bin_choice(
-    groundgrid,
-    bin_photon_assignment,
-    bin_idxs_above_threshold,
-    prng,
-):
-    bin_idx = draw_bin_idx(bin_idxs=bin_idxs_above_threshold, prng=prng)
-
-    cc = {}
-    cc["bin_idx_x"] = bin_idx[0]
-    cc["bin_idx_y"] = bin_idx[1]
-    cc["core_x_m"] = groundgrid["x_bin"]["centers"][cc["bin_idx_x"]]
-    cc["core_y_m"] = groundgrid["y_bin"]["centers"][cc["bin_idx_y"]]
-    cc["cherenkov_bunches_idxs"] = np.array(bin_photon_assignment[bin_idx][0])
-    return cc
-
-
 def histogram_bins_in_scatter_radius(groundgrid, bin_idxs):
     NUM_BINS = 16
     scatter_radius_bin_edges_m = radii_for_area_power_space(num_bins=NUM_BINS)
