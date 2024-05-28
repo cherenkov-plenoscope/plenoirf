@@ -83,6 +83,12 @@ def run(env, seed, logger):
         path=os.path.join(corsika_and_grid_work_dir, "event_table.tar"),
     )
 
+    cherenkov_bunch_storage.filter_by_event_uids(
+        inpath=opj(corsika_and_grid_work_dir, "cherenkov_pools.tar"),
+        outpath=opj(corsika_and_grid_work_dir, "cherenkov_pools.debug.tar"),
+        event_uids=event_uids_for_debugging,
+    )
+
     logger.info(__name__ + ": remove temporary cherenkov_pool_storage files.")
     cherenkov_pool_storage_in_fov_path = opj(
         corsika_and_grid_work_dir,

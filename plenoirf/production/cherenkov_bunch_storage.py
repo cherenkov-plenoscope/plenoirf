@@ -4,6 +4,8 @@ import spherical_coordinates
 import un_bound_histogram
 import dynamicsizerecarray
 
+from .. import bookkeeping
+
 
 def _make_fake_runh():
     runh = np.zeros(273, dtype=np.float32)
@@ -300,3 +302,20 @@ def mask_cherenkov_bunches_hit_sphere(
 
     ray_hits_sphere = delta_norm_2 <= sphere_radius_2
     return ray_hits_sphere
+
+
+def filter_by_event_uids(inpath, outpath, event_uids):
+    with cpw.cherenkov.CherenkovEventTapeReader(
+        path=inpath
+    ) as tin, cpw.cherenkov.CherenkovEventTapeWriter(path=outpath) as tout:
+        tout.write_runh(tin.runh)
+        for event in tin:
+            evth, cherenkov_reader = event
+            event_uid = bookkeeping.uid.make_uid_from_corsika_evth(evth=evth)
+            if event_uid in event_uids:
+                tout.write_evth(evth)
+                for cherenkov_block in cherenkov_reader:
+                    tout.write_payload(cherenkov_block)
+            else:
+                for cherenkov_block in cherenkov_reader:
+                    pass

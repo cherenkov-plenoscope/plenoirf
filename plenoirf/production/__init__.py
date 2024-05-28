@@ -334,7 +334,7 @@ def run_job_in_dir(job, work_dir):
         )
         base = opj(
             "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
-            "cherenkov_pools.tar",
+            "cherenkov_pools.debug.tar",
         )
         zip_write_gz(
             zout,
