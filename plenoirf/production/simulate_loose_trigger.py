@@ -68,6 +68,7 @@ def run_block(env, blk, block_id, logger):
         event_uids_for_debugging=event_uids_for_debugging,
         visible_cherenkov_photon_size=visible_cherenkov_photon_size,
         logger=logger,
+        write_figures=job["debugging_figures"],
     )
 
     event_table.write_certain_levels_to_path(
@@ -88,6 +89,7 @@ def simulate_loose_trigger(
     event_uids_for_debugging,
     visible_cherenkov_photon_size,
     logger,
+    write_figures,
 ):
     opj = os.path.join
     block_dir = opj(env["work_dir"], "blocks", "{:06d}".format(block_id))
@@ -121,7 +123,7 @@ def simulate_loose_trigger(
 
         # apply loose trigger
         # -------------------
-        if True:
+        if write_figures:
             uid_str = bookkeeping.uid.make_uid_str(
                 run_id=run_id,
                 event_id=event_id,

@@ -40,6 +40,7 @@ def run(env, logger):
         mirror_center=[0, 0],
         mirror_radius=35.5,
         threshold_num_photons=25,
+        write_figures=job["debugging_figures"],
     )
     with rnw.open(
         os.path.join(out_dir, "visible_cherenkov_photon_size.json"), "wt"
@@ -60,6 +61,7 @@ def inspect_cherenkov_pools(
     field_of_view_half_angle_rad,
     mirror_center,
     mirror_radius,
+    write_figures,
 ):
     CM_TO_M = 1e-2
     NS_TO_S = 1e-9
@@ -144,7 +146,7 @@ def inspect_cherenkov_pools(
 
             events_visible_num_photons[uid_str] = total_visible_size
 
-            if total_visible_size >= threshold_num_photons:
+            if total_visible_size >= threshold_num_photons and write_figures:
                 fig = sebplt.figure(
                     style={"rows": 1280, "cols": 2560, "fontsize": 1}, dpi=240
                 )

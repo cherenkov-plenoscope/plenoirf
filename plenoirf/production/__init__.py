@@ -46,6 +46,7 @@ def make_example_job(
     instrument_key="diag9_default_default",
     num_events=1000,
     max_num_events_in_merlict_run=100,
+    debugging_figures=True,
 ):
     job = {}
     job["run_id"] = run_id
@@ -55,6 +56,7 @@ def make_example_job(
     job["instrument_key"] = instrument_key
     job["num_events"] = num_events
     job["max_num_events_in_merlict_run"] = max_num_events_in_merlict_run
+    job["debugging_figures"] = debugging_figures
     return job
 
 
