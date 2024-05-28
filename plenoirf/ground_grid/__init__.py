@@ -85,161 +85,6 @@ def GroundGrid(
     return gg
 
 
-def _make_fake_runh():
-    runh = np.zeros(273, dtype=np.float32)
-    runh[cpw.I.RUNH.MARKER] = cpw.I.RUNH.MARKER_FLOAT32
-    runh[cpw.I.RUNH.RUN_NUMBER] = 1
-    runh[cpw.I.RUNH.NUM_EVENTS] = 1
-    return runh
-
-
-def _make_fake_evth():
-    runh = np.zeros(273, dtype=np.float32)
-    runh[cpw.I.EVTH.MARKER] = cpw.I.EVTH.MARKER_FLOAT32
-    runh[cpw.I.EVTH.RUN_NUMBER] = 1
-    runh[cpw.I.EVTH.EVENT_NUMBER] = 1
-    return runh
-
-
-def assign_cherenkov_bunches2(groundgrid, cherenkov_bunch_storage_path):
-    exe = configfile.read()["ground_grid"]
-
-    # log = json_line_logger.LoggerStdout()
-
-    with tempfile.TemporaryDirectory() as tmp:
-        cpath = os.path.join(tmp, "config")
-        opath = os.path.join(tmp, "assignment.jsonl")
-
-        # with json_line_logger.TimeDelta(log, "assign write config"):
-        with open(cpath, "wt") as f:
-            for dim in ["x", "y", "z"]:
-                dimbin = "{:s}_bin".format(dim)
-                num_edges = 1 + groundgrid[dimbin]["num"]
-                f.write("{:d}\n".format(num_edges))
-                for i in range(num_edges):
-                    f.write(
-                        "{:f}\n".format(1e2 * groundgrid[dimbin]["edges"][i])
-                    )
-
-        # with json_line_logger.TimeDelta(log, "assign call merlict c89"):
-        rc = subprocess.call([exe, cherenkov_bunch_storage_path, opath, cpath])
-        assert rc == 0
-
-        # with json_line_logger.TimeDelta(log, "assign read json"):
-        ass = json_utils.lines.read(opath)[0]
-
-        # with json_line_logger.TimeDelta(log, "assign convert json"):
-        num_overflow = ass["num_overflow"]
-        bin_photon_assignment = {}
-        for key in ass["assignment"]:
-            xstr, ystr = str.split(key, ",")
-            pay = ass["assignment"][key]
-            bin_idx = (int(xstr), int(ystr))
-            bin_photon_assignment[bin_idx] = (pay["idx"], pay["weight"])
-
-    return bin_photon_assignment, num_overflow
-
-
-def assign_cherenkov_bunches(groundgrid, cherenkov_bunch_storage_path):
-    bin_photon_assignment = {}
-    num_overflow = 0
-
-    MOMENTUM_TO_INCIDENT = -1.0
-
-    ibunch = 0
-    with cpw.cherenkov.CherenkovEventTapeReader(
-        path=cherenkov_bunch_storage_path
-    ) as _run:
-        _evth, cherenkov_reader = next(_run)
-        for cherenkov_block in cherenkov_reader:
-            for bunch in cherenkov_block:
-                cer_x_m = cpw.CM2M * bunch[cpw.I.BUNCH.X_CM]
-                cer_y_m = cpw.CM2M * bunch[cpw.I.BUNCH.Y_CM]
-                cer_z_m = 0.0  # by definition of ground / observation-level
-
-                cer_cx = MOMENTUM_TO_INCIDENT * bunch[cpw.I.BUNCH.UX_1]
-                cer_cy = MOMENTUM_TO_INCIDENT * bunch[cpw.I.BUNCH.VY_1]
-                cer_cz = spherical_coordinates.restore_cz(cx=cer_cx, cy=cer_cy)
-
-                cer_w = bunch[cpw.I.BUNCH.BUNCH_SIZE_1]
-
-                overlap = (
-                    ray_voxel_overlap.estimate_overlap_of_ray_with_voxels(
-                        support=[cer_x_m, cer_y_m, cer_z_m],
-                        direction=[cer_cx, cer_cy, cer_cz],
-                        x_bin_edges=groundgrid["x_bin"]["edges"],
-                        y_bin_edges=groundgrid["y_bin"]["edges"],
-                        z_bin_edges=groundgrid["z_bin"]["edges"],
-                    )
-                )
-
-                num_overlaps = len(overlap["x"])
-                if num_overlaps == 0:
-                    num_overflow += 1
-                else:
-                    for n in range(num_overlaps):
-                        bin_idx = (overlap["x"][n], overlap["y"][n])
-                        if bin_idx in bin_photon_assignment:
-                            bin_photon_assignment[bin_idx][0].append(ibunch)
-                            bin_photon_assignment[bin_idx][1] += cer_w
-                        else:
-                            bin_photon_assignment[bin_idx] = [[ibunch], cer_w]
-                ibunch += 1
-
-    return bin_photon_assignment, num_overflow
-
-
-def assign2(
-    groundgrid,
-    cherenkov_bunch_storage_path,
-    threshold_num_photons,
-    prng,
-):
-    # log = json_line_logger.LoggerStdout()
-    # log.info("---------start-------------")
-    # with json_line_logger.TimeDelta(log, "py-loop"):
-    #    bin_photon_assignment, num_photons_overflow = assign_cherenkov_bunches(
-    #        groundgrid=groundgrid,
-    #        cherenkov_bunch_storage_path=cherenkov_bunch_storage_path,
-    #    )
-
-    # with json_line_logger.TimeDelta(log, "c-loop"):
-    bin_photon_assignment, num_photons_overflow = assign_cherenkov_bunches2(
-        groundgrid=groundgrid,
-        cherenkov_bunch_storage_path=cherenkov_bunch_storage_path,
-    )
-
-    bin_idxs_above_threshold = find_bin_idxs_above_or_equal_threshold(
-        bin_photon_assignment=bin_photon_assignment,
-        threshold_num_photons=threshold_num_photons,
-    )
-
-    out = {}
-    out["num_photons_overflow"] = num_photons_overflow
-    out["num_bins_above_threshold"] = len(bin_idxs_above_threshold)
-
-    if out["num_bins_above_threshold"] == 0:
-        out["choice"] = None
-    else:
-        out["choice"] = draw_random_bin_choice(
-            groundgrid=groundgrid,
-            bin_photon_assignment=bin_photon_assignment,
-            bin_idxs_above_threshold=bin_idxs_above_threshold,
-            prng=prng,
-        )
-
-    # compare to classic scatter algorithm as used in the
-    # Cherenkov-Telescpe-Array
-    # ---------------------------------------------------
-    out["scatter_histogram"] = histogram_bins_in_scatter_radius(
-        groundgrid=groundgrid,
-        bin_idxs=bin_idxs_above_threshold,
-    )
-    debug = {}
-    debug["bin_photon_assignment"] = bin_photon_assignment
-    return out, debug
-
-
 def assign3(
     groundgrid,
     cherenkov_bunch_storage_path,
@@ -297,33 +142,13 @@ def histogram_cherenkov_bunches_into_grid(
 ):
     exe = configfile.read()["ground_grid"]
 
-    log = json_line_logger.LoggerStdout()
-
     with tempfile.TemporaryDirectory() as tmp:
         cpath = os.path.join(tmp, "config")
         opath = os.path.join(tmp, "assignment.bin")
-
-        with json_line_logger.TimeDelta(log, "assign write config"):
-            with open(cpath, "wt") as f:
-                for dim in ["x", "y", "z"]:
-                    dimbin = "{:s}_bin".format(dim)
-                    num_edges = 1 + groundgrid[dimbin]["num"]
-                    f.write("{:d}\n".format(num_edges))
-                    for i in range(num_edges):
-                        f.write(
-                            "{:f}\n".format(
-                                1e2 * groundgrid[dimbin]["edges"][i]
-                            )
-                        )
-
-        with json_line_logger.TimeDelta(log, "assign call merlict c89"):
-            rc = subprocess.call(
-                [exe, cherenkov_bunch_storage_path, opath, cpath]
-            )
-            assert rc == 0
-
-        with json_line_logger.TimeDelta(log, "assign read json"):
-            hist = read_histogram2d_from_path(path=opath)
+        write_groundgrid_config(path=cpath, groundgrid=groundgrid)
+        rc = subprocess.call([exe, cherenkov_bunch_storage_path, opath, cpath])
+        assert rc == 0
+        hist = read_histogram2d_from_path(path=opath)
 
     return hist
 
@@ -341,17 +166,6 @@ def draw_random_bin_choice3(
     cc["core_x_m"] = groundgrid["x_bin"]["centers"][cc["bin_idx_x"]]
     cc["core_y_m"] = groundgrid["y_bin"]["centers"][cc["bin_idx_y"]]
     return cc
-
-
-def find_bin_idxs_above_or_equal_threshold(
-    bin_photon_assignment, threshold_num_photons
-):
-    bin_idxs = []
-    for bin_idx in bin_photon_assignment:
-        summed_weights = bin_photon_assignment[bin_idx][1]
-        if summed_weights >= threshold_num_photons:
-            bin_idxs.append(bin_idx)
-    return bin_idxs
 
 
 def draw_bin_idx(bin_idxs, prng):
@@ -454,3 +268,13 @@ def read_histogram2d_from_path(path):
 
 def make_histogram2d_dtype():
     return [("x_bin", "i4"), ("y_bin", "i4"), ("weight_photons", "f8")]
+
+
+def write_groundgrid_config(path, groundgrid):
+    M2CM = 1e2
+    with open(path, "wt") as f:
+        for dim in ["x", "y", "z"]:
+            dimbin = "{:s}_bin".format(dim)
+            f.write("{:d}\n".format(groundgrid[dimbin]["num"]))
+            f.write("{:e}\n".format(M2CM * groundgrid[dimbin]["start"]))
+            f.write("{:e}\n".format(M2CM * groundgrid[dimbin]["stop"]))
