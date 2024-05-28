@@ -520,15 +520,15 @@ def make_primary_record(
     pd = primary_direction
 
     if pd["method"] == "magnetic_deflection_skymap" and not pd["cutoff"]:
-        res[
+        rec[
             "draw_primary_direction_method"
         ] = event_table.structure.METHOD_SKYMAP_VALID
     elif pd["method"] == "magnetic_deflection_skymap" and pd["cutoff"]:
-        res[
+        rec[
             "draw_primary_direction_method"
         ] = event_table.structure.METHOD_SKYMAP_CUTOFF_FALLBACK_FULL_SKY
     elif pd["method"] == "viewcone":
-        res[
+        rec[
             "draw_primary_direction_method"
         ] = event_table.structure.METHOD_VIEWCONE
     else:
