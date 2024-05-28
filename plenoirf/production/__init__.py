@@ -10,6 +10,7 @@ import gzip
 import json_utils
 import json_line_logger
 from json_line_logger import TimeDelta
+from json_line_logger import xml
 import merlict_development_kit_python as mlidev
 import rename_after_writing as rnw
 import plenopy
@@ -210,13 +211,13 @@ def run_job_in_dir(job, work_dir):
         blk_size_bytes = debugging.estimate_memory_size_in_bytes_of_anything(
             anything=blk
         )
-        logger.info("<blk size_bytes='{:d}'/>".format(blk_size_bytes))
+        logger.info(xml("Size", name="blk", size_bytes=blk_size_bytes))
 
     with TimeDelta(logger, "estimate size of environment 'env'."):
         env_size_bytes = debugging.estimate_memory_size_in_bytes_of_anything(
             anything=env
         )
-        logger.info("<env size_bytes='{:d}'/>".format(env_size_bytes))
+        logger.info(xml("Size", name="env", size_bytes=env_size_bytes))
     with open(opj(env["work_dir"], "memory_usage.json"), "wt") as fout:
         _out = {"env": env_size_bytes, "blk": blk_size_bytes}
         fout.write(json_utils.dumps(_out))
@@ -406,10 +407,8 @@ def run_job_in_dir(job, work_dir):
             opj(env["run_id_str"], base + ".gz"),
         )
         base = "merlict_events.debug.zip"
-        zip_write_gz(
-            zout,
-            opj(env["work_dir"], base),
-            opj(env["run_id_str"], base + ".gz"),
+        zip_write(
+            zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
         )
 
         for ext in ["stdout", "stderr"]:

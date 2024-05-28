@@ -119,9 +119,7 @@ def corsika_and_grid(
     opj = os.path.join
     logger.info(__name__ + ": start corsika")
     work_dir = corsika_and_grid_work_dir
-    debug_dir = opj(work_dir, "debug")
     os.makedirs(work_dir, exist_ok=True)
-    os.makedirs(debug_dir, exist_ok=True)
 
     with cpw.cherenkov.CherenkovEventTapeWriter(
         path=opj(work_dir, "cherenkov_pools.tar")
@@ -140,6 +138,17 @@ def corsika_and_grid(
             evttar.write_runh(runh=corsika_run.runh)
 
             for event_idx, corsika_event in enumerate(corsika_run):
+                logger.debug(
+                    xml(
+                        "EventTime",
+                        uid=bookkeeping.uid.make_uid_str(
+                            run_id=corsika_primary_steering["run"]["run_id"],
+                            event_id=event_idx + 1,
+                        ),
+                        status="corsika_start",
+                    )
+                )
+
                 corsika_evth, cherenkov_reader = corsika_event
 
                 cherenkov_storage_path = opj(
@@ -157,10 +166,9 @@ def corsika_and_grid(
                     corsika_primary_steering=corsika_primary_steering,
                 )
 
-                if utils.is_10th_part_in_current_decade(i=uid["event_id"]):
-                    logger.info(
-                        __name__ + ": shower uid {:s}".format(uid["uid_str"])
-                    )
+                logger.debug(
+                    xml("EventTime", uid=uid["uid_str"], status="corsika_done")
+                )
 
                 primary_rec = make_primary_record(
                     uid=uid,
@@ -187,6 +195,14 @@ def corsika_and_grid(
                 cherenkovsize_rec.update(uid["record"])
                 evttab["cherenkovsize"].append_record(cherenkovsize_rec)
 
+                logger.debug(
+                    xml(
+                        "EventTime",
+                        uid=uid["uid_str"],
+                        status="made_cherenkovsize_record",
+                    )
+                )
+
                 if cherenkovsize_rec["num_bunches"] > 0:
                     cherenkovpool_rec = (
                         cherenkov_bunch_storage.make_cherenkovpool_record(
@@ -195,6 +211,14 @@ def corsika_and_grid(
                     )
                     cherenkovpool_rec.update(uid["record"])
                     evttab["cherenkovpool"].append_record(cherenkovpool_rec)
+
+                    logger.debug(
+                        xml(
+                            "EventTime",
+                            uid=uid["uid_str"],
+                            status="made_cherenkovpool_record",
+                        )
+                    )
 
                     groundgrid_config = ground_grid.make_ground_grid_config(
                         bin_width_m=env["config"]["ground_grid"]["geometry"][
@@ -230,6 +254,14 @@ def corsika_and_grid(
                         ],
                     )
 
+                    logger.debug(
+                        xml(
+                            "EventTime",
+                            uid=uid["uid_str"],
+                            status="cut_in_field_of_view",
+                        )
+                    )
+
                     (
                         groundgrid_result,
                         groundgrid_histogram,
@@ -249,6 +281,14 @@ def corsika_and_grid(
                         groundgrid=groundgrid,
                     )
                     evttab["groundgrid"].append_record(groundgrid_rec)
+
+                    logger.debug(
+                        xml(
+                            "EventTime",
+                            uid=uid["uid_str"],
+                            status="made_ground_grid_histogram",
+                        )
+                    )
 
                     if groundgrid_result["choice"]:
                         cherenkov_bunches_in_choice = (
@@ -275,6 +315,14 @@ def corsika_and_grid(
                             cherenkov_bunches_in_choice=cherenkov_bunches_in_choice,
                         )
 
+                        logger.debug(
+                            xml(
+                                "EventTime",
+                                uid=uid["uid_str"],
+                                status="read_cherenkov_in_sphere",
+                            )
+                        )
+
                         cherenkov_bunches_in_instrument = transform_cherenkov_bunches.from_obervation_level_to_instrument(
                             cherenkov_bunches=cherenkov_bunches_in_choice,
                             instrument_pointing=instrument_pointing,
@@ -293,6 +341,14 @@ def corsika_and_grid(
                         )
                         del cherenkov_bunches_in_choice
 
+                        logger.debug(
+                            xml(
+                                "EventTime",
+                                uid=uid["uid_str"],
+                                status="transformed_cherenkov_into_instrument_frame",
+                            )
+                        )
+
                         core_rec = make_core_record(
                             uid=uid,
                             groundgrid_result_choice=groundgrid_result[
@@ -309,6 +365,14 @@ def corsika_and_grid(
                             core_y_m=groundgrid_result["choice"]["core_y_m"],
                         )
 
+                        logger.debug(
+                            xml(
+                                "EventTime",
+                                uid=uid["uid_str"],
+                                status="wrote_cherenkov_for_instrument",
+                            )
+                        )
+
                         ImgRoiTar_append(
                             imgroitar=imgroitar,
                             uid=uid,
@@ -323,12 +387,28 @@ def corsika_and_grid(
                                 groundgrid_histogram=groundgrid_histogram,
                             )
 
+                        logger.debug(
+                            xml(
+                                "EventTime",
+                                uid=uid["uid_str"],
+                                status="wrote_cherenkov_for_instrument",
+                            )
+                        )
+
                         cherenkovsizepart_rec = cherenkov_bunch_storage.make_cherenkovsize_record(
                             cherenkov_bunches=cherenkov_bunches_in_instrument
                         )
                         cherenkovsizepart_rec.update(uid["record"])
                         evttab["cherenkovsizepart"].append_record(
                             cherenkovsizepart_rec
+                        )
+
+                        logger.debug(
+                            xml(
+                                "EventTime",
+                                uid=uid["uid_str"],
+                                status="made_cherenkovpartsize_record",
+                            )
                         )
 
                         if cherenkovsizepart_rec["num_bunches"] > 0:
@@ -339,15 +419,17 @@ def corsika_and_grid(
                             evttab["cherenkovpoolpart"].append_record(
                                 cherenkovpoolpart_rec
                             )
+                            logger.debug(
+                                xml(
+                                    "EventTime",
+                                    uid=uid["uid_str"],
+                                    status="made_cherenkovpartpool_record",
+                                )
+                            )
 
-                    with open(
-                        opj(
-                            debug_dir,
-                            uid["uid_str"] + "_ground_grid.json",
-                        ),
-                        "wt",
-                    ) as f:
-                        f.write(json_utils.dumps(groundgrid_result))
+                        logger.debug(
+                            xml("EventTime", uid=uid["uid_str"], status="end")
+                        )
 
     logger.info(__name__ + ": convert particle output from .dat to .tar")
     cpw.particles.dat_to_tape(

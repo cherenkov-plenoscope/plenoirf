@@ -3,6 +3,7 @@ import merlict_development_kit_python as mlidev
 import rename_after_writing as rnw
 import json_utils
 import numpy as np
+import plenopy
 import corsika_primary as cpw
 import tarfile
 
@@ -98,6 +99,10 @@ def make_debug_output(env, blk, block_id, logger):
             assert_merlict_event_has_uid(
                 merlict_event_path=merlict_event_path,
                 event_uid=event_uid,
+            )
+
+            plenopy.tools.acp_format.compress_event_in_place(
+                merlict_event_path
             )
 
             with zipfile.ZipFile(file=debug_out_path, mode="a") as zout:

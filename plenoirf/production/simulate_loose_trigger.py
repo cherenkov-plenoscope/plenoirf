@@ -7,6 +7,7 @@ import corsika_primary as cpw
 import sparse_numeric_table as snt
 import rename_after_writing as rnw
 import json_utils
+from json_line_logger import xml
 import sebastians_matplotlib_addons as sebplt
 
 from .. import bookkeeping
@@ -112,6 +113,10 @@ def simulate_loose_trigger(
         uidrec = {
             snt.IDX: bookkeeping.uid.make_uid(run_id=run_id, event_id=event_id)
         }
+        uid_str = bookkeeping.uid.make_uid_str(
+            run_id=run_id,
+            event_id=event_id,
+        )
 
         # export instrument's time relative to CORSIKA's time
         # ---------------------------------------------------
@@ -124,10 +129,6 @@ def simulate_loose_trigger(
         # apply loose trigger
         # -------------------
         if write_figures:
-            uid_str = bookkeeping.uid.make_uid_str(
-                run_id=run_id,
-                event_id=event_id,
-            )
             if visible_cherenkov_photon_size[uid_str] > 100:
                 foci_trigger_image_sequences = (
                     plenopy.trigger.estimate.estimate_trigger_image_sequences(
@@ -147,6 +148,8 @@ def simulate_loose_trigger(
                     foci_trigger_image_sequences=foci_trigger_image_sequences,
                 )
 
+        logger.debug(xml("EventTime", uid=uid_str, status="trigger_start"))
+
         (
             trigger_responses,
             max_response_in_focus_vs_timeslices,
@@ -158,6 +161,8 @@ def simulate_loose_trigger(
                 env["config"]["sum_trigger"]["integration_time_slices"]
             ),
         )
+
+        logger.debug(xml("EventTime", uid=uid_str, status="trigger_stop"))
 
         trg_resp_path = opj(event._path, "refocus_sum_trigger.json")
         with rnw.open(trg_resp_path, "wt") as f:
@@ -184,6 +189,8 @@ def simulate_loose_trigger(
             )
         evttab["trigger"].append_record(trgtru)
 
+        logger.debug(xml("EventTime", uid=uid_str, status="trigger_exported"))
+
         # passing loose trigger
         # ---------------------
         if (
@@ -200,26 +207,7 @@ def simulate_loose_trigger(
             patrec = uidrec.copy()
             evttab["pasttrigger"].append_record(patrec)
 
-            # export past loose trigger
-            # -------------------------
-            if uidrec[snt.IDX] in event_uids_for_debugging:
-                plenopy.tools.acp_format.compress_event_in_place(
-                    ptp["tmp_path"]
-                )
-                final_tarname = ptp["uid_str"] + ".tar"
-                plenoscope_event_dir_to_tar(
-                    event_dir=ptp["tmp_path"],
-                    output_tar_path=opj(work_dir, final_tarname),
-                )
-
     return evttab
-
-
-def plenoscope_event_dir_to_tar(event_dir, output_tar_path=None):
-    if output_tar_path is None:
-        output_tar_path = event_dir + ".tar"
-    with tarfile.open(output_tar_path, "w") as tarfout:
-        tarfout.add(event_dir, arcname=".")
 
 
 def plot_foci_trigger_image_sequences(out_dir, foci_trigger_image_sequences):

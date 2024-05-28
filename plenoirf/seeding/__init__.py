@@ -5,6 +5,7 @@ import rename_after_writing
 import json_line_logger
 import xmltodict
 import copy
+import time
 
 
 def hash_PCG64(bytes):
@@ -81,7 +82,9 @@ class SeedSection:
         )
 
     def __enter__(self):
-        msg = self.format_log_message(
+        self.start = time.time()
+        msg = json_line_logger.xml(
+            "SeedSection",
             name=self.name,
             run_id=self.run_id,
             block_id=self.block_id,
@@ -92,12 +95,15 @@ class SeedSection:
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        msg = self.format_log_message(
+        self.stop = time.time()
+        msg = json_line_logger.xml(
+            "SeedSection",
             name=self.name,
             run_id=self.run_id,
             block_id=self.block_id,
             seed=self.seed,
             status="exit",
+            delta=self.delta(),
         )
         self.logger.info(msg)
 
@@ -110,6 +116,8 @@ class SeedSection:
         out["block_id"] = int(o["@block_id"])
         out["seed"] = int(o["@seed"])
         out["status"] = o["@status"]
+        if out["status"] == "exit":
+            out["delta"] = o["@delta"]
         return out
 
     @staticmethod
@@ -118,14 +126,5 @@ class SeedSection:
         out["m"] = SeedSection.parse_log_message(log_message=out["m"])
         return out
 
-    @staticmethod
-    def format_log_message(name, run_id, block_id, seed, status):
-        s = ""
-        s += "<SeedSection"
-        s += " name='{:s}'".format(name)
-        s += " run_id='{:d}'".format(run_id)
-        s += " block_id='{:d}'".format(block_id)
-        s += " seed='{:d}'".format(seed)
-        s += " status='{:s}'".format(status)
-        s += "/>"
-        return s
+    def delta(self):
+        return self.stop - self.start
