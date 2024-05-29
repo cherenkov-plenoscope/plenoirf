@@ -17,7 +17,6 @@ def list_important_programs():
         "make": {"version": "--version"},
         "gcc": {"version": "--version"},
         "g++": {"version": "--version"},
-        "f77": {"version": "--version"},
         "gfortran": {"version": "--version"},
     }
     return out
