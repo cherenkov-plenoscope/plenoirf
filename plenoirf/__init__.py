@@ -23,6 +23,7 @@ from . import ground_grid
 from . import configfile
 from . import seeding
 from . import logging
+from . import benchmarking
 
 import os
 import numpy as np
