@@ -18,38 +18,38 @@ def disk_write_rate():
         # 1k
         dts = []
         for i in range(27):
-            dt = benchmark_open_and_write(
+            dt, sz = benchmark_open_and_write(
                 path=os.path.join(tmp, "{:06d}.rnd".format(i)),
                 seed=i,
                 num_blocks=1,
                 block_size=1000,
             )
             dts.append(dt)
-        out["k"] = _analysis(dts=dts, size=1e6)
+        out["1k"] = _analysis(dts=dts, size=sz)
 
         # 1M
         dts = []
         for i in range(9):
-            dt = benchmark_open_and_write(
+            dt, sz = benchmark_open_and_write(
                 path=os.path.join(tmp, "{:06d}.rnd".format(i)),
                 seed=i,
                 num_blocks=1,
                 block_size=1000 * 1000,
             )
             dts.append(dt)
-        out["M"] = _analysis(dts=dts, size=1e6)
+        out["1M"] = _analysis(dts=dts, size=sz)
 
-        # 1G
+        # 100M
         dts = []
         for i in range(3):
-            dt = benchmark_open_and_write(
+            dt, sz = benchmark_open_and_write(
                 path=os.path.join(tmp, "{:06d}.rnd".format(i)),
                 seed=i,
-                num_blocks=1000,
+                num_blocks=100,
                 block_size=1000 * 1000,
             )
             dts.append(dt)
-        out["G"] = _analysis(dts=dts, size=1e9)
+        out["100M"] = _analysis(dts=dts, size=sz)
 
     return out
 
@@ -172,13 +172,14 @@ def _analysis(dts, size):
 def benchmark_open_and_write(path, seed, num_blocks=1, block_size=1000):
     prng = np.random.Generator(np.random.PCG64(1))
     start = time.time()
+    total_size = 0
     with open(path, "wb") as fout:
         for i in range(num_blocks):
             block = prng.bytes(block_size)
-            fout.write(block)
+            total_size += fout.write(block)
 
     stop = time.time()
-    return stop - start
+    return stop - start, total_size
 
 
 def make_corsika_run_steering(run_id=19, num_events=10):

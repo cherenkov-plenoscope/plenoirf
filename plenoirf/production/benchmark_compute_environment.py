@@ -21,13 +21,13 @@ def run(env, logger):
     logger.debug(
         json_line_logger.xml(
             "disk_write_rate",
-            rate_1k_MB_per_s=out["disk_write_rate"]["k"]["rate_MB_per_s"][
+            rate_1k_MB_per_s=out["disk_write_rate"]["1k"]["rate_MB_per_s"][
                 "avg"
             ],
-            rate_1M_MB_per_s=out["disk_write_rate"]["M"]["rate_MB_per_s"][
+            rate_1M_MB_per_s=out["disk_write_rate"]["1M"]["rate_MB_per_s"][
                 "avg"
             ],
-            rate_1G_MB_per_s=out["disk_write_rate"]["G"]["rate_MB_per_s"][
+            rate_100M_MB_per_s=out["disk_write_rate"]["100M"]["rate_MB_per_s"][
                 "avg"
             ],
         )
