@@ -1,9 +1,11 @@
 from .. import benchmarking
+from .. import provenance
+
 import os
 import json_utils
 import tempfile
 import rename_after_writing as rnw
-from json_line_logger import xml
+import json_line_logger
 
 
 def run(env, logger):
@@ -19,7 +21,7 @@ def run(env, logger):
 
     out["disk_write_rate"] = benchmarking.disk_write_rate(path=out["tmp"])
     logger.debug(
-        xml(
+        json_line_logger.xml(
             "disk_write_rate",
             rate_1k_MB_per_s=out["disk_write_rate"]["k"]["rate_MB_per_s"][
                 "avg"
@@ -39,7 +41,7 @@ def run(env, logger):
         path=out["tmp"]
     )
     logger.debug(
-        xml(
+        json_line_logger.xml(
             "disk_create_write_close_open_read_remove_latency",
             time=out["disk_create_write_close_open_read_remove_latency"][
                 "avg"
@@ -49,7 +51,7 @@ def run(env, logger):
 
     out["corsika"] = benchmarking.corsika(path=out["tmp"])
     logger.debug(
-        xml(
+        json_line_logger.xml(
             "corsika_benchmark",
             total=out["corsika"]["total"],
             initializing=out["corsika"]["initializing"],
@@ -65,3 +67,20 @@ def run(env, logger):
         f.write(json_utils.dumps(out))
 
     logger.info(__name__ + ": ... done.")
+
+
+def run_job(job):
+    """
+    To benchmark the compute infrustructure without running the actual
+    simulations.
+    """
+    logger = json_line_logger.LoggerStdout()
+    out = {}
+    with json_line_logger.TimeDelta(logger, "provenance"):
+        out["provenance"] = provenance.make_provenance()
+    with json_line_logger.TimeDelta(logger, "benchmark"):
+        with tempfile.TemporaryDirectory() as tmp:
+            run(env={"work_dir": tmp}, logger=logger)
+            with open(os.path.join(tmp, "benchmark.json"), "rt") as fin:
+                out["benchmark"] = json_utils.loads(fin.read())
+    return out
