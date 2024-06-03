@@ -78,6 +78,10 @@ def make_debug_output(env, blk, block_id, logger):
     debug_out_path = os.path.join(env["work_dir"], "merlict_events.debug.zip")
     event_uid_strs_in_block = blk["event_uid_strs_in_block"][block_id_str]
 
+    if not os.path.exists(debug_out_path):
+        with zipfile.ZipFile(debug_out_path, "w") as zout:
+            pass
+
     for ii, event_uid_str in enumerate(event_uid_strs_in_block):
         merlict_event_id = ii + 1
         event_uid = int(event_uid_str)
