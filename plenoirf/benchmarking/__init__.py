@@ -8,20 +8,18 @@ import spherical_coordinates
 import hashlib
 
 
-def disk_write_rate(path):
+def disk_write_rate():
     seed = 1
     out = {}
     with tempfile.TemporaryDirectory(
-        suffix="-benchmark",
         prefix="plenoirf-",
-        dir=path,
-        ignore_cleanup_errors=False,
-    ) as td:
+        suffix="-disk_write_rate-benchmark",
+    ) as tmp:
         # 1k
         dts = []
         for i in range(27):
             dt = benchmark_open_and_write(
-                path=os.path.join(path, "{:06d}.rnd".format(i)),
+                path=os.path.join(tmp, "{:06d}.rnd".format(i)),
                 seed=i,
                 num_blocks=1,
                 block_size=1000,
@@ -33,7 +31,7 @@ def disk_write_rate(path):
         dts = []
         for i in range(9):
             dt = benchmark_open_and_write(
-                path=os.path.join(path, "{:06d}.rnd".format(i)),
+                path=os.path.join(tmp, "{:06d}.rnd".format(i)),
                 seed=i,
                 num_blocks=1,
                 block_size=1000 * 1000,
@@ -45,7 +43,7 @@ def disk_write_rate(path):
         dts = []
         for i in range(3):
             dt = benchmark_open_and_write(
-                path=os.path.join(path, "{:06d}.rnd".format(i)),
+                path=os.path.join(tmp, "{:06d}.rnd".format(i)),
                 seed=i,
                 num_blocks=1000,
                 block_size=1000 * 1000,
@@ -56,13 +54,10 @@ def disk_write_rate(path):
     return out
 
 
-def disk_create_write_close_open_read_remove_latency(path, num=1000):
+def disk_create_write_close_open_read_remove_latency(num=1000):
     start = time.time()
     with tempfile.TemporaryDirectory(
-        suffix="-benchmark",
-        prefix="plenoirf-",
-        dir=path,
-        ignore_cleanup_errors=False,
+        prefix="plenoirf-", suffix="-disk_latency-benchmark"
     ) as td:
         for i in range(num):
             s = "{:06d}".format(i)
@@ -79,7 +74,7 @@ def disk_create_write_close_open_read_remove_latency(path, num=1000):
     return {"avg": delta, "std": delta_unc}
 
 
-def corsika(path):
+def corsika():
     """
     run the same corsika run as a benchmark and measure its wall time.
     """
@@ -91,10 +86,8 @@ def corsika(path):
 
     event_reports = []
     with tempfile.TemporaryDirectory(
-        suffix="-benchmark",
         prefix="plenoirf-",
-        dir=path,
-        ignore_cleanup_errors=False,
+        suffix="-corsika-benchmark",
     ) as tmp:
         md5 = hashlib.md5()
         t_run_start = time.time()

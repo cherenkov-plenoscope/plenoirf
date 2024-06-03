@@ -17,9 +17,7 @@ def run(env, logger):
         return
 
     out = {}
-    out["tmp"] = tempfile.gettempdir()
-
-    out["disk_write_rate"] = benchmarking.disk_write_rate(path=out["tmp"])
+    out["disk_write_rate"] = benchmarking.disk_write_rate()
     logger.debug(
         json_line_logger.xml(
             "disk_write_rate",
@@ -37,9 +35,7 @@ def run(env, logger):
 
     out[
         "disk_create_write_close_open_read_remove_latency"
-    ] = benchmarking.disk_create_write_close_open_read_remove_latency(
-        path=out["tmp"]
-    )
+    ] = benchmarking.disk_create_write_close_open_read_remove_latency()
     logger.debug(
         json_line_logger.xml(
             "disk_create_write_close_open_read_remove_latency",
@@ -49,7 +45,7 @@ def run(env, logger):
         )
     )
 
-    out["corsika"] = benchmarking.corsika(path=out["tmp"])
+    out["corsika"] = benchmarking.corsika()
     logger.debug(
         json_line_logger.xml(
             "corsika_benchmark",
