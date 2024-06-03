@@ -36,6 +36,7 @@ import plenopy
 import plenoptics
 import magnetic_deflection
 import json_line_logger
+import json_utils
 from binning_utils.power10 import lower_bin_edge as power10_to_GeV
 
 
@@ -304,3 +305,19 @@ def _make_missing_run_ids_instrument_site_particle(
             missing_run_ids.append(run_id)
 
     return missing_run_ids
+
+
+def benchmark(pool, out_path, num_runs):
+    """
+    benchmarks the compute infrastructure and writes results to out_path jsonl.
+    """
+
+    jobs = []
+    for i in range(num_runs):
+        jobs.append(None)
+
+    results = pool.map(production.benchmark_compute_environment.run_job, jobs)
+
+    with json_utils.lines.open(out_path, mode="w") as jlout:
+        for result in results:
+            jlout.write(result)
