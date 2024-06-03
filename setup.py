@@ -38,6 +38,7 @@ setuptools.setup(
     ],
     install_requires=[
         "xmltodict",
+        "scikit-image",
         "un_bound_histogram>=0.0.1",
         "cosmic_fluxes",
         "corsika_primary>=2.3.3",
