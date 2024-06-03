@@ -7,6 +7,13 @@ from json_line_logger import xml
 
 
 def run(env, logger):
+    logger.info(__name__ + ": start ...")
+
+    outpath = os.path.join(env["work_dir"], "benchmark.json")
+    if os.path.exists(outpath):
+        logger.info(__name__ + ": already done. skip computation.")
+        return
+
     out = {}
     out["tmp"] = tempfile.gettempdir()
 
@@ -54,5 +61,7 @@ def run(env, logger):
         )
     )
 
-    with rnw.open(os.path.join(env["work_dir"], "benchmark.json"), "wt") as f:
+    with rnw.open(outpath, "wt") as f:
         f.write(json_utils.dumps(out))
+
+    logger.info(__name__ + ": ... done.")
