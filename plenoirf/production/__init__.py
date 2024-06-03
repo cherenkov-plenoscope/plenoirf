@@ -38,6 +38,7 @@ from . import classify_cherenkov_photons
 from . import inspect_cherenkov_pool
 from . import extract_features_from_light_field
 from . import estimate_primary_trajectory
+from . import benchmark_compute_environment
 
 
 def make_example_job(
@@ -85,6 +86,9 @@ def run_job_in_dir(job, work_dir):
         gather_and_export_provenance(
             path=opj(env["work_dir"], "provenance.json"),
         )
+
+    with TimeDelta(logger, "benchmark compute environment"):
+        benchmark_compute_environment.run(env=env, logger=logger)
 
     with seeding.SeedSection(
         run_id=run_id,
@@ -368,6 +372,11 @@ def run_job_in_dir(job, work_dir):
             zout,
             opj(env["work_dir"], "provenance.json"),
             opj(env["run_id_str"], "provenance.json.gz"),
+        )
+        zip_write_gz(
+            zout,
+            opj(env["work_dir"], "benchmark.json"),
+            opj(env["run_id_str"], "benchmark.json.gz"),
         )
         base = "plenoirf.production.draw_event_uids_for_debugging.json"
         zip_write_gz(
