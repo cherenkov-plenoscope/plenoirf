@@ -106,6 +106,139 @@ def run(env, seed, logger):
     logger.info(__name__ + ": ... done.")
 
 
+def stage_one(
+    env,
+    prng,
+    evttab,
+    corsika_and_grid_work_dir,
+    corsika_primary_steering,
+    primary_directions,
+    instrument_pointings,
+    event_uids_for_debugging,
+    logger,
+):
+    opj = os.path.join
+    logger.info(__name__ + ": start corsika stage one")
+    work_dir = corsika_and_grid_work_dir
+    os.makedirs(work_dir, exist_ok=True)
+
+    with tarfile.open(
+        opj(work_dir, "ground_grid_intensity.tar"), "w"
+    ) as imgtar, tarfile.open(
+        opj(work_dir, "ground_grid_intensity_roi.tar"), "w"
+    ) as imgroitar:
+        with cpw.CorsikaPrimary(
+            steering_dict=corsika_primary_steering,
+            stdout_path=opj(work_dir, "corsika.stdout.txt"),
+            stderr_path=opj(work_dir, "corsika.stderr.txt"),
+            particle_output_path=opj(work_dir, "particle_pools.dat"),
+        ) as corsika_run:
+            logger.info(__name__ + ": corsika is ready")
+            evttar.write_runh(runh=corsika_run.runh)
+
+            GGH = ground_grid.GGH()
+
+            for event_idx, corsika_event in enumerate(corsika_run):
+                corsika_evth, cherenkov_reader = corsika_event
+                uid = nail_down_event_identity(
+                    corsika_evth=corsika_evth,
+                    event_idx=event_idx,
+                    corsika_primary_steering=corsika_primary_steering,
+                )
+
+                # ========
+
+                instrument_pointing_rec = make_instrument_pointing_record(
+                    uid=uid, instrument_pointings=instrument_pointings
+                )
+                evttab["instrument_pointing"].append_record(
+                    instrument_pointing_rec
+                )
+                _ = instrument_pointing_rec.pop("idx")
+                instrument_pointing = instrument_pointing_rec
+
+                # ========
+
+                logger.debug(
+                    xml(
+                        "EventTime", uid=uid["uid_str"], status="corsika_start"
+                    )
+                )
+
+                # ========
+
+                primary_rec = make_primary_record(
+                    uid=uid,
+                    corsika_evth=corsika_evth,
+                    corsika_primary_steering=corsika_primary_steering,
+                    primary_directions=primary_directions,
+                )
+                evttab["primary"].append_record(primary_rec)
+
+                # ========
+
+                groundgrid_config = ground_grid.make_ground_grid_config(
+                    bin_width_m=env["config"]["ground_grid"]["geometry"][
+                        "bin_width_m"
+                    ],
+                    num_bins_each_axis=env["config"]["ground_grid"][
+                        "geometry"
+                    ]["num_bins_each_axis"],
+                    prng=prng,
+                )
+                groundgrid = ground_grid.GroundGrid(**groundgrid_config)
+
+                # ========
+
+                cherenkovsizestats = (
+                    cherenkov_bunch_storage.CherenkovSizeStatistics()
+                )
+                cherenkovpoolstats = (
+                    cherenkov_bunch_storage.CherenkovPoolStatistics()
+                )
+                GGH.init_groundgrid(groundgrid=groundgrid)
+
+                for cherenkov_block in cherenkov_reader:
+                    cherenkovsizestats.assign_cherenkov_bunches(
+                        cherenkov_bunches=cherenkov_block
+                    )
+                    cherenkovpoolstats.assign_cherenkov_bunches(
+                        cherenkov_bunches=cherenkov_block
+                    )
+                    GGH.assign_cherenkov_bunches(
+                        cherenkov_bunches=cherenkov_block
+                    )
+
+                cherenkovsize_rec = cherenkovsizestats.make_record()
+                cherenkovsize_rec.update(uid["record"])
+                evttab["cherenkovsize"].append_record(cherenkovsize_rec)
+
+                if cherenkovsize_rec["num_bunches"] > 0:
+                    cherenkovpool_rec = cherenkovpoolstats.make_record()
+                    cherenkovpool_rec.update(uid["record"])
+                    evttab["cherenkovpool"].append_record(cherenkovpool_rec)
+
+                    groundgrid_histogram = GGH.export_groundgrid_histogram()
+                    groundgrid_result = ground_grid.make_choice(
+                        groundgrid=groundgrid,
+                        groundgrid_histogram=groundgrid_histogram,
+                        threshold_num_photons=env["config"]["ground_grid"][
+                            "threshold_num_photons"
+                        ],
+                        prng=prng,
+                    )
+
+                    groundgrid_rec = make_groundgrid_record(
+                        uid=uid,
+                        groundgrid_config=groundgrid_config,
+                        groundgrid_result=groundgrid_result,
+                        groundgrid=groundgrid,
+                    )
+                    evttab["groundgrid"].append_record(groundgrid_rec)
+
+            GGH.close()
+
+
 def corsika_and_grid(
     env,
     prng,

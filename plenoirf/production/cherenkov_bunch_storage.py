@@ -103,8 +103,26 @@ def read_sphere(
     return ooo
 
 
+class CherenkovSizeStatistics:
+    def __init__(self):
+        self.num_bunches = 0
+        self.num_photons = 0.0
+
+    def assign_cherenkov_bunches(self, cherenkov_bunches):
+        self.num_bunches += cherenkov_bunches.shape[0]
+        self.num_photons += np.sum(
+            cherenkov_bunches[:, cpw.I.BUNCH.BUNCH_SIZE_1]
+        )
+
+    def make_record(self):
+        return {
+            "num_bunches": self.num_bunches,
+            "num_photons": self.num_photons,
+        }
+
+
 def make_cherenkovsize_record(path=None, cherenkov_bunches=None):
-    sizerecord = {"num_bunches": 0, "num_photons": 0}
+    sz = CherenkovSizeStatistics()
 
     if path is not None:
         assert cherenkov_bunches is None
@@ -112,70 +130,86 @@ def make_cherenkovsize_record(path=None, cherenkov_bunches=None):
             for event in tr:
                 evth, cherenkov_reader = event
                 for cherenkov_block in cherenkov_reader:
-                    sizerecord["num_bunches"] += cherenkov_block.shape[0]
-                    sizerecord["num_photons"] += np.sum(
-                        cherenkov_block[:, cpw.I.BUNCH.BUNCH_SIZE_1]
+                    sz.assign_cherenkov_bunches(
+                        cherenkov_bunches=cherenkov_block
                     )
     else:
         assert cherenkov_bunches is not None
-        sizerecord["num_bunches"] += cherenkov_bunches.shape[0]
-        sizerecord["num_photons"] += np.sum(
-            cherenkov_bunches[:, cpw.I.BUNCH.BUNCH_SIZE_1]
-        )
-    return sizerecord
+        sz.assign_cherenkov_bunches(cherenkov_bunches=cherenkov_bunches)
+    return sz.make_record()
 
 
-def inti_stats():
-    ubh = un_bound_histogram.UnBoundHistogram
-    MOMENTUM_TO_INCIDENT = -1.0
-    s = {}
-    s["x"] = {
-        "hist": ubh(bin_width=25e2),
-        "column": cpw.I.BUNCH.X_CM,
-        "unit": "m",
-        "factor": 1e-2,
-    }
-    s["y"] = {
-        "hist": ubh(bin_width=25e2),
-        "column": cpw.I.BUNCH.Y_CM,
-        "unit": "m",
-        "factor": 1e-2,
-    }
-    s["cx"] = {
-        "hist": ubh(bin_width=np.deg2rad(0.05)),
-        "column": cpw.I.BUNCH.UX_1,
-        "unit": "1",
-        "factor": MOMENTUM_TO_INCIDENT,
-    }
-    s["cy"] = {
-        "hist": ubh(bin_width=np.deg2rad(0.05)),
-        "column": cpw.I.BUNCH.VY_1,
-        "unit": "1",
-        "factor": MOMENTUM_TO_INCIDENT,
-    }
-    s["z_emission"] = {
-        "hist": ubh(bin_width=10e2),
-        "column": cpw.I.BUNCH.EMISSOION_ALTITUDE_ASL_CM,
-        "unit": "m",
-        "factor": 1e-2,
-    }
-    s["wavelength"] = {
-        "hist": ubh(bin_width=1.0),
-        "column": cpw.I.BUNCH.WAVELENGTH_NM,
-        "unit": "m",
-        "factor": 1e-9,
-    }
-    s["bunch_size"] = {
-        "hist": ubh(bin_width=1e-2),
-        "column": cpw.I.BUNCH.BUNCH_SIZE_1,
-        "unit": "1",
-        "factor": 1,
-    }
-    return s
+class CherenkovPoolStatistics:
+    def __init__(self):
+        ubh = un_bound_histogram.UnBoundHistogram
+        MOMENTUM_TO_INCIDENT = -1.0
+        s = {}
+        s["x"] = {
+            "hist": ubh(bin_width=25e2),
+            "column": cpw.I.BUNCH.X_CM,
+            "unit": "m",
+            "factor": 1e-2,
+        }
+        s["y"] = {
+            "hist": ubh(bin_width=25e2),
+            "column": cpw.I.BUNCH.Y_CM,
+            "unit": "m",
+            "factor": 1e-2,
+        }
+        s["cx"] = {
+            "hist": ubh(bin_width=np.deg2rad(0.05)),
+            "column": cpw.I.BUNCH.UX_1,
+            "unit": "1",
+            "factor": MOMENTUM_TO_INCIDENT,
+        }
+        s["cy"] = {
+            "hist": ubh(bin_width=np.deg2rad(0.05)),
+            "column": cpw.I.BUNCH.VY_1,
+            "unit": "1",
+            "factor": MOMENTUM_TO_INCIDENT,
+        }
+        s["z_emission"] = {
+            "hist": ubh(bin_width=10e2),
+            "column": cpw.I.BUNCH.EMISSOION_ALTITUDE_ASL_CM,
+            "unit": "m",
+            "factor": 1e-2,
+        }
+        s["wavelength"] = {
+            "hist": ubh(bin_width=1.0),
+            "column": cpw.I.BUNCH.WAVELENGTH_NM,
+            "unit": "m",
+            "factor": 1e-9,
+        }
+        s["bunch_size"] = {
+            "hist": ubh(bin_width=1e-2),
+            "column": cpw.I.BUNCH.BUNCH_SIZE_1,
+            "unit": "1",
+            "factor": 1,
+        }
+        self.stats = s
+
+    def assign_cherenkov_bunches(self, cherenkov_bunches):
+        for key in self.stats:
+            self.stats[key]["hist"].assign(
+                cherenkov_bunches[:, sts[key]["column"]]
+            )
+
+    def make_record(self):
+        percentiles = [16, 50, 84]
+        out = {}
+        for key in self.stats:
+            for pp in percentiles:
+                stskey = "{:s}_p{:02d}_{:s}".format(
+                    key, pp, self.stats[key]["unit"]
+                )
+                out[stskey] = self.stats[key]["factor"] * self.stats[key][
+                    "hist"
+                ].percentile(pp)
+        return out
 
 
 def make_cherenkovpool_record(path=None, cherenkov_bunches=None):
-    sts = inti_stats()
+    sts = CherenkovPoolStatistics()
 
     if path is not None:
         assert cherenkov_bunches is None
@@ -183,21 +217,14 @@ def make_cherenkovpool_record(path=None, cherenkov_bunches=None):
             for event in tr:
                 evth, cherenkov_reader = event
                 for cherenkov_block in cherenkov_reader:
-                    for key in sts:
-                        sts[key]["hist"].assign(
-                            cherenkov_block[:, sts[key]["column"]]
-                        )
+                    sts.assign_cherenkov_bunches(
+                        cherenkov_block=cherenkov_block
+                    )
     else:
         assert cherenkov_bunches is not None
-        for key in sts:
-            sts[key]["hist"].assign(cherenkov_bunches[:, sts[key]["column"]])
+        sts.assign_cherenkov_bunches(cherenkov_block=cherenkov_bunches)
 
-    percentiles = [16, 50, 84]
-    out = {}
-    for key in sts:
-        for pp in percentiles:
-            stskey = "{:s}_p{:02d}_{:s}".format(key, pp, sts[key]["unit"])
-            out[stskey] = sts[key]["factor"] * sts[key]["hist"].percentile(pp)
+    out = sts.make_record()
     return out
 
 

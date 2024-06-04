@@ -10,12 +10,11 @@ def init_event_table_structure():
     t["cherenkovsize"] = init_cherenkovsize_level_structure()
     t["cherenkovpool"] = init_cherenkovpool_level_structure()
 
-    t["groundgrid"] = init_groundgrid_level_structure()
+    t["groundgrid_config"] = init_groundgrid_config_level_structure()
+    t["groundgrid_result"] = init_groundgrid_result_level_structure()
 
     t["cherenkovsizepart"] = init_cherenkovsizepart_level_structure()
     t["cherenkovpoolpart"] = init_cherenkovpoolpart_level_structure()
-
-    t["core"] = init_core_level_structure()
 
     t["particlepool"] = init_particlepool_level_structure()
     t["particlepoolonaperture"] = init_particlepoolonaperture_level_structure()
@@ -195,9 +194,8 @@ def init_cherenkovpool_level_structure():
     return t
 
 
-def init_groundgrid_level_structure():
+def init_groundgrid_config_level_structure():
     t = collections.OrderedDict()
-    # arguments to init GroundGrid
     t["bin_width_m"] = {"dtype": "<f8", "comment": ""}
     t["num_bins_each_axis"] = {"dtype": "<i8", "comment": ""}
 
@@ -206,24 +204,17 @@ def init_groundgrid_level_structure():
         "comment": "This is random_shift_x_m + cherenkov_pool_median_x_m.",
     }
     t["center_y_m"] = {"dtype": "<f8", "comment": "See center_x_m."}
+    return t
 
-    t["cherenkov_pool_median_x_m"] = {
-        "dtype": "<f8",
-        "comment": "The median impact of Cherenkov bunches in 'x'."
-        "If there are Cherenkov buncehs, this is taken from "
-        "cherenkovpool.x_median_m. If not, this is zero.",
-    }
-    t["cherenkov_pool_median_y_m"] = {
-        "dtype": "<f8",
-        "comment": "See cherenkov_pool_median_x_m.",
-    }
 
-    t["random_shift_x_m"] = {
-        "dtype": "<f8",
-        "comment": "A random shift of the grid by plus or "
-        "minus half the bin_width_m.",
-    }
-    t["random_shift_y_m"] = {"dtype": "<f8", "comment": ""}
+def init_groundgrid_result_level_structure():
+    t = collections.OrderedDict()
+    # arguments to init GroundGrid
+
+    t["bin_idx_x"] = {"dtype": "<i8", "comment": ""}
+    t["bin_idx_y"] = {"dtype": "<i8", "comment": ""}
+    t["core_x_m"] = {"dtype": "<f8", "comment": ""}
+    t["core_y_m"] = {"dtype": "<f8", "comment": ""}
 
     t["num_bins_thrown"] = {
         "dtype": "<i8",
@@ -250,15 +241,6 @@ def init_cherenkovsizepart_level_structure():
 
 def init_cherenkovpoolpart_level_structure():
     return init_cherenkovpool_level_structure()
-
-
-def init_core_level_structure():
-    t = collections.OrderedDict()
-    t["bin_idx_x"] = {"dtype": "<i8", "comment": ""}
-    t["bin_idx_y"] = {"dtype": "<i8", "comment": ""}
-    t["core_x_m"] = {"dtype": "<f8", "comment": ""}
-    t["core_y_m"] = {"dtype": "<f8", "comment": ""}
-    return t
 
 
 def init_particlepool_level_structure():

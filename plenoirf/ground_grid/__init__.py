@@ -6,18 +6,17 @@ import spherical_coordinates
 import tempfile
 import json_utils
 import os
+import tarfile
 import subprocess
 import json_line_logger
+import io
 
-from . import io
 from .. import configfile
 
 
 def make_ground_grid_config(
     bin_width_m,
     num_bins_each_axis,
-    cherenkov_pool_median_x_m,
-    cherenkov_pool_median_y_m,
     prng,
 ):
     assert bin_width_m > 0.0
@@ -28,18 +27,11 @@ def make_ground_grid_config(
     random_shift_x_m = prng.uniform(-random_radius_m, random_radius_m)
     random_shift_y_m = prng.uniform(-random_radius_m, random_radius_m)
 
-    center_x_m = cherenkov_pool_median_x_m + random_shift_x_m
-    center_y_m = cherenkov_pool_median_y_m + random_shift_y_m
-
     return {
         "bin_width_m": bin_width_m,
         "num_bins_each_axis": num_bins_each_axis,
-        "center_x_m": center_x_m,
-        "center_y_m": center_y_m,
-        "cherenkov_pool_median_x_m": cherenkov_pool_median_x_m,
-        "cherenkov_pool_median_y_m": cherenkov_pool_median_y_m,
-        "random_shift_x_m": random_shift_x_m,
-        "random_shift_y_m": random_shift_y_m,
+        "center_x_m": random_shift_x_m,
+        "center_y_m": random_shift_y_m,
     }
 
 
@@ -91,13 +83,26 @@ def assign3(
     threshold_num_photons,
     prng,
 ):
-    grid_histogram = histogram_cherenkov_bunches_into_grid(
+    groundgrid_histogram = histogram_cherenkov_bunches_into_grid(
         groundgrid=groundgrid,
         cherenkov_bunch_storage_path=cherenkov_bunch_storage_path,
     )
+    return make_choice(
+        groundgrid=groundgrid,
+        groundgrid_histogram=groundgrid_histogram,
+        threshold_num_photons=threshold_num_photons,
+        prng=prng,
+    )
 
+
+def make_choice(
+    groundgrid,
+    groundgrid_histogram,
+    threshold_num_photons,
+    prng,
+):
     bin_idxs_above_threshold = find_bin_idxs_above_or_equal_threshold3(
-        grid_histogram=grid_histogram,
+        grid_histogram=groundgrid_histogram,
         threshold_num_photons=threshold_num_photons,
     )
 
@@ -121,7 +126,7 @@ def assign3(
         bin_idxs=bin_idxs_above_threshold,
     )
 
-    return out, grid_histogram
+    return out, groundgrid_histogram
 
 
 def find_bin_idxs_above_or_equal_threshold3(
@@ -240,12 +245,17 @@ import sys
 
 
 def read_histogram2d_from_path(path):
+    with open(path, "rb") as f:
+        arr = fread_histogram2d(fileobj=f)
+    return arr
+
+
+def fread_histogram2d(fileobj):
     entry_size = np.uint64(4 + 4 + 8)
     entry_dtype = make_histogram2d_dtype()
-    with open(path, "rb") as f:
-        num_entries = np.frombuffer(f.read(8), dtype="u8")[0]
-        size = num_entries * entry_size
-        arr = np.frombuffer(f.read(size), dtype=entry_dtype)
+    num_entries = np.frombuffer(fileobj.read(8), dtype="u8")[0]
+    size = num_entries * entry_size
+    arr = np.frombuffer(fileobj.read(size), dtype=entry_dtype)
     return arr
 
 
@@ -255,9 +265,101 @@ def make_histogram2d_dtype():
 
 def write_groundgrid_config(path, groundgrid):
     M2CM = 1e2
-    with open(path, "wt") as f:
-        for dim in ["x", "y", "z"]:
-            dimbin = "{:s}_bin".format(dim)
-            f.write("{:d}\n".format(groundgrid[dimbin]["num"]))
-            f.write("{:e}\n".format(M2CM * groundgrid[dimbin]["start"]))
-            f.write("{:e}\n".format(M2CM * groundgrid[dimbin]["stop"]))
+    with open(path, "wb") as f:
+        f.write(make_groundgrid_config_bytes(groundgrid=groundgrid))
+
+
+def make_groundgrid_config_bytes(groundgrid):
+    f = io.StringIO()
+    M2CM = 1e2
+    for dim in ["x", "y", "z"]:
+        dimbin = "{:s}_bin".format(dim)
+        f.write("{:d}\n".format(groundgrid[dimbin]["num"]))
+        f.write("{:e}\n".format(M2CM * groundgrid[dimbin]["start"]))
+        f.write("{:e}\n".format(M2CM * groundgrid[dimbin]["stop"]))
+    f.seek(0)
+    return str.encode(f.read())
+
+
+def tar_header_bytes(name, size):
+    info = tarfile.TarInfo()
+    info.name = name
+    info.size = size
+    return info.tobuf()
+
+
+def _fill_tar_buffer_with_zeros_untill_next_block(buff):
+    TAR_BLOCK_SIZE = 512
+    num_zeros = (
+        TAR_BLOCK_SIZE - buff.tell() % TAR_BLOCK_SIZE
+    ) % TAR_BLOCK_SIZE
+    buff.write(num_zeros * b"\0")
+    return buff
+
+
+def tar_make_groundgrid_init_txt(groundgrid):
+    buff = io.BytesIO()
+    payload = make_groundgrid_config_bytes(groundgrid=groundgrid)
+    buff.write(tar_header_bytes(name="init.txt", size=len(payload)))
+    buff.write(payload)
+    buff = _fill_tar_buffer_with_zeros_untill_next_block(buff=buff)
+    buff.seek(0)
+    return buff.read()
+
+
+def tar_make_export_txt():
+    buff = io.BytesIO()
+    buff.write(tar_header_bytes(name="export.txt", size=0))
+    buff.seek(0)
+    return buff.read()
+
+
+def tar_make_cer(cherenkov_bunches):
+    buff = io.BytesIO()
+    assert cherenkov_bunches.dtype == np.float32
+    assert len(cherenkov_bunches.shape) == 2
+    assert cherenkov_bunches.shape[1] == 8
+    payload = cherenkov_bunches.flatten(order="c").tobytes()
+    buff.write(tar_header_bytes(name="cer.x8.float32", size=len(payload)))
+    buff.write(payload)
+    buff = _fill_tar_buffer_with_zeros_untill_next_block(buff=buff)
+    buff.seek(0)
+    return buff.read()
+
+
+def tar_make_zero_block():
+    return 512 * b"\0"
+
+
+class GGH:
+    def __init__(self):
+        self.merlict_ground_grid_path = configfile.read()["ground_grid"]
+        self.process = subprocess.Popen(
+            self.merlict_ground_grid_path,
+            stdout=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+        )
+
+    def init_groundgrid(self, groundgrid):
+        self.process.stdin.write(
+            tar_make_groundgrid_init_txt(groundgrid=groundgrid)
+        )
+        self.process.stdin.flush()
+
+    def assign_cherenkov_bunches(self, cherenkov_bunches):
+        cer = tar_make_cer(cherenkov_bunches=cherenkov_bunches)
+        self.process.stdin.write(cer)
+        self.process.stdin.flush()
+
+    def export_groundgrid_histogram(self):
+        self.process.stdin.write(tar_make_export_txt())
+        self.process.stdin.flush()
+        return fread_histogram2d(fileobj=self.process.stdout)
+
+    def close(self):
+        NUM_ZERO_BLOCKS_AT_END_OF_TAR = 2
+        for i in range(NUM_ZERO_BLOCKS_AT_END_OF_TAR):
+            self.process.stdin.write(tar_make_zero_block())
+        self.process.stdin.flush()
+        self.process.wait()
+        assert self.process.returncode == 0
