@@ -10,7 +10,7 @@ def init_event_table_structure():
     t["cherenkovsize"] = init_cherenkovsize_level_structure()
     t["cherenkovpool"] = init_cherenkovpool_level_structure()
 
-    t["groundgrid_config"] = init_groundgrid_config_level_structure()
+    t["groundgrid"] = init_groundgrid_level_structure()
     t["groundgrid_result"] = init_groundgrid_result_level_structure()
 
     t["cherenkovsizepart"] = init_cherenkovsizepart_level_structure()
@@ -194,7 +194,7 @@ def init_cherenkovpool_level_structure():
     return t
 
 
-def init_groundgrid_config_level_structure():
+def init_groundgrid_level_structure():
     t = collections.OrderedDict()
     t["bin_width_m"] = {"dtype": "<f8", "comment": ""}
     t["num_bins_each_axis"] = {"dtype": "<i8", "comment": ""}
@@ -204,6 +204,14 @@ def init_groundgrid_config_level_structure():
         "comment": "This is random_shift_x_m + cherenkov_pool_median_x_m.",
     }
     t["center_y_m"] = {"dtype": "<f8", "comment": "See center_x_m."}
+
+    t["num_bins_thrown"] = {
+        "dtype": "<i8",
+        "comment": "The number of all grid-bins which can collect "
+        "Cherenkov-photons.",
+    }
+    t["area_thrown_m2"] = {"dtype": "<f8", "comment": ""}
+
     return t
 
 
@@ -213,16 +221,11 @@ def init_groundgrid_result_level_structure():
 
     t["bin_idx_x"] = {"dtype": "<i8", "comment": ""}
     t["bin_idx_y"] = {"dtype": "<i8", "comment": ""}
+    t["bin_num_photons"] = {"dtype": "<f8", "comment": ""}
     t["core_x_m"] = {"dtype": "<f8", "comment": ""}
     t["core_y_m"] = {"dtype": "<f8", "comment": ""}
 
-    t["num_bins_thrown"] = {
-        "dtype": "<i8",
-        "comment": "The number of all grid-bins which can collect "
-        "Cherenkov-photons.",
-    }
     t["num_bins_above_threshold"] = {"dtype": "<i8", "comment": ""}
-    t["area_thrown_m2"] = {"dtype": "<f8", "comment": ""}
 
     # compare scatter
     num_scatter_bins = 16

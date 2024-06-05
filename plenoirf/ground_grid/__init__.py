@@ -87,15 +87,16 @@ def assign3(
         groundgrid=groundgrid,
         cherenkov_bunch_storage_path=cherenkov_bunch_storage_path,
     )
-    return make_choice(
+    groundgrid_result = make_result(
         groundgrid=groundgrid,
         groundgrid_histogram=groundgrid_histogram,
         threshold_num_photons=threshold_num_photons,
         prng=prng,
     )
+    return groundgrid_result, groundgrid_histogram
 
 
-def make_choice(
+def make_result(
     groundgrid,
     groundgrid_histogram,
     threshold_num_photons,
@@ -114,6 +115,7 @@ def make_choice(
     else:
         out["choice"] = draw_random_bin_choice3(
             groundgrid=groundgrid,
+            groundgrid_histogram=groundgrid_histogram,
             bin_idxs_above_threshold=bin_idxs_above_threshold,
             prng=prng,
         )
@@ -126,18 +128,18 @@ def make_choice(
         bin_idxs=bin_idxs_above_threshold,
     )
 
-    return out, groundgrid_histogram
+    return out
 
 
 def find_bin_idxs_above_or_equal_threshold3(
     grid_histogram,
     threshold_num_photons,
 ):
-    bin_idxs = []
+    bin_idxs = {}
     for entry in grid_histogram:
         if entry["weight_photons"] >= threshold_num_photons:
             bin_idx = (entry["x_bin"], entry["y_bin"])
-            bin_idxs.append(bin_idx)
+            bin_idxs[bin_idx] = entry["weight_photons"]
     return bin_idxs
 
 
@@ -160,6 +162,7 @@ def histogram_cherenkov_bunches_into_grid(
 
 def draw_random_bin_choice3(
     groundgrid,
+    groundgrid_histogram,
     bin_idxs_above_threshold,
     prng,
 ):
@@ -170,11 +173,13 @@ def draw_random_bin_choice3(
     cc["bin_idx_y"] = bin_idx[1]
     cc["core_x_m"] = groundgrid["x_bin"]["centers"][cc["bin_idx_x"]]
     cc["core_y_m"] = groundgrid["y_bin"]["centers"][cc["bin_idx_y"]]
+    cc["bin_num_photons"] = bin_idxs_above_threshold[bin_idx]
     return cc
 
 
 def draw_bin_idx(bin_idxs, prng):
-    return bin_idxs[prng.choice(a=len(bin_idxs))]
+    keys = list(bin_idxs.keys())
+    return keys[prng.choice(a=len(keys))]
 
 
 def histogram_bins_in_scatter_radius(groundgrid, bin_idxs):
@@ -351,7 +356,7 @@ class GGH:
         self.process.stdin.write(cer)
         self.process.stdin.flush()
 
-    def export_groundgrid_histogram(self):
+    def get_histogram(self):
         self.process.stdin.write(tar_make_export_txt())
         self.process.stdin.flush()
         return fread_histogram2d(fileobj=self.process.stdout)

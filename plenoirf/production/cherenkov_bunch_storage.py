@@ -67,33 +67,22 @@ def read_with_mask(path, bunch_indices):
 def read_sphere(
     path, sphere_obs_level_x_m, sphere_obs_level_y_m, sphere_radius_m
 ):
-    sphere_obs_level_x_cm = 1e2 * sphere_obs_level_x_m
-    sphere_obs_level_y_cm = 1e2 * sphere_obs_level_y_m
-    sphere_radius_cm = 1e2 * sphere_radius_m
-
-    BUNCH = cpw.I.BUNCH
-
     dyn_out = dynamicsizerecarray.DynamicSizeRecarray(dtype=BUNCH.DTYPE)
-
     with cpw.cherenkov.CherenkovEventTapeReader(path=path) as tr:
         for event in tr:
             evth, cherenkov_reader = event
             for cherenkov_block in cherenkov_reader:
-                mask = mask_cherenkov_bunches_hit_sphere(
-                    cherenkov_bunches_ux=cherenkov_block[:, BUNCH.UX_1],
-                    cherenkov_bunches_vy=cherenkov_block[:, BUNCH.VY_1],
-                    cherenkov_bunches_x=cherenkov_block[:, BUNCH.X_CM],
-                    cherenkov_bunches_y=cherenkov_block[:, BUNCH.Y_CM],
-                    sphere_x=sphere_obs_level_x_cm,
-                    sphere_y=sphere_obs_level_y_cm,
-                    sphere_radius=sphere_radius_cm,
+                out_block = cut_in_sphere(
+                    cherenkov_bunches=cherenkov_block,
+                    sphere_obs_level_x_m=sphere_obs_level_x_m,
+                    sphere_obs_level_y_m=sphere_obs_level_y_m,
+                    sphere_radius_m=sphere_radius_m,
                 )
-                out_block = cherenkov_block[mask]
-                block_recarray = np.frombuffer(
+                out_block_recarray = np.frombuffer(
                     out_block.tobytes(),
                     dtype=BUNCH.DTYPE,
                 )
-                dyn_out.append_recarray(block_recarray)
+                dyn_out.append_recarray(out_block_recarray)
 
     buff = dyn_out.to_recarray().tobytes()
     raw_out = np.frombuffer(buff, dtype="f4")
@@ -101,6 +90,29 @@ def read_sphere(
         (len(raw_out) // BUNCH.NUM_FLOAT32, BUNCH.NUM_FLOAT32)
     )
     return ooo
+
+
+def cut_in_sphere(
+    cherenkov_bunches,
+    sphere_obs_level_x_m,
+    sphere_obs_level_y_m,
+    sphere_radius_m,
+):
+    sphere_obs_level_x_cm = 1e2 * sphere_obs_level_x_m
+    sphere_obs_level_y_cm = 1e2 * sphere_obs_level_y_m
+    sphere_radius_cm = 1e2 * sphere_radius_m
+    BUNCH = cpw.I.BUNCH
+    mask = mask_cherenkov_bunches_hit_sphere(
+        cherenkov_bunches_ux=cherenkov_bunches[:, BUNCH.UX_1],
+        cherenkov_bunches_vy=cherenkov_bunches[:, BUNCH.VY_1],
+        cherenkov_bunches_x=cherenkov_bunches[:, BUNCH.X_CM],
+        cherenkov_bunches_y=cherenkov_bunches[:, BUNCH.Y_CM],
+        sphere_x=sphere_obs_level_x_cm,
+        sphere_y=sphere_obs_level_y_cm,
+        sphere_radius=sphere_radius_cm,
+    )
+    out_block = cherenkov_bunches[mask]
+    return out_block
 
 
 class CherenkovSizeStatistics:
@@ -190,9 +202,8 @@ class CherenkovPoolStatistics:
 
     def assign_cherenkov_bunches(self, cherenkov_bunches):
         for key in self.stats:
-            self.stats[key]["hist"].assign(
-                cherenkov_bunches[:, sts[key]["column"]]
-            )
+            cer_column = self.stats[key]["column"]
+            self.stats[key]["hist"].assign(cherenkov_bunches[:, cer_column])
 
     def make_record(self):
         percentiles = [16, 50, 84]
