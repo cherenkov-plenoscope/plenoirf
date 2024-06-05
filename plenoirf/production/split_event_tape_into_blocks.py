@@ -23,7 +23,7 @@ def run(env, logger):
     uid_map = split_event_tape_into_blocks(
         inpath=os.path.join(
             env["work_dir"],
-            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "plenoirf.production.simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument",
             "cherenkov_pools.tar",
         ),
         outpath_block_fmt=os.path.join(

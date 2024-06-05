@@ -61,7 +61,6 @@ def run(env, seed, logger):
 
     evttab = {}
     evttab = event_table.add_empty_level(evttab, "primary")
-    evttab = event_table.add_empty_level(evttab, "instrument_pointing")
     evttab = event_table.add_empty_level(evttab, "cherenkovsize")
     evttab = event_table.add_empty_level(evttab, "cherenkovpool")
     evttab = event_table.add_empty_level(evttab, "groundgrid")
@@ -74,7 +73,6 @@ def run(env, seed, logger):
         corsika_and_grid_work_dir=corsika_and_grid_work_dir,
         corsika_primary_steering=dpp["corsika_primary_steering"],
         primary_directions=dpp["primary_directions"],
-        instrument_pointings=dpp["instrument_pointings"],
         event_uids_for_debugging=event_uids_for_debugging,
         logger=logger,
     )
@@ -94,7 +92,6 @@ def stage_one(
     corsika_and_grid_work_dir,
     corsika_primary_steering,
     primary_directions,
-    instrument_pointings,
     event_uids_for_debugging,
     logger,
 ):
@@ -126,12 +123,6 @@ def stage_one(
                     corsika_evth=corsika_evth,
                     event_idx=event_idx,
                     corsika_primary_steering=corsika_primary_steering,
-                )
-
-                evttab["instrument_pointing"].append_record(
-                    make_instrument_pointing_record(
-                        uid=uid, instrument_pointings=instrument_pointings
-                    )
                 )
 
                 evttab["primary"].append_record(
@@ -332,13 +323,6 @@ def make_primary_record(
     else:
         raise AssertionError("Can not assign draw_primary_direction_method")
 
-    return rec
-
-
-def make_instrument_pointing_record(uid, instrument_pointings):
-    rec = uid["record"].copy()
-    for key in ["azimuth_rad", "zenith_rad"]:
-        rec[key] = instrument_pointings[uid["uid_str"]][key]
     return rec
 
 

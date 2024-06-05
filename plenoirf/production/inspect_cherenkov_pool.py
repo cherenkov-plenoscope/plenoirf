@@ -28,7 +28,7 @@ def run(env, logger):
     visible_cherenkov_photon_size = inspect_cherenkov_pools(
         cherenkov_pools_path=os.path.join(
             env["work_dir"],
-            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "plenoirf.production.simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument",
             "cherenkov_pools.tar",
         ),
         aperture_bin_edges=np.linspace(-50, 50, 51),

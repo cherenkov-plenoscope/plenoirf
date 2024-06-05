@@ -421,7 +421,7 @@ def run_job_in_dir(job, work_dir):
             opj(env["run_id_str"], base + ".gz"),
         )
         base = opj(
-            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "plenoirf.production.simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument",
             "cherenkov_pools.debug.tar",
         )
         zip_write_gz(

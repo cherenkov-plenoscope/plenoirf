@@ -73,7 +73,7 @@ def inspect_particle_pool(evttab, env, logger):
             ppp = init_particlepool_record(uid=uid)
 
             core = record_by_uid(
-                dynamicsizerecarray=evttab["core"],
+                dynamicsizerecarray=evttab["groundgrid_result"],
                 uid=uid,
             )
 
