@@ -246,9 +246,6 @@ def bin_photon_assignment_to_array(
     return out
 
 
-import sys
-
-
 def read_histogram2d_from_path(path):
     with open(path, "rb") as f:
         arr = fread_histogram2d(fileobj=f)
@@ -336,6 +333,27 @@ def tar_make_zero_block():
     return 512 * b"\0"
 
 
+def tar_read_data(fileobj, size):
+    num_blocks = (size // 512)
+    if size > num_blocks * 512:
+        num_blocks += 1
+
+    if num_blocks == 0:
+        return b""
+    else:
+        buff = fileobj.read(num_blocks * 512)
+        data = buff[0:size]
+        return data
+
+
+def tar_read_header(fileobj):
+    return tarfile.TarInfo.frombuf(
+        fileobj.read(512),
+        encoding=tarfile.ENCODING,
+        errors="surrogateescape",
+    )
+
+
 class GGH:
     def __init__(self):
         self.merlict_ground_grid_path = configfile.read()["ground_grid"]
@@ -346,6 +364,7 @@ class GGH:
         )
 
     def init_groundgrid(self, groundgrid):
+        self.groundgrid_num_bins_each_axis = int(groundgrid["num_bins_each_axis"])
         self.process.stdin.write(
             tar_make_groundgrid_init_txt(groundgrid=groundgrid)
         )
@@ -359,12 +378,37 @@ class GGH:
     def get_histogram(self):
         self.process.stdin.write(tar_make_export_txt())
         self.process.stdin.flush()
-        return fread_histogram2d(fileobj=self.process.stdout)
+        info = tar_read_header(fileobj=self.process.stdout)
+        assert info.name == "histogram.int32_int32_float64"
+        buff = tar_read_data(fileobj=self.process.stdout, size=info.size)
+        hist = np.frombuffer(buff, dtype=make_histogram2d_dtype())
+        assert_histogram_in_limits(
+            hist=hist,
+            num_bins_each_axis=self.groundgrid_num_bins_each_axis,
+        )
+        return hist
 
     def close(self):
         NUM_ZERO_BLOCKS_AT_END_OF_TAR = 2
         for i in range(NUM_ZERO_BLOCKS_AT_END_OF_TAR):
             self.process.stdin.write(tar_make_zero_block())
         self.process.stdin.flush()
+
+        for i in range(NUM_ZERO_BLOCKS_AT_END_OF_TAR):
+            z = self.process.stdout.read(512)
+            assert z == 512 * b"\x00"
+
         self.process.wait()
         assert self.process.returncode == 0
+
+
+def assert_histogram_in_limits(hist, num_bins_each_axis):
+    num = num_bins_each_axis
+    if any(hist["x_bin"] < 0) or any(hist["x_bin"] >= num):
+        raise AssertionError(
+            "merlict_c89 ground_grid_main hist x_bin out of range"
+        )
+    if any(hist["y_bin"] < 0) or any(hist["y_bin"] >= num):
+        raise AssertionError(
+            "merlict_c89 ground_grid_main hist y_bin out of range"
+        )
