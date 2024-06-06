@@ -334,7 +334,7 @@ def tar_make_zero_block():
 
 
 def tar_read_data(fileobj, size):
-    num_blocks = (size // 512)
+    num_blocks = size // 512
     if size > num_blocks * 512:
         num_blocks += 1
 
@@ -364,7 +364,9 @@ class GGH:
         )
 
     def init_groundgrid(self, groundgrid):
-        self.groundgrid_num_bins_each_axis = int(groundgrid["num_bins_each_axis"])
+        self.groundgrid_num_bins_each_axis = int(
+            groundgrid["num_bins_each_axis"]
+        )
         self.process.stdin.write(
             tar_make_groundgrid_init_txt(groundgrid=groundgrid)
         )

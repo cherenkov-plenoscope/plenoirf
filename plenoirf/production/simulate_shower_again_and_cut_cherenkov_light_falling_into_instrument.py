@@ -156,6 +156,8 @@ def stage_two(
                 corsika_primary_steering=corsika_primary_steering,
             )
 
+            logger.debug(xml("EventTime", uid=uid["uid_str"], status="start."))
+
             evttab["instrument_pointing"].append_record(
                 make_instrument_pointing_record(
                     uid=uid, instrument_pointings=instrument_pointings
@@ -173,6 +175,14 @@ def stage_two(
 
             cherenkovmd5 = hashlib.md5()
             if uid["uid"] in evttab_groundgrid_result_by_uid:
+                logger.debug(
+                    xml(
+                        "EventTime",
+                        uid=uid["uid_str"],
+                        status="extract cherenkov light.",
+                    )
+                )
+
                 groundgrid_result = evttab_groundgrid_result_by_uid[uid["uid"]]
                 cherenkovsizepartstats = (
                     cherenkov_bunch_storage.CherenkovSizeStatistics()
@@ -242,12 +252,21 @@ def stage_two(
                 )
 
             else:
+                logger.debug(
+                    xml(
+                        "EventTime",
+                        uid=uid["uid_str"],
+                        status="discard cherenkov light.",
+                    )
+                )
                 for cherenkov_block in cherenkov_block_reader:
                     cherenkovmd5.update(cherenkov_block.tobytes())
 
             assert (
                 cherenkovpools_md5[uid["uid_str"]] == cherenkovmd5.hexdigest()
-            )
+            ), "Expected md5 sum of cherenkov light to be equal."
+
+            logger.debug(xml("EventTime", uid=uid["uid_str"], status="stop."))
 
     return evttab
 

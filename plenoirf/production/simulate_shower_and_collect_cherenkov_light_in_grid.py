@@ -125,6 +125,10 @@ def stage_one(
                     corsika_primary_steering=corsika_primary_steering,
                 )
 
+                logger.debug(
+                    xml("EventTime", uid=uid["uid_str"], status="start.")
+                )
+
                 evttab["primary"].append_record(
                     make_primary_record(
                         uid=uid,
@@ -151,6 +155,14 @@ def stage_one(
                     )
                 )
 
+                logger.debug(
+                    xml(
+                        "EventTime",
+                        uid=uid["uid_str"],
+                        status="cherenkov production start ...",
+                    )
+                )
+
                 cherenkovmd5 = hashlib.md5()
                 cherenkovsizestats = (
                     cherenkov_bunch_storage.CherenkovSizeStatistics()
@@ -173,6 +185,14 @@ def stage_one(
                         cherenkov_bunches=cherenkov_block
                     )
 
+                logger.debug(
+                    xml(
+                        "EventTime",
+                        uid=uid["uid_str"],
+                        status="cherenkov production done.",
+                    )
+                )
+
                 cherenkovpools_md5[uid["uid_str"]] = cherenkovmd5.hexdigest()
 
                 cherenkovsize_rec = cherenkovsizestats.make_record()
@@ -180,6 +200,14 @@ def stage_one(
                 evttab["cherenkovsize"].append_record(cherenkovsize_rec)
 
                 if cherenkovsize_rec["num_bunches"] > 0:
+                    logger.debug(
+                        xml(
+                            "EventTime",
+                            uid=uid["uid_str"],
+                            status="has cherenkov light.",
+                        )
+                    )
+
                     cherenkovpool_rec = cherenkovpoolstats.make_record()
                     cherenkovpool_rec.update(uid["record"])
                     evttab["cherenkovpool"].append_record(cherenkovpool_rec)
@@ -195,6 +223,14 @@ def stage_one(
                     )
 
                     if groundgrid_result["choice"]:
+                        logger.debug(
+                            xml(
+                                "EventTime",
+                                uid=uid["uid_str"],
+                                status="has grid bins above threshold.",
+                            )
+                        )
+
                         evttab["groundgrid_result"].append_record(
                             make_groundgrid_result_record(
                                 uid=uid,
@@ -214,6 +250,10 @@ def stage_one(
                                 uid=uid,
                                 groundgrid_histogram=groundgrid_histogram,
                             )
+
+                logger.debug(
+                    xml("EventTime", uid=uid["uid_str"], status="stop.")
+                )
 
             GGH.close()
 
