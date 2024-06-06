@@ -77,25 +77,6 @@ def GroundGrid(
     return gg
 
 
-def assign3(
-    groundgrid,
-    cherenkov_bunch_storage_path,
-    threshold_num_photons,
-    prng,
-):
-    groundgrid_histogram = histogram_cherenkov_bunches_into_grid(
-        groundgrid=groundgrid,
-        cherenkov_bunch_storage_path=cherenkov_bunch_storage_path,
-    )
-    groundgrid_result = make_result(
-        groundgrid=groundgrid,
-        groundgrid_histogram=groundgrid_histogram,
-        threshold_num_photons=threshold_num_photons,
-        prng=prng,
-    )
-    return groundgrid_result, groundgrid_histogram
-
-
 def make_result(
     groundgrid,
     groundgrid_histogram,
@@ -141,23 +122,6 @@ def find_bin_idxs_above_or_equal_threshold3(
             bin_idx = (entry["x_bin"], entry["y_bin"])
             bin_idxs[bin_idx] = entry["weight_photons"]
     return bin_idxs
-
-
-def histogram_cherenkov_bunches_into_grid(
-    groundgrid,
-    cherenkov_bunch_storage_path,
-):
-    exe = configfile.read()["ground_grid"]
-
-    with tempfile.TemporaryDirectory() as tmp:
-        cpath = os.path.join(tmp, "config")
-        opath = os.path.join(tmp, "assignment.bin")
-        write_groundgrid_config(path=cpath, groundgrid=groundgrid)
-        rc = subprocess.call([exe, cherenkov_bunch_storage_path, opath, cpath])
-        assert rc == 0
-        hist = read_histogram2d_from_path(path=opath)
-
-    return hist
 
 
 def draw_random_bin_choice3(
@@ -212,63 +176,8 @@ def radii_for_area_power_space(start=1e6, factor=2.0, num_bins=16):
     return np.array(radii)
 
 
-def bin_photon_assignment_to_array_roi(
-    bin_photon_assignment, x_bin, y_bin, r_bin, dtype=np.float32
-):
-    x_bin = int(x_bin)
-    y_bin = int(y_bin)
-    r_bin = int(r_bin)
-    assert r_bin >= 0
-    dia = 2 * r_bin + 1
-    out = np.zeros(shape=(dia, dia), dtype=dtype)
-    for bin_idx in bin_photon_assignment:
-        _x = int(bin_idx[0])
-        _y = int(bin_idx[1])
-        ox = _x - x_bin + r_bin
-        if 0 <= ox < dia:
-            oy = _y - y_bin + r_bin
-            if 0 <= oy < dia:
-                summed_weights = bin_photon_assignment[bin_idx][1]
-                i = summed_weights
-                out[ox, oy] = i
-    return out
-
-
-def bin_photon_assignment_to_array(
-    bin_photon_assignment, num_bins_each_axis, dtype=np.float32
-):
-    dia = num_bins_each_axis
-    out = np.zeros(shape=(dia, dia), dtype=dtype)
-    for bin_idx in bin_photon_assignment:
-        x, y = bin_idx
-        summed_weights = bin_photon_assignment[bin_idx][1]
-        out[x, y] = summed_weights
-    return out
-
-
-def read_histogram2d_from_path(path):
-    with open(path, "rb") as f:
-        arr = fread_histogram2d(fileobj=f)
-    return arr
-
-
-def fread_histogram2d(fileobj):
-    entry_size = np.uint64(4 + 4 + 8)
-    entry_dtype = make_histogram2d_dtype()
-    num_entries = np.frombuffer(fileobj.read(8), dtype="u8")[0]
-    size = num_entries * entry_size
-    arr = np.frombuffer(fileobj.read(size), dtype=entry_dtype)
-    return arr
-
-
 def make_histogram2d_dtype():
     return [("x_bin", "i4"), ("y_bin", "i4"), ("weight_photons", "f8")]
-
-
-def write_groundgrid_config(path, groundgrid):
-    M2CM = 1e2
-    with open(path, "wb") as f:
-        f.write(make_groundgrid_config_bytes(groundgrid=groundgrid))
 
 
 def make_groundgrid_config_bytes(groundgrid):
