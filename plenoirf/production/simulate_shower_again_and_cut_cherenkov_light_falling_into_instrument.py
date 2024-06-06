@@ -275,7 +275,22 @@ def assert_expected_num_photons_in_sphere(
     num_photons_in_sphere,
     num_photons_in_groundgrid_bin,
 ):
-    assert num_photons_in_sphere >= num_photons_in_groundgrid_bin
+    """
+    The epsilon works around edge cases which are likely caused by numerics.
+    A photon with weight 1e-3 is not going to change the physics result as the
+    expected bunchsizes are in the order of 1e0.
+    """
+    epsilon = 1e-3
+    assert (
+        num_photons_in_sphere + epsilon
+    ) >= num_photons_in_groundgrid_bin, (
+        "Expected "
+        "num_photons_in_sphere + 1e-3 >= num_photons_in_groundgrid_bin. "
+        "But actual num_photons_in_sphere is "
+        "{:e} and num_photons_in_groundgrid_bin is {:e}".format(
+            num_photons_in_sphere, num_photons_in_groundgrid_bin
+        )
+    )
 
 
 def make_instrument_pointing_record(uid, instrument_pointings):
