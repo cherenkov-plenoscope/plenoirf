@@ -86,6 +86,12 @@ eye_outer_radius_m = (
 
 ROI_RADIUS = 0.35
 
+lixel_polygons = pl.light_field_geometry.init_lixel_polygons(
+    lixel_positions_x=light_field_geometry.lixel_positions_x,
+    lixel_positions_y=light_field_geometry.lixel_positions_y,
+    lixel_outer_radius=light_field_geometry.lixel_outer_radius,
+)
+
 for pixel in pixels:
     fig = seb.figure(style={"rows": 360, "cols": 360, "fontsize": 0.7})
     ax = seb.add_axes(fig=fig, span=[0.0, 0.0, 1, 1], style=AXES_STYLE)
@@ -101,7 +107,7 @@ for pixel in pixels:
     )
 
     pl.plot.light_field_geometry.ax_add_polygons_with_colormap(
-        polygons=light_field_geometry.lixel_polygons,
+        polygons=lixel_polygons,
         I=pixel["photosensor_mask"],
         ax=ax,
         cmap="binary",
@@ -158,7 +164,7 @@ for pixel in pixels:
     overview_photosensor_mask[pixel["photosensor_ids"]] = True
 
 pl.plot.light_field_geometry.ax_add_polygons_with_colormap(
-    polygons=light_field_geometry.lixel_polygons,
+    polygons=lixel_polygons,
     I=overview_photosensor_mask,
     ax=ax,
     cmap="binary",

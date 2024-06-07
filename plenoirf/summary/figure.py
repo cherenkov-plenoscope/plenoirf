@@ -98,7 +98,12 @@ def position_of_eye(light_field_geometry, eye_id):
     num_pax = light_field_geometry.number_paxel
     start = eye_id * num_pax
     stop = (eye_id + 1) * num_pax
-    poly = light_field_geometry.lixel_polygons[start:stop]
+    poly = plenopy.light_field_geometry.init_lixel_polygons(
+        lixel_positions_x=light_field_geometry.lixel_positions_x,
+        lixel_positions_y=light_field_geometry.lixel_positions_y,
+        lixel_outer_radius=light_field_geometry.lixel_outer_radius,
+    )
+    poly = poly[start:stop]
     poly = np.array(poly)
     pp = []
     for pol in poly:

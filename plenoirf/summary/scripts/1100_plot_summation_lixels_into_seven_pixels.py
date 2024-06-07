@@ -72,6 +72,12 @@ poseye = irf.summary.figure.positions_of_eyes_in_roi(
 
 AXES_STYLE = {"spines": ["left", "bottom"], "axes": ["x", "y"], "grid": False}
 
+lixel_polygons = pl.light_field_geometry.init_lixel_polygons(
+    lixel_positions_x=light_field_geometry.lixel_positions_x,
+    lixel_positions_y=light_field_geometry.lixel_positions_y,
+    lixel_outer_radius=light_field_geometry.lixel_outer_radius,
+)
+
 for obj, object_distance in enumerate(object_distances):
     fig = seb.figure(style={"rows": 960, "cols": 1280, "fontsize": 1.244})
     ax = seb.add_axes(
@@ -108,7 +114,7 @@ for obj, object_distance in enumerate(object_distances):
         additional_colored_lixels = np.zeros(
             light_field_geometry.number_lixel, dtype=bool
         )
-        for j, poly in enumerate(light_field_geometry.lixel_polygons):
+        for j, poly in enumerate(lixel_polygons):
             if pixel_id in lixel_to_pixel[j]:
                 valid_polygons.append(poly)
                 additional_colored_lixels[j] = True
@@ -125,7 +131,7 @@ for obj, object_distance in enumerate(object_distances):
 
     not_colored = np.invert(colored_lixels)
     not_colored_polygons = []
-    for j, poly in enumerate(light_field_geometry.lixel_polygons):
+    for j, poly in enumerate(lixel_polygons):
         if not_colored[j]:
             if lixel_in_region_of_interest(
                 light_field_geometry=light_field_geometry,
