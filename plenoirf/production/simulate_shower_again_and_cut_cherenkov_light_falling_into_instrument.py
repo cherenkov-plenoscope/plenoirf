@@ -277,15 +277,17 @@ def assert_expected_num_photons_in_sphere(
 ):
     """
     The epsilon works around edge cases which are likely caused by numerics.
-    A photon with weight 1e-3 is not going to change the physics result as the
-    expected bunchsizes are in the order of 1e0.
+    A relative ratio of (1.0 + 1e-3) does not make a significant difference
+    in the physics.
+    Apparently, adding 1e-3 was not enough due to rounding issues for sizes
+    in the larger than 1e4.
     """
     epsilon = 1e-3
     assert (
-        num_photons_in_sphere + epsilon
+        num_photons_in_sphere * (1.0 + epsilon)
     ) >= num_photons_in_groundgrid_bin, (
         "Expected "
-        "num_photons_in_sphere + 1e-3 >= num_photons_in_groundgrid_bin. "
+        "num_photons_in_sphere * (1 + 1e-3) >= num_photons_in_groundgrid_bin. "
         "But actual num_photons_in_sphere is "
         "{:e} and num_photons_in_groundgrid_bin is {:e}".format(
             num_photons_in_sphere, num_photons_in_groundgrid_bin
