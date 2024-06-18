@@ -24,6 +24,7 @@ from . import configfile
 from . import seeding
 from . import logging
 from . import benchmarking
+from . import reduction
 
 import os
 import numpy as np
