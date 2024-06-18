@@ -322,3 +322,11 @@ def benchmark(pool, out_path, num_runs):
     with json_utils.lines.open(out_path, mode="w") as jlout:
         for result in results:
             jlout.write(result)
+
+
+def reduce(plenoirf_dir, config=None, pool=None):
+    if pool is None:
+        pool = utils.SerialprocessingPool()
+
+    jobs = reduction.make_jobs(plenoirf_dir=plenoirf_dir, config=config)
+    _ = pool.map(reduction.run_job, jobs)
