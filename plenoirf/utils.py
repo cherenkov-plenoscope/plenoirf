@@ -304,3 +304,26 @@ def zipfile_write_dir_recursively(zipfile, filename, arcname):
             relname = os.path.relpath(os.path.join(root, file), filename)
             aname = os.path.join(arcname, relname)
             zipfile.write(filename=fname, arcname=aname)
+
+
+class SerialprocessingPool:
+    def __init__(self):
+        pass
+
+    def map(self, func, iterable):
+        results = []
+        for item in iterable:
+            result = func(item)
+        results.append(result)
+        return results
+
+    def starmap(self, func, iterable):
+        results = []
+        for item in iterable:
+            result = func(*item)
+        results.append(result)
+        return results
+
+    def __repr__(self):
+        out = "{:s}()".format(self.__class__.__name__)
+        return out
