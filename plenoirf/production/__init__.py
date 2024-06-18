@@ -274,6 +274,14 @@ def run_job_in_dir(job, work_dir):
             evttab=evttab,
             path=opj(
                 env["work_dir"],
+                "plenoirf.production.simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument",
+                "event_table.tar",
+            ),
+        )
+        evttab = event_table.add_levels_from_path(
+            evttab=evttab,
+            path=opj(
+                env["work_dir"],
                 "plenoirf.production.inspect_particle_pool",
                 "event_table.tar",
             ),
