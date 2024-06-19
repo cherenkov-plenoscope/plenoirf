@@ -7,34 +7,30 @@ import os
 import json_utils
 import magnetic_deflection
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
-
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
-
-os.makedirs(pa["out_dir"], exist_ok=True)
+paths = irf.summary.paths_from_argv(sys.argv)
+res = irf.summary.Resources.from_argv(sys.argv)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 raw_cosmic_ray_fluxes = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0010_flux_of_cosmic_rays")
+    os.path.join(paths["analysis_dir"], "0010_flux_of_cosmic_rays")
 )
 
 energy_bin = json_utils.read(
-    os.path.join(pa["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["interpolation"]
 
 deflection_table = magnetic_deflection.read_deflection(
-    work_dir=os.path.join(pa["run_dir"], "magnetic_deflection"),
+    work_dir=os.path.join(paths["plenoirf_dir"], "magnetic_deflection"),
 )
 
-SITES = irf_config["config"]["sites"]
-PARTICLES = irf_config["config"]["particles"]
-COSMIC_RAYS = irf.utils.filter_particles_with_electric_charge(PARTICLES)
+SITES = res.SITES
+PARTICLES = res.PARTICLES
+COSMIC_RAYS = res.COSMIC_RAYS
 
-fraction_of_flux_below_geomagnetic_cutoff = sum_config["airshower_flux"][
+fraction_of_flux_below_geomagnetic_cutoff = res.analysis["airshower_flux"][
     "fraction_of_flux_below_geomagnetic_cutoff"
 ]
-relative_uncertainty_below_geomagnetic_cutoff = sum_config["airshower_flux"][
+relative_uncertainty_below_geomagnetic_cutoff = res.analysis["airshower_flux"][
     "relative_uncertainty_below_geomagnetic_cutoff"
 ]
 
@@ -114,7 +110,7 @@ for sk in SITES:
 # ------
 for sk in SITES:
     for pk in COSMIC_RAYS:
-        sk_pk_dir = os.path.join(pa["out_dir"], sk, pk)
+        sk_pk_dir = os.path.join(paths["out_dir"], sk, pk)
         os.makedirs(sk_pk_dir, exist_ok=True)
         json_utils.write(
             os.path.join(sk_pk_dir, "differential_flux.json"),

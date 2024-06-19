@@ -16,6 +16,7 @@ import json_utils
 import atmospheric_cherenkov_response
 import merlict_development_kit_python
 
+from .. import utils
 # from .. import features
 # from .. import reconstruction
 # from .. import analysis
@@ -99,6 +100,14 @@ class Resources:
         if not hasattr(self, "_PARTICLES"):
             self._PARTICLES = _init_PARTICLES(config=self.config)
         return self._PARTICLES
+
+    @property
+    def COSMIC_RAYS(self):
+        if not hasattr(self, "_COSMIC_RAYS"):
+            self._COSMIC_RAYS = utils.filter_particles_with_electric_charge(
+                self.PARTICLES
+            )
+        return self._COSMIC_RAYS
 
     @property
     def analysis(self):
