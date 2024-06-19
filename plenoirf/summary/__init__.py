@@ -26,7 +26,8 @@ from .. import outer_telescope_array
 from .. import configuration
 from . import figure
 
-# from .cosmic_flux import make_gamma_ray_reference_flux
+from .cosmic_flux import make_gamma_ray_reference_flux
+
 # from .scripts_multiprocessing import run_parallel
 
 
