@@ -24,6 +24,13 @@ def read(plenoirf_dir):
     return cfg
 
 
+def read_if_None(plenoirf_dir, config):
+    if config:
+        return config
+    else:
+        return read(plenoirf_dir)
+
+
 def write_default(plenoirf_dir):
     pdir = plenoirf_dir
     os.makedirs(opj(pdir, "config"), exist_ok=False)

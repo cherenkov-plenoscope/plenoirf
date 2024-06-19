@@ -1,17 +1,20 @@
-# import os
+import os
+
 # import copy
 # from os.path import join as opj
 # import pandas
 import numpy as np
 
-# from importlib import resources as importlib_resources
+from importlib import resources as importlib_resources
+
 # import subprocess
 import sparse_numeric_table as snt
 
-# import glob
-# import json_utils
-# import atmospheric_cherenkov_response
-# import merlict_development_kit_python
+import glob
+import json_utils
+
+import atmospheric_cherenkov_response
+import merlict_development_kit_python
 
 # from .. import features
 # from .. import reconstruction
@@ -19,90 +22,202 @@ import sparse_numeric_table as snt
 # from .. import table
 # from .. import provenance
 # from .. import production
-# from .. import outer_telescope_array
+from .. import outer_telescope_array
+from .. import configuration
 from . import figure
 
 # from .cosmic_flux import make_gamma_ray_reference_flux
 # from .scripts_multiprocessing import run_parallel
 
 
-def init(run_dir):
-    summary_config = _guess_summary_config(run_dir)
-
-    summary_dir = os.path.join(run_dir, "summary")
-    os.makedirs(summary_dir, exist_ok=True)
-
-    with open(opj(summary_dir, "summary_config.json"), "wt") as fout:
-        fout.write(json_utils.dumps(summary_config, indent=4))
-
-
-def argv_since_py(sys_argv):
-    argv = []
-    for arg in sys_argv:
-        if len(argv) > 0:
-            argv.append(arg)
+def argv_since_py(argv):
+    _argv = []
+    for arg in argv:
+        if len(_argv) > 0:
+            _argv.append(arg)
         if ".py" in arg:
-            argv.append(arg)
-    return argv
+            _argv.append(arg)
+    return _argv
 
 
 def paths_from_argv(argv):
-    assert len(argv) == 2
-    run_dir = argv[1]
-    summary_dir = os.path.join(run_dir, "summary")
+    argv = argv_since_py(argv)
+
+    assert len(argv) == 3
+    plenoirf_dir = argv[1]
+    instrument_key = argv[2]
+    analysis_dir = os.path.join(plenoirf_dir, "analysis", instrument_key)
     script_name = str.split(os.path.basename(argv[0]), ".")[0]
     return {
-        "run_dir": run_dir,
+        "plenoirf_dir": plenoirf_dir,
+        "instrument_key": instrument_key,
         "script_name": script_name,
-        "summary_dir": summary_dir,
-        "out_dir": os.path.join(summary_dir, script_name),
+        "analysis_dir": analysis_dir,
+        "out_dir": os.path.join(analysis_dir, script_name),
     }
+
+
+class Resources:
+    """
+    Lazy
+    """
+
+    def __init__(self, plenoirf_dir, instrument_key):
+        self.instrument_key = instrument_key
+        self.plenoirf_dir = plenoirf_dir
+
+    @classmethod
+    def from_argv(cls, argv):
+        argv = argv_since_py(argv)
+        assert len(argv) == 3
+        return cls(plenoirf_dir=argv[1], instrument_key=argv[2])
+
+    @property
+    def config(self):
+        if not hasattr(self, "_config"):
+            self._config = configuration.read(plenoirf_dir=self.plenoirf_dir)
+        return self._config
+
+    @property
+    def instrument(self):
+        if not hasattr(self, "_instrument"):
+            self._instrument = read_instrument_config(
+                plenoirf_dir=self.plenoirf_dir,
+                instrument_key=self.instrument_key,
+            )
+        return self._instrument
+
+    @property
+    def SITES(self):
+        if not hasattr(self, "_SITES"):
+            self._SITES = _init_SITES(config=self.config)
+        return self._SITES
+
+    @property
+    def PARTICLES(self):
+        if not hasattr(self, "_PARTICLES"):
+            self._PARTICLES = _init_PARTICLES(config=self.config)
+        return self._PARTICLES
+
+    @property
+    def analysis(self):
+        if not hasattr(self, "_analysis"):
+            path = os.path.join(
+                self.plenoirf_dir,
+                "analysis",
+                self.instrument_key,
+                "analysis_config.json",
+            )
+            with open(path, "rt") as fin:
+                self._analysis = json_utils.loads(fin.read())
+        return self._analysis
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}()"
+
+
+def _init_SITES(config):
+    SITES = {}
+    for sk in config["sites"]["instruemnt_response"]:
+        SITES[sk] = atmospheric_cherenkov_response.sites.init(sk)
+    return SITES
+
+
+def _init_PARTICLES(config):
+    PARTICLES = {}
+    for pk in config["particles"]:
+        PARTICLES[pk] = atmospheric_cherenkov_response.particles.init(pk)
+    return PARTICLES
+
+
+def paths_and_config_from_argv(argv):
+    paths = paths_from_argv(argv)
+    config = read_analysis_config(
+        plenoirf_dir=paths["plenoirf_dir"],
+        instrument_key=paths["instrument_key"],
+    )
+    return paths, config
+
+
+def read_analysis_config(plenoirf_dir, instrument_key):
+    out = {}
+    out["response"] = configuration.read(plenoirf_dir)
+    out["instrument"] = read_instrument_config(
+        plenoirf_dir=plenoirf_dir,
+        instrument_key=instrument_key,
+    )
+    out["analysis"] = read_summary_config(
+        summary_dir=os.path.join(plenoirf_dir, "analysis", instrument_key)
+    )
+    return out
+
+
+def get_PARTICLES(analysis_config):
+    particles = {}
+    for particle_key in analysis_config["response"]["particles"]:
+        particles[
+            particle_key
+        ] = atmospheric_cherenkov_response.particles.init(particle_key)
+    return particles
+
+
+def get_SITES(analysis_config):
+    sites = {}
+    for site_key in analysis_config["response"]["sites"][
+        "instruemnt_response"
+    ]:
+        sites[site_key] = atmospheric_cherenkov_response.sites.init(site_key)
+    return sites
+
+
+def init(plenoirf_dir, config=None):
+    config = configuration.read_if_None(plenoirf_dir, config=config)
+
+    analysis_dir = os.path.join(plenoirf_dir, "analysis")
+    os.makedirs(analysis_dir, exist_ok=True)
+
+    for instrument_key in config["instruments"]:
+        summary_instrument_dir = os.path.join(analysis_dir, instrument_key)
+
+        os.makedirs(summary_instrument_dir, exist_ok=True)
+        analysis_config = _guess_analysis_config_for_instrument(
+            plenoirf_dir=plenoirf_dir,
+            instrument_key=instrument_key,
+            config=config,
+        )
+
+        with open(
+            os.path.join(summary_instrument_dir, "analysis_config.json"), "wt"
+        ) as fout:
+            fout.write(json_utils.dumps(analysis_config, indent=4))
 
 
 def production_name_from_run_dir(path):
     return os.path.basename(os.path.normpath(path))
 
 
-def read_summary_config(summary_dir):
-    with open(opj(summary_dir, "summary_config.json"), "rt") as fin:
-        config = json_utils.loads(fin.read())
-    return config
+def read_instrument_config(plenoirf_dir, instrument_key):
+    instrument_scenery_path = os.path.join(
+        plenoirf_dir,
+        "plenoptics",
+        "instruments",
+        instrument_key,
+        "light_field_geometry",
+        "input",
+        "scenery",
+        "scenery.json",
+    )
 
-
-def read_instrument_response_config(run_dir):
-    with open(opj(run_dir, "input", "config.json"), "rt") as f:
-        config = json_utils.loads(f.read())
     light_field_sensor_geometry = merlict_development_kit_python.plenoscope_propagator.read_plenoscope_geometry(
-        opj(run_dir, "input", "scenery", "scenery.json")
+        instrument_scenery_path
     )
 
-    grid_geometry = atmospheric_cherenkov_response.grid.init_geometry(
-        instrument_aperture_outer_diameter=(
-            2.0
-            * light_field_sensor_geometry[
-                "expected_imaging_system_aperture_radius"
-            ]
-        ),
-        bin_width_overhead=config["grid"]["bin_width_overhead"],
-        instrument_field_of_view_outer_radius_deg=(
-            0.5 * light_field_sensor_geometry["max_FoV_diameter_deg"]
-        ),
-        instrument_pointing_direction=[0, 0, 1],
-        field_of_view_overhead=config["grid"]["field_of_view_overhead"],
-        num_bins_radius=config["grid"]["num_bins_radius"],
-    )
-
-    with open(opj(run_dir, "input", "scenery", "scenery.json"), "rt") as f:
+    with open(instrument_scenery_path, "rt") as f:
         plenoscope_scenery = json_utils.loads(f.read())
-    _prop_cfg_path = opj(run_dir, "input", "merlict_propagation_config.json")
-    with open(_prop_cfg_path, "rt") as f:
-        merlict_propagation_config = json_utils.loads(f.read())
+
     bundle = {
-        "config": config,
         "light_field_sensor_geometry": light_field_sensor_geometry,
-        "plenoscope_scenery": plenoscope_scenery,
-        "grid_geometry": grid_geometry,
-        "merlict_propagation_config": merlict_propagation_config,
+        "scenery": plenoscope_scenery,
     }
     return bundle
 
@@ -144,25 +259,27 @@ def _make_script_abspaths():
     return out_order
 
 
-def _estimate_num_events_past_trigger(run_dir, irf_config):
-    irf_config = read_instrument_response_config(run_dir=run_dir)
+def _estimate_num_events_past_trigger_for_instrument(
+    plenoirf_dir, instrument_key, config=None
+):
+    config = configuration.read_if_None(plenoirf_dir, config=config)
 
-    num_events_past_trigger = 10 * 1000
-    for site_key in irf_config["config"]["sites"]:
-        for particle_key in irf_config["config"]["particles"]:
-            event_table = snt.read(
+    num = float("inf")
+    for site_key in config["sites"]["instruemnt_response"]:
+        for particle_key in config["particles"]:
+            evttab = snt.read(
                 path=os.path.join(
-                    run_dir,
-                    "event_table",
+                    plenoirf_dir,
+                    "response",
+                    instrument_key,
                     site_key,
                     particle_key,
                     "event_table.tar",
-                ),
-                structure=table.STRUCTURE,
+                )
             )
-            if event_table["pasttrigger"].shape[0] < num_events_past_trigger:
-                num_events_past_trigger = event_table["pasttrigger"].shape[0]
-    return num_events_past_trigger
+            if evttab["pasttrigger"].shape[0] < num:
+                num = evttab["pasttrigger"].shape[0]
+    return num
 
 
 def _guess_num_direction_bins(num_events):
@@ -193,7 +310,7 @@ def make_ratescan_trigger_thresholds(
     tt = tt.tolist()
     tt = tt + [collection_trigger_threshold]
     tt = tt + [analysis_trigger_threshold]
-    tt = np.array(tt, dtype=np.int)
+    tt = np.array(tt, dtype=np.int64)
     tt = set(tt)
     tt = list(tt)
     tt = np.sort(tt)
@@ -276,22 +393,31 @@ def guess_num_offregions(
     return num
 
 
-def _guess_summary_config(run_dir):
-    irf_config = read_instrument_response_config(run_dir=run_dir)
+def _guess_analysis_config_for_instrument(
+    plenoirf_dir, instrument_key, config=None
+):
+    config = configuration.read_if_None(plenoirf_dir, config=config)
 
-    num_events_past_collection_trigger = _estimate_num_events_past_trigger(
-        run_dir=run_dir, irf_config=irf_config
+    ins_config = read_instrument_config(
+        plenoirf_dir=plenoirf_dir,
+        instrument_key=instrument_key,
     )
 
-    collection_trigger_threshold_pe = irf_config["config"]["sum_trigger"][
-        "threshold_pe"
-    ]
+    num_events_past_collection_trigger = (
+        _estimate_num_events_past_trigger_for_instrument(
+            plenoirf_dir=plenoirf_dir,
+            instrument_key=instrument_key,
+            config=config,
+        )
+    )
+
+    collection_trigger_threshold_pe = config["sum_trigger"]["threshold_pe"]
     analysis_trigger_threshold_pe = int(
         np.round(1.09 * collection_trigger_threshold_pe)
     )
 
     fov_radius_deg = (
-        0.5 * irf_config["light_field_sensor_geometry"]["max_FoV_diameter_deg"]
+        0.5 * ins_config["light_field_sensor_geometry"]["max_FoV_diameter_deg"]
     )
 
     _onoff = {
@@ -419,15 +545,15 @@ def _guess_summary_config(run_dir):
     cfg["plot"]["particle_colors"] = figure.PARTICLE_COLORS
 
     cfg["trigger"] = {}
-    SITES = irf_config["config"]["sites"]
-    for sk in irf_config["config"]["sites"]:
+    SITES = _init_SITES(config=config)
+    for sk in SITES:
         cfg["trigger"][sk] = _guess_trigger(
             collection_trigger_threshold_pe=collection_trigger_threshold_pe,
             analysis_trigger_threshold_pe=analysis_trigger_threshold_pe,
             site_altitude_asl_m=SITES[sk]["observation_level_asl_m"],
-            trigger_foci_object_distamces_m=irf_config["config"][
-                "sum_trigger"
-            ]["object_distances_m"],
+            trigger_foci_object_distamces_m=config["sum_trigger"][
+                "object_distances_m"
+            ],
             trigger_accepting_altitude_asl_m=19856,
             trigger_rejecting_altitude_asl_m=13851,
         )
