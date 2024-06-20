@@ -43,23 +43,6 @@ def argv_since_py(argv):
     return _argv
 
 
-def paths_from_argv(argv):
-    argv = argv_since_py(argv)
-
-    assert len(argv) == 3
-    plenoirf_dir = argv[1]
-    instrument_key = argv[2]
-    analysis_dir = os.path.join(plenoirf_dir, "analysis", instrument_key)
-    script_name = str.split(os.path.basename(argv[0]), ".")[0]
-    return {
-        "plenoirf_dir": plenoirf_dir,
-        "instrument_key": instrument_key,
-        "script_name": script_name,
-        "analysis_dir": analysis_dir,
-        "out_dir": os.path.join(analysis_dir, script_name),
-    }
-
-
 class Resources:
     """
     Lazy
@@ -139,15 +122,6 @@ def _init_PARTICLES(config):
     for pk in config["particles"]:
         PARTICLES[pk] = atmospheric_cherenkov_response.particles.init(pk)
     return PARTICLES
-
-
-def paths_and_config_from_argv(argv):
-    paths = paths_from_argv(argv)
-    config = read_analysis_config(
-        plenoirf_dir=paths["plenoirf_dir"],
-        instrument_key=paths["instrument_key"],
-    )
-    return paths, config
 
 
 def read_analysis_config(plenoirf_dir, instrument_key):
