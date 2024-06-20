@@ -5,44 +5,35 @@ import sparse_numeric_table as snt
 import os
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-
+paths = irf.summary.paths_from_argv(sys.argv)
+res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 
-max_relative_leakage = sum_config["quality"]["max_relative_leakage"]
-min_reconstructed_photons = sum_config["quality"]["min_reconstructed_photons"]
+max_relative_leakage = res.analysis["quality"]["max_relative_leakage"]
+min_reconstructed_photons = res.analysis["quality"][
+    "min_reconstructed_photons"
+]
 
-for site_key in irf_config["config"]["sites"]:
-    for particle_key in irf_config["config"]["particles"]:
-        site_particle_dir = os.path.join(
-            paths["out_dir"], site_key, particle_key
-        )
-        os.makedirs(site_particle_dir, exist_ok=True)
+for pk in res.PARTICLES:
+    pk_dir = os.path.join(paths["out_dir"], pk)
+    os.makedirs(pk_dir, exist_ok=True)
 
-        event_table = snt.read(
-            path=os.path.join(
-                paths["plenoirf_dir"],
-                "event_table",
-                site_key,
-                particle_key,
-                "event_table.tar",
-            ),
-            structure=irf.table.STRUCTURE,
+    event_table = snt.read(
+        path=os.path.join(
+            paths["plenoirf_dir"],
+            "response",
+            res.instrument_key,
+            res.site_key,
+            pk,
+            "event_table.tar",
         )
+    )
 
-        idx_pastquality = irf.analysis.cuts.cut_quality(
-            feature_table=event_table["features"],
-            max_relative_leakage=max_relative_leakage,
-            min_reconstructed_photons=min_reconstructed_photons,
-        )
+    idx_pastquality = irf.analysis.cuts.cut_quality(
+        feature_table=event_table["features"],
+        max_relative_leakage=max_relative_leakage,
+        min_reconstructed_photons=min_reconstructed_photons,
+    )
 
-        json_utils.write(
-            path=os.path.join(site_particle_dir, "idx.json"),
-            out_dict=idx_pastquality,
-        )
+    json_utils.write(os.path.join(pk_dir, "idx.json"), idx_pastquality)
