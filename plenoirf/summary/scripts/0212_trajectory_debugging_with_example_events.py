@@ -13,7 +13,7 @@ argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
 irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["run_dir"]
+    run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
@@ -30,7 +30,7 @@ onreion_config = sum_config["on_off_measuremnent"]["onregion_types"]["large"]
 # READ light-field-geometry
 # =========================
 lfg = pl.LightFieldGeometry(
-    os.path.join(paths["run_dir"], "light_field_geometry")
+    os.path.join(paths["plenoirf_dir"], "light_field_geometry")
 )
 
 fov_radius_deg = np.rad2deg(
@@ -76,7 +76,7 @@ for sk in irf_config["config"]["sites"]:
 
         event_table = snt.read(
             path=os.path.join(
-                paths["run_dir"], "event_table", sk, pk, "event_table.tar"
+                paths["plenoirf_dir"], "event_table", sk, pk, "event_table.tar"
             ),
             structure=irf.table.STRUCTURE,
         )
@@ -128,7 +128,7 @@ def read_shower_maximum_object_distance(
 ):
     event_table = snt.read(
         path=os.path.join(
-            paths["run_dir"],
+            paths["plenoirf_dir"],
             "event_table",
             site_key,
             particle_key,
@@ -158,7 +158,7 @@ for sk in irf_config["config"]["sites"]:
 
         run = pl.photon_stream.loph.LopfTarReader(
             os.path.join(
-                paths["run_dir"],
+                paths["plenoirf_dir"],
                 "event_table",
                 sk,
                 pk,

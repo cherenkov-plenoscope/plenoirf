@@ -18,7 +18,7 @@ seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 light_field_geometry = pl.LightFieldGeometry(
-    os.path.join(paths["run_dir"], "light_field_geometry")
+    os.path.join(paths["plenoirf_dir"], "light_field_geometry")
 )
 
 region_of_interest_on_sensor_plane = {"x": [-0.35, 0.35], "y": [-0.35, 0.35]}

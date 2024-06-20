@@ -19,7 +19,7 @@ AXES_STYLE = {"spines": ["left", "bottom"], "axes": ["x", "y"], "grid": False}
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 light_field_geometry = pl.LightFieldGeometry(
-    os.path.join(paths["run_dir"], "light_field_geometry")
+    os.path.join(paths["plenoirf_dir"], "light_field_geometry")
 )
 
 OBJECT_DISTANCE = 999e3

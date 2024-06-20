@@ -12,7 +12,7 @@ argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
 irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["run_dir"]
+    run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
@@ -184,7 +184,7 @@ for sk in SITES:
     for pk in PARTICLES:
         event_table = snt.read(
             path=os.path.join(
-                paths["run_dir"], "event_table", sk, pk, "event_table.tar"
+                paths["plenoirf_dir"], "event_table", sk, pk, "event_table.tar"
             ),
             structure=irf.table.STRUCTURE,
         )

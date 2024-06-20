@@ -19,7 +19,7 @@ pa = irf.summary.paths_from_argv(argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["run_dir"]
+    run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 
@@ -210,7 +210,7 @@ for sk in SITES:
         particle_frames[pk] = read_event_frame(
             site_key=sk,
             particle_key=pk,
-            run_dir=paths["run_dir"],
+            run_dir=paths["plenoirf_dir"],
             transformed_features_dir=transformed_features_dir,
             passing_trigger=passing_trigger,
             passing_quality=passing_quality,
