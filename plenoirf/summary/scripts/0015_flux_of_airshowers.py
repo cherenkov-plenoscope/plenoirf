@@ -5,7 +5,6 @@ import numpy as np
 import plenoirf as irf
 import os
 import json_utils
-import magnetic_deflection
 
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)

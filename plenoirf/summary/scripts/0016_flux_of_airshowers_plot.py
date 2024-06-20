@@ -7,26 +7,23 @@ import json_utils
 import sebastians_matplotlib_addons as seb
 
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
+paths = irf.summary.paths_from_argv(sys.argv)
+res = irf.summary.Resources.from_argv(sys.argv)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
-os.makedirs(pa["out_dir"], exist_ok=True)
-
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 airshower_fluxes = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0015_flux_of_airshowers")
+    os.path.join(paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 
 energy_bin = json_utils.read(
-    os.path.join(pa["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["interpolation"]
 
-particle_colors = sum_config["plot"]["particle_colors"]
+particle_colors = res.analysis["plot"]["particle_colors"]
 
-for sk in irf_config["config"]["sites"]:
+for sk in res.SITES:
     fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
     ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
     for pk in airshower_fluxes[sk]:
@@ -60,7 +57,7 @@ for sk in irf_config["config"]["sites"]:
     ax.legend()
     fig.savefig(
         os.path.join(
-            pa["out_dir"],
+            paths["out_dir"],
             "{:s}_airshower_differential_flux.jpg".format(sk),
         )
     )
