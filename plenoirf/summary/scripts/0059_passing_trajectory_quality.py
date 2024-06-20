@@ -6,64 +6,53 @@ import sparse_numeric_table as snt
 import os
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
-
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-
+paths = irf.summary.paths_from_argv(sys.argv)
+res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 
-for sk in irf_config["config"]["sites"]:
-    for pk in irf_config["config"]["particles"]:
-        site_particle_dir = os.path.join(paths["out_dir"], sk, pk)
-        os.makedirs(site_particle_dir, exist_ok=True)
+for pk in res.PARTICLES:
+    pk_dir = os.path.join(paths["out_dir"], pk)
+    os.makedirs(pk_dir, exist_ok=True)
 
-        event_table = snt.read(
-            path=os.path.join(
-                paths["plenoirf_dir"], "event_table", sk, pk, "event_table.tar"
+    event_table = snt.read(
+        path=os.path.join(
+            paths["plenoirf_dir"],
+            "response",
+            res.instrument_key,
+            res.site_key,
+            pk,
+            "event_table.tar",
+        )
+    )
+
+    event_frame = irf.reconstruction.trajectory_quality.make_rectangular_table(
+        event_table=event_table,
+    )
+
+    # estimate_quality
+    # ----------------
+
+    quality = irf.reconstruction.trajectory_quality.estimate_trajectory_quality(
+        event_frame=event_frame,
+        quality_features=irf.reconstruction.trajectory_quality.QUALITY_FEATURES,
+    )
+
+    json_utils.write(
+        os.path.join(pk_dir, "trajectory_quality.json"),
+        {
+            "comment": (
+                "Quality of reconstructed trajectory. "
+                "0 is worst, 1 is best."
             ),
-            structure=irf.table.STRUCTURE,
-        )
+            snt.IDX: event_frame[snt.IDX],
+            "unit": "1",
+            "quality": quality,
+        },
+    )
 
-        event_frame = (
-            irf.reconstruction.trajectory_quality.make_rectangular_table(
-                event_table=event_table,
-                plenoscope_pointing=irf_config["config"][
-                    "plenoscope_pointing"
-                ],
-            )
-        )
+    # apply cut
+    # ---------
+    mask = quality >= res.analysis["quality"]["min_trajectory_quality"]
+    idx_passed = event_frame[snt.IDX][mask]
 
-        # estimate_quality
-        # ----------------
-
-        quality = irf.reconstruction.trajectory_quality.estimate_trajectory_quality(
-            event_frame=event_frame,
-            quality_features=irf.reconstruction.trajectory_quality.QUALITY_FEATURES,
-        )
-
-        json_utils.write(
-            os.path.join(site_particle_dir, "trajectory_quality.json"),
-            {
-                "comment": (
-                    "Quality of reconstructed trajectory. "
-                    "0 is worst, 1 is best."
-                ),
-                snt.IDX: event_frame[snt.IDX],
-                "unit": "1",
-                "quality": quality,
-            },
-        )
-
-        # apply cut
-        # ---------
-        mask = quality >= sum_config["quality"]["min_trajectory_quality"]
-        idx_passed = event_frame[snt.IDX][mask]
-
-        json_utils.write(
-            path=os.path.join(site_particle_dir, "idx.json"),
-            out_dict=idx_passed,
-        )
+    json_utils.write(os.path.join(pk_dir, "idx.json"), idx_passed)

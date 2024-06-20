@@ -6,18 +6,28 @@ import airshower_template_generator as atg
 import sparse_numeric_table as snt
 
 
-def make_rectangular_table(event_table, plenoscope_pointing):
+def make_rectangular_table(event_table):
     tab = snt.cut_and_sort_table_on_indices(
         table=event_table,
         common_indices=event_table["reconstructed_trajectory"][snt.IDX],
     )
     df = snt.make_rectangular_DataFrame(tab)
 
+    df["reconstructed_trajectory/r_m"] = np.hypot(
+        df["reconstructed_trajectory/x_m"], df["reconstructed_trajectory/y_m"]
+    )
+
+    df["features/image_half_depth_shift_c"] = np.hypot(
+        df["features/image_half_depth_shift_cx"],
+        df["features/image_half_depth_shift_cy"],
+    )
+
+    """
     cx, cy = analysis.gamma_direction.momentum_to_cx_cy_wrt_aperture(
         momentum_x_GeV_per_c=df["primary/momentum_x_GeV_per_c"],
         momentum_y_GeV_per_c=df["primary/momentum_y_GeV_per_c"],
         momentum_z_GeV_per_c=df["primary/momentum_z_GeV_per_c"],
-        plenoscope_pointing=plenoscope_pointing,
+        plenoscope_pointing=instrument_pointing,
     )
     df["true_trajectory/cx_rad"] = cx
     df["true_trajectory/cy_rad"] = cy
@@ -25,10 +35,6 @@ def make_rectangular_table(event_table, plenoscope_pointing):
     df["true_trajectory/y_m"] = -df["core/core_y_m"]
     df["true_trajectory/r_m"] = np.hypot(
         df["true_trajectory/x_m"], df["true_trajectory/y_m"]
-    )
-
-    df["reconstructed_trajectory/r_m"] = np.hypot(
-        df["reconstructed_trajectory/x_m"], df["reconstructed_trajectory/y_m"]
     )
 
     # w.r.t. source
@@ -52,10 +58,8 @@ def make_rectangular_table(event_table, plenoscope_pointing):
         df["reconstructed_trajectory/cy_rad"] - df["true_trajectory/cy_rad"],
     )
 
-    df["features/image_half_depth_shift_c"] = np.hypot(
-        df["features/image_half_depth_shift_cx"],
-        df["features/image_half_depth_shift_cy"],
-    )
+
+    """
 
     return df.to_records(index=False)
 
