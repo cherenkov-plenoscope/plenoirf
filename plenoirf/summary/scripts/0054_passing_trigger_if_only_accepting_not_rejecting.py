@@ -5,7 +5,7 @@ import sparse_numeric_table as snt
 import os
 import json_utils
 import numpy as np
-import copy
+
 
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
