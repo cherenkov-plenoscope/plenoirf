@@ -135,6 +135,18 @@ class Resources:
                 self._analysis = json_utils.loads(fin.read())
         return self._analysis
 
+    def read_event_table(self, particle_key):
+        return snt.read(
+            path=os.path.join(
+                self.plenoirf_dir,
+                "response",
+                self.instrument_key,
+                self.site_key,
+                particle_key,
+                "event_table.tar",
+            )
+        )
+
     def __repr__(self):
         return f"{self.__class__.__name__}()"
 

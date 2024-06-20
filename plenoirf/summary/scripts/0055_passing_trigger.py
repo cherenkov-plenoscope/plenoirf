@@ -18,16 +18,7 @@ for pk in res.PARTICLES:
     pk_dir = os.path.join(paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
-    event_table = snt.read(
-        path=os.path.join(
-            paths["plenoirf_dir"],
-            "response",
-            res.instrument_key,
-            res.site_key,
-            pk,
-            "event_table.tar",
-        )
-    )
+    event_table = res.read_event_table(particle_key=pk)
 
     idx_pasttrigger = irf.analysis.light_field_trigger_modi.make_indices(
         trigger_table=event_table["trigger"],

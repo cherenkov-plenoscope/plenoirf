@@ -80,16 +80,7 @@ for pk in PARTICLES:
     thrown_spectrum["rates"][pk] = {}
     energy_ranges[pk] = {}
 
-    _table = snt.read(
-        path=os.path.join(
-            paths["plenoirf_dir"],
-            "response",
-            res.instrument_key,
-            res.site_key,
-            pk,
-            "event_table.tar",
-        )
-    )
+    _table = res.read_event_table(particle_key=pk)
 
     thrown_spectrum["rates"][pk] = np.histogram(
         _table["primary"]["energy_GeV"],
