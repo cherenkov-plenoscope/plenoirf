@@ -11,7 +11,7 @@ import sebastians_matplotlib_addons as seb
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 AXES_STYLE = {"spines": ["left", "bottom"], "axes": ["x", "y"], "grid": False}

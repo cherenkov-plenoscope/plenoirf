@@ -12,13 +12,13 @@ pa = irf.summary.paths_from_argv(argv)
 irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["run_dir"]
 )
-sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 psf = json_utils.tree.read(
-    os.path.join(paths["summary_dir"], "0213_trajectory_benchmarking")
+    os.path.join(paths["analysis_dir"], "0213_trajectory_benchmarking")
 )
 
 fov_radius_deg = (

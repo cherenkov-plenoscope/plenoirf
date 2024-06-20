@@ -14,7 +14,7 @@ pa = irf.summary.paths_from_argv(argv)
 irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["run_dir"]
 )
-sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
@@ -25,16 +25,16 @@ SITES = irf_config["config"]["sites"]
 PLT = sum_config["plot"]
 
 energy_bin = json_utils.read(
-    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["trigger_acceptance_onregion"]
 
 scatter_bin = json_utils.read(
-    os.path.join(paths["summary_dir"], "0005_common_binning", "scatter.json")
+    os.path.join(paths["analysis_dir"], "0005_common_binning", "scatter.json")
 )
 
 rates = json_utils.tree.read(
     os.path.join(
-        paths["summary_dir"],
+        paths["analysis_dir"],
         "0107_trigger_rates_for_cosmic_particles_vs_max_scatter_angle",
     )
 )

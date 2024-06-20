@@ -16,7 +16,7 @@ pa = irf.summary.paths_from_argv(argv)
 irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["run_dir"]
 )
-sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
@@ -29,20 +29,20 @@ ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 # load
 # ----
 energy_binning = json_utils.read(
-    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance_onregion"]
 
 energy_migration = json_utils.tree.read(
-    os.path.join(paths["summary_dir"], "0066_energy_estimate_quality")
+    os.path.join(paths["analysis_dir"], "0066_energy_estimate_quality")
 )
 
 acceptance = json_utils.tree.read(
-    os.path.join(paths["summary_dir"], "0300_onregion_trigger_acceptance")
+    os.path.join(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 
 airshower_fluxes = json_utils.tree.read(
-    os.path.join(paths["summary_dir"], "0017_flux_of_airshowers_rebin")
+    os.path.join(paths["analysis_dir"], "0017_flux_of_airshowers_rebin")
 )
 
 # prepare

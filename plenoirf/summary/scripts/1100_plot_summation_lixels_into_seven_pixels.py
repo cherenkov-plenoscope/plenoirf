@@ -12,7 +12,7 @@ from matplotlib.collections import PolyCollection
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)

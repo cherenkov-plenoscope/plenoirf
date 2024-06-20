@@ -16,7 +16,7 @@ pa = irf.summary.paths_from_argv(argv)
 irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["run_dir"]
 )
-sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 SITES = irf_config["config"]["sites"]
@@ -26,17 +26,17 @@ PLT = sum_config["plot"]
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 energy_bin = json_utils.read(
-    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["point_spread_function"]
 
 passing_array_trigger = json_utils.tree.read(
     os.path.join(
-        paths["summary_dir"],
+        paths["analysis_dir"],
         "0820_passing_trigger_of_outer_array_of_small_telescopes",
     )
 )
 passing_plenoscope_trigger = json_utils.tree.read(
-    os.path.join(paths["summary_dir"], "0055_passing_trigger")
+    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
 )
 
 ARRAY_CONFIGS = copy.deepcopy(

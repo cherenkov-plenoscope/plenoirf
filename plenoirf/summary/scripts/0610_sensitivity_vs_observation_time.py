@@ -16,7 +16,7 @@ pa = irf.summary.paths_from_argv(argv)
 irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["run_dir"]
 )
-sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
@@ -28,7 +28,7 @@ ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 # load
 # ----
 dS = json_utils.tree.read(
-    os.path.join(paths["summary_dir"], "0540_diffsens_estimate")
+    os.path.join(paths["analysis_dir"], "0540_diffsens_estimate")
 )
 
 diff_sens_scenario = sum_config["differential_sensitivity"][
@@ -66,7 +66,7 @@ for pe in pivot_energies:
 
     energy_bin = json_utils.read(
         os.path.join(
-            paths["summary_dir"], "0005_common_binning", "energy.json"
+            paths["analysis_dir"], "0005_common_binning", "energy.json"
         )
     )["trigger_acceptance_onregion"]
 

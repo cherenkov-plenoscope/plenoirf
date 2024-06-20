@@ -14,13 +14,13 @@ pa = irf.summary.paths_from_argv(argv)
 irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["run_dir"]
 )
-sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 observation_times = json_utils.read(
     os.path.join(
-        paths["summary_dir"],
+        paths["analysis_dir"],
         "0539_diffsens_observation_times",
         "observation_times.json",
     )

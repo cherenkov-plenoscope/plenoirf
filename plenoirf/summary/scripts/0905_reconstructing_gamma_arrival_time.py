@@ -18,22 +18,22 @@ pa = irf.summary.paths_from_argv(argv)
 irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["run_dir"]
 )
-sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["summary_dir"], "0055_passing_trigger")
+    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(paths["summary_dir"], "0056_passing_basic_quality")
+    os.path.join(paths["analysis_dir"], "0056_passing_basic_quality")
 )
 passing_trajectory_quality = json_utils.tree.read(
-    os.path.join(paths["summary_dir"], "0059_passing_trajectory_quality")
+    os.path.join(paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
 energy_bin = json_utils.read(
-    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["point_spread_function"]
 
 

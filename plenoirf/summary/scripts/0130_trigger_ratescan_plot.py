@@ -12,7 +12,7 @@ pa = irf.summary.paths_from_argv(argv)
 irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["run_dir"]
 )
-sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
@@ -22,12 +22,12 @@ PARTICLES = irf_config["config"]["particles"]
 TRIGGER = sum_config["trigger"]
 cosmic_rates = json_utils.tree.read(
     os.path.join(
-        paths["summary_dir"], "0105_trigger_rates_for_cosmic_particles"
+        paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles"
     )
 )
 nsb_rates = json_utils.tree.read(
     os.path.join(
-        paths["summary_dir"], "0120_trigger_rates_for_night_sky_background"
+        paths["analysis_dir"], "0120_trigger_rates_for_night_sky_background"
     )
 )
 

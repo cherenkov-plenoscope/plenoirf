@@ -14,7 +14,7 @@ pa = irf.summary.paths_from_argv(argv)
 irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["run_dir"]
 )
-sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -25,13 +25,13 @@ ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 opj = os.path.join
 
 passing_trigger = json_utils.tree.read(
-    opj(paths["summary_dir"], "0055_passing_trigger")
+    opj(paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    opj(paths["summary_dir"], "0056_passing_basic_quality")
+    opj(paths["analysis_dir"], "0056_passing_basic_quality")
 )
 passing_trajectory_quality = json_utils.tree.read(
-    opj(paths["summary_dir"], "0059_passing_trajectory_quality")
+    opj(paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
 
 MAX_SOURCE_ANGLE_DEG = sum_config["gamma_ray_source_direction"][
@@ -49,7 +49,7 @@ pointing_azimuth_deg = irf_config["config"]["plenoscope_pointing"][
 pointing_zenith_deg = irf_config["config"]["plenoscope_pointing"]["zenith_deg"]
 
 energy_bin = json_utils.read(
-    opj(paths["summary_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["trigger_acceptance_onregion"]
 
 cosmic_ray_keys = list(irf_config["config"]["particles"].keys())

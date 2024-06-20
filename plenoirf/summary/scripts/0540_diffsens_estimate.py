@@ -16,7 +16,7 @@ pa = irf.summary.paths_from_argv(argv)
 irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["run_dir"]
 )
-sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
@@ -29,14 +29,14 @@ ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 # load
 # ----
 energy_binning = json_utils.read(
-    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance_onregion"]
 energy_bin_width_au = np.zeros(energy_bin["num_bins"])
 
 S = json_utils.tree.read(
     os.path.join(
-        paths["summary_dir"],
+        paths["analysis_dir"],
         "0534_diffsens_signal_area_and_background_rates_for_multiple_scenarios",
     )
 )
@@ -52,7 +52,7 @@ num_systematic_uncertainties = len(systematic_uncertainties)
 
 observation_times = json_utils.read(
     os.path.join(
-        paths["summary_dir"],
+        paths["analysis_dir"],
         "0539_diffsens_observation_times",
         "observation_times.json",
     )

@@ -16,7 +16,7 @@ pa = irf.summary.paths_from_argv(argv)
 irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["run_dir"]
 )
-sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 SITES = irf_config["config"]["sites"]
@@ -27,7 +27,7 @@ os.makedirs(paths["out_dir"], exist_ok=True)
 
 plenoscope_trigger_vs_cherenkov_density = json_utils.tree.read(
     os.path.join(
-        paths["summary_dir"],
+        paths["analysis_dir"],
         "0074_trigger_probability_vs_cherenkov_density_on_ground",
     )
 )

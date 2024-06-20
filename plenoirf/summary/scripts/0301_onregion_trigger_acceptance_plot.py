@@ -13,7 +13,7 @@ pa = irf.summary.paths_from_argv(argv)
 irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["run_dir"]
 )
-sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
@@ -25,17 +25,17 @@ TRIGGER = sum_config["trigger"]
 # trigger
 # -------
 A = json_utils.tree.read(
-    opj(paths["summary_dir"], "0100_trigger_acceptance_for_cosmic_particles")
+    opj(paths["analysis_dir"], "0100_trigger_acceptance_for_cosmic_particles")
 )
 
 # trigger fix onregion
 # --------------------
 G = json_utils.tree.read(
-    opj(paths["summary_dir"], "0300_onregion_trigger_acceptance")
+    opj(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 
 energy_binning = json_utils.read(
-    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )
 A_energy_bin = energy_binning["trigger_acceptance"]
 G_energy_bin = energy_binning["trigger_acceptance_onregion"]

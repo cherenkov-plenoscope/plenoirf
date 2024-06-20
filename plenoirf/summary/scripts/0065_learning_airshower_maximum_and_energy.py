@@ -21,25 +21,25 @@ os.makedirs(paths["out_dir"], exist_ok=True)
 irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["run_dir"]
 )
-sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 
 train_test = json_utils.tree.read(
     os.path.join(
-        paths["summary_dir"],
+        paths["analysis_dir"],
         "0030_splitting_train_and_test_sample",
     )
 )
 transformed_features_dir = os.path.join(
-    paths["summary_dir"], "0062_transform_features"
+    paths["analysis_dir"], "0062_transform_features"
 )
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["summary_dir"], "0055_passing_trigger")
+    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(paths["summary_dir"], "0056_passing_basic_quality")
+    os.path.join(paths["analysis_dir"], "0056_passing_basic_quality")
 )
 passing_trajectory = json_utils.tree.read(
-    os.path.join(paths["summary_dir"], "0059_passing_trajectory_quality")
+    os.path.join(paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
 
 random_seed = sum_config["random_seed"]
