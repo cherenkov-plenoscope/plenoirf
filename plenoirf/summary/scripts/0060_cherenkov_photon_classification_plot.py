@@ -11,21 +11,23 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0055_passing_trigger")
+    os.path.join(paths["summary_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0056_passing_basic_quality")
+    os.path.join(paths["summary_dir"], "0056_passing_basic_quality")
 )
 
 energy_bin = json_utils.read(
-    os.path.join(pa["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
 )["point_spread_function"]
 
 span_hist_1_1 = [0.2, 0.15, 0.75, 0.8]
@@ -39,7 +41,7 @@ def guess_num_bins(num_events):
 CHCL = "cherenkovclassification"
 
 for sk in irf_config["config"]["sites"]:
-    site_dir = opj(pa["out_dir"], sk)
+    site_dir = opj(paths["out_dir"], sk)
     for pk in irf_config["config"]["particles"]:
         site_particle_dir = opj(site_dir, pk)
         os.makedirs(site_particle_dir, exist_ok=True)
@@ -48,7 +50,7 @@ for sk in irf_config["config"]["sites"]:
 
         event_table = snt.read(
             path=opj(
-                pa["run_dir"],
+                paths["run_dir"],
                 "event_table",
                 sk,
                 pk,
@@ -122,7 +124,7 @@ for sk in irf_config["config"]["sites"]:
         ax_h.set_xlabel("true Cherenkov-size / p.e.")
         ax_h.set_ylabel("num. events")
         fig.savefig(
-            opj(pa["out_dir"], site_particle_prefix + "_" + key + ".jpg")
+            opj(paths["out_dir"], site_particle_prefix + "_" + key + ".jpg")
         )
         seb.close(fig)
 
@@ -190,7 +192,7 @@ for sk in irf_config["config"]["sites"]:
         ax.set_ylim([0, 1])
         ax.semilogx()
         fig.savefig(
-            opj(pa["out_dir"], site_particle_prefix + "_" + key + ".jpg")
+            opj(paths["out_dir"], site_particle_prefix + "_" + key + ".jpg")
         )
         seb.close(fig)
 
@@ -255,7 +257,7 @@ for sk in irf_config["config"]["sites"]:
         ax.set_xlim(energy_bin["limits"])
         ax.semilogx()
         fig.savefig(
-            opj(pa["out_dir"], site_particle_prefix + "_" + key + ".jpg")
+            opj(paths["out_dir"], site_particle_prefix + "_" + key + ".jpg")
         )
         seb.close(fig)
 
@@ -319,7 +321,7 @@ for sk in irf_config["config"]["sites"]:
         ax.set_xlim([np.min(size_bin_edges), np.max(size_bin_edges)])
         ax.semilogx()
         fig.savefig(
-            opj(pa["out_dir"], site_particle_prefix + "_" + key + ".jpg")
+            opj(paths["out_dir"], site_particle_prefix + "_" + key + ".jpg")
         )
         seb.close(fig)
 

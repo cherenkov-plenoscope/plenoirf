@@ -12,14 +12,16 @@ import os
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 observation_times = json_utils.read(
     os.path.join(
-        pa["summary_dir"],
+        paths["summary_dir"],
         "0539_diffsens_observation_times",
         "observation_times.json",
     )
@@ -45,7 +47,7 @@ CTA_IRF_CONFIG["systematic_uncertainty_relative"] = 1e-2  # CTA-specific
 CTA_IRF_CONFIG["observation_times"] = observation_times
 
 json_utils.write(
-    os.path.join(pa["out_dir"], "config.json"),
+    os.path.join(paths["out_dir"], "config.json"),
     CTA_IRF_CONFIG,
 )
 
@@ -132,14 +134,14 @@ blk["signal_area_m2_au"] = signal_area_m2_au
 blk["background_rate_onregion_per_s"] = background_rate_onregion_per_s
 blk["background_rate_onregion_per_s_au"] = background_rate_onregion_per_s_au
 json_utils.write(
-    os.path.join(pa["out_dir"], "instrument_response_function.json"), blk
+    os.path.join(paths["out_dir"], "instrument_response_function.json"), blk
 )
 
 
 # scenarios
 # ---------
 for dk in flux_sensitivity.differential.SCENARIOS:
-    scenario_dir = os.path.join(pa["out_dir"], dk)
+    scenario_dir = os.path.join(paths["out_dir"], dk)
     os.makedirs(scenario_dir, exist_ok=True)
 
     scenario = flux_sensitivity.differential.init_scenario_matrices_for_signal_and_background(

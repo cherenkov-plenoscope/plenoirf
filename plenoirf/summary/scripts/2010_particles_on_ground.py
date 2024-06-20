@@ -12,19 +12,21 @@ import corsika_primary
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 PARTICLES = irf_config["config"]["particles"]
 SITES = irf_config["config"]["sites"]
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0055_passing_trigger")
+    os.path.join(paths["summary_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0056_passing_basic_quality")
+    os.path.join(paths["summary_dir"], "0056_passing_basic_quality")
 )
 
 zoo = corsika_primary.particles.identification.Zoo(
@@ -40,7 +42,7 @@ for sk in ["chile"]:  # SITES:
     for pk in ["proton"]:  # PARTICLES:
         event_table = snt.read(
             path=os.path.join(
-                pa["run_dir"],
+                paths["run_dir"],
                 "event_table",
                 sk,
                 pk,
@@ -66,7 +68,12 @@ for sk in ["chile"]:  # SITES:
 
         RRR[sk][pk] = {}
         path_template = os.path.join(
-            pa["run_dir"], "event_table", sk, pk, "particles.map", "*.tar.gz"
+            paths["run_dir"],
+            "event_table",
+            sk,
+            pk,
+            "particles.map",
+            "*.tar.gz",
         )
         for run_path in glob.glob(path_template):
             with corsika_primary.particles.ParticleEventTapeReader(

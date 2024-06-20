@@ -11,18 +11,20 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 train_test = json_utils.tree.read(
     os.path.join(
-        pa["summary_dir"],
+        paths["summary_dir"],
         "0030_splitting_train_and_test_sample",
     )
 )
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 PARTICLES = irf_config["config"]["particles"]
 SITES = irf_config["config"]["sites"]
@@ -38,7 +40,7 @@ for sk in SITES:
     for pk in ["gamma"]:
         _table = snt.read(
             path=os.path.join(
-                pa["run_dir"],
+                paths["run_dir"],
                 "event_table",
                 sk,
                 pk,
@@ -73,7 +75,7 @@ for sk in SITES:
 
         features = snt.read(
             path=os.path.join(
-                pa["run_dir"],
+                paths["run_dir"],
                 "event_table",
                 sk,
                 pk,
@@ -93,7 +95,7 @@ for sk in SITES:
                 feature_raw=f_raw, transformation=ft_trafo[sk][fk]
             )
 
-        site_particle_dir = os.path.join(pa["out_dir"], sk, pk)
+        site_particle_dir = os.path.join(paths["out_dir"], sk, pk)
         os.makedirs(site_particle_dir, exist_ok=True)
 
         out_table = snt.dict_to_recarray(transformed_features[sk][pk])
@@ -106,7 +108,9 @@ for sk in SITES:
 
 for sk in SITES:
     for fk in ALL_FEATURES:
-        fig_path = os.path.join(pa["out_dir"], "{:s}_{:s}.jpg".format(sk, fk))
+        fig_path = os.path.join(
+            paths["out_dir"], "{:s}_{:s}.jpg".format(sk, fk)
+        )
 
         if not os.path.exists(fig_path):
             fig = seb.figure(seb.FIGURE_16_9)

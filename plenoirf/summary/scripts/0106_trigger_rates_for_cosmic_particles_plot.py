@@ -9,18 +9,22 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 cosmic_rates = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0105_trigger_rates_for_cosmic_particles")
+    os.path.join(
+        paths["summary_dir"], "0105_trigger_rates_for_cosmic_particles"
+    )
 )
 
 fine_energy_bin = json_utils.read(
-    os.path.join(pa["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
 )["interpolation"]
 
 particle_colors = sum_config["plot"]["particle_colors"]
@@ -89,7 +93,7 @@ for sk in irf_config["config"]["sites"]:
     ax.set_ylim([1e-3, 1e5])
     fig.savefig(
         os.path.join(
-            pa["out_dir"],
+            paths["out_dir"],
             "{:s}_differential_trigger_rate.jpg".format(sk),
         )
     )

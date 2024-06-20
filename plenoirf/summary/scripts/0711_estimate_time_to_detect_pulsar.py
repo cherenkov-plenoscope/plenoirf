@@ -15,11 +15,13 @@ import lima1983analysis
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 SITES = irf_config["config"]["sites"]
 PARTICLES = irf_config["config"]["particles"]
@@ -29,15 +31,15 @@ COSMIC_RAYS.pop("gamma")
 
 onregion_rates = json_utils.tree.read(
     os.path.join(
-        pa["summary_dir"], "0320_onregion_trigger_rates_for_cosmic_rays"
+        paths["summary_dir"], "0320_onregion_trigger_rates_for_cosmic_rays"
     )
 )
 onregion_acceptance = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0300_onregion_trigger_acceptance")
+    os.path.join(paths["summary_dir"], "0300_onregion_trigger_acceptance")
 )
 
 energy_binning = json_utils.read(
-    os.path.join(pa["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance_onregion"]
 energy_fine_bin = energy_binning["interpolation"]
@@ -69,7 +71,7 @@ ax.set_ylabel(
     r"$\frac{\mathrm{d\,flux}}{\mathrm{d\,energy}}$ / m$^{-2}$ s$^{-1}$ (GeV)$^{-1}$"
 )
 fig.savefig(
-    os.path.join(pa["out_dir"], "pulsar_{:s}_flux.jpg".format(pulsar_name))
+    os.path.join(paths["out_dir"], "pulsar_{:s}_flux.jpg".format(pulsar_name))
 )
 seb.close(fig)
 
@@ -87,7 +89,7 @@ ax.set_xlabel(r"phase / 2$\pi$")
 ax.set_ylabel(r"relative / 1")
 fig.savefig(
     os.path.join(
-        pa["out_dir"], "pulsar_{:s}_phaseogram.jpg".format(pulsar_name)
+        paths["out_dir"], "pulsar_{:s}_phaseogram.jpg".format(pulsar_name)
     )
 )
 seb.close(fig)
@@ -107,7 +109,7 @@ ax.set_xlabel(r"cummulative distribution function / 1")
 ax.set_ylabel(r"phase / 2$\pi$")
 fig.savefig(
     os.path.join(
-        pa["out_dir"],
+        paths["out_dir"],
         "pulsar_{:s}_phaseogram_cummulative_distribution_function.jpg".format(
             pulsar_name
         ),
@@ -153,7 +155,7 @@ if TEST_DRAW_RANDOM_PHASE:
     ax.set_ylabel(r"relative / 1")
     fig.savefig(
         os.path.join(
-            pa["out_dir"],
+            paths["out_dir"],
             "pulsar_{:s}_phaseogram_test_draw.jpg".format(pulsar_name),
         )
     )
@@ -278,7 +280,7 @@ PULSARS = cosmic_fluxes.pulsars.list_pulsar_names()
 
 
 for sk in SITES:
-    sk_dir = os.path.join(pa["out_dir"], sk)
+    sk_dir = os.path.join(paths["out_dir"], sk)
     for ok in ONREGION_TYPES:
         sk_ok_dir = os.path.join(sk_dir, ok)
         os.makedirs(sk_ok_dir, exist_ok=True)

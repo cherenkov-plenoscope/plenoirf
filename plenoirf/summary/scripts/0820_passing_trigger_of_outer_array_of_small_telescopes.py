@@ -13,19 +13,21 @@ import atmospheric_cherenkov_response
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 SITES = irf_config["config"]["sites"]
 PARTICLES = irf_config["config"]["particles"]
 PLT = sum_config["plot"]
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 plenoscope_trigger_vs_cherenkov_density = json_utils.tree.read(
     os.path.join(
-        pa["summary_dir"],
+        paths["summary_dir"],
         "0074_trigger_probability_vs_cherenkov_density_on_ground",
     )
 )
@@ -119,7 +121,7 @@ for ak in ARRAY_CONFIGS:
     )
     fig.savefig(
         os.path.join(
-            pa["out_dir"],
+            paths["out_dir"],
             "array_configuration_" + ak + ".jpg",
         )
     )
@@ -189,7 +191,7 @@ for sk in SITES:
         ax.set_ylabel("telescope\ntrigger-probability / 1")
         fig.savefig(
             os.path.join(
-                pa["out_dir"],
+                paths["out_dir"],
                 sk + "_" + ak + "_telescope_trigger_probability" + ".jpg",
             )
         )
@@ -209,7 +211,7 @@ for sk in SITES:
         grid_reader = (
             atmospheric_cherenkov_response.grid.serialization.GridReader(
                 path=os.path.join(
-                    pa["run_dir"],
+                    paths["run_dir"],
                     "event_table",
                     sk,
                     pk,
@@ -254,7 +256,7 @@ for sk in SITES:
 for sk in SITES:
     for pk in PARTICLES:
         for ak in ARRAY_CONFIGS:
-            sk_pk_ak_dir = os.path.join(pa["out_dir"], sk, pk, ak)
+            sk_pk_ak_dir = os.path.join(paths["out_dir"], sk, pk, ak)
             os.makedirs(sk_pk_ak_dir, exist_ok=True)
 
             json_utils.write(

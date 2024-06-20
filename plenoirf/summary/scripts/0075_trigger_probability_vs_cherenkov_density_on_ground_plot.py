@@ -10,15 +10,17 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 trigger_vs_size = json_utils.tree.read(
     os.path.join(
-        pa["summary_dir"],
+        paths["summary_dir"],
         "0074_trigger_probability_vs_cherenkov_density_on_ground",
     )
 )
@@ -74,7 +76,7 @@ for sk in irf_config["config"]["sites"]:
         ax.set_ylabel("{:s} / 1".format(trigger_modi[tm]))
         fig.savefig(
             opj(
-                pa["out_dir"],
+                paths["out_dir"],
                 sk + "_" + tm + ".jpg",
             )
         )

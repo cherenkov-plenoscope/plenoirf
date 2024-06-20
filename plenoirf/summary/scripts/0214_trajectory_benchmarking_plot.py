@@ -9,14 +9,16 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 psf = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0213_trajectory_benchmarking")
+    os.path.join(paths["summary_dir"], "0213_trajectory_benchmarking")
 )
 
 fov_radius_deg = (
@@ -100,7 +102,7 @@ for site_key in psf:
 
         for theta_key in ["theta", "theta_para", "theta_perp"]:
             scenario_dir = os.path.join(
-                pa["out_dir"], site_key, particle_key, theta_key
+                paths["out_dir"], site_key, particle_key, theta_key
             )
             os.makedirs(scenario_dir, exist_ok=True)
 
@@ -152,7 +154,7 @@ for site_key in psf:
 
                     write_theta_square_figure(
                         path=os.path.join(
-                            pa["out_dir"],
+                            paths["out_dir"],
                             site_key,
                             particle_key,
                             theta_key,

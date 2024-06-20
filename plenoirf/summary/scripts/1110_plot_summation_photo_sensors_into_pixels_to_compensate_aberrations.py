@@ -11,15 +11,15 @@ import sebastians_matplotlib_addons as seb
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 AXES_STYLE = {"spines": ["left", "bottom"], "axes": ["x", "y"], "grid": False}
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 light_field_geometry = pl.LightFieldGeometry(
-    os.path.join(pa["run_dir"], "light_field_geometry")
+    os.path.join(paths["run_dir"], "light_field_geometry")
 )
 
 OBJECT_DISTANCE = 999e3
@@ -144,7 +144,7 @@ for pixel in pixels:
     off_axis_angle_mdeg = int(1000 * np.rad2deg(pixel["off_axis_angle"]))
     fig.savefig(
         os.path.join(
-            pa["out_dir"],
+            paths["out_dir"],
             "aberration_pixel_{pixel:0d}_{angle:0d}mdeg.jpg".format(
                 pixel=pixel["id"], angle=off_axis_angle_mdeg
             ),
@@ -222,14 +222,14 @@ ax.spines["top"].set_visible(False)
 ax.set_xlabel("$x\\,/\\,$m")
 ax.set_ylabel("$y\\,/\\,$m")
 
-fig.savefig(os.path.join(pa["out_dir"], "aberration_overview.jpg"))
+fig.savefig(os.path.join(paths["out_dir"], "aberration_overview.jpg"))
 seb.close("all")
 
 # export table
 # ------------
 
 with open(
-    os.path.join(pa["out_dir"], "aberration_overview.txt"), "wt"
+    os.path.join(paths["out_dir"], "aberration_overview.txt"), "wt"
 ) as fout:
     for pixel in pixels:
         _x, _y = pixel["mean_position_of_photosensors_on_sensor_plane"]

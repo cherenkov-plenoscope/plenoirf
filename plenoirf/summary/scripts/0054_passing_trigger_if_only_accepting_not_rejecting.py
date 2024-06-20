@@ -10,10 +10,12 @@ import copy
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 for sk in irf_config["config"]["sites"]:
     trigger_modus = sum_config["trigger"][sk]["modus"]
@@ -29,12 +31,12 @@ for sk in irf_config["config"]["sites"]:
     tm["accepting"]["response_pe"] = trigger_modus["accepting"]["response_pe"]
 
     for pk in irf_config["config"]["particles"]:
-        sk_pk_dir = os.path.join(pa["out_dir"], sk, pk)
+        sk_pk_dir = os.path.join(paths["out_dir"], sk, pk)
         os.makedirs(sk_pk_dir, exist_ok=True)
 
         event_table = snt.read(
             path=os.path.join(
-                pa["run_dir"],
+                paths["run_dir"],
                 "event_table",
                 sk,
                 pk,

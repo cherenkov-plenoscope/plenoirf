@@ -10,11 +10,13 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 SITES = irf_config["config"]["sites"]
 PARTICLES = irf_config["config"]["particles"]
@@ -24,17 +26,17 @@ ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 # load
 # ----
 energy_binning = json_utils.read(
-    os.path.join(pa["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance_onregion"]
 
 acceptance = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0300_onregion_trigger_acceptance")
+    os.path.join(paths["summary_dir"], "0300_onregion_trigger_acceptance")
 )
 
 scenarios = json_utils.tree.read(
     os.path.join(
-        pa["summary_dir"],
+        paths["summary_dir"],
         "0534_diffsens_signal_area_and_background_rates_for_multiple_scenarios",
     )
 )
@@ -43,7 +45,7 @@ scenarios = json_utils.tree.read(
 # ----
 for sk in SITES:
     for ok in ONREGION_TYPES:
-        os.makedirs(os.path.join(pa["out_dir"], sk, ok), exist_ok=True)
+        os.makedirs(os.path.join(paths["out_dir"], sk, ok), exist_ok=True)
 
 
 for sk in SITES:
@@ -80,7 +82,7 @@ for sk in SITES:
             ax.loglog()
             fig.savefig(
                 os.path.join(
-                    pa["out_dir"],
+                    paths["out_dir"],
                     sk,
                     ok,
                     dk + "_background_rate_vs_reco_energy.jpg",
@@ -121,7 +123,7 @@ for sk in SITES:
             ax.loglog()
             fig.savefig(
                 os.path.join(
-                    pa["out_dir"],
+                    paths["out_dir"],
                     sk,
                     ok,
                     dk + "_area_gamma.jpg",
@@ -152,7 +154,7 @@ for sk in SITES:
             ax_c.set_xlabel("energy / GeV")
             fig.savefig(
                 os.path.join(
-                    pa["out_dir"],
+                    paths["out_dir"],
                     sk,
                     ok,
                     dk + "_G_matrix.jpg",
@@ -183,7 +185,7 @@ for sk in SITES:
             ax_c.set_xlabel("energy / GeV")
             fig.savefig(
                 os.path.join(
-                    pa["out_dir"],
+                    paths["out_dir"],
                     sk,
                     ok,
                     dk + "_B_matrix.jpg",

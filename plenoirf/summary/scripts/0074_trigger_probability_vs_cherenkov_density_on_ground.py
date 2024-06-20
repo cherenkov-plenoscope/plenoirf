@@ -11,24 +11,26 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 SITES = irf_config["config"]["sites"]
 PARTICLES = irf_config["config"]["particles"]
 
 trigger_modi = {}
 trigger_modi["passing_trigger"] = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0055_passing_trigger")
+    os.path.join(paths["summary_dir"], "0055_passing_trigger")
 )
 trigger_modi[
     "passing_trigger_if_only_accepting_not_rejecting"
 ] = json_utils.tree.read(
     os.path.join(
-        pa["summary_dir"],
+        paths["summary_dir"],
         "0054_passing_trigger_if_only_accepting_not_rejecting",
     )
 )
@@ -39,12 +41,12 @@ density_bin_edges_per_m2 = np.geomspace(1e-3, 1e4, 7 * 5 + 1)
 
 for sk in SITES:
     for pk in PARTICLES:
-        site_particle_dir = opj(pa["out_dir"], sk, pk)
+        site_particle_dir = opj(paths["out_dir"], sk, pk)
         os.makedirs(site_particle_dir, exist_ok=True)
 
         event_table = snt.read(
             path=os.path.join(
-                pa["run_dir"],
+                paths["run_dir"],
                 "event_table",
                 sk,
                 pk,

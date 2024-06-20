@@ -11,10 +11,12 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 SITES = irf_config["config"]["sites"]
 PARTICLES = irf_config["config"]["particles"]
@@ -23,13 +25,13 @@ ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 opj = os.path.join
 
 passing_trigger = json_utils.tree.read(
-    opj(pa["summary_dir"], "0055_passing_trigger")
+    opj(paths["summary_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    opj(pa["summary_dir"], "0056_passing_basic_quality")
+    opj(paths["summary_dir"], "0056_passing_basic_quality")
 )
 passing_trajectory_quality = json_utils.tree.read(
-    opj(pa["summary_dir"], "0059_passing_trajectory_quality")
+    opj(paths["summary_dir"], "0059_passing_trajectory_quality")
 )
 
 MAX_SOURCE_ANGLE_DEG = sum_config["gamma_ray_source_direction"][
@@ -47,7 +49,7 @@ pointing_azimuth_deg = irf_config["config"]["plenoscope_pointing"][
 pointing_zenith_deg = irf_config["config"]["plenoscope_pointing"]["zenith_deg"]
 
 energy_bin = json_utils.read(
-    opj(pa["summary_dir"], "0005_common_binning", "energy.json")
+    opj(paths["summary_dir"], "0005_common_binning", "energy.json")
 )["trigger_acceptance_onregion"]
 
 cosmic_ray_keys = list(irf_config["config"]["particles"].keys())
@@ -91,7 +93,7 @@ def make_wighted_mask_wrt_primary_table(
 for sk in SITES:
     for ok in ONREGION_TYPES:
         for pk in PARTICLES:
-            os.makedirs(opj(pa["out_dir"], sk, ok, pk), exist_ok=True)
+            os.makedirs(opj(paths["out_dir"], sk, ok, pk), exist_ok=True)
 
 for sk in SITES:
     for pk in PARTICLES:
@@ -99,7 +101,7 @@ for sk in SITES:
         # -------------
         diffuse_thrown = snt.read(
             path=opj(
-                pa["run_dir"],
+                paths["run_dir"],
                 "event_table",
                 sk,
                 pk,
@@ -187,7 +189,7 @@ for sk in SITES:
             )
 
             json_utils.write(
-                opj(pa["out_dir"], sk, ok, pk, "point.json"),
+                opj(paths["out_dir"], sk, ok, pk, "point.json"),
                 {
                     "comment": (
                         "Effective area "
@@ -283,7 +285,7 @@ for sk in SITES:
             )
 
             json_utils.write(
-                opj(pa["out_dir"], sk, ok, pk, "diffuse.json"),
+                opj(paths["out_dir"], sk, ok, pk, "diffuse.json"),
                 {
                     "comment": (
                         "Effective acceptance (area x solid angle) "

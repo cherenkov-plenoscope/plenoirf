@@ -10,21 +10,23 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 SITES = irf_config["config"]["sites"]
 PARTICLES = irf_config["config"]["particles"]
 ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 
 onregion_acceptance = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0300_onregion_trigger_acceptance")
+    os.path.join(paths["summary_dir"], "0300_onregion_trigger_acceptance")
 )
 
 energy_binning = json_utils.read(
-    os.path.join(pa["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance_onregion"]
 fenergy_bin = energy_binning["interpolation"]
@@ -32,14 +34,16 @@ fenergy_bin = energy_binning["interpolation"]
 # cosmic-ray-flux
 # ----------------
 airshower_fluxes = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0015_flux_of_airshowers")
+    os.path.join(paths["summary_dir"], "0015_flux_of_airshowers")
 )
 
 # gamma-ray-flux of reference source
 # ----------------------------------
 gamma_source = json_utils.read(
     os.path.join(
-        pa["summary_dir"], "0009_flux_of_gamma_rays", "reference_source.json"
+        paths["summary_dir"],
+        "0009_flux_of_gamma_rays",
+        "reference_source.json",
     )
 )
 gamma_dKdE = gamma_source["differential_flux"]["values"]
@@ -66,7 +70,9 @@ dKdE / s^{-1} m^{-2} (GeV)^{-1}
 for sk in SITES:
     for ok in ONREGION_TYPES:
         for pk in PARTICLES:
-            os.makedirs(os.path.join(pa["out_dir"], sk, ok, pk), exist_ok=True)
+            os.makedirs(
+                os.path.join(paths["out_dir"], sk, ok, pk), exist_ok=True
+            )
 
 for sk in SITES:
     # gamma-ray
@@ -99,7 +105,7 @@ for sk in SITES:
 
         json_utils.write(
             os.path.join(
-                pa["out_dir"], sk, ok, "gamma", "differential_rate.json"
+                paths["out_dir"], sk, ok, "gamma", "differential_rate.json"
             ),
             {
                 "comment": comment_differential
@@ -112,7 +118,9 @@ for sk in SITES:
             },
         )
         json_utils.write(
-            os.path.join(pa["out_dir"], sk, ok, "gamma", "integral_rate.json"),
+            os.path.join(
+                paths["out_dir"], sk, ok, "gamma", "integral_rate.json"
+            ),
             {
                 "comment": comment_integral
                 + ", "
@@ -165,7 +173,7 @@ for sk in SITES:
 
             json_utils.write(
                 os.path.join(
-                    pa["out_dir"], sk, ok, ck, "differential_rate.json"
+                    paths["out_dir"], sk, ok, ck, "differential_rate.json"
                 ),
                 {
                     "comment": comment_differential + " VS onregion-radius",
@@ -175,7 +183,9 @@ for sk in SITES:
                 },
             )
             json_utils.write(
-                os.path.join(pa["out_dir"], sk, ok, ck, "integral_rate.json"),
+                os.path.join(
+                    paths["out_dir"], sk, ok, ck, "integral_rate.json"
+                ),
                 {
                     "comment": comment_integral + " VS onregion-radius",
                     "unit": "s$^{-1}$",

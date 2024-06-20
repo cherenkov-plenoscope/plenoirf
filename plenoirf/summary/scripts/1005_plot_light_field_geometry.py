@@ -19,8 +19,8 @@ subprocess.call(
         "python",
         script_path,
         "--light_field_geometry_path",
-        os.path.join(pa["run_dir"], "light_field_geometry"),
+        os.path.join(paths["run_dir"], "light_field_geometry"),
         "--out_dir",
-        pa["out_dir"],
+        paths["out_dir"],
     ]
 )

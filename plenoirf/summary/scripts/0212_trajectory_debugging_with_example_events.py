@@ -12,15 +12,17 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0055_passing_trigger")
+    os.path.join(paths["summary_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0056_passing_basic_quality")
+    os.path.join(paths["summary_dir"], "0056_passing_basic_quality")
 )
 
 onreion_config = sum_config["on_off_measuremnent"]["onregion_types"]["large"]
@@ -28,7 +30,7 @@ onreion_config = sum_config["on_off_measuremnent"]["onregion_types"]["large"]
 # READ light-field-geometry
 # =========================
 lfg = pl.LightFieldGeometry(
-    os.path.join(pa["run_dir"], "light_field_geometry")
+    os.path.join(paths["run_dir"], "light_field_geometry")
 )
 
 fov_radius_deg = np.rad2deg(
@@ -74,7 +76,7 @@ for sk in irf_config["config"]["sites"]:
 
         event_table = snt.read(
             path=os.path.join(
-                pa["run_dir"], "event_table", sk, pk, "event_table.tar"
+                paths["run_dir"], "event_table", sk, pk, "event_table.tar"
             ),
             structure=irf.table.STRUCTURE,
         )
@@ -126,7 +128,7 @@ def read_shower_maximum_object_distance(
 ):
     event_table = snt.read(
         path=os.path.join(
-            pa["run_dir"],
+            paths["run_dir"],
             "event_table",
             site_key,
             particle_key,
@@ -156,11 +158,15 @@ for sk in irf_config["config"]["sites"]:
 
         run = pl.photon_stream.loph.LopfTarReader(
             os.path.join(
-                pa["run_dir"], "event_table", sk, pk, "cherenkov.phs.loph.tar"
+                paths["run_dir"],
+                "event_table",
+                sk,
+                pk,
+                "cherenkov.phs.loph.tar",
             )
         )
 
-        site_particle_dir = os.path.join(pa["out_dir"], sk, pk)
+        site_particle_dir = os.path.join(paths["out_dir"], sk, pk)
         os.makedirs(site_particle_dir, exist_ok=True)
 
         event_counter = 0
@@ -213,7 +219,7 @@ for sk in irf_config["config"]["sites"]:
                     fuzzy_debug=debug["fuzzy_debug"],
                 )
                 path = os.path.join(
-                    pa["out_dir"],
+                    paths["out_dir"],
                     sk,
                     pk,
                     "{:09d}_ring.jpg".format(
@@ -347,7 +353,7 @@ for sk in irf_config["config"]["sites"]:
                 ax_core.set_xlabel("x / m")
                 ax_core.set_ylabel("y / m")
                 path = os.path.join(
-                    pa["out_dir"],
+                    paths["out_dir"],
                     sk,
                     pk,
                     "{:09d}.jpg".format(

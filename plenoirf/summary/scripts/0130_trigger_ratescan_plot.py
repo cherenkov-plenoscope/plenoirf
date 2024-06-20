@@ -9,21 +9,25 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 SITES = irf_config["config"]["sites"]
 PARTICLES = irf_config["config"]["particles"]
 TRIGGER = sum_config["trigger"]
 cosmic_rates = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0105_trigger_rates_for_cosmic_particles")
+    os.path.join(
+        paths["summary_dir"], "0105_trigger_rates_for_cosmic_particles"
+    )
 )
 nsb_rates = json_utils.tree.read(
     os.path.join(
-        pa["summary_dir"], "0120_trigger_rates_for_night_sky_background"
+        paths["summary_dir"], "0120_trigger_rates_for_night_sky_background"
     )
 )
 
@@ -80,5 +84,5 @@ for sk in SITES:
         x=analysis_trigger_threshold, color="k", linestyle="-", alpha=0.25
     )
     ax.set_ylim([1e0, 1e7])
-    fig.savefig(os.path.join(pa["out_dir"], "{:s}_ratescan.jpg".format(sk)))
+    fig.savefig(os.path.join(paths["out_dir"], "{:s}_ratescan.jpg".format(sk)))
     seb.close(fig)

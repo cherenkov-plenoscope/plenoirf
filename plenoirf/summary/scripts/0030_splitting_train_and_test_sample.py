@@ -9,8 +9,10 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 
 SITES = irf_config["config"]["sites"]
 PARTICLES = irf_config["config"]["particles"]
@@ -20,12 +22,12 @@ test_size = sum_config["train_and_test"]["test_size"]
 
 for sk in SITES:
     for pk in PARTICLES:
-        site_dir = os.path.join(pa["out_dir"], sk)
+        site_dir = os.path.join(paths["out_dir"], sk)
         os.makedirs(site_dir, exist_ok=True)
 
         event_table = snt.read(
             path=os.path.join(
-                pa["run_dir"],
+                paths["run_dir"],
                 "event_table",
                 sk,
                 pk,

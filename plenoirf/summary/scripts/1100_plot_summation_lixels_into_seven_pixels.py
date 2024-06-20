@@ -12,13 +12,13 @@ from matplotlib.collections import PolyCollection
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 light_field_geometry = pl.LightFieldGeometry(
-    os.path.join(pa["run_dir"], "light_field_geometry")
+    os.path.join(paths["run_dir"], "light_field_geometry")
 )
 
 region_of_interest_on_sensor_plane = {"x": [-0.35, 0.35], "y": [-0.35, 0.35]}
@@ -86,7 +86,7 @@ for obj, object_distance in enumerate(object_distances):
     ax2 = seb.add_axes(fig=fig, span=[0.82, 0.15, 0.2 * (3 / 4), 0.85])
 
     cpath = os.path.join(
-        pa["out_dir"], "lixel_to_pixel_{:06d}.json".format(obj)
+        paths["out_dir"], "lixel_to_pixel_{:06d}.json".format(obj)
     )
 
     # compute a list of pixels where a lixel contributes to.
@@ -212,7 +212,7 @@ for obj, object_distance in enumerate(object_distances):
 
     fig.savefig(
         os.path.join(
-            pa["out_dir"],
+            paths["out_dir"],
             "refocus_lixel_summation_7_{obj:d}.jpg".format(obj=obj),
         )
     )

@@ -11,29 +11,31 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 COSMIC_RAYS = irf_config["config"]["particles"]
 _ = COSMIC_RAYS.pop("gamma")
 SITES = irf_config["config"]["sites"]
 
 acceptance = json_utils.tree.read(
     os.path.join(
-        pa["summary_dir"],
+        paths["summary_dir"],
         "0102_trigger_acceptance_for_cosmic_particles_vs_max_scatter_angle",
     )
 )
 
 energy_bin = json_utils.read(
-    os.path.join(pa["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
 )["trigger_acceptance_onregion"]
 
 # cosmic-ray-flux
 # ----------------
 airshower_fluxes = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0017_flux_of_airshowers_rebin")
+    os.path.join(paths["summary_dir"], "0017_flux_of_airshowers_rebin")
 )
 
 """
@@ -53,7 +55,7 @@ dKdE / s^{-1} m^{-2} (GeV)^{-1}
 source_key = "diffuse"
 
 for sk in SITES:
-    sk_dir = os.path.join(pa["out_dir"], sk)
+    sk_dir = os.path.join(paths["out_dir"], sk)
     os.makedirs(sk_dir, exist_ok=True)
 
     # cosmic-rays

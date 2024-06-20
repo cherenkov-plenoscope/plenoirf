@@ -13,11 +13,13 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 SITES = irf_config["config"]["sites"]
 PARTICLES = irf_config["config"]["particles"]
@@ -26,7 +28,7 @@ ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 # load
 # ----
 dS = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0540_diffsens_estimate")
+    os.path.join(paths["summary_dir"], "0540_diffsens_estimate")
 )
 
 diff_sens_scenario = sum_config["differential_sensitivity"][
@@ -63,7 +65,9 @@ for pe in pivot_energies:
     )
 
     energy_bin = json_utils.read(
-        os.path.join(pa["summary_dir"], "0005_common_binning", "energy.json")
+        os.path.join(
+            paths["summary_dir"], "0005_common_binning", "energy.json"
+        )
     )["trigger_acceptance_onregion"]
 
     fermi = irf.other_instruments.fermi_lat
@@ -93,7 +97,7 @@ for pe in pivot_energies:
         for ok in ONREGION_TYPES:
             for dk in flux_sensitivity.differential.SCENARIOS:
                 os.makedirs(
-                    os.path.join(pa["out_dir"], sk, ok, dk), exist_ok=True
+                    os.path.join(paths["out_dir"], sk, ok, dk), exist_ok=True
                 )
 
                 observation_times = dS[sk][ok][dk]["observation_times"]
@@ -266,7 +270,7 @@ for pe in pivot_energies:
 
                 fig.savefig(
                     os.path.join(
-                        pa["out_dir"],
+                        paths["out_dir"],
                         sk,
                         ok,
                         dk,

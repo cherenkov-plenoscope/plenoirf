@@ -11,14 +11,16 @@ import os
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 observation_times = json_utils.read(
     os.path.join(
-        pa["summary_dir"],
+        paths["summary_dir"],
         "0539_diffsens_observation_times",
         "observation_times.json",
     )
@@ -64,4 +66,4 @@ for ebin in range(num_energy_bins):
             right=float("nan"),
         )
 
-json_utils.write(os.path.join(pa["out_dir"], "flux_sensitivity.json"), out)
+json_utils.write(os.path.join(paths["out_dir"], "flux_sensitivity.json"), out)

@@ -13,11 +13,13 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 SITES = irf_config["config"]["sites"]
 PARTICLES = irf_config["config"]["particles"]
@@ -27,14 +29,14 @@ ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 # load
 # ----
 energy_binning = json_utils.read(
-    os.path.join(pa["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance_onregion"]
 energy_bin_width_au = np.zeros(energy_bin["num_bins"])
 
 S = json_utils.tree.read(
     os.path.join(
-        pa["summary_dir"],
+        paths["summary_dir"],
         "0534_diffsens_signal_area_and_background_rates_for_multiple_scenarios",
     )
 )
@@ -50,7 +52,7 @@ num_systematic_uncertainties = len(systematic_uncertainties)
 
 observation_times = json_utils.read(
     os.path.join(
-        pa["summary_dir"],
+        paths["summary_dir"],
         "0539_diffsens_observation_times",
         "observation_times.json",
     )
@@ -66,7 +68,7 @@ estimator_statistics = sum_config["on_off_measuremnent"][
 # -------
 for sk in SITES:
     for ok in ONREGION_TYPES:
-        os.makedirs(os.path.join(pa["out_dir"], sk, ok), exist_ok=True)
+        os.makedirs(os.path.join(paths["out_dir"], sk, ok), exist_ok=True)
 
 # work
 # ----
@@ -139,7 +141,7 @@ for sk in SITES:
                     critical_dVdE_au[:, obstix, sysuncix] = dVdE_au
 
             json_utils.write(
-                os.path.join(pa["out_dir"], sk, ok, dk + ".json"),
+                os.path.join(paths["out_dir"], sk, ok, dk + ".json"),
                 {
                     "energy_binning_key": energy_bin["key"],
                     "observation_times": observation_times,

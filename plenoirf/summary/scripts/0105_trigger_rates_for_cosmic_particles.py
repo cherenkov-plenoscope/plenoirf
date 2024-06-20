@@ -11,19 +11,21 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 acceptance = json_utils.tree.read(
     os.path.join(
-        pa["summary_dir"], "0100_trigger_acceptance_for_cosmic_particles"
+        paths["summary_dir"], "0100_trigger_acceptance_for_cosmic_particles"
     )
 )
 
 energy_binning = json_utils.read(
-    os.path.join(pa["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance"]
 fine_energy_bin = energy_binning["interpolation"]
@@ -31,14 +33,16 @@ fine_energy_bin = energy_binning["interpolation"]
 # cosmic-ray-flux
 # ----------------
 airshower_fluxes = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0015_flux_of_airshowers")
+    os.path.join(paths["summary_dir"], "0015_flux_of_airshowers")
 )
 
 # gamma-ray-flux of reference source
 # ----------------------------------
 gamma_source = json_utils.read(
     os.path.join(
-        pa["summary_dir"], "0009_flux_of_gamma_rays", "reference_source.json"
+        paths["summary_dir"],
+        "0009_flux_of_gamma_rays",
+        "reference_source.json",
     )
 )
 gamma_dKdE = gamma_source["differential_flux"]["values"]
@@ -75,7 +79,7 @@ for sk in irf_config["config"]["sites"]:
     analysis_trigger_threshold = sum_config["trigger"][sk]["threshold_pe"]
     num_trigger_thresholds = len(trigger_thresholds)
 
-    sk_dir = os.path.join(pa["out_dir"], sk)
+    sk_dir = os.path.join(paths["out_dir"], sk)
     os.makedirs(sk_dir, exist_ok=True)
 
     # gamma-ray

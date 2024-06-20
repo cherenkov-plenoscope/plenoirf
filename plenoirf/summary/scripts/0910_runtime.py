@@ -13,8 +13,10 @@ import sebastians_matplotlib_addons as seb
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 SITES = irf_config["config"]["sites"]
@@ -171,19 +173,21 @@ def write_speed(table, out_path, figure_style):
     os.rename(out_path + ".json" + ".tmp", out_path + ".json")
 
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 for sk in SITES:
     for pk in PARTICLES:
         prefix_str = "{:s}_{:s}".format(sk, pk)
 
-        extended_runtime_path = opj(pa["out_dir"], prefix_str + "_runtime.csv")
+        extended_runtime_path = opj(
+            paths["out_dir"], prefix_str + "_runtime.csv"
+        )
         if os.path.exists(extended_runtime_path):
             extended_runtime_table = read_csv_records(extended_runtime_path)
         else:
             event_table = snt.read(
                 path=os.path.join(
-                    pa["run_dir"],
+                    paths["run_dir"],
                     "event_table",
                     sk,
                     pk,
@@ -193,7 +197,7 @@ for sk in SITES:
             )
             runtime_table = read_csv_records(
                 opj(
-                    pa["run_dir"],
+                    paths["run_dir"],
                     "event_table",
                     sk,
                     pk,
@@ -209,13 +213,13 @@ for sk in SITES:
 
         write_relative_runtime(
             table=extended_runtime_table,
-            out_path=opj(pa["out_dir"], prefix_str + "_relative_runtime"),
+            out_path=opj(paths["out_dir"], prefix_str + "_relative_runtime"),
             figure_style=seb.FIGURE_1_1,
         )
 
         write_speed(
             table=extended_runtime_table,
-            out_path=opj(pa["out_dir"], prefix_str + "_speed_runtime"),
+            out_path=opj(paths["out_dir"], prefix_str + "_speed_runtime"),
             figure_style=seb.FIGURE_1_1,
         )
 

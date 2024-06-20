@@ -14,22 +14,24 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 SITES = irf_config["config"]["sites"]
 PARTICLES = irf_config["config"]["particles"]
 PLT = sum_config["plot"]
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0055_passing_trigger")
+    os.path.join(paths["summary_dir"], "0055_passing_trigger")
 )
 
 energy_bin = json_utils.read(
-    os.path.join(pa["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
 )["point_spread_function"]
 
 MAX_SCATTER_DEG = 20
@@ -60,7 +62,7 @@ for sk in SITES:
 
         evttab = snt.read(
             path=os.path.join(
-                pa["run_dir"],
+                paths["run_dir"],
                 "event_table",
                 sk,
                 pk,
@@ -133,7 +135,7 @@ AXSPAN = [AXSPAN[0], AXSPAN[1], AXSPAN[2], AXSPAN[3]]
 
 for sk in SITES:
     for pk in PARTICLES:
-        sk_pk_dir = os.path.join(pa["out_dir"], sk, pk)
+        sk_pk_dir = os.path.join(paths["out_dir"], sk, pk)
         os.makedirs(sk_pk_dir, exist_ok=True)
 
         for ex in range(energy_bin["num_bins"]):
@@ -328,7 +330,7 @@ for sk in SITES:
 
         fig.savefig(
             os.path.join(
-                pa["out_dir"],
+                paths["out_dir"],
                 "{:s}_{:s}.jpg".format(
                     sk,
                     pk,

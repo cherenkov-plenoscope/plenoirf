@@ -19,15 +19,17 @@ from skimage.draw import circle as skimage_draw_circle
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 
 production_key = "demo_helium_for_tomography"
-demo_helium_dir = os.path.join(pa["run_dir"], production_key)
+demo_helium_dir = os.path.join(paths["run_dir"], production_key)
 
 if not os.path.exists(demo_helium_dir):
     job = irf.production.example.make_helium_demo_for_tomography(
-        run_dir=pa["run_dir"],
+        run_dir=paths["run_dir"],
         num_air_showers=50,
         production_key=production_key,
         site_key="namibia",
@@ -35,7 +37,7 @@ if not os.path.exists(demo_helium_dir):
     )
     irf.instrument_response.run_job(job)
     irf.instrument_response.reduce(
-        run_dir=pa["run_dir"],
+        run_dir=paths["run_dir"],
         production_key=production_key,
         site_key="namibia",
         particle_key="helium",
@@ -49,10 +51,10 @@ MAX_CORE_DISTANCE = 400
 TOMO_NUM_ITERATIONS = 550
 NUM_THREADS = 6
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 light_field_geometry = pl.LightFieldGeometry(
-    os.path.join(pa["run_dir"], "light_field_geometry")
+    os.path.join(paths["run_dir"], "light_field_geometry")
 )
 FIELD_OF_VIEW_RADIUS_DEG = 0.5 * np.rad2deg(
     light_field_geometry.sensor_plane2imaging_system.max_FoV_diameter
@@ -224,12 +226,12 @@ binning = make_binning_from_ligh_field_geometry(
 pl.Tomography.Image_Domain.Binning.write(
     binning=binning,
     path=os.path.join(
-        pa["out_dir"], "binning_for_tomography_in_image_domain.json"
+        paths["out_dir"], "binning_for_tomography_in_image_domain.json"
     ),
 )
 
 system_matrix_path = os.path.join(
-    pa["out_dir"], "system_matrix_for_tomography_in_image_domain.bin"
+    paths["out_dir"], "system_matrix_for_tomography_in_image_domain.bin"
 )
 
 pool = multiprocessing.Pool(NUM_THREADS)
@@ -262,7 +264,7 @@ tomo_psf = pl.Tomography.Image_Domain.Point_Spread_Function.init(
 
 for sk in ["namibia"]:
     for pk in ["helium"]:
-        sk_pk_dir = os.path.join(pa["run_dir"], production_key, sk, pk)
+        sk_pk_dir = os.path.join(paths["run_dir"], production_key, sk, pk)
 
         print("===", sk, pk, "===")
 
@@ -329,7 +331,7 @@ for sk in ["namibia"]:
             )
 
             result_dir = os.path.join(
-                pa["out_dir"], sk, pk, irf.unique.UID_FOTMAT_STR.format(uid)
+                paths["out_dir"], sk, pk, irf.unique.UID_FOTMAT_STR.format(uid)
             )
 
             os.makedirs(result_dir, exist_ok=True)

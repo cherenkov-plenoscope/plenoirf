@@ -13,18 +13,20 @@ import json_utils
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(pa["summary_dir"], "0055_passing_trigger")
+    os.path.join(paths["summary_dir"], "0055_passing_trigger")
 )
 
-os.makedirs(pa["out_dir"], exist_ok=True)
+os.makedirs(paths["out_dir"], exist_ok=True)
 
 energy_bin = json_utils.read(
-    os.path.join(pa["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
 )["point_spread_function"]
 
 c_bin_edges_deg = np.linspace(
@@ -43,7 +45,7 @@ for site_key in irf_config["config"]["sites"]:
         # ----
         event_table = snt.read(
             path=os.path.join(
-                pa["run_dir"],
+                paths["run_dir"],
                 "event_table",
                 site_key,
                 particle_key,
@@ -154,7 +156,7 @@ for site_key in irf_config["config"]["sites"]:
                         )
             fig.savefig(
                 opj(
-                    pa["out_dir"],
+                    paths["out_dir"],
                     "{:s}_{:s}_{:06d}.{:s}".format(
                         prefix_str,
                         "grid_direction_pasttrigger",

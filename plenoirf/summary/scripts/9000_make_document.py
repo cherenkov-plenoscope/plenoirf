@@ -12,10 +12,12 @@ import io
 argv = irf.summary.argv_since_py(sys.argv)
 pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(run_dir=pa["run_dir"])
-sum_config = irf.summary.read_summary_config(summary_dir=pa["summary_dir"])
+irf_config = irf.summary.read_instrument_response_config(
+    run_dir=paths["run_dir"]
+)
+sum_config = irf.summary.read_summary_config(summary_dir=paths["summary_dir"])
 
-production_dirname = irf.summary.production_name_from_run_dir(pa["run_dir"])
+production_dirname = irf.summary.production_name_from_run_dir(paths["run_dir"])
 
 geometry_options = {
     "paper": "a4paper",
@@ -42,7 +44,7 @@ ok = ["small", "medium", "large"][0]
 dk = "bell_spectrum"
 
 energy_bin = json_utils.read(
-    os.path.join(pa["summary_dir"], "0005_common_binning", "energy.json")
+    os.path.join(paths["summary_dir"], "0005_common_binning", "energy.json")
 )["point_spread_function"]
 
 
@@ -69,16 +71,16 @@ def verbatim(string):
 
 
 production_provenance = irf.utils.read_json_but_forgive(
-    path=os.path.join(pa["run_dir"], "event_table", "provenance.json")
+    path=os.path.join(paths["run_dir"], "event_table", "provenance.json")
 )
 analysis_provenance = irf.utils.read_json_but_forgive(
-    path=os.path.join(pa["summary_dir"], "provenance.json")
+    path=os.path.join(paths["summary_dir"], "provenance.json")
 )
 
 for sk in SITES:
     total_trigger_rate_per_s = get_total_trigger_rate_at_analysis_threshold(
         trigger_rates_by_origin=json_utils.tree.read(
-            ppath(pa["summary_dir"], "0131_trigger_rates_total")
+            ppath(paths["summary_dir"], "0131_trigger_rates_total")
         )[sk]["trigger_rates_by_origin"]
     )
     total_trigger_rate_per_s_ltx = irf.utils.latex_scientific(
@@ -86,7 +88,7 @@ for sk in SITES:
     )
 
     fname = os.path.join(
-        pa["summary_dir"], "{:s}_{:s}".format(production_dirname, sk)
+        paths["summary_dir"], "{:s}_{:s}".format(production_dirname, sk)
     )
 
     doc = ltx.Document(
@@ -146,7 +148,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0550_diffsens_plot",
                     sk,
                     ok,
@@ -168,7 +170,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0610_sensitivity_vs_observation_time",
                     sk,
                     ok,
@@ -188,7 +190,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0230_point_spread_function",
                     "{:s}_gamma.jpg".format(sk),
                 ),
@@ -206,7 +208,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0066_energy_estimate_quality",
                     "{:s}_gamma_resolution.jpg".format(sk),
                 ),
@@ -253,7 +255,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0016_flux_of_airshowers_plot",
                     sk + "_airshower_differential_flux.jpg",
                 ),
@@ -282,7 +284,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0130_trigger_ratescan_plot",
                     sk + "_ratescan.jpg",
                 ),
@@ -297,7 +299,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0071_trigger_probability_vs_cherenkov_size_plot",
                     sk + "_trigger_probability_vs_cherenkov_size.jpg",
                 ),
@@ -310,7 +312,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0075_trigger_probability_vs_cherenkov_density_on_ground_plot",
                     "{:s}_passing_trigger.jpg".format(sk),
                 ),
@@ -324,7 +326,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0101_trigger_acceptance_for_cosmic_particles_plot",
                     sk + "_diffuse.jpg",
                 ),
@@ -334,7 +336,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0101_trigger_acceptance_for_cosmic_particles_plot",
                     sk + "_point.jpg",
                 ),
@@ -345,7 +347,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0106_trigger_rates_for_cosmic_particles_plot",
                     sk + "_differential_trigger_rate.jpg",
                 ),
@@ -368,7 +370,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0060_cherenkov_photon_classification_plot",
                     sk + "_gamma_confusion.jpg",
                 ),
@@ -381,7 +383,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0060_cherenkov_photon_classification_plot",
                     sk + "_gamma_sensitivity_vs_true_energy.jpg",
                 ),
@@ -395,7 +397,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0066_energy_estimate_quality",
                     sk + "_gamma.jpg",
                 ),
@@ -407,7 +409,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0213_trajectory_benchmarking",
                     "{:s}_gamma_psf_image_all.jpg".format(sk),
                 ),
@@ -418,7 +420,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0301_onregion_trigger_acceptance_plot",
                     "{:s}_{:s}_diffuse.jpg".format(sk, ok),
                 ),
@@ -429,7 +431,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0301_onregion_trigger_acceptance_plot",
                     "{:s}_{:s}_point.jpg".format(sk, ok),
                 ),
@@ -440,7 +442,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0325_onregion_trigger_rates_for_cosmic_rays_plot",
                     "{:s}_{:s}_differential_event_rates.jpg".format(sk, ok),
                 ),
@@ -460,7 +462,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0905_reconstructing_gamma_arrival_time",
                     "{:s}_gamma_arrival_time_spread.jpg".format(sk),
                 ),
@@ -479,7 +481,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0108_trigger_rates_for_cosmic_particles_vs_max_scatter_angle_plot",
                     "{:s}_trigger-rate_vs_scatter.jpg".format(sk),
                 ),
@@ -489,7 +491,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0108_trigger_rates_for_cosmic_particles_vs_max_scatter_angle_plot",
                     "{:s}_diff-trigger-rate_vs_scatter.jpg".format(sk),
                 ),
@@ -501,7 +503,7 @@ for sk in SITES:
             with doc.create(ltx.Figure(position="H")) as fig:
                 fig.add_image(
                     ppath(
-                        pa["summary_dir"],
+                        paths["summary_dir"],
                         "0108_trigger_rates_for_cosmic_particles_vs_max_scatter_angle_plot",
                         "{:s}_{:s}_diff-trigger-rate_vs_scatter_vs_energy".format(
                             sk, cosmic_key
@@ -522,7 +524,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "1005_plot_light_field_geometry",
                     "solid_angles_log.jpg",
                 ),
@@ -531,7 +533,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "1005_plot_light_field_geometry",
                     "areas_log.jpg",
                 ),
@@ -540,7 +542,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "1005_plot_light_field_geometry",
                     "time_spreads_log.jpg",
                 ),
@@ -549,7 +551,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "1005_plot_light_field_geometry",
                     "efficiencies_log.jpg",
                 ),
@@ -563,7 +565,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "1210_demonstrate_resolution_of_depth",
                     "relative_depth_reco_vs_true.jpg",
                 ),
@@ -580,7 +582,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0820_passing_trigger_of_outer_array_of_small_telescopes",
                     "array_configuration_{:s}.jpg".format(OUTER_ARRAY_KEY),
                 ),
@@ -589,7 +591,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0820_passing_trigger_of_outer_array_of_small_telescopes",
                     "{:s}_{:s}_telescope_trigger_probability.jpg".format(
                         sk, OUTER_ARRAY_KEY
@@ -600,7 +602,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0821_passing_trigger_of_outer_array_of_small_telescopes_plot",
                     "{:s}_{:s}.jpg".format(sk, OUTER_ARRAY_KEY),
                 ),
@@ -615,7 +617,7 @@ for sk in SITES:
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
                 ppath(
-                    pa["summary_dir"],
+                    paths["summary_dir"],
                     "0910_runtime",
                     "{:s}_proton_relative_runtime.jpg".format(sk),
                 ),
