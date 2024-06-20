@@ -23,42 +23,48 @@ energy_bin = json_utils.read(
 
 particle_colors = res.analysis["plot"]["particle_colors"]
 
-for sk in res.SITES:
-    fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-    for pk in airshower_fluxes[sk]:
-        dFdE = airshower_fluxes[sk][pk]["differential_flux"]["values"]
-        dFdE_au = airshower_fluxes[sk][pk]["differential_flux"][
-            "absolute_uncertainty"
-        ]
 
-        ax.plot(
-            energy_bin["centers"],
-            dFdE,
-            label=pk,
-            color=particle_colors[pk],
-        )
-        ax.fill_between(
-            x=energy_bin["centers"],
-            y1=dFdE - dFdE_au,
-            y2=dFdE + dFdE_au,
-            facecolor=particle_colors[pk],
-            alpha=0.2,
-            linewidth=0.0,
-        )
+fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
+ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+for pk in airshower_fluxes:
+    dFdE = airshower_fluxes[pk]["differential_flux"]["values"]
+    dFdE_au = airshower_fluxes[pk]["differential_flux"]["absolute_uncertainty"]
 
-    ax.set_xlabel("energy / GeV")
-    ax.set_ylabel(
-        "differential flux of airshowers /\n"
-        + "m$^{-2}$ s$^{-1}$ sr$^{-1}$ (GeV)$^{-1}$"
+    ax.plot(
+        energy_bin["centers"],
+        dFdE,
+        label=pk,
+        color=particle_colors[pk],
     )
-    ax.loglog()
-    ax.set_xlim(energy_bin["limits"])
-    ax.legend()
-    fig.savefig(
-        os.path.join(
-            paths["out_dir"],
-            "{:s}_airshower_differential_flux.jpg".format(sk),
-        )
+    ax.fill_between(
+        x=energy_bin["centers"],
+        y1=dFdE - dFdE_au,
+        y2=dFdE + dFdE_au,
+        facecolor=particle_colors[pk],
+        alpha=0.2,
+        linewidth=0.0,
     )
-    seb.close(fig)
+
+ax.set_xlabel("energy / GeV")
+ax.set_ylabel(
+    "differential flux of airshowers /\n"
+    + "m$^{-2}$ s$^{-1}$ sr$^{-1}$ (GeV)$^{-1}$"
+)
+ax.text(
+    0.1,
+    0.1,
+    f"site: {res.SITE['name']}",
+    horizontalalignment="center",
+    # verticalalignment="center",
+    transform=ax.transAxes,
+)
+ax.loglog()
+ax.set_xlim(energy_bin["limits"])
+ax.legend()
+fig.savefig(
+    os.path.join(
+        paths["out_dir"],
+        "airshower_differential_flux.jpg",
+    )
+)
+seb.close(fig)

@@ -43,20 +43,43 @@ def argv_since_py(argv):
     return _argv
 
 
+def paths_from_argv(argv):
+    argv = argv_since_py(argv)
+
+    assert len(argv) == 4
+    plenoirf_dir = argv[1]
+    instrument_key = argv[2]
+    site_key = argv[3]
+    analysis_dir = os.path.join(
+        plenoirf_dir, "analysis", instrument_key, site_key
+    )
+    script_name = str.split(os.path.basename(argv[0]), ".")[0]
+    return {
+        "plenoirf_dir": plenoirf_dir,
+        "instrument_key": instrument_key,
+        "script_name": script_name,
+        "analysis_dir": analysis_dir,
+        "out_dir": os.path.join(analysis_dir, script_name),
+    }
+
+
 class Resources:
     """
     Lazy
     """
 
-    def __init__(self, plenoirf_dir, instrument_key):
-        self.instrument_key = instrument_key
+    def __init__(self, plenoirf_dir, instrument_key, site_key):
         self.plenoirf_dir = plenoirf_dir
+        self.instrument_key = instrument_key
+        self.site_key = site_key
 
     @classmethod
     def from_argv(cls, argv):
         argv = argv_since_py(argv)
-        assert len(argv) == 3
-        return cls(plenoirf_dir=argv[1], instrument_key=argv[2])
+        assert len(argv) == 4
+        return cls(
+            plenoirf_dir=argv[1], instrument_key=argv[2], site_key=argv[3]
+        )
 
     @property
     def config(self):
@@ -78,6 +101,12 @@ class Resources:
         if not hasattr(self, "_SITES"):
             self._SITES = _init_SITES(config=self.config)
         return self._SITES
+
+    @property
+    def SITE(self):
+        if not hasattr(self, "_SITE"):
+            self._SITE = self.SITES[self.site_key]
+        return self._SITE
 
     @property
     def PARTICLES(self):
@@ -162,9 +191,9 @@ def init(plenoirf_dir, config=None):
     os.makedirs(analysis_dir, exist_ok=True)
 
     for instrument_key in config["instruments"]:
-        summary_instrument_dir = os.path.join(analysis_dir, instrument_key)
+        instrument_dir = os.path.join(analysis_dir, instrument_key)
+        os.makedirs(instrument_dir, exist_ok=True)
 
-        os.makedirs(summary_instrument_dir, exist_ok=True)
         analysis_config = _guess_analysis_config_for_instrument(
             plenoirf_dir=plenoirf_dir,
             instrument_key=instrument_key,
@@ -172,7 +201,7 @@ def init(plenoirf_dir, config=None):
         )
 
         with open(
-            os.path.join(summary_instrument_dir, "analysis_config.json"), "wt"
+            os.path.join(instrument_dir, "analysis_config.json"), "wt"
         ) as fout:
             fout.write(json_utils.dumps(analysis_config, indent=4))
 
