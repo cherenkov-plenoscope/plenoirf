@@ -2,7 +2,8 @@ from .version import __version__
 
 
 # from . import analysis
-# from . import features
+from . import features
+
 # from . import instrument_response
 # from . import create_test_tables
 

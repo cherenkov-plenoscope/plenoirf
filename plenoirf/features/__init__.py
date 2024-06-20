@@ -1,5 +1,5 @@
 from . import combined_features
-from .. import table
+from .. import event_table
 
 import numpy as np
 import sympy
@@ -74,18 +74,19 @@ def find_transformation(feature_raw, transformation_instruction):
     return transformation
 
 
-ORIGINAL = table.STRUCTURE["features"]
-COMBINED = combined_features.COMBINED_FEATURES
+def init_all_features_structure():
+    original = irf.event_table.structure.init_features_level_structure()
+    combined = combined_features.init_combined_features_structure()
 
-ALL = {}
-for fk in ORIGINAL:
-    ALL[fk] = dict(ORIGINAL[fk])
-for fk in COMBINED:
-    ALL[fk] = dict(COMBINED[fk])
+    out = {}
+    for fk in original:
+        out[fk] = dict(original[fk])
+    for fk in combined:
+        out[fk] = dict(combined[fk])
 
-
-TRANSFORMED_FEATURE_STRUCTURE = {"transformed_features": {}}
-for fk in ALL:
-    TRANSFORMED_FEATURE_STRUCTURE["transformed_features"][fk] = {
-        "dtype": "<f8"
-    }
+    transformed_feature_structure = {"transformed_features": {}}
+    for fk in out:
+        transformed_feature_structure["transformed_features"][fk] = {
+            "dtype": "<f8"
+        }
+    return out

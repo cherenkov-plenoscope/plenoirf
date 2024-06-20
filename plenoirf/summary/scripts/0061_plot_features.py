@@ -7,16 +7,11 @@ import numpy as np
 import sebastians_matplotlib_addons as seb
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
-
+paths = irf.summary.paths_from_argv(sys.argv)
+res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
+seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 weights_thrown2expected = json_utils.tree.read(
     os.path.join(
@@ -31,169 +26,148 @@ passing_quality = json_utils.tree.read(
     os.path.join(paths["analysis_dir"], "0056_passing_basic_quality")
 )
 
-PARTICLES = irf_config["config"]["particles"]
-SITES = irf_config["config"]["sites"]
+particle_colors = res.analysis["plot"]["particle_colors"]
 
-particle_colors = sum_config["plot"]["particle_colors"]
+PARTICLES = res.PARTICLES
 
 # Read features
 # =============
 
 tables = {}
-for sk in SITES:
-    tables[sk] = {}
-    for pk in PARTICLES:
-        _table = snt.read(
-            path=os.path.join(
-                paths["plenoirf_dir"],
-                "event_table",
-                sk,
-                pk,
-                "event_table.tar",
-            ),
-            structure=irf.table.STRUCTURE,
-        )
 
-        idx_common = snt.intersection(
-            [
-                passing_trigger[sk][pk]["idx"],
-                passing_quality[sk][pk]["idx"],
-            ]
-        )
+for pk in PARTICLES:
+    _table = res.read_event_table(particle_key=pk)
 
-        tables[sk][pk] = snt.cut_and_sort_table_on_indices(
-            table=_table,
-            common_indices=idx_common,
-            level_keys=["primary", "features"],
-        )
+    idx_common = snt.intersection(
+        [
+            passing_trigger[pk]["idx"],
+            passing_quality[pk]["idx"],
+        ]
+    )
+
+    tables[pk] = snt.cut_and_sort_table_on_indices(
+        table=_table,
+        common_indices=idx_common,
+        level_keys=["primary", "features"],
+    )
 
 # guess bin edges
 lims = {}
-Sfeatures = irf.table.STRUCTURE["features"]
+Sfeatures = irf.event_table.structure.init_features_level_structure()
 
 for fk in Sfeatures:
     lims[fk] = {}
-    for sk in SITES:
-        lims[fk][sk] = {}
-        for pk in PARTICLES:
-            lims[fk][sk][pk] = {}
-            features = tables[sk][pk]["features"]
-            num_bins = int(np.sqrt(features.shape[0]))
-            num_bin_edges = num_bins + 1
-            lims[fk][sk][pk]["bin_edges"] = {}
-            lims[fk][sk][pk]["bin_edges"]["num"] = num_bin_edges
+    for pk in PARTICLES:
+        lims[fk][pk] = {}
+        features = tables[pk]["features"]
+        num_bins = int(np.sqrt(features.shape[0]))
+        num_bin_edges = num_bins + 1
+        lims[fk][pk]["bin_edges"] = {}
+        lims[fk][pk]["bin_edges"]["num"] = num_bin_edges
 
-            start, stop = irf.features.find_values_quantile_range(
-                values=features[fk], quantile_range=[0.01, 0.99]
-            )
-            if "log(x)" in Sfeatures[fk]["transformation"]["function"]:
-                start = 10 ** np.floor(np.log10(start))
-                stop = 10 ** np.ceil(np.log10(stop))
+        start, stop = irf.features.find_values_quantile_range(
+            values=features[fk], quantile_range=[0.01, 0.99]
+        )
+        if "log(x)" in Sfeatures[fk]["transformation"]["function"]:
+            start = 10 ** np.floor(np.log10(start))
+            stop = 10 ** np.ceil(np.log10(stop))
+        else:
+            if start >= 0.0:
+                start = 0.9 * start
             else:
-                if start >= 0.0:
-                    start = 0.9 * start
-                else:
-                    start = 1.1 * start
-                if stop >= 0.0:
-                    stop = 1.1 * stop
-                else:
-                    stop = 0.9 * stop
+                start = 1.1 * start
+            if stop >= 0.0:
+                stop = 1.1 * stop
+            else:
+                stop = 0.9 * stop
 
-            lims[fk][sk][pk]["bin_edges"]["start"] = start
-            lims[fk][sk][pk]["bin_edges"]["stop"] = stop
+        lims[fk][pk]["bin_edges"]["start"] = start
+        lims[fk][pk]["bin_edges"]["stop"] = stop
 
 # find same bin-edges for all particles
 for fk in Sfeatures:
-    for sk in SITES:
-        starts = [lims[fk][sk][pk]["bin_edges"]["start"] for pk in PARTICLES]
-        stops = [lims[fk][sk][pk]["bin_edges"]["stop"] for pk in PARTICLES]
-        nums = [lims[fk][sk][pk]["bin_edges"]["num"] for pk in PARTICLES]
-        start = np.min(starts)
-        stop = np.max(stops)
-        num = np.max(nums)
-        for pk in PARTICLES:
-            lims[fk][sk][pk]["bin_edges"]["stop"] = stop
-            lims[fk][sk][pk]["bin_edges"]["start"] = start
-            lims[fk][sk][pk]["bin_edges"]["num"] = num
+    starts = [lims[fk][pk]["bin_edges"]["start"] for pk in PARTICLES]
+    stops = [lims[fk][pk]["bin_edges"]["stop"] for pk in PARTICLES]
+    nums = [lims[fk][pk]["bin_edges"]["num"] for pk in PARTICLES]
+    start = np.min(starts)
+    stop = np.max(stops)
+    num = np.max(nums)
+    for pk in PARTICLES:
+        lims[fk][pk]["bin_edges"]["stop"] = stop
+        lims[fk][pk]["bin_edges"]["start"] = start
+        lims[fk][pk]["bin_edges"]["num"] = num
 
 for fk in Sfeatures:
-    for sk in SITES:
-        fig = seb.figure(style=seb.FIGURE_1_1)
-        ax = seb.add_axes(fig=fig, span=[0.175, 0.15, 0.75, 0.8])
+    fig = seb.figure(style=seb.FIGURE_1_1)
+    ax = seb.add_axes(fig=fig, span=[0.175, 0.15, 0.75, 0.8])
 
-        for pk in PARTICLES:
-            reweight_spectrum = np.interp(
-                x=tables[sk][pk]["primary"]["energy_GeV"],
-                xp=weights_thrown2expected[sk][pk]["weights_vs_energy"][
-                    "energy_GeV"
-                ],
-                fp=weights_thrown2expected[sk][pk]["weights_vs_energy"][
-                    "mean"
-                ],
-            )
-
-            if "log(x)" in Sfeatures[fk]["transformation"]["function"]:
-                myspace = np.geomspace
-            else:
-                myspace = np.linspace
-
-            bin_edges_fk = myspace(
-                lims[fk][sk][pk]["bin_edges"]["start"],
-                lims[fk][sk][pk]["bin_edges"]["stop"],
-                lims[fk][sk][pk]["bin_edges"]["num"],
-            )
-            bin_counts_fk = np.histogram(
-                tables[sk][pk]["features"][fk], bins=bin_edges_fk
-            )[0]
-            bin_counts_weight_fk = np.histogram(
-                tables[sk][pk]["features"][fk],
-                weights=reweight_spectrum,
-                bins=bin_edges_fk,
-            )[0]
-
-            bin_counts_unc_fk = irf.utils._divide_silent(
-                numerator=np.sqrt(bin_counts_fk),
-                denominator=bin_counts_fk,
-                default=np.nan,
-            )
-            bin_counts_weight_norm_fk = irf.utils._divide_silent(
-                numerator=bin_counts_weight_fk,
-                denominator=np.sum(bin_counts_weight_fk),
-                default=0,
-            )
-
-            seb.ax_add_histogram(
-                ax=ax,
-                bin_edges=bin_edges_fk,
-                bincounts=bin_counts_weight_norm_fk,
-                linestyle="-",
-                linecolor=particle_colors[pk],
-                linealpha=1.0,
-                bincounts_upper=bin_counts_weight_norm_fk
-                * (1 + bin_counts_unc_fk),
-                bincounts_lower=bin_counts_weight_norm_fk
-                * (1 - bin_counts_unc_fk),
-                face_color=particle_colors[pk],
-                face_alpha=0.3,
-            )
+    for pk in PARTICLES:
+        reweight_spectrum = np.interp(
+            x=tables[pk]["primary"]["energy_GeV"],
+            xp=weights_thrown2expected[pk]["weights_vs_energy"]["energy_GeV"],
+            fp=weights_thrown2expected[pk]["weights_vs_energy"]["mean"],
+        )
 
         if "log(x)" in Sfeatures[fk]["transformation"]["function"]:
-            ax.loglog()
+            myspace = np.geomspace
         else:
-            ax.semilogy()
+            myspace = np.linspace
 
-        irf.summary.figure.mark_ax_airshower_spectrum(ax=ax)
-        ax.set_xlabel("{:s} / {:s}".format(fk, Sfeatures[fk]["unit"]))
-        ax.set_ylabel("relative intensity / 1")
-        seb.ax_add_grid(ax)
-        ax.set_xlim(
-            [
-                lims[fk][sk][pk]["bin_edges"]["start"],
-                lims[fk][sk][pk]["bin_edges"]["stop"],
-            ]
+        bin_edges_fk = myspace(
+            lims[fk][pk]["bin_edges"]["start"],
+            lims[fk][pk]["bin_edges"]["stop"],
+            lims[fk][pk]["bin_edges"]["num"],
         )
-        ax.set_ylim([1e-5, 1.0])
-        fig.savefig(
-            os.path.join(paths["out_dir"], "{:s}_{:s}.jpg".format(sk, fk))
+        bin_counts_fk = np.histogram(
+            tables[pk]["features"][fk], bins=bin_edges_fk
+        )[0]
+        bin_counts_weight_fk = np.histogram(
+            tables[pk]["features"][fk],
+            weights=reweight_spectrum,
+            bins=bin_edges_fk,
+        )[0]
+
+        bin_counts_unc_fk = irf.utils._divide_silent(
+            numerator=np.sqrt(bin_counts_fk),
+            denominator=bin_counts_fk,
+            default=np.nan,
         )
-        seb.close(fig)
+        bin_counts_weight_norm_fk = irf.utils._divide_silent(
+            numerator=bin_counts_weight_fk,
+            denominator=np.sum(bin_counts_weight_fk),
+            default=0,
+        )
+
+        seb.ax_add_histogram(
+            ax=ax,
+            bin_edges=bin_edges_fk,
+            bincounts=bin_counts_weight_norm_fk,
+            linestyle="-",
+            linecolor=particle_colors[pk],
+            linealpha=1.0,
+            bincounts_upper=bin_counts_weight_norm_fk
+            * (1 + bin_counts_unc_fk),
+            bincounts_lower=bin_counts_weight_norm_fk
+            * (1 - bin_counts_unc_fk),
+            face_color=particle_colors[pk],
+            face_alpha=0.3,
+        )
+
+    if "log(x)" in Sfeatures[fk]["transformation"]["function"]:
+        ax.loglog()
+    else:
+        ax.semilogy()
+
+    irf.summary.figure.mark_ax_airshower_spectrum(ax=ax)
+    ax.set_xlabel("{:s} / {:s}".format(fk, Sfeatures[fk]["unit"]))
+    ax.set_ylabel("relative intensity / 1")
+    seb.ax_add_grid(ax)
+    ax.set_xlim(
+        [
+            lims[fk][pk]["bin_edges"]["start"],
+            lims[fk][pk]["bin_edges"]["stop"],
+        ]
+    )
+    ax.set_ylim([1e-5, 1.0])
+    fig.savefig(os.path.join(paths["out_dir"], f"{fk:s}.jpg"))
+    seb.close(fig)
