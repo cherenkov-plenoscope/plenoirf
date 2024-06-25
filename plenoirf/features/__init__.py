@@ -75,7 +75,7 @@ def find_transformation(feature_raw, transformation_instruction):
 
 
 def init_all_features_structure():
-    original = irf.event_table.structure.init_features_level_structure()
+    original = event_table.structure.init_features_level_structure()
     combined = combined_features.init_combined_features_structure()
 
     out = {}
