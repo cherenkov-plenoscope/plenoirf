@@ -7,7 +7,7 @@ import numpy as np
 
 from importlib import resources as importlib_resources
 
-# import subprocess
+import subprocess
 import sparse_numeric_table as snt
 
 import glob
@@ -22,7 +22,8 @@ from .. import utils
 # from .. import reconstruction
 # from .. import analysis
 # from .. import table
-# from .. import provenance
+from .. import provenance
+
 # from .. import production
 from .. import outer_telescope_array
 from .. import configuration
@@ -248,23 +249,36 @@ def read_instrument_config(plenoirf_dir, instrument_key):
     return bundle
 
 
-def run(run_dir):
+def _run_instrument_site(plenoirf_dir, instrument_key, site_key):
+    result_dir = os.path.join(
+        plenoirf_dir, "analysis", instrument_key, site_key
+    )
+    os.makedirs(result_dir, exist_ok=True)
+
     json_utils.write(
-        path=opj(run_dir, "summary", "provenance.json"),
-        out_dict=provenance.make_provenance(),
+        os.path.join(result_dir, "provenance.json"),
+        provenance.make_provenance(),
     )
 
-    script_abspaths = _make_script_abspaths()
+    script_abspaths = _make_script_abspaths()[0:14]
 
     for script_abspath in script_abspaths:
         script_basename = os.path.basename(script_abspath)
         script_name = str.split(script_basename, ".")[0]
-        result_path = os.path.join(run_dir, "summary", script_name)
+        result_path = os.path.join(result_dir, script_name)
         if os.path.exists(result_path):
             print("[skip] ", script_name)
         else:
             print("[run ] ", script_name)
-            subprocess.call(["python", script_abspath, run_dir])
+            subprocess.call(
+                [
+                    "python",
+                    script_abspath,
+                    plenoirf_dir,
+                    instrument_key,
+                    site_key,
+                ]
+            )
 
 
 def _make_script_abspaths():
