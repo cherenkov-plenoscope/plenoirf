@@ -65,7 +65,7 @@ for tm in trigger_modi:
     ax.semilogy()
     ax.set_xlim([np.min(density_bin_edges), np.max(density_bin_edges)])
     ax.set_ylim([1e-6, 1.5e-0])
-    ax.set_xlabel("density of Cherenkov photons at plenoscope / m$^{-2}$")
+    ax.set_xlabel("density of Cherenkov photons on mirror / m$^{-2}$")
     ax.set_ylabel("{:s} / 1".format(trigger_modi[tm]))
     fig.savefig(opj(paths["out_dir"], f"{tm}.jpg"))
     seb.close(fig)
