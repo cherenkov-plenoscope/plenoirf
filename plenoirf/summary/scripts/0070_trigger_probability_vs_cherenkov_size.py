@@ -7,14 +7,8 @@ from os.path import join as opj
 import sparse_numeric_table as snt
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
-
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-
+paths = irf.summary.paths_from_argv(sys.argv)
+res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 num_size_bins = 12
@@ -24,55 +18,45 @@ passing_trigger = json_utils.tree.read(
     os.path.join(paths["analysis_dir"], "0055_passing_trigger")
 )
 
-for site_key in irf_config["config"]["sites"]:
-    for particle_key in irf_config["config"]["particles"]:
-        site_particle_dir = opj(paths["out_dir"], site_key, particle_key)
-        os.makedirs(site_particle_dir, exist_ok=True)
+for pk in res.PARTICLES:
+    pk_dir = opj(paths["out_dir"], pk)
+    os.makedirs(pk_dir, exist_ok=True)
 
-        event_table = snt.read(
-            path=os.path.join(
-                paths["plenoirf_dir"],
-                "event_table",
-                site_key,
-                particle_key,
-                "event_table.tar",
-            ),
-            structure=irf.table.STRUCTURE,
-        )
+    event_table = res.read_event_table(particle_key=pk)
 
-        key = "trigger_probability_vs_cherenkov_size"
+    key = "trigger_probability_vs_cherenkov_size"
 
-        mask_pasttrigger = snt.make_mask_of_right_in_left(
-            left_indices=event_table["trigger"][snt.IDX],
-            right_indices=passing_trigger[site_key][particle_key]["idx"],
-        )
+    mask_pasttrigger = snt.make_mask_of_right_in_left(
+        left_indices=event_table["trigger"][snt.IDX],
+        right_indices=passing_trigger[pk]["idx"],
+    ).astype(float)
 
-        num_thrown = np.histogram(
-            event_table["trigger"]["num_cherenkov_pe"], bins=size_bin_edges
-        )[0]
+    num_thrown = np.histogram(
+        event_table["trigger"]["num_cherenkov_pe"], bins=size_bin_edges
+    )[0]
 
-        num_pasttrigger = np.histogram(
-            event_table["trigger"]["num_cherenkov_pe"],
-            bins=size_bin_edges,
-            weights=mask_pasttrigger,
-        )[0]
+    num_pasttrigger = np.histogram(
+        event_table["trigger"]["num_cherenkov_pe"],
+        bins=size_bin_edges,
+        weights=mask_pasttrigger,
+    )[0]
 
-        trigger_probability = irf.utils._divide_silent(
-            numerator=num_pasttrigger, denominator=num_thrown, default=np.nan
-        )
+    trigger_probability = irf.utils._divide_silent(
+        numerator=num_pasttrigger, denominator=num_thrown, default=np.nan
+    )
 
-        trigger_probability_unc = irf.utils._divide_silent(
-            numerator=np.sqrt(num_pasttrigger),
-            denominator=num_pasttrigger,
-            default=np.nan,
-        )
+    trigger_probability_unc = irf.utils._divide_silent(
+        numerator=np.sqrt(num_pasttrigger),
+        denominator=num_pasttrigger,
+        default=np.nan,
+    )
 
-        json_utils.write(
-            os.path.join(site_particle_dir, key + ".json"),
-            {
-                "true_Cherenkov_size_bin_edges_pe": size_bin_edges,
-                "unit": "1",
-                "mean": trigger_probability,
-                "relative_uncertainty": trigger_probability_unc,
-            },
-        )
+    json_utils.write(
+        os.path.join(pk_dir, f"{key}.json"),
+        {
+            "true_Cherenkov_size_bin_edges_pe": size_bin_edges,
+            "unit": "1",
+            "mean": trigger_probability,
+            "relative_uncertainty": trigger_probability_unc,
+        },
+    )

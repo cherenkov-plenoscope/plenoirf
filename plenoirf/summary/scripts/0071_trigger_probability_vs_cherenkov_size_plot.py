@@ -7,16 +7,10 @@ from os.path import join as opj
 import sebastians_matplotlib_addons as seb
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
-
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
-
+paths = irf.summary.paths_from_argv(sys.argv)
+res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
+seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 trigger_vs_size = json_utils.tree.read(
     os.path.join(
@@ -24,62 +18,59 @@ trigger_vs_size = json_utils.tree.read(
     )
 )
 
-particle_colors = sum_config["plot"]["particle_colors"]
+particle_colors = res.analysis["plot"]["particle_colors"]
 
-for site_key in irf_config["config"]["sites"]:
-    # all particles together
-    # ----------------------
-    fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+# all particles together
+# ----------------------
+fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
+ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
-    text_y = 0
-    for particle_key in irf_config["config"]["particles"]:
-        size_bin_edges = np.array(
-            trigger_vs_size[site_key][particle_key][
-                "trigger_probability_vs_cherenkov_size"
-            ]["true_Cherenkov_size_bin_edges_pe"]
-        )
-
-        prob = np.array(
-            trigger_vs_size[site_key][particle_key][
-                "trigger_probability_vs_cherenkov_size"
-            ]["mean"]
-        )
-        prob_unc = np.array(
-            trigger_vs_size[site_key][particle_key][
-                "trigger_probability_vs_cherenkov_size"
-            ]["relative_uncertainty"]
-        )
-
-        seb.ax_add_histogram(
-            ax=ax,
-            bin_edges=size_bin_edges,
-            bincounts=prob,
-            linestyle="-",
-            linecolor=particle_colors[particle_key],
-            bincounts_upper=prob * (1 + prob_unc),
-            bincounts_lower=prob * (1 - prob_unc),
-            face_color=particle_colors[particle_key],
-            face_alpha=0.25,
-        )
-        ax.text(
-            0.85,
-            0.1 + text_y,
-            particle_key,
-            color=particle_colors[particle_key],
-            transform=ax.transAxes,
-        )
-        text_y += 0.06
-    ax.semilogx()
-    ax.semilogy()
-    ax.set_xlim([1e1, np.max(size_bin_edges)])
-    ax.set_ylim([1e-6, 1.5e-0])
-    ax.set_xlabel("true Cherenkov-size / p.e.")
-    ax.set_ylabel("trigger-probability / 1")
-    fig.savefig(
-        opj(
-            paths["out_dir"],
-            site_key + "_trigger_probability_vs_cherenkov_size.jpg",
-        )
+text_y = 0
+for pk in res.PARTICLES:
+    size_bin_edges = np.array(
+        trigger_vs_size[pk]["trigger_probability_vs_cherenkov_size"][
+            "true_Cherenkov_size_bin_edges_pe"
+        ]
     )
-    seb.close(fig)
+
+    prob = np.array(
+        trigger_vs_size[pk]["trigger_probability_vs_cherenkov_size"]["mean"]
+    )
+    prob_unc = np.array(
+        trigger_vs_size[pk]["trigger_probability_vs_cherenkov_size"][
+            "relative_uncertainty"
+        ]
+    )
+
+    seb.ax_add_histogram(
+        ax=ax,
+        bin_edges=size_bin_edges,
+        bincounts=prob,
+        linestyle="-",
+        linecolor=particle_colors[pk],
+        bincounts_upper=prob * (1 + prob_unc),
+        bincounts_lower=prob * (1 - prob_unc),
+        face_color=particle_colors[pk],
+        face_alpha=0.25,
+    )
+    ax.text(
+        0.85,
+        0.1 + text_y,
+        pk,
+        color=particle_colors[pk],
+        transform=ax.transAxes,
+    )
+    text_y += 0.06
+ax.semilogx()
+ax.semilogy()
+ax.set_xlim([1e1, np.max(size_bin_edges)])
+ax.set_ylim([1e-6, 1.5e-0])
+ax.set_xlabel("true Cherenkov-size / p.e.")
+ax.set_ylabel("trigger-probability / 1")
+fig.savefig(
+    opj(
+        paths["out_dir"],
+        "trigger_probability_vs_cherenkov_size.jpg",
+    )
+)
+seb.close(fig)
