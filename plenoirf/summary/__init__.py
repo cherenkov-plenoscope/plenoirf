@@ -15,6 +15,7 @@ import json_utils
 
 import atmospheric_cherenkov_response
 import merlict_development_kit_python
+import solid_angle_utils
 
 from .. import utils
 
@@ -147,6 +148,16 @@ class Resources:
                 "event_table.tar",
             )
         )
+
+    def ZenithBinning(self, key):
+        zb_cfg = self.analysis["pointing_binning"]["zenith_binning"]
+        num_bins = zb_cfg["num_bins"] * zb_cfg["fine"][key]
+        bin_edges = solid_angle_utils.cone.half_angle_space(
+            start_half_angle_rad=zb_cfg["start_half_angle_rad"],
+            stop_half_angle_rad=zb_cfg["stop_half_angle_rad"],
+            num=num_bins + 1,
+        )
+        return ZenithBinning(bin_edges=bin_edges)
 
     def __repr__(self):
         return f"{self.__class__.__name__}()"
@@ -580,6 +591,18 @@ def _guess_analysis_config_for_instrument(
         },
     }
 
+    cfg["pointing_binning"] = {
+        "zenith_binning": {
+            "start_half_angle_rad": 0,
+            "stop_half_angle_rad": np.deg2rad(45),
+            "num_bins": 3,
+            "fine": {
+                "once": 1,
+                "twice": 2,
+            },
+        }
+    }
+
     cfg["plot"] = {}
     cfg["plot"]["matplotlib"] = figure.MATPLOTLIB_RCPARAMS_LATEX
     cfg["plot"]["particle_colors"] = figure.PARTICLE_COLORS
@@ -667,3 +690,31 @@ def read_train_test_frame(
         out[kk] = snt.make_rectangular_DataFrame(table_kk)
 
     return out
+
+
+class ZenithBinning:
+    def __init__(self, bin_edges):
+        b = binning_utils.Binning(bin_edges=bin_edges)
+        self.num = b["num"]
+        self.edges = b["edges"]
+        self.widths = b["widths"]
+        self.start = b["start"]
+        self.stop = b["stop"]
+        self.limits = b["limits"]
+
+        self.centers = np.zeros(self.num)
+        for i in range(self.num):
+            self.centers[i] = solid_angle_utils.cone.half_angle_space(
+                start_half_angle_rad=self.edges[i],
+                stop_half_angle_rad=self.edges[i + 1],
+                num=3,
+            )[1]
+
+        self.solid_angles = np.zeros(self.num)
+        for i in range(self.num):
+            outer = solid_angle_utils.cone.solid_angle(self.edges[i + 1])
+            inner = solid_angle_utils.cone.solid_angle(self.edges[i])
+            self.solid_angles[i] = outer - inner
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}()"
