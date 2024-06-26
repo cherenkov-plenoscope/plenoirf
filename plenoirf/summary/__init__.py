@@ -131,10 +131,9 @@ class Resources:
                 self.plenoirf_dir,
                 "analysis",
                 self.instrument_key,
-                "analysis_config.json",
+                "config",
             )
-            with open(path, "rt") as fin:
-                self._analysis = json_utils.loads(fin.read())
+            self._analysis = json_utils.tree.read(path)
         return self._analysis
 
     def read_event_table(self, particle_key):
@@ -224,10 +223,15 @@ def init(plenoirf_dir, config=None):
             config=config,
         )
 
-        with open(
-            os.path.join(instrument_dir, "analysis_config.json"), "wt"
-        ) as fout:
-            fout.write(json_utils.dumps(analysis_config, indent=4))
+        analysis_config_dir = os.path.join(
+            analysis_dir, instrument_key, "config"
+        )
+        json_utils.tree.write(
+            path=analysis_config_dir,
+            tree=analysis_config,
+            dirtree={},
+            indent=4,
+        )
 
 
 def production_name_from_run_dir(path):
