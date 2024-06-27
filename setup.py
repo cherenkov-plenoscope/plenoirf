@@ -51,7 +51,7 @@ setuptools.setup(
         "json_numpy_sebastian-achim-mueller",
         "confusion_matrix_sebastian-achim-mueller>=0.0.4",
         "flux_sensitivity_sebastian-achim-mueller>=0.0.1",
-        "rename_after_writing",
+        "rename_after_writing>=0.0.6",
         "gitpython>=3.1.40",
         "plenoptics_cherenkov-plenoscope-project>=0.0.8",
         "gamma_ray_reconstruction_cherenkov-plenoscope-project>=0.0.5",

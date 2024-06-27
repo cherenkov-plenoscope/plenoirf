@@ -3,6 +3,7 @@ import tarfile
 import os
 import io
 import glob
+import rename_after_writing as rnw
 import sparse_numeric_table as snt
 import gzip
 import plenopy
@@ -56,11 +57,12 @@ def run_job(job):
         job["site_key"],
         job["particle_key"],
     )
-    reduce_item(
-        map_dir=os.path.join(par_dir, "stage"),
-        out_path=os.path.join(par_dir, job["item_key"]),
-        item_key=job["item_key"],
-    )
+    with rnw.Path(os.path.join(par_dir, job["item_key"])) as out_path:
+        reduce_item(
+            map_dir=os.path.join(par_dir, "stage"),
+            out_path=out_path,
+            item_key=job["item_key"],
+        )
 
 
 def zip_read_BytesIo(file, internal_path, mode="r"):
