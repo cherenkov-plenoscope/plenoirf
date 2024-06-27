@@ -76,19 +76,19 @@ def zip_read_BytesIo(file, internal_path, mode="r"):
 
 
 def recude_event_table(run_paths, out_path):
-    evttab = snt.init(dtypes=event_table.structure.dtypes())
-    opj = os.path.join
-    for run_path in run_paths:
-        run_basename = os.path.basename(run_path)
-        run_id_str = os.path.splitext(run_basename)[0]
-        buff = zip_read_BytesIo(
-            file=run_path,
-            internal_path=opj(run_id_str, "event_table.tar.gz"),
-            mode="r|gz",
-        )
-        part_evttab = snt.read(fileobj=buff, dynamic=False)
-        evttab = snt.append(evttab, part_evttab)
-    snt.write(path=out_path, table=evttab)
+    with snt.archive.open(
+        out_path, mode="w", dtypes=event_table.structure.dtypes()
+    ) as arc:
+        for run_path in run_paths:
+            run_basename = os.path.basename(run_path)
+            run_id_str = os.path.splitext(run_basename)[0]
+            buff = zip_read_BytesIo(
+                file=run_path,
+                internal_path=os.path.join(run_id_str, "event_table.tar.gz"),
+                mode="r|gz",
+            )
+            run_evttab = snt.read(fileobj=buff, dynamic=False)
+            arc.append_table(run_evttab)
 
 
 def reduce_reconstructed_cherenkov(run_paths, out_path):
