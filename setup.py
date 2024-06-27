@@ -38,6 +38,7 @@ setuptools.setup(
     ],
     install_requires=[
         "xmltodict",
+        "sympy>=1.11.1",
         "scikit-image",
         "un_bound_histogram>=0.0.1",
         "cosmic_fluxes",
