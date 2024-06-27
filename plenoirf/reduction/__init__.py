@@ -13,14 +13,14 @@ from .. import configuration
 
 def list_items():
     return [
-        "event_table.tar",
+        "event_table.zip",
         "reconstructed_cherenkov.tar",
     ]
 
 
 def reduce_item(map_dir, out_path, item_key):
     run_paths = glob.glob(os.path.join(map_dir, "*.zip"))
-    if item_key == "event_table.tar":
+    if item_key == "event_table.zip":
         recude_event_table(run_paths=run_paths, out_path=out_path)
     elif item_key == "reconstructed_cherenkov.tar":
         reduce_reconstructed_cherenkov(run_paths=run_paths, out_path=out_path)
