@@ -59,7 +59,10 @@ def align_on_idx(input_idx, input_values, target_idxs):
 
 
 for pk in PARTICLES:
-    event_table = res.read_event_table(particle_key=pk)
+    with res.open_event_table(particle_key=pk) as arc:
+        event_table = arc.read_table(
+            levels_and_columns={"primary": [snt.IDX, "energy_GeV"]}
+        )
 
     idx_valid = snt.intersection(
         [

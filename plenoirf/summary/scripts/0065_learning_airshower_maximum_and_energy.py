@@ -61,13 +61,6 @@ targets = {
     },
 }
 
-level_keys = [
-    "primary",
-    "cherenkovpool",
-    "transformed_features",
-    "reconstructed_trajectory",
-]
-
 min_number_samples = 100
 
 
@@ -79,19 +72,27 @@ def read_event_frame(
     passing_trigger,
     passing_quality,
     train_test,
-    level_keys,
 ):
     pk = particle_key
 
-    airshower_table = res.read_event_table(particle_key=pk)
-
-    airshower_table["transformed_features"] = snt.read(
-        os.path.join(
-            transformed_features_dir,
-            pk,
-            "transformed_features.tar",
+    with res.open_event_table(particle_key=pk) as arc:
+        airshower_table = arc.read_table(
+            levels_and_columns={
+                "primary": [snt.IDX, "energy_GeV"],
+                "cherenkovpool": [snt.IDX, "z_emission_p50_m"],
+                "reconstructed_trajectory": "__all__",
+            }
         )
-    )["transformed_features"]
+
+    transformed_features_path = os.path.join(
+        transformed_features_dir,
+        pk,
+        "transformed_features.zip",
+    )
+    with snt.archive.open(transformed_features_path, "r") as arc:
+        airshower_table["transformed_features"] = arc.read_table()[
+            "transformed_features"
+        ]
 
     EXT_STRUCTRURE = irf.features.init_all_features_structure()
 
@@ -108,7 +109,6 @@ def read_event_frame(
         table_kk = snt.cut_and_sort_table_on_indices(
             table=airshower_table,
             common_indices=idxs_valid_kk,
-            level_keys=level_keys,
         )
         out[kk] = snt.make_rectangular_DataFrame(table_kk)
 
@@ -186,7 +186,6 @@ for pk in PARTICLES:
         passing_trigger=passing_trigger,
         passing_quality=passing_quality,
         train_test=train_test_gamma_energy,
-        level_keys=level_keys,
     )
 
 # prepare sets

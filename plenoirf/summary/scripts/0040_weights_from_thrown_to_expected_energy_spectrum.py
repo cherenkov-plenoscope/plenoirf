@@ -80,7 +80,10 @@ for pk in PARTICLES:
     thrown_spectrum["rates"][pk] = {}
     energy_ranges[pk] = {}
 
-    _table = res.read_event_table(particle_key=pk)
+    with res.open_event_table(particle_key=pk) as arc:
+        _table = arc.read_table(
+            levels_and_columns={"primary": [snt.IDX, "energy_GeV"]}
+        )
 
     thrown_spectrum["rates"][pk] = np.histogram(
         _table["primary"]["energy_GeV"],

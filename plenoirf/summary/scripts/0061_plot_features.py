@@ -36,7 +36,13 @@ PARTICLES = res.PARTICLES
 tables = {}
 
 for pk in PARTICLES:
-    _table = res.read_event_table(particle_key=pk)
+    with res.open_event_table(particle_key=pk) as arc:
+        _table = arc.read_table(
+            levels_and_columns={
+                "primary": [snt.IDX, "energy_GeV"],
+                "features": "__all__",
+            }
+        )
 
     idx_common = snt.intersection(
         [
@@ -48,7 +54,6 @@ for pk in PARTICLES:
     tables[pk] = snt.cut_and_sort_table_on_indices(
         table=_table,
         common_indices=idx_common,
-        level_keys=["primary", "features"],
     )
 
 # guess bin edges

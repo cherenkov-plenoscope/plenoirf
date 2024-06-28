@@ -2,6 +2,7 @@
 import sys
 import plenoirf as irf
 import sparse_numeric_table as snt
+import rename_after_writing as rnw
 import os
 import pandas
 import numpy as np
@@ -34,12 +35,12 @@ particle_colors = res.analysis["plot"]["particle_colors"]
 
 ft_trafo = {}
 for pk in ["gamma"]:
-    _table = res.read_event_table(particle_key=pk)
+    with res.open_event_table(particle_key=pk) as arc:
+        _table = arc.read_table(levels_and_columns={"features": "__all__"})
 
     features = snt.cut_table_on_indices(
         table=_table,
         common_indices=train_test[pk]["train"],
-        level_keys=["features"],
     )["features"]
 
     for fk in ALL_FEATURES:
@@ -58,8 +59,9 @@ transformed_features = {}
 for pk in PARTICLES:
     transformed_features[pk] = {}
 
-    _table = res.read_event_table(particle_key=pk)
-    features = _table["features"]
+    with res.open_event_table(particle_key=pk) as arc:
+        _table = arc.read_table(levels_and_columns={"features": "__all__"})
+        features = _table["features"]
 
     transformed_features[pk][snt.IDX] = np.array(features[snt.IDX])
 
@@ -76,11 +78,12 @@ for pk in PARTICLES:
     pk_dir = os.path.join(paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
-    out_table = snt.dict_to_recarray(transformed_features[pk])
-    snt.write(
-        path=os.path.join(pk_dir, "transformed_features.tar"),
-        table={"transformed_features": out_table},
-    )
+    out_level = snt.dict_to_recarray(transformed_features[pk])
+    out_table = {"transformed_features": out_level}
+    out_dtypes = snt.get_dtypes(out_table)
+    with rnw.Path(os.path.join(pk_dir, "transformed_features.zip")) as path:
+        with snt.archive.open(file=path, mode="w", dtypes=out_dtypes) as arc:
+            arc.append_table(out_table)
 
 
 for fk in ALL_FEATURES:

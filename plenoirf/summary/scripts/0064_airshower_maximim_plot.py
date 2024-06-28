@@ -43,7 +43,19 @@ distance_bin_edges = np.geomspace(5e3, 25e3, num_bins + 1)
 STRUCTURE = irf.event_table.structure.init_event_table_structure()
 
 for pk in PARTICLES:
-    event_table = res.read_event_table(particle_key=pk)
+    with res.open_event_table(particle_key=pk) as arc:
+        event_table = arc.read_table(
+            levels_and_columns={
+                "primary": [snt.IDX, "energy_GeV"],
+                "instrument_pointing": [snt.IDX, "zenith_rad"],
+                "cherenkovpool": [snt.IDX, "z_emission_p50_m"],
+                "features": [
+                    snt.IDX,
+                    "image_smallest_ellipse_object_distance",
+                ],
+            }
+        )
+
     idx_common = snt.intersection(
         [
             passing_trigger[pk]["idx"],
@@ -54,14 +66,6 @@ for pk in PARTICLES:
     table = snt.cut_and_sort_table_on_indices(
         table=event_table,
         common_indices=idx_common,
-        level_keys=[
-            "primary",
-            "instrument_pointing",
-            "cherenkovsize",
-            "cherenkovpool",
-            "trigger",
-            "features",
-        ],
     )
 
     true_airshower_maximum_altitude = table["cherenkovpool"][

@@ -31,11 +31,18 @@ for pk in res.PARTICLES:
     pk_dir = opj(paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
-    event_table = res.read_event_table(particle_key=pk)
+    with res.open_event_table(particle_key=pk) as arc:
+        event_table = arc.read_table(
+            levels_and_columns={
+                "cherenkovsizepart": "__all__",
+                "instrument_pointing": "__all__",
+                "trigger": "__all__",
+            }
+        )
+
     event_table = snt.cut_and_sort_table_on_indices(
         table=event_table,
         common_indices=event_table["trigger"][snt.IDX],
-        level_keys=["trigger", "cherenkovsizepart", "instrument_pointing"],
     )
     df = snt.make_rectangular_DataFrame(table=event_table)
 

@@ -41,7 +41,15 @@ for pk in res.PARTICLES:
     pk_dir = opj(paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
-    event_table = res.read_event_table(particle_key=pk)
+    with res.open_event_table(particle_key=pk) as arc:
+        event_table = arc.read_table(
+            levels_and_columns={
+                "primary": [snt.IDX, "energy_GeV"],
+                "trigger": [snt.IDX, "num_cherenkov_pe"],
+                CHCL: "__all__",
+                "features": [snt.IDX, "num_photons"],
+            }
+        )
 
     idx_common = snt.intersection(
         [
@@ -53,7 +61,6 @@ for pk in res.PARTICLES:
     mrg_chc_fts = snt.cut_and_sort_table_on_indices(
         table=event_table,
         common_indices=idx_common,
-        level_keys=["primary", "trigger", CHCL, "features"],
     )
 
     # ---------------------------------------------------------------------

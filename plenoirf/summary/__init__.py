@@ -136,16 +136,20 @@ class Resources:
             self._analysis = json_utils.tree.read(path)
         return self._analysis
 
-    def read_event_table(self, particle_key):
-        return snt.read(
-            path=os.path.join(
-                self.plenoirf_dir,
-                "response",
-                self.instrument_key,
-                self.site_key,
-                particle_key,
-                "event_table.tar",
-            )
+    def event_table_path(self, particle_key):
+        return os.path.join(
+            self.plenoirf_dir,
+            "response",
+            self.instrument_key,
+            self.site_key,
+            particle_key,
+            "event_table.zip",
+        )
+
+    def open_event_table(self, particle_key):
+        return snt.archive.open(
+            self.event_table_path(particle_key=particle_key),
+            mode="r",
         )
 
     def ZenithBinning(self, key):
@@ -275,10 +279,14 @@ def _run_instrument_site(plenoirf_dir, instrument_key, site_key):
         provenance.make_provenance(),
     )
 
-    script_abspaths = _make_script_abspaths()[0:14]
+    script_abspaths = _make_script_abspaths()
 
     for script_abspath in script_abspaths:
         script_basename = os.path.basename(script_abspath)
+        script_id = int(script_basename[0:4])
+        if script_id >= 101:
+            print(f"Skipping scipt {script_id:d}.")
+            continue
         script_name = str.split(script_basename, ".")[0]
         result_path = os.path.join(result_dir, script_name)
         if os.path.exists(result_path):
@@ -320,20 +328,23 @@ def _estimate_num_events_past_trigger_for_instrument(
     config = configuration.read_if_None(plenoirf_dir, config=config)
 
     num = float("inf")
-    for site_key in config["sites"]["instruemnt_response"]:
-        for particle_key in config["particles"]:
-            evttab = snt.read(
-                path=os.path.join(
-                    plenoirf_dir,
-                    "response",
-                    instrument_key,
-                    site_key,
-                    particle_key,
-                    "event_table.tar",
-                )
+    for sk in config["sites"]["instruemnt_response"]:
+        for pk in config["particles"]:
+            path = os.path.join(
+                plenoirf_dir,
+                "response",
+                instrument_key,
+                sk,
+                pk,
+                "event_table.zip",
             )
-            if evttab["pasttrigger"].shape[0] < num:
-                num = evttab["pasttrigger"].shape[0]
+
+            with snt.archive.open(path, mode="r") as arc:
+                pt_idx = arc.read_column(
+                    level_key="pasttrigger", column_key=snt.IDX
+                )
+                if pt_idx.shape[0] < num:
+                    num = pt_idx.shape[0]
     return num
 
 

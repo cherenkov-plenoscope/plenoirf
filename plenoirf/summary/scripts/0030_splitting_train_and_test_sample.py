@@ -12,7 +12,8 @@ res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 for pk in res.PARTICLES:
-    event_table = res.read_event_table(particle_key=pk)
+    with res.open_event_table(particle_key=pk) as arc:
+        event_table = arc.read_table(levels_and_columns={"primary": [snt.IDX]})
 
     train_idxs, test_idxs = sklearn.model_selection.train_test_split(
         event_table["primary"][snt.IDX],
