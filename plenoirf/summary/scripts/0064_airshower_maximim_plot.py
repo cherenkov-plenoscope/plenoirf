@@ -114,7 +114,7 @@ for pk in PARTICLES:
     seb.ax_add_grid(ax_c)
 
     ax_h.semilogx()
-    ax_h.set_xlim([np.min(cm["ax0_bin_edges"]), np.max(cm["ax1_bin_edges"])])
+    ax_h.set_xlim([np.min(cm["ax0_bin_edges"]), np.max(cm["ax0_bin_edges"])])
     ax_h.set_xlabel("true maximum of airshower / m")
     ax_h.set_ylabel("num. events / 1")
     irf.summary.figure.mark_ax_thrown_spectrum(ax_h)
