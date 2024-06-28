@@ -1,5 +1,6 @@
 import collections
 import numpy as np
+import sparse_numeric_table as snt
 
 
 def init_event_table_structure():
@@ -220,6 +221,39 @@ def init_groundgrid_level_structure():
     t["area_thrown_m2"] = {"dtype": "<f8", "comment": ""}
 
     return t
+
+
+def patch_groundgrid(groundgrid, groundgrid_result):
+    """
+    A temporary fix to get groundgrid_result/num_bins_above_threshold into
+    groundgrid.
+    """
+    new_groundgrid = np.core.records.recarray(
+        shape=groundgrid.shape[0],
+        dtype=[
+            (snt.IDX, snt.IDX_DTYPE),
+            ("bin_width_m", "<f8"),
+            ("num_bins_each_axis", "<i8"),
+            ("center_x_m", "<f8"),
+            ("center_y_m", "<f8"),
+            ("num_bins_thrown", "<i8"),
+            ("area_thrown_m2", "<f8"),
+            ("num_bins_above_threshold", "<i8"),
+        ],
+    )
+
+    for key in groundgrid.dtype.names:
+        new_groundgrid[key] = groundgrid[key]
+
+    new_groundgrid["num_bins_above_threshold"] = np.zeros(groundgrid.shape[0])
+
+    mask = snt.make_mask_of_right_in_left(
+        left_indices=new_groundgrid[snt.IDX],
+        right_indices=groundgrid_result[snt.IDX],
+    )
+
+    new_groundgrid[mask] = groundgrid_result["num_bins_above_threshold"]
+    return new_groundgrid
 
 
 def init_groundgrid_result_level_structure():

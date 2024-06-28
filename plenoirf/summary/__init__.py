@@ -16,6 +16,7 @@ import json_utils
 import atmospheric_cherenkov_response
 import merlict_development_kit_python
 import solid_angle_utils
+import binning_utils
 
 from .. import utils
 
@@ -161,6 +162,16 @@ class Resources:
             num=num_bins + 1,
         )
         return ZenithBinning(bin_edges=bin_edges)
+
+    def ax_add_site_marker(self, ax, x=0.1, y=0.1):
+        ax.text(
+            x,
+            y,
+            f"site: {self.SITE['name']}",
+            horizontalalignment="center",
+            # verticalalignment="center",
+            transform=ax.transAxes,
+        )
 
     def __repr__(self):
         return f"{self.__class__.__name__}()"
