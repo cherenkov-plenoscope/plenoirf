@@ -1,6 +1,7 @@
 import collections
 import numpy as np
 import sparse_numeric_table as snt
+import dynamicsizerecarray
 
 
 def init_event_table_structure():
@@ -245,14 +246,28 @@ def patch_groundgrid(groundgrid, groundgrid_result):
     for key in groundgrid.dtype.names:
         new_groundgrid[key] = groundgrid[key]
 
-    new_groundgrid["num_bins_above_threshold"] = np.zeros(groundgrid.shape[0])
+    idx_only_in_gg = set(groundgrid[snt.IDX]).difference(
+        groundgrid_result[snt.IDX]
+    )
+    dyn_gg_res = dynamicsizerecarray.DynamicSizeRecarray(
+        recarray=groundgrid_result
+    )
+    for iii in idx_only_in_gg:
+        rec = {}
+        rec[snt.IDX] = iii
+        rec["num_bins_above_threshold"] = 0
+        dyn_gg_res.append_record(rec)
 
-    mask = snt.make_mask_of_right_in_left(
-        left_indices=new_groundgrid[snt.IDX],
-        right_indices=groundgrid_result[snt.IDX],
+    tmp = {"groundgrid_result": dyn_gg_res.to_recarray()}
+
+    tmp = snt.sort_table_on_common_indices(
+        table=tmp,
+        common_indices=new_groundgrid[snt.IDX],
     )
 
-    new_groundgrid[mask] = groundgrid_result["num_bins_above_threshold"]
+    new_groundgrid["num_bins_above_threshold"] = tmp["groundgrid_result"][
+        "num_bins_above_threshold"
+    ]
     return new_groundgrid
 
 
