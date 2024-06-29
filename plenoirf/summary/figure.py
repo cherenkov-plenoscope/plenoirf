@@ -32,6 +32,25 @@ PARTICLE_COLORS = {
     "helium": "orange",
 }
 
+
+def make_particle_colormaps(particle_colors):
+    import matplotlib.colors
+    from matplotlib.colors import ListedColormap
+
+    NUM = 256
+    out = {}
+    for pk in particle_colors:
+        rgba = matplotlib.colors.to_rgba(particle_colors[pk])
+        newcolors = np.zeros(shape=(NUM, 4))
+        for c in range(4):
+            newcolors[:, c] = rgba[c]
+        intensities = np.linspace(0, 1, NUM)
+        for i in range(NUM):
+            newcolors[i, :] = intensities[i] * newcolors[i, :]
+        out[pk] = matplotlib.colors.ListedColormap(newcolors)
+    return out
+
+
 MATPLOTLIB_RCPARAMS_LATEX = {
     "mathtext.fontset": "cm",
     "font.family": "STIXGeneral",
