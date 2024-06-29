@@ -168,10 +168,22 @@ class Resources:
             x,
             y,
             f"site: {self.SITE['name']}",
-            horizontalalignment="center",
+            # horizontalalignment="center",
             # verticalalignment="center",
             transform=ax.transAxes,
         )
+
+    @property
+    def PARTICLE_COLORS(self):
+        return self.analysis["plot"]["particle_colors"]
+
+    @property
+    def PARTICLE_COLORMAPS(self):
+        if not hasattr(self, "_PARTICLE_COLORMAPS"):
+            self._PARTICLE_COLORMAPS = figure.make_particle_colormaps(
+                particle_colors=self.PARTICLE_COLORS
+            )
+        return self._PARTICLE_COLORMAPS
 
     def __repr__(self):
         return f"{self.__class__.__name__}()"
@@ -744,3 +756,16 @@ class ZenithBinning:
 
     def __repr__(self):
         return f"{self.__class__.__name__}()"
+
+
+def make_angle_range_str(start_rad, stop_rad):
+    circ_str = r"$^\circ{}$"
+    zenith_range_str = (
+        f"[{np.rad2deg(start_rad):0.1f}"
+        + circ_str
+        + ", "
+        + f"{np.rad2deg(stop_rad):0.1f}"
+        + circ_str
+        + ")"
+    )
+    return zenith_range_str
