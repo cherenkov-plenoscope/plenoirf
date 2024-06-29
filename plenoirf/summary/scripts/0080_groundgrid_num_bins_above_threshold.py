@@ -20,19 +20,24 @@ seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 energy_bin = json_utils.read(
     os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["trigger_acceptance_onregion"]
+)["trigger_acceptance"]
 
 passing_trigger = json_utils.tree.read(
     os.path.join(paths["analysis_dir"], "0055_passing_trigger")
 )
 
-nat_bin = binning_utils.Binning(bin_edges=np.geomspace(1, 100_000, 31))
+nat_bin = binning_utils.Binning(
+    bin_edges=np.geomspace(1, 100_000, energy_bin["num_bins"])
+)
 
 POINTNIG_ZENITH_BIN = res.ZenithBinning("once")
 
+
 bbb = {}
+huh = {}
 for pk in res.PARTICLES:
     bbb[pk] = {"avg": [], "au": []}
+    huh[pk] = {}
 
     with res.open_event_table(particle_key=pk) as arc:
         table = arc.read_table(
@@ -64,8 +69,18 @@ for pk in res.PARTICLES:
         common_indices=table["primary"][snt.IDX],
     )
 
-    min_number_samples = 10
+    huh[pk]["bin_edges"] = np.geomspace(
+        1e0,
+        1e6,
+        int(np.sqrt(table["groundgrid"].shape[0])),
+    )
 
+    huh[pk]["bin_counts"] = np.histogram(
+        table["groundgrid"]["num_bins_above_threshold"],
+        bins=huh[pk]["bin_edges"],
+    )[0]
+
+    min_number_samples = 10
     for zdbin in range(POINTNIG_ZENITH_BIN.num):
         zd_start = POINTNIG_ZENITH_BIN.edges[zdbin]
         zd_stop = POINTNIG_ZENITH_BIN.edges[zdbin + 1]
@@ -75,8 +90,8 @@ for pk in res.PARTICLES:
             table["instrument_pointing"]["zenith_rad"] < zd_stop,
         )
 
-        # 1D
-        # --
+        # 1D VS energy
+        # ------------
         hh_exposure = np.histogram(
             table["primary"]["energy_GeV"][mask],
             bins=energy_bin["edges"],
@@ -98,8 +113,8 @@ for pk in res.PARTICLES:
         bbb[pk]["avg"].append(avg_num_bins)
         bbb[pk]["au"].append(avg_num_bins_au)
 
-        # 2D
-        # --
+        # 2D VS energy
+        # ------------
         cm = confusion_matrix.init(
             ax0_key="primary/energy_GeV",
             ax0_values=table["primary"]["energy_GeV"][mask],
@@ -120,19 +135,16 @@ for pk in res.PARTICLES:
             cm["ax0_bin_edges"],
             cm["ax1_bin_edges"],
             np.transpose(cm["counts_normalized_on_ax0"]),
-            cmap="Greys",
+            cmap=res.PARTICLE_COLORMAPS[pk],
             norm=seb.plt_colors.PowerNorm(gamma=0.5),
         )
         seb.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
-        circ_str = r"$^\circ{}$"
-        zenith_range_str = (
-            f"zenith range: {np.rad2deg(zd_start):0.1f}"
-            + circ_str
-            + " to "
-            + f"{np.rad2deg(zd_stop):0.1f}"
-            + circ_str
+
+        zenith_range_str = irf.summary.make_angle_range_str(
+            start_rad=POINTNIG_ZENITH_BIN.edges[zdbin],
+            stop_rad=POINTNIG_ZENITH_BIN.edges[zdbin + 1],
         )
-        ax_c.set_title(zenith_range_str)
+        ax_c.set_title("zenith: " + zenith_range_str)
         ax_c.set_ylabel("num. bins above threshod / 1")
         ax_c.loglog()
         res.ax_add_site_marker(ax_c, x=0.2, y=0.1)
@@ -142,8 +154,8 @@ for pk in res.PARTICLES:
             y=0.05,
             s="normalized for each column",
             fontsize=8,
-            horizontalalignment="center",
-            # verticalalignment="center",
+            # horizontalalignment="center",
+            verticalalignment="center",
             transform=ax_c.transAxes,
         )
 
@@ -169,30 +181,93 @@ for pk in res.PARTICLES:
         seb.close(fig)
 
 
-particle_colors = res.analysis["plot"]["particle_colors"]
-
-fig = seb.figure(style=seb.FIGURE_1_1)
-ax = seb.add_axes(fig=fig, span=[0.175, 0.15, 0.75, 0.8])
-
+fig = seb.figure(style=irf.summary.figure.FIGURE_STYLE)
+ax = seb.add_axes(fig=fig, span=[0.175, 0.15, 0.6, 0.8])
+ax_legend = seb.add_axes(
+    fig=fig, span=[0.8, 0.15, 0.1, 0.8], style=seb.AXES_BLANK
+)
 linestyles = ["-", "--", ":"]
 for pk in res.PARTICLES:
     for zdbin in range(POINTNIG_ZENITH_BIN.num):
-        seb.ax_add_histogram(
-            ax=ax,
-            bin_edges=energy_bin["edges"],
-            bincounts=bbb[pk]["avg"][zdbin],
+        ax.plot(
+            energy_bin["centers"],
+            bbb[pk]["avg"][zdbin],
             linestyle=linestyles[zdbin],
-            linecolor=particle_colors[pk],
-            linealpha=1.0,
-            bincounts_upper=None,
-            bincounts_lower=None,
-            face_color=particle_colors[pk],
-            face_alpha=0.3,
+            color=res.PARTICLE_COLORS[pk],
         )
-res.ax_add_site_marker(ax)
-ax.set_ylim([1e3, 1e4])
+_yy = 1
+for pk in res.PARTICLES:
+    _yy -= 0.1
+    ax_legend.plot(
+        [0, 0.3],
+        [_yy, _yy],
+        linestyle="-",
+        color=res.PARTICLE_COLORS[pk],
+    )
+    ax_legend.text(
+        x=0.4,
+        y=_yy,
+        s=pk,
+        fontsize=8,
+        verticalalignment="center",
+    )
+
+_yy -= 0.1
+ax_legend.text(
+    x=0.2,
+    y=_yy,
+    s="zenith ranges",
+    fontsize=8,
+    verticalalignment="center",
+)
+
+for zdbin in range(POINTNIG_ZENITH_BIN.num):
+    _yy -= 0.1
+    ax_legend.plot(
+        [0, 0.3],
+        [_yy, _yy],
+        linestyle=linestyles[zdbin],
+        color="grey",
+    )
+    ax_legend.text(
+        x=0.4,
+        y=_yy,
+        s=irf.summary.make_angle_range_str(
+            start_rad=POINTNIG_ZENITH_BIN.edges[zdbin],
+            stop_rad=POINTNIG_ZENITH_BIN.edges[zdbin + 1],
+        ),
+        fontsize=8,
+        verticalalignment="center",
+    )
+ax_legend.set_xlim([0, 1])
+
+res.ax_add_site_marker(ax, x=0.8, y=0.1)
+ax.set_ylim([1e0, 1e5])
 ax.loglog()
 ax.set_xlabel("energy / GeV")
 ax.set_ylabel("num. bins above threshold / 1")
 fig.savefig(os.path.join(paths["out_dir"], "num_bins_above_threshold.jpg"))
+seb.close(fig)
+
+
+fig = seb.figure(style=seb.FIGURE_1_1)
+ax = seb.add_axes(fig=fig, span=[0.175, 0.15, 0.75, 0.8])
+for pk in res.PARTICLES:
+    seb.ax_add_histogram(
+        ax=ax,
+        bin_edges=huh[pk]["bin_edges"],
+        bincounts=huh[pk]["bin_counts"] / np.sum(huh[pk]["bin_counts"]),
+        linestyle="-",
+        linecolor=res.PARTICLE_COLORS[pk],
+        linealpha=1.0,
+        bincounts_upper=None,
+        bincounts_lower=None,
+        face_color=res.PARTICLE_COLORS[pk],
+        face_alpha=0.3,
+    )
+res.ax_add_site_marker(ax)
+ax.loglog()
+ax.set_xlabel("num. bins above threshold / 1")
+ax.set_ylabel("relative intensity / 1")
+fig.savefig(os.path.join(paths["out_dir"], "what_was_throwm.jpg"))
 seb.close(fig)
