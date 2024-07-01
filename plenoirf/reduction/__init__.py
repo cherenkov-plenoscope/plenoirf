@@ -21,6 +21,8 @@ def list_items():
         "reconstructed_cherenkov.tar",
         "ground_grid_intensity.zip",
         "ground_grid_intensity_roi.zip",
+        "benchmark.zip",
+        "event_uids_for_debugging.txt",
     ]
 
 
@@ -38,6 +40,10 @@ def reduce_item(map_dir, out_path, item_key):
         reduce_ground_grid_intensity(
             run_paths=run_paths, out_path=out_path, roi=True
         )
+    elif item_key == "benchmark.zip":
+        reduce_benchmarks(run_paths=run_paths, out_path=out_path)
+    elif item == "event_uids_for_debugging.txt":
+        reduce_event_uids_for_debugging(run_paths=run_paths, out_path=out_path)
     else:
         raise KeyError(f"No such item_key '{item_key}'.")
 
@@ -273,3 +279,22 @@ def reduce_benchmarks(run_paths, out_path):
     with zipfile.ZipFile(file=out_path, mode="a") as zout:
         with zout.open("hostname_hashes.json", mode="w") as fout:
             fout.write(str.encode(json_utils.dumps(hostname_hashes)))
+
+
+def reduce_event_uids_for_debugging(run_paths, out_path):
+    with open(out_path, "wt") as fout:
+        for run_path in run_paths:
+            run_basename = os.path.basename(run_path)
+            run_id_str = os.path.splitext(run_basename)[0]
+
+            buff = zip_read_IO(
+                file=run_path,
+                internal_path=os.path.join(
+                    run_id_str,
+                    "plenoirf.production.draw_event_uids_for_debugging.json",
+                ),
+                mode="rt|gz",
+            )
+            event_uids = json_utils.loads(buff.read())
+            for event_uid in event_uids:
+                fout.write(f"{event_uid:012d}\n")
