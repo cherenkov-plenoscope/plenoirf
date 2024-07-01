@@ -109,3 +109,54 @@ ax.set_xlabel("energy / GeV")
 ax.set_ylabel(r"intensity / 1")
 fig.savefig(os.path.join(paths["out_dir"], "thrown_primary_energy.jpg"))
 seb.close(fig)
+
+
+fig = seb.figure({"rows": 64, "cols": 1280, "fontsize": 1.0})
+ax = seb.add_axes(fig=fig, span=[0.0, 0.0, 1.0, 1.0], style=seb.AXES_BLANK)
+ax.set_xlim([0, 1])
+ax.set_ylim([0, 1])
+xpos = 0.0
+for pk in res.PARTICLES:
+    ax.plot(
+        [xpos, xpos + 0.05],
+        [0.5, 0.5],
+        linestyle="-",
+        color=res.PARTICLE_COLORS[pk],
+    )
+    ax.text(
+        x=xpos + 0.075,
+        y=0.5,
+        s=pk,
+        fontsize=12,
+        verticalalignment="center",
+    )
+    xpos += 0.25
+fig.savefig(os.path.join(paths["out_dir"], "particle_labels.jpg"))
+seb.close(fig)
+
+fig = seb.figure({"rows": 64, "cols": 1280, "fontsize": 1.0})
+ax = seb.add_axes(fig=fig, span=[0.0, 0.0, 1.0, 1.0], style=seb.AXES_BLANK)
+ax.set_xlim([0, 1])
+ax.set_ylim([0, 1])
+xpos = 0.0
+for zdbin in range(POINTNIG_ZENITH_BIN.num):
+    ax.plot(
+        [xpos, xpos + 0.05],
+        [0.5, 0.5],
+        linestyle=linestyles[zdbin],
+        color="grey",
+    )
+    zd_str = irf.summary.make_angle_range_str(
+        start_rad=POINTNIG_ZENITH_BIN.edges[zdbin],
+        stop_rad=POINTNIG_ZENITH_BIN.edges[zdbin + 1],
+    )
+    ax.text(
+        x=xpos + 0.075,
+        y=0.5,
+        s=zd_str,
+        fontsize=12,
+        verticalalignment="center",
+    )
+    xpos += 0.33
+fig.savefig(os.path.join(paths["out_dir"], "zenith_range_labels.jpg"))
+seb.close(fig)
