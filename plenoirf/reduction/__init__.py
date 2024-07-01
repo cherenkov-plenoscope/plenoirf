@@ -49,7 +49,7 @@ def reduce_item(map_dir, out_path, item_key):
         )
     elif item_key == "benchmark.zip":
         reduce_benchmarks(run_paths=run_paths, out_path=out_path)
-    elif item == "event_uids_for_debugging.txt":
+    elif item_key == "event_uids_for_debugging.txt":
         reduce_event_uids_for_debugging(run_paths=run_paths, out_path=out_path)
     else:
         raise KeyError(f"No such item_key '{item_key}'.")
