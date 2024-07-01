@@ -13,6 +13,7 @@ import dynamicsizerecarray
 
 from .. import event_table
 from .. import configuration
+from .. import bookkeeping
 
 
 def list_items():
@@ -34,11 +35,17 @@ def reduce_item(map_dir, out_path, item_key):
         reduce_reconstructed_cherenkov(run_paths=run_paths, out_path=out_path)
     elif item_key == "ground_grid_intensity.zip":
         reduce_ground_grid_intensity(
-            run_paths=run_paths, out_path=out_path, roi=False
+            run_paths=run_paths,
+            out_path=out_path,
+            roi=False,
+            only_past_trigger=True,
         )
     elif item_key == "ground_grid_intensity_roi.zip":
         reduce_ground_grid_intensity(
-            run_paths=run_paths, out_path=out_path, roi=True
+            run_paths=run_paths,
+            out_path=out_path,
+            roi=True,
+            only_past_trigger=True,
         )
     elif item_key == "benchmark.zip":
         reduce_benchmarks(run_paths=run_paths, out_path=out_path)
@@ -148,11 +155,24 @@ def reduce_reconstructed_cherenkov(run_paths, out_path):
                     lout.add(uid=uid, phs=phs)
 
 
-def reduce_ground_grid_intensity(run_paths, out_path, roi=False):
+def reduce_ground_grid_intensity(
+    run_paths, out_path, roi=False, only_past_trigger=False
+):
     with zipfile.ZipFile(out_path, "w") as zout:
         for run_path in run_paths:
             run_basename = os.path.basename(run_path)
             run_id_str = os.path.splitext(run_basename)[0]
+
+            if only_past_trigger:
+                buff = zip_read_IO(
+                    file=run_path,
+                    internal_path=os.path.join(
+                        run_id_str, "event_table.tar.gz"
+                    ),
+                    mode="rb|gz",
+                )
+                run_evttab = snt.read(fileobj=buff, dynamic=False)
+                past_trigger_uids = run_evttab["pasttrigger"][snt.IDX]
 
             suff = "_roi" if roi else ""
             internal_path = os.path.join(
@@ -167,8 +187,22 @@ def reduce_ground_grid_intensity(run_paths, out_path, roi=False):
             )
             with sequential_tar.open(fileobj=buff, mode="r") as tarin:
                 for item in tarin:
-                    with zout.open(item.name, "w") as fout:
-                        fout.write(item.read(mode="rb"))
+                    run_id = int(item.name[0:6])
+                    event_id = int(item.name[7 : 7 + 6])
+                    event_uid = bookkeeping.uid.make_uid(
+                        run_id=run_id,
+                        event_id=event_id,
+                    )
+                    payload = item.read(mode="rb")
+                    do_add = True
+                    if only_past_trigger:
+                        do_add = False
+                        if event_uid in past_trigger_uids:
+                            do_add = True
+
+                    if do_add:
+                        with zout.open(item.name, "w") as fout:
+                            fout.write(payload)
 
 
 def _make_benchmarks_dtype():
