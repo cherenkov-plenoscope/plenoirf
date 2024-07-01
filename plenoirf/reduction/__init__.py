@@ -8,6 +8,8 @@ import sparse_numeric_table as snt
 import sequential_tar
 import gzip
 import plenopy
+import json_utils
+import dynamicsizerecarray
 
 from .. import event_table
 from .. import configuration
@@ -87,15 +89,22 @@ def run_job(job):
         )
 
 
-def zip_read_BytesIo(file, internal_path, mode="r"):
+def zip_read_IO(file, internal_path, mode="rb"):
     with zipfile.ZipFile(file=file, mode="r") as zin:
         with zin.open(internal_path) as fin:
-            buff = io.BytesIO()
             if "|gz" in mode:
-                buff.write(gzip.decompress(fin.read()))
+                block = gzip.decompress(fin.read())
             else:
-                buff.write(fin.read())
-            buff.seek(0)
+                block = fin.read()
+    if "t" in mode:
+        buff = io.StringIO()
+        buff.write(bytes.decode(block))
+    elif "b" in mode:
+        buff = io.BytesIO()
+        buff.write(block)
+    else:
+        raise KeyError("mode must either be 'b' or 't'.")
+    buff.seek(0)
     return buff
 
 
@@ -106,10 +115,10 @@ def recude_event_table(run_paths, out_path):
         for run_path in run_paths:
             run_basename = os.path.basename(run_path)
             run_id_str = os.path.splitext(run_basename)[0]
-            buff = zip_read_BytesIo(
+            buff = zip_read_IO(
                 file=run_path,
                 internal_path=os.path.join(run_id_str, "event_table.tar.gz"),
-                mode="r|gz",
+                mode="rb|gz",
             )
             run_evttab = snt.read(fileobj=buff, dynamic=False)
             arc.append_table(run_evttab)
@@ -120,12 +129,12 @@ def reduce_reconstructed_cherenkov(run_paths, out_path):
         for run_path in run_paths:
             run_basename = os.path.basename(run_path)
             run_id_str = os.path.splitext(run_basename)[0]
-            buff = zip_read_BytesIo(
+            buff = zip_read_IO(
                 file=run_path,
                 internal_path=os.path.join(
                     run_id_str, "reconstructed_cherenkov.tar"
                 ),
-                mode="r",
+                mode="rb",
             )
             with plenopy.photon_stream.loph.LopfTarReader(fileobj=buff) as lin:
                 for event in lin:
@@ -145,12 +154,122 @@ def reduce_ground_grid_intensity(run_paths, out_path, roi=False):
                 "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
                 f"ground_grid_intensity{suff:s}.tar",
             )
-            buff = zip_read_BytesIo(
+            buff = zip_read_IO(
                 file=run_path,
                 internal_path=internal_path,
-                mode="r",
+                mode="rb",
             )
             with sequential_tar.open(fileobj=buff, mode="r") as tarin:
                 for item in tarin:
                     with zout.open(item.name, "w") as fout:
                         fout.write(item.read(mode="rb"))
+
+
+def _make_benchmarks_dtype():
+    dtype = [
+        (snt.IDX, "<u8"),
+        ("hostname_hash", "<i8"),
+        ("time_unix_s", "<f8"),
+        ("run_id", "<u8"),
+        ("corsika/total_s", "<f4"),
+        ("corsika/initializing_s", "<f4"),
+        ("corsika/energy_rate_GeV_per_s/avg", "<f4"),
+        ("corsika/energy_rate_GeV_per_s/std", "<f4"),
+        ("corsika/cherenkov_bunch_rate_per_s/avg", "<f4"),
+        ("corsika/cherenkov_bunch_rate_per_s/std", "<f4"),
+        ("disk_write_rate/1k/rate_MB_per_s/avg", "<f4"),
+        ("disk_write_rate/1k/rate_MB_per_s/std", "<f4"),
+        ("disk_write_rate/1M/rate_MB_per_s/avg", "<f4"),
+        ("disk_write_rate/1M/rate_MB_per_s/std", "<f4"),
+        ("disk_write_rate/100M/rate_MB_per_s/avg", "<f4"),
+        ("disk_write_rate/100M/rate_MB_per_s/std", "<f4"),
+        ("disk_create_write_close_open_read_remove_latency/avg", "<f4"),
+        ("disk_create_write_close_open_read_remove_latency/std", "<f4"),
+    ]
+    return dtype
+
+
+def reduce_benchmarks(run_paths, out_path):
+    hostname_hashes = {}
+
+    stats = dynamicsizerecarray.DynamicSizeRecarray(
+        dtype=_make_benchmarks_dtype()
+    )
+
+    for run_path in run_paths:
+        run_basename = os.path.basename(run_path)
+        run_id_str = os.path.splitext(run_basename)[0]
+
+        buff = zip_read_IO(
+            file=run_path,
+            internal_path=os.path.join(run_id_str, "provenance.json.gz"),
+            mode="rt|gz",
+        )
+        item = json_utils.loads(buff.read())
+
+        if item["hostname"] not in hostname_hashes:
+            hostname_hashes[item["hostname"]] = hash(item["hostname"])
+
+        buff = zip_read_IO(
+            file=run_path,
+            internal_path=os.path.join(run_id_str, "benchmark.json.gz"),
+            mode="rt|gz",
+        )
+        bench = json_utils.loads(buff.read())
+
+        rec = {}
+        rec["hostname_hash"] = hash(item["hostname"])
+        rec["time_unix_s"] = item["time"]["unix"]
+        rec["run_id"] = int(run_id_str)
+        rec[snt.IDX] = rec["run_id"]
+        ccc = bench["corsika"]
+        rec["corsika/total_s"] = ccc["total"]
+        rec["corsika/initializing_s"] = ccc["initializing"]
+        rec["corsika/energy_rate_GeV_per_s/avg"] = ccc[
+            "energy_rate_GeV_per_s"
+        ]["avg"]
+        rec["corsika/energy_rate_GeV_per_s/std"] = ccc[
+            "energy_rate_GeV_per_s"
+        ]["std"]
+        rec["corsika/cherenkov_bunch_rate_per_s/avg"] = ccc[
+            "cherenkov_bunch_rate_per_s"
+        ]["avg"]
+        rec["corsika/cherenkov_bunch_rate_per_s/std"] = ccc[
+            "cherenkov_bunch_rate_per_s"
+        ]["avg"]
+        ddd = bench["disk_write_rate"]
+        rec["disk_write_rate/1k/rate_MB_per_s/avg"] = ddd["1k"][
+            "rate_MB_per_s"
+        ]["avg"]
+        rec["disk_write_rate/1k/rate_MB_per_s/std"] = ddd["1k"][
+            "rate_MB_per_s"
+        ]["std"]
+        rec["disk_write_rate/1M/rate_MB_per_s/avg"] = ddd["1M"][
+            "rate_MB_per_s"
+        ]["avg"]
+        rec["disk_write_rate/1M/rate_MB_per_s/std"] = ddd["1M"][
+            "rate_MB_per_s"
+        ]["std"]
+        rec["disk_write_rate/100M/rate_MB_per_s/avg"] = ddd["100M"][
+            "rate_MB_per_s"
+        ]["avg"]
+        rec["disk_write_rate/100M/rate_MB_per_s/std"] = ddd["100M"][
+            "rate_MB_per_s"
+        ]["std"]
+        ddd = bench["disk_create_write_close_open_read_remove_latency"]
+        rec["disk_create_write_close_open_read_remove_latency/avg"] = ddd[
+            "avg"
+        ]
+        rec["disk_create_write_close_open_read_remove_latency/std"] = ddd[
+            "std"
+        ]
+        stats.append_record(rec)
+
+    with snt.archive.open(
+        file=out_path, mode="w", dtypes={"benchmark": _make_benchmarks_dtype()}
+    ) as fout:
+        fout.append_table({"benchmark": stats})
+
+    with zipfile.ZipFile(file=out_path, mode="a") as zout:
+        with zout.open("hostname_hashes.json", mode="w") as fout:
+            fout.write(str.encode(json_utils.dumps(hostname_hashes)))
