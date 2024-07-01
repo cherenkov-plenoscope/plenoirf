@@ -62,8 +62,8 @@ def make_jobs(plenoirf_dir, config=None, lazy=False):
                             plenoirf_dir,
                             "response",
                             instrument_key,
-                            "site_key",
-                            "particle_key",
+                            site_key,
+                            particle_key,
                             item_key,
                         )
                         if os.path.exists(job_out_path):
