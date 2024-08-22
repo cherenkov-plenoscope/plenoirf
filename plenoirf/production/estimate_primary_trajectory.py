@@ -53,6 +53,14 @@ def run_block(env, blk, block_id, logger):
     logger.info(__name__ + ": ... done.")
 
 
+def get_column_as_dict_by_index(table, level_key, column_key, index_key):
+    level = table[level_key]
+    out = {}
+    for ii in range(level.shape[0]):
+        out[level[index_key][ii]] = level[column_key][ii]
+    return out
+
+
 def estimate_primary_trajectory(
     evttab,
     fuzzy_config,
@@ -61,10 +69,11 @@ def estimate_primary_trajectory(
     light_field_geometry,
     logger,
 ):
-    shower_maximum_object_distance = snt.get_column_as_dict_by_index(
+    shower_maximum_object_distance = get_column_as_dict_by_index(
         table=evttab,
         level_key="features",
         column_key="image_smallest_ellipse_object_distance",
+        index_key="idx",
     )
 
     run = plenopy.photon_stream.loph.LopfTarReader(

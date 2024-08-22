@@ -137,7 +137,7 @@ def read_shower_maximum_object_distance(
         structure=irf.table.STRUCTURE,
     )
 
-    return snt.get_column_as_dict_by_index(
+    return irf.production.estimate_primary_trajectory.get_column_as_dict_by_index(
         table=event_table, level_key="features", column_key=key
     )
 
