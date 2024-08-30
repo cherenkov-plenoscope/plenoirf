@@ -7,19 +7,39 @@ import os
 import json_utils
 import numpy as np
 import sebastians_matplotlib_addons as seb
+from plenopy.light_field_geometry.LightFieldGeometry import init_lixel_polygons
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
+DARKMODE = False
+rrr = 1
 
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+paths = irf.summary.paths_from_argv(sys.argv)
+res = irf.summary.Resources.from_argv(sys.argv)
+os.makedirs(paths["out_dir"], exist_ok=True)
+
+if DARKMODE:
+    seb.plt.style.use("dark_background")
+    stroke = "white"
+    EXT = ".dark.png"
+    cmap = "binary_r"
+else:
+    EXT = ".jpg"
+    stroke = "black"
+    cmap = "binary"
+
+seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 AXES_STYLE = {"spines": ["left", "bottom"], "axes": ["x", "y"], "grid": False}
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 light_field_geometry = pl.LightFieldGeometry(
-    os.path.join(paths["plenoirf_dir"], "light_field_geometry")
+    os.path.join(
+        paths["plenoirf_dir"],
+        "plenoptics",
+        "instruments",
+        res.instrument_key,
+        "light_field_geometry",
+    )
 )
 
 OBJECT_DISTANCE = 999e3
@@ -86,14 +106,16 @@ eye_outer_radius_m = (
 
 ROI_RADIUS = 0.35
 
-lixel_polygons = pl.light_field_geometry.init_lixel_polygons(
+lixel_polygons = init_lixel_polygons(
     lixel_positions_x=light_field_geometry.lixel_positions_x,
     lixel_positions_y=light_field_geometry.lixel_positions_y,
     lixel_outer_radius=light_field_geometry.lixel_outer_radius,
 )
 
 for pixel in pixels:
-    fig = seb.figure(style={"rows": 360, "cols": 360, "fontsize": 0.7})
+    fig = seb.figure(
+        style={"rows": 360 * rrr, "cols": 360 * rrr, "fontsize": 0.7 * rrr}
+    )
     ax = seb.add_axes(fig=fig, span=[0.0, 0.0, 1, 1], style=AXES_STYLE)
 
     _x, _y = pixel["mean_position_of_photosensors_on_sensor_plane"]
@@ -102,6 +124,7 @@ for pixel in pixels:
 
     poseye = irf.summary.figure.positions_of_eyes_in_roi(
         light_field_geometry=light_field_geometry,
+        lixel_polygons=lixel_polygons,
         roi={"x": xlim, "y": ylim},
         margin=0.2,
     )
@@ -110,7 +133,7 @@ for pixel in pixels:
         polygons=lixel_polygons,
         I=pixel["photosensor_mask"],
         ax=ax,
-        cmap="binary",
+        cmap=cmap,
         edgecolors="grey",
         linewidths=0.33,
         xlim=xlim,
@@ -125,7 +148,7 @@ for pixel in pixels:
             y=_y,
             r_outer=eye_outer_radius_m,
             orientation_deg=0,
-            color="black",
+            color=stroke,
             linestyle="-",
             linewidth=0.5,
         )
@@ -145,8 +168,8 @@ for pixel in pixels:
     fig.savefig(
         os.path.join(
             paths["out_dir"],
-            "aberration_pixel_{pixel:0d}_{angle:0d}mdeg.jpg".format(
-                pixel=pixel["id"], angle=off_axis_angle_mdeg
+            "aberration_pixel_{pixel:0d}_{angle:0d}mdeg{ext:s}".format(
+                pixel=pixel["id"], angle=off_axis_angle_mdeg, ext=EXT
             ),
         ),
     )
@@ -154,7 +177,9 @@ for pixel in pixels:
 
 # plot all pixels overview
 # -------------------------
-fig = fig = seb.figure(style={"rows": 720, "cols": 720, "fontsize": 0.7})
+fig = fig = seb.figure(
+    style={"rows": 720 * rrr, "cols": 720 * rrr, "fontsize": 0.7 * rrr}
+)
 ax = seb.add_axes(fig=fig, span=[0.16, 0.16, 0.82, 0.82])
 
 overview_photosensor_mask = np.zeros(
@@ -167,13 +192,14 @@ pl.plot.light_field_geometry.ax_add_polygons_with_colormap(
     polygons=lixel_polygons,
     I=overview_photosensor_mask,
     ax=ax,
-    cmap="binary",
+    cmap=cmap,
     edgecolors="grey",
     linewidths=(0.02,),
 )
 
 poseye = irf.summary.figure.positions_of_eyes_in_roi(
     light_field_geometry=light_field_geometry,
+    lixel_polygons=lixel_polygons,
     roi={"x": [-10, 10], "y": [-10, 10]},
     margin=0.2,
 )
@@ -186,7 +212,7 @@ for peye in poseye:
         y=_y,
         r_outer=eye_outer_radius_m,
         orientation_deg=0,
-        color="black",
+        color=stroke,
         linestyle="-",
         alpha=0.5,
         linewidth=0.2,
@@ -222,7 +248,7 @@ ax.spines["top"].set_visible(False)
 ax.set_xlabel("$x\\,/\\,$m")
 ax.set_ylabel("$y\\,/\\,$m")
 
-fig.savefig(os.path.join(paths["out_dir"], "aberration_overview.jpg"))
+fig.savefig(os.path.join(paths["out_dir"], "aberration_overview" + EXT))
 seb.close("all")
 
 # export table

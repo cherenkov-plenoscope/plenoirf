@@ -1,4 +1,5 @@
 import numpy as np
+from plenopy.light_field_geometry.LightFieldGeometry import init_lixel_polygons
 
 
 FIGURE_STYLE = {"rows": 720, "cols": 1280, "fontsize": 1.0}
@@ -113,15 +114,12 @@ def is_in_roi(x, y, roi, margin=0.1):
         return False
 
 
-def position_of_eye(light_field_geometry, eye_id):
+def position_of_eye(light_field_geometry, lixel_polygons, eye_id):
+    poly = lixel_polygons
     num_pax = light_field_geometry.number_paxel
     start = eye_id * num_pax
     stop = (eye_id + 1) * num_pax
-    poly = plenopy.light_field_geometry.init_lixel_polygons(
-        lixel_positions_x=light_field_geometry.lixel_positions_x,
-        lixel_positions_y=light_field_geometry.lixel_positions_y,
-        lixel_outer_radius=light_field_geometry.lixel_outer_radius,
-    )
+
     poly = poly[start:stop]
     poly = np.array(poly)
     pp = []
@@ -135,11 +133,15 @@ def position_of_eye(light_field_geometry, eye_id):
     return np.array([x_mean, y_mean])
 
 
-def positions_of_eyes_in_roi(light_field_geometry, roi, margin=0.1):
+def positions_of_eyes_in_roi(
+    light_field_geometry, lixel_polygons, roi, margin=0.1
+):
     positions_of_eyes = {}
     for eye_id in range(light_field_geometry.number_pixel):
         pos = position_of_eye(
-            light_field_geometry=light_field_geometry, eye_id=eye_id
+            light_field_geometry=light_field_geometry,
+            lixel_polygons=lixel_polygons,
+            eye_id=eye_id,
         )
         if is_in_roi(x=pos[0], y=pos[1], roi=roi, margin=margin):
             positions_of_eyes[eye_id] = pos

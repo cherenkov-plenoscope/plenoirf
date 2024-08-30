@@ -5,20 +5,45 @@ import plenopy as pl
 import os
 import numpy as np
 import json_utils
+import json
 import sebastians_matplotlib_addons as seb
 import matplotlib
 from matplotlib.collections import PolyCollection
+from plenopy.light_field_geometry.LightFieldGeometry import init_lixel_polygons
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
+DARKMODE = True
+rrr = 2
 
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
-
+paths = irf.summary.paths_from_argv(sys.argv)
+res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 
+if DARKMODE:
+    seb.plt.style.use("dark_background")
+    stroke = "white"
+    backc = "black"
+    EXT = ".dark.png"
+    cmap = "binary_r"
+    BEAM_ALPHA = 0.4
+    colors = ["gray", "g", "b", "r", "c", "m", "orange"]
+else:
+    EXT = ".jpg"
+    stroke = "black"
+    backc = "white"
+    cmap = "binary"
+    BEAM_ALPHA = 0.2
+    colors = ["k", "g", "b", "r", "c", "m", "orange"]
+
+seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+
 light_field_geometry = pl.LightFieldGeometry(
-    os.path.join(paths["plenoirf_dir"], "light_field_geometry")
+    os.path.join(
+        paths["plenoirf_dir"],
+        "plenoptics",
+        "instruments",
+        res.instrument_key,
+        "light_field_geometry",
+    )
 )
 
 region_of_interest_on_sensor_plane = {"x": [-0.35, 0.35], "y": [-0.35, 0.35]}
@@ -26,7 +51,7 @@ region_of_interest_on_sensor_plane = {"x": [-0.35, 0.35], "y": [-0.35, 0.35]}
 object_distances = [21e3, 29e3, 999e3]
 # object_distances = [3e3, 5e3, 9e3, 15e3, 25e3, 999e3]
 central_seven_pixel_ids = [4221, 4124, 4222, 4220, 4125, 4317, 4318]
-colors = ["k", "g", "b", "r", "c", "m", "orange"]
+
 
 XY_LABELS_ALWAYS = True
 
@@ -56,7 +81,7 @@ image_geometry = pl.trigger.geometry.init_trigger_image_geometry(
 def lixel_in_region_of_interest(
     light_field_geometry, lixel_id, roi, margin=0.1
 ):
-    return is_in_roi(
+    return irf.summary.figure.is_in_roi(
         x=light_field_geometry.lixel_positions_x[lixel_id],
         y=light_field_geometry.lixel_positions_y[lixel_id],
         roi=roi,
@@ -64,22 +89,25 @@ def lixel_in_region_of_interest(
     )
 
 
+lixel_polygons = init_lixel_polygons(
+    lixel_positions_x=light_field_geometry.lixel_positions_x,
+    lixel_positions_y=light_field_geometry.lixel_positions_y,
+    lixel_outer_radius=light_field_geometry.lixel_outer_radius,
+)
+
 poseye = irf.summary.figure.positions_of_eyes_in_roi(
     light_field_geometry=light_field_geometry,
+    lixel_polygons=lixel_polygons,
     roi=region_of_interest_on_sensor_plane,
     margin=0.2,
 )
 
 AXES_STYLE = {"spines": ["left", "bottom"], "axes": ["x", "y"], "grid": False}
 
-lixel_polygons = pl.light_field_geometry.init_lixel_polygons(
-    lixel_positions_x=light_field_geometry.lixel_positions_x,
-    lixel_positions_y=light_field_geometry.lixel_positions_y,
-    lixel_outer_radius=light_field_geometry.lixel_outer_radius,
-)
-
 for obj, object_distance in enumerate(object_distances):
-    fig = seb.figure(style={"rows": 960, "cols": 1280, "fontsize": 1.244})
+    fig = seb.figure(
+        style={"rows": 960 * rrr, "cols": 1280 * rrr, "fontsize": 1.244 * rrr}
+    )
     ax = seb.add_axes(
         fig=fig, span=[0.15, 0.15, 0.85 * (3 / 4), 0.85], style=AXES_STYLE
     )
@@ -104,9 +132,10 @@ for obj, object_distance in enumerate(object_distances):
             )
         )
 
-        json_utils.write(path=cpath, out_dict=lixel_to_pixel, indent=None)
+        json_utils.write(cpath, lixel_to_pixel, indent=None)
     else:
-        lixel_to_pixel = json_utils.read(path=cpath)
+        with open(cpath, "rt") as f:
+            lixel_to_pixel = json.loads(f.read())
 
     colored_lixels = np.zeros(light_field_geometry.number_lixel, dtype=bool)
     for i, pixel_id in enumerate(central_seven_pixel_ids):
@@ -143,7 +172,7 @@ for obj, object_distance in enumerate(object_distances):
 
     coll = PolyCollection(
         not_colored_polygons,
-        facecolors=["w" for _ in range(len(not_colored_polygons))],
+        facecolors=[backc for _ in range(len(not_colored_polygons))],
         edgecolors="gray",
         linewidths=linewidths,
     )
@@ -157,7 +186,7 @@ for obj, object_distance in enumerate(object_distances):
             y=_y,
             r_outer=eye_outer_radius_m,
             orientation_deg=0,
-            color="black",
+            color=stroke,
             linestyle="-",
             linewidth=linewidths * 2,
         )
@@ -179,7 +208,7 @@ for obj, object_distance in enumerate(object_distances):
         N=9,
         linewidth=4.7,
         color=irf.summary.figure.COLOR_BEAM_RGBA,
-        alpha=0.2,
+        alpha=BEAM_ALPHA,
     )
     ax2.plot(
         [
@@ -187,7 +216,7 @@ for obj, object_distance in enumerate(object_distances):
             1,
         ],
         [-0.1, -0.1],
-        color="white",
+        color=backc,
         linewidth=10,
         alpha=1.0,
     )
@@ -197,7 +226,7 @@ for obj, object_distance in enumerate(object_distances):
             1.0,
         ],
         [0, 0],
-        color="k",
+        color=stroke,
         linewidth=0.5 * linewidths,
     )
 
@@ -213,7 +242,9 @@ for obj, object_distance in enumerate(object_distances):
     fig.savefig(
         os.path.join(
             paths["out_dir"],
-            "refocus_lixel_summation_7_{obj:d}.jpg".format(obj=obj),
+            "refocus_lixel_summation_7_{obj:d}{ext:s}".format(
+                obj=obj, ext=EXT
+            ),
         )
     )
     seb.close("all")
