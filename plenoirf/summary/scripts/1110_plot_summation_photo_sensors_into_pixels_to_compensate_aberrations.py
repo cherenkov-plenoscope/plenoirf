@@ -9,8 +9,8 @@ import numpy as np
 import sebastians_matplotlib_addons as seb
 from plenopy.light_field_geometry.LightFieldGeometry import init_lixel_polygons
 
-DARKMODE = False
-rrr = 1
+DARKMODE = True
+rrr = 3
 
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
@@ -232,10 +232,10 @@ for pixel in pixels:
     Dx = _x - ROI_RADIUS
     Dy = _y + ROI_RADIUS
 
-    ax.plot([Ax, Bx], [Ay, By], "k", linewidth=0.5)
-    ax.plot([Bx, Cx], [By, Cy], "k", linewidth=0.5)
-    ax.plot([Cx, Dx], [Cy, Dy], "k", linewidth=0.5)
-    ax.plot([Dx, Ax], [Dy, Ay], "k", linewidth=0.5)
+    ax.plot([Ax, Bx], [Ay, By], stroke, linewidth=0.5)
+    ax.plot([Bx, Cx], [By, Cy], stroke, linewidth=0.5)
+    ax.plot([Cx, Dx], [Cy, Dy], stroke, linewidth=0.5)
+    ax.plot([Dx, Ax], [Dy, Ay], stroke, linewidth=0.5)
     ax.text(
         s=pixel["name_in_figure"],
         x=_x - 1.0 * ROI_RADIUS,

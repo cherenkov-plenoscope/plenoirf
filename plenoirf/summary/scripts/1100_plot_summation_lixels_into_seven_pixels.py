@@ -12,6 +12,7 @@ from matplotlib.collections import PolyCollection
 from plenopy.light_field_geometry.LightFieldGeometry import init_lixel_polygons
 
 DARKMODE = True
+FINE_STEPS = 9
 rrr = 2
 
 paths = irf.summary.paths_from_argv(sys.argv)
@@ -48,7 +49,13 @@ light_field_geometry = pl.LightFieldGeometry(
 
 region_of_interest_on_sensor_plane = {"x": [-0.35, 0.35], "y": [-0.35, 0.35]}
 
-object_distances = [21e3, 29e3, 999e3]
+
+if FINE_STEPS is not None:
+    object_distances = np.geomspace(10e3, 60e3, FINE_STEPS).tolist() + [999e3]
+    object_distances = np.array(object_distances)
+else:
+    object_distances = [21e3, 29e3, 999e3]
+
 # object_distances = [3e3, 5e3, 9e3, 15e3, 25e3, 999e3]
 central_seven_pixel_ids = [4221, 4124, 4222, 4220, 4125, 4317, 4318]
 
