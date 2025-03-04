@@ -41,7 +41,7 @@ setuptools.setup(
         "sympy>=1.11.1",
         "scikit-image",
         "un_bound_histogram>=0.0.1",
-        "cosmic_fluxes",
+        "cosmic_fluxes_cherenkov-plenoscope-project>=0.0.3",
         "corsika_primary>=2.3.3",
         "atmospheric_cherenkov_response_cherenkov-plenoscope-project>=0.1.3",
         "json_line_logger>=0.0.3",
