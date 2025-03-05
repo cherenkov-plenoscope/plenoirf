@@ -156,10 +156,10 @@ def make_particles_scatter_solid_angle():
         cone = acr.particles.scatter_cone(key=particle_key)
         out[particle_key] = {}
         out[particle_key]["energy_GeV"] = cone["energy_GeV"]
-        out[particle_key][
-            "solid_angle_sr"
-        ] = solid_angle_utils.cone.solid_angle(
-            half_angle_rad=cone["half_angle_rad"]
+        out[particle_key]["solid_angle_sr"] = (
+            solid_angle_utils.cone.solid_angle(
+                half_angle_rad=cone["half_angle_rad"]
+            )
         )
     return out
 

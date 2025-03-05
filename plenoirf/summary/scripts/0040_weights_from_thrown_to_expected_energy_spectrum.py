@@ -48,9 +48,9 @@ gamma_reference_source = json_utils.read(
 )
 
 _airshower_differential_fluxes["gamma"] = {}
-_airshower_differential_fluxes["gamma"][
-    "differential_flux"
-] = gamma_reference_source["differential_flux"]
+_airshower_differential_fluxes["gamma"]["differential_flux"] = (
+    gamma_reference_source["differential_flux"]
+)
 
 airshower_rates["rates"] = {}
 

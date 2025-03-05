@@ -219,9 +219,9 @@ def read_analysis_config(plenoirf_dir, instrument_key):
 def get_PARTICLES(analysis_config):
     particles = {}
     for particle_key in analysis_config["response"]["particles"]:
-        particles[
-            particle_key
-        ] = atmospheric_cherenkov_response.particles.init(particle_key)
+        particles[particle_key] = (
+            atmospheric_cherenkov_response.particles.init(particle_key)
+        )
     return particles
 
 
@@ -707,9 +707,9 @@ def read_train_test_frame(
     )
 
     EXT_STRUCTRURE = dict(table.STRUCTURE)
-    EXT_STRUCTRURE[
-        "transformed_features"
-    ] = features.TRANSFORMED_FEATURE_STRUCTURE["transformed_features"]
+    EXT_STRUCTRURE["transformed_features"] = (
+        features.TRANSFORMED_FEATURE_STRUCTURE["transformed_features"]
+    )
 
     out = {}
     for kk in ["test", "train"]:

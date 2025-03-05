@@ -49,10 +49,10 @@ ARRAY_CONFIGS = copy.deepcopy(
 )
 
 for ak in ARRAY_CONFIGS:
-    ARRAY_CONFIGS[ak][
-        "mask"
-    ] = irf.outer_telescope_array.init_mask_from_telescope_positions(
-        positions=ARRAY_CONFIGS[ak]["positions"],
+    ARRAY_CONFIGS[ak]["mask"] = (
+        irf.outer_telescope_array.init_mask_from_telescope_positions(
+            positions=ARRAY_CONFIGS[ak]["positions"],
+        )
     )
 
 CB = irf.outer_telescope_array.CENTER_BIN

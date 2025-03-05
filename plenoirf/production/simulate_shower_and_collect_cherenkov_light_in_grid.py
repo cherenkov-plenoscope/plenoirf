@@ -349,17 +349,17 @@ def make_primary_record(
     pd = primary_direction
 
     if pd["method"] == "magnetic_deflection_skymap" and not pd["cutoff"]:
-        rec[
-            "draw_primary_direction_method"
-        ] = event_table.structure.METHOD_SKYMAP_VALID
+        rec["draw_primary_direction_method"] = (
+            event_table.structure.METHOD_SKYMAP_VALID
+        )
     elif pd["method"] == "magnetic_deflection_skymap" and pd["cutoff"]:
-        rec[
-            "draw_primary_direction_method"
-        ] = event_table.structure.METHOD_SKYMAP_CUTOFF_FALLBACK_FULL_SKY
+        rec["draw_primary_direction_method"] = (
+            event_table.structure.METHOD_SKYMAP_CUTOFF_FALLBACK_FULL_SKY
+        )
     elif pd["method"] == "viewcone":
-        rec[
-            "draw_primary_direction_method"
-        ] = event_table.structure.METHOD_VIEWCONE
+        rec["draw_primary_direction_method"] = (
+            event_table.structure.METHOD_VIEWCONE
+        )
     else:
         raise AssertionError("Can not assign draw_primary_direction_method")
 

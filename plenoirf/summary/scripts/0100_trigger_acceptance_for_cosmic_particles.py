@@ -66,9 +66,9 @@ for pk in res.PARTICLES:
         "area_thrown_m2"
     ] * np.cos(point_particle_table["primary"]["zenith_rad"])
     num_grid_cells_above_lose_threshold = np.zeros(shape=len(energy_GeV))
-    num_grid_cells_above_lose_threshold[
-        has_groundgrid_result
-    ] = point_particle_table["groundgrid_result"]["num_bins_above_threshold"]
+    num_grid_cells_above_lose_threshold[has_groundgrid_result] = (
+        point_particle_table["groundgrid_result"]["num_bins_above_threshold"]
+    )
     total_num_grid_cells = point_particle_table["groundgrid"][
         "num_bins_thrown"
     ]
@@ -131,9 +131,9 @@ for pk in res.PARTICLES:
         * diffuse_particle_table["primary"]["solid_angle_thrown_sr"]
     )
     num_grid_cells_above_lose_threshold = np.zeros(shape=len(energy_GeV))
-    num_grid_cells_above_lose_threshold[
-        has_groundgrid_result
-    ] = diffuse_particle_table["groundgrid_result"]["num_bins_above_threshold"]
+    num_grid_cells_above_lose_threshold[has_groundgrid_result] = (
+        diffuse_particle_table["groundgrid_result"]["num_bins_above_threshold"]
+    )
     total_num_grid_cells = diffuse_particle_table["groundgrid"][
         "num_bins_thrown"
     ]

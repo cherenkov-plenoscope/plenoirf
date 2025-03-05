@@ -25,13 +25,13 @@ def init_event_table_structure():
     t["trigger"] = init_trigger_level_structure()
     t["pasttrigger"] = init_pasttrigger_level_structure()
 
-    t[
-        "cherenkovclassification"
-    ] = init_cherenkovclassification_level_structure()
+    t["cherenkovclassification"] = (
+        init_cherenkovclassification_level_structure()
+    )
     t["features"] = init_features_level_structure()
-    t[
-        "reconstructed_trajectory"
-    ] = init_reconstructed_trajectory_level_structure()
+    t["reconstructed_trajectory"] = (
+        init_reconstructed_trajectory_level_structure()
+    )
     return t
 
 

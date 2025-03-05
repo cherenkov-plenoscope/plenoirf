@@ -54,9 +54,9 @@ def read_with_mask(path, bunch_indices):
 
                 cherenkov_sub_block = cherenkov_block[block_match_idxs]
 
-                outblock[
-                    oo : oo + cherenkov_sub_block.shape[0]
-                ] = cherenkov_sub_block
+                outblock[oo : oo + cherenkov_sub_block.shape[0]] = (
+                    cherenkov_sub_block
+                )
 
                 oo += cherenkov_sub_block.shape[0]
                 ii += cherenkov_block.shape[0]

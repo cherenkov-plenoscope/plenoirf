@@ -112,17 +112,15 @@ def draw_primaries_and_pointings(
 
         # energies
         # --------
-        energies_GeV[
-            event_uid_str
-        ] = corsika_primary.random.distributions.draw_power_law(
-            prng=prng,
-            lower_limit=energy_distribution["energy_start_GeV"],
-            upper_limit=energy_distribution["energy_stop_GeV"],
-            power_slope=energy_distribution["power_slope"],
-            num_samples=1,
-        )[
-            0
-        ]
+        energies_GeV[event_uid_str] = (
+            corsika_primary.random.distributions.draw_power_law(
+                prng=prng,
+                lower_limit=energy_distribution["energy_start_GeV"],
+                upper_limit=energy_distribution["energy_stop_GeV"],
+                power_slope=energy_distribution["power_slope"],
+                num_samples=1,
+            )[0]
+        )
 
         # instrument pointings
         # --------------------

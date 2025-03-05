@@ -182,14 +182,10 @@ for pe in pivot_energies:
                     com["differential_flux"] = np.array(
                         cta_s_vs_t["differential_flux"]["values"]
                     )
-                    com[
-                        "label"
-                    ] = (
+                    com["label"] = (
                         irf.other_instruments.cherenkov_telescope_array_south.LABEL
                     )
-                    com[
-                        "color"
-                    ] = (
+                    com["color"] = (
                         irf.other_instruments.cherenkov_telescope_array_south.COLOR
                     )
                     com["alpha"] = 1.0

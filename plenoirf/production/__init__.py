@@ -189,10 +189,10 @@ def run_job_in_dir(job, work_dir):
         )
 
     with TimeDelta(logger, "make light_field_calibration addon"):
-        blk[
-            "light_field_geometry_addon"
-        ] = plenopy.features.make_light_field_geometry_addon(
-            light_field_geometry=blk["light_field_geometry"]
+        blk["light_field_geometry_addon"] = (
+            plenopy.features.make_light_field_geometry_addon(
+                light_field_geometry=blk["light_field_geometry"]
+            )
         )
 
     with TimeDelta(logger, "read trigger_geometry"):
@@ -208,19 +208,19 @@ def run_job_in_dir(job, work_dir):
 
     with TimeDelta(logger, "init trajectory reconstruction config"):
         blk["trajectory_reconstruction"] = {}
-        blk["trajectory_reconstruction"][
-            "fuzzy_config"
-        ] = gamrec.trajectory.v2020nov12fuzzy0.config.compile_user_config(
-            user_config=env["config"]["reconstruction"]["trajectory"][
-                "fuzzy_method"
-            ]
+        blk["trajectory_reconstruction"]["fuzzy_config"] = (
+            gamrec.trajectory.v2020nov12fuzzy0.config.compile_user_config(
+                user_config=env["config"]["reconstruction"]["trajectory"][
+                    "fuzzy_method"
+                ]
+            )
         )
-        blk["trajectory_reconstruction"][
-            "model_fit_config"
-        ] = gamrec.trajectory.v2020dec04iron0b.config.compile_user_config(
-            user_config=env["config"]["reconstruction"]["trajectory"][
-                "core_axis_fit"
-            ]
+        blk["trajectory_reconstruction"]["model_fit_config"] = (
+            gamrec.trajectory.v2020dec04iron0b.config.compile_user_config(
+                user_config=env["config"]["reconstruction"]["trajectory"][
+                    "core_axis_fit"
+                ]
+            )
         )
 
     # estimate memory footprint of env and blk

@@ -106,9 +106,9 @@ for sk in irf_config["config"]["sites"]:
     theta_deg = np.abs(np.rad2deg(rectab["trajectory/theta_rad"]))
 
     out = {}
-    out[
-        "comment"
-    ] = "theta is angle between true and reco. direction of source. "
+    out["comment"] = (
+        "theta is angle between true and reco. direction of source. "
+    )
     out["energy_bin_edges_GeV"] = energy_bin["edges"]
     for con in range(num_containment_fractions):
         tkey = "theta{:02d}".format(containment_percents[con])

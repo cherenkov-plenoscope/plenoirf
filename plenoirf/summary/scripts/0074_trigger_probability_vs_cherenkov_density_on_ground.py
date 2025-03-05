@@ -15,12 +15,12 @@ trigger_modi = {}
 trigger_modi["passing_trigger"] = json_utils.tree.read(
     os.path.join(paths["analysis_dir"], "0055_passing_trigger")
 )
-trigger_modi[
-    "passing_trigger_if_only_accepting_not_rejecting"
-] = json_utils.tree.read(
-    os.path.join(
-        paths["analysis_dir"],
-        "0054_passing_trigger_if_only_accepting_not_rejecting",
+trigger_modi["passing_trigger_if_only_accepting_not_rejecting"] = (
+    json_utils.tree.read(
+        os.path.join(
+            paths["analysis_dir"],
+            "0054_passing_trigger_if_only_accepting_not_rejecting",
+        )
     )
 )
 

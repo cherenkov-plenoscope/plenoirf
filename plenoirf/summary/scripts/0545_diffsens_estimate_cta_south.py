@@ -171,12 +171,12 @@ for dk in flux_sensitivity.differential.SCENARIOS:
     )
     scenario["signal_area_in_scenario_m2"] = signal_area_in_scenario_m2
     scenario["signal_area_in_scenario_m2_au"] = signal_area_in_scenario_m2_au
-    scenario[
-        "background_rate_onregion_in_scenario_per_s"
-    ] = background_rate_onregion_in_scenario_per_s
-    scenario[
-        "background_rate_onregion_in_scenario_per_s_au"
-    ] = background_rate_onregion_in_scenario_per_s_au
+    scenario["background_rate_onregion_in_scenario_per_s"] = (
+        background_rate_onregion_in_scenario_per_s
+    )
+    scenario["background_rate_onregion_in_scenario_per_s_au"] = (
+        background_rate_onregion_in_scenario_per_s_au
+    )
     json_utils.write(os.path.join(scenario_dir, "scenario.json"), scenario)
 
     critrate = np.zeros(shape=(num_energy_bins, num_observation_times))

@@ -33,9 +33,9 @@ def run(env, logger):
         )
     )
 
-    out[
-        "disk_create_write_close_open_read_remove_latency"
-    ] = benchmarking.disk_create_write_close_open_read_remove_latency()
+    out["disk_create_write_close_open_read_remove_latency"] = (
+        benchmarking.disk_create_write_close_open_read_remove_latency()
+    )
     logger.debug(
         json_line_logger.xml(
             "disk_create_write_close_open_read_remove_latency",

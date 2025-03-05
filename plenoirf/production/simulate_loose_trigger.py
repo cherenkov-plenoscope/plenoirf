@@ -121,9 +121,9 @@ def simulate_loose_trigger(
         # export instrument's time relative to CORSIKA's time
         # ---------------------------------------------------
         insrec = uidrec.copy()
-        insrec[
-            "start_time_of_exposure_s"
-        ] = event.simulation_truth.photon_propagator.nsb_exposure_start_time()
+        insrec["start_time_of_exposure_s"] = (
+            event.simulation_truth.photon_propagator.nsb_exposure_start_time()
+        )
         evttab["instrument"].append_record(insrec)
 
         # apply loose trigger
