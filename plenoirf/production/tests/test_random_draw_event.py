@@ -20,12 +20,17 @@ def test_dummy():
     prng = np.random.Generator(np.random.PCG64(RUN_ID))
 
     energy_distribution = {
-        "energy_start_GeV": 1.0, "energy_stop_GeV": 10.0, "power_slope": -1.5
+        "energy_start_GeV": 1.0,
+        "energy_stop_GeV": 10.0,
+        "power_slope": -1.5,
     }
 
     scatter_solid_angle_vs_energy = {
         "energy_GeV": [1.0, 10.0],
-        "solid_angle_sr": [solid_angle_utils.squaredeg2sr(4.0), solid_angle_utils.squaredeg2sr(16.0)]
+        "solid_angle_sr": [
+            solid_angle_utils.squaredeg2sr(4.0),
+            solid_angle_utils.squaredeg2sr(16.0),
+        ],
     }
 
     (
