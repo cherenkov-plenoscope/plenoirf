@@ -229,7 +229,7 @@ def patch_groundgrid(groundgrid, groundgrid_result):
     A temporary fix to get groundgrid_result/num_bins_above_threshold into
     groundgrid.
     """
-    new_groundgrid = np.core.records.recarray(
+    new_groundgrid = np.recarray(
         shape=groundgrid.shape[0],
         dtype=[
             (snt.IDX, snt.IDX_DTYPE),
