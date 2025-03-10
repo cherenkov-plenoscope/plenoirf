@@ -327,7 +327,7 @@ def benchmark(pool, out_path, num_runs):
 
 def reduce(plenoirf_dir, config=None, pool=None):
     if pool is None:
-        pool = utils.SerialprocessingPool()
+        pool = utils.SerialPool()
 
     jobs = reduction.make_jobs(plenoirf_dir=plenoirf_dir, config=config)
     _ = pool.map(reduction.run_job, jobs)

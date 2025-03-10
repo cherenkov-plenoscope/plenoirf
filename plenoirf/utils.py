@@ -306,23 +306,15 @@ def zipfile_write_dir_recursively(zipfile, filename, arcname):
             zipfile.write(filename=fname, arcname=aname)
 
 
-class SerialprocessingPool:
+class SerialPool:
     def __init__(self):
         pass
 
     def map(self, func, iterable):
-        results = []
-        for item in iterable:
-            result = func(item)
-        results.append(result)
-        return results
+        return [func(item) for item in iterable]
 
     def starmap(self, func, iterable):
-        results = []
-        for item in iterable:
-            result = func(*item)
-        results.append(result)
-        return results
+        return [func(*item) for item in iterable]
 
     def __repr__(self):
         out = "{:s}()".format(self.__class__.__name__)
