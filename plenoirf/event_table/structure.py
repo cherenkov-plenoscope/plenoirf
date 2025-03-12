@@ -5,6 +5,7 @@ import dynamicsizerecarray
 
 UID_DTYPE = ("uid", "<u8")
 
+
 def init_event_table_structure():
     t = collections.OrderedDict()
     t["primary"] = init_primary_level_structure()
