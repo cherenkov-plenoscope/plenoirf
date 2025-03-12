@@ -402,7 +402,9 @@ def run_job_in_dir(job, work_dir):
         )
         base = "plenoirf.production.draw_event_uids_for_debugging.json"
         zip_write_gz(
-            zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
+            zout,
+            opj(env["work_dir"], base),
+            opj(env["run_id_str"], base + ".gz"),
         )
         zip_write(
             zout,
