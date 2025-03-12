@@ -344,6 +344,9 @@ def make_primary_record(
 
     rec["solid_angle_thrown_sr"] = primary_direction["solid_angle_thrown_sr"]
     rec["inner_atmopsheric_magnetic_cutoff"] = primary_direction["cutoff"]
+    rec["containment_quantile_in_solid_angle_thrown"] = primary_direction[
+        "sky_draw_quantile"
+    ]
 
     pd = primary_direction
 

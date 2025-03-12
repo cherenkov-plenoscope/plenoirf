@@ -177,10 +177,11 @@ def draw_primaries_and_pointings(
                     ],
                 ),
             }
-            dbg = {"method": "viewcone"}
+            dbg = {"method": "viewcone", "sky_draw_quantile": float("nan")}
 
         primary_directions[event_uid_str] = res
-        primary_directions[event_uid_str]["method"] = dbg["method"]
+        for dbgkey in ["method", "sky_draw_quantile"]:
+            primary_directions[event_uid_str][dbgkey] = dbg[dbgkey]
 
         if int(event_uid_str) in event_uids_for_debugging:
             debug[event_uid_str] = {"result": res, "debug": dbg}
@@ -208,7 +209,12 @@ def draw_primaries_and_pointings(
 
     for event_uid_str in primary_directions:
         y = {}
-        for key in ["cutoff", "solid_angle_thrown_sr", "method"]:
+        for key in [
+            "cutoff",
+            "solid_angle_thrown_sr",
+            "method",
+            "sky_draw_quantile",
+        ]:
             y[key] = primary_directions[event_uid_str][key]
         out["primary_directions"][event_uid_str] = y
     return out, debug

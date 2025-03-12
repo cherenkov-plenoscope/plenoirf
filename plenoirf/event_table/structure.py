@@ -147,6 +147,14 @@ def init_primary_level_structure():
         "no primary direction which can produce Cherenkov light at a "
         "given direction.",
     }
+    t["containment_quantile_in_solid_angle_thrown"] = {
+        "dtype": "<f4",
+        "comment": "The quantile of possible primary particle directions "
+        "contained wit in the 'solid_angle_thrown_sr' according to the "
+        "magnetic deflection sky map look-up-table. Only applicable when the "
+        "magnetic deflection sky map was queried to draw the particle "
+        "direction. For the 'viewcone' method this quantile is not known.",
+    }
     t["draw_primary_direction_method"] = {
         "dtype": "<i1",
         "comment": ""
