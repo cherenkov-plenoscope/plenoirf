@@ -123,7 +123,10 @@ def zip_read_IO(file, internal_path, mode="rb"):
 
 def recude_event_table(run_paths, out_path):
     with snt.archive.open(
-        out_path, mode="w", dtypes=event_table.structure.dtypes()
+        out_path,
+        mode="w",
+        dtypes=event_table.structure.dtypes(),
+        compress=True,
     ) as arc:
         for run_path in run_paths:
             run_basename = os.path.basename(run_path)
