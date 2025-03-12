@@ -2,7 +2,6 @@ import numpy as np
 import os
 import plenopy
 import rename_after_writing as rnw
-import sparse_numeric_table as snt
 from .. import bookkeeping
 from .. import event_table
 from . import simulate_hardware
@@ -63,7 +62,7 @@ def extract_features(
     logger,
 ):
     for ptp in evttab["pasttrigger"]:
-        event_uid = ptp[snt.IDX]
+        event_uid = ptp["uid"]
 
         merlict_event_id = simulate_hardware.make_merlict_event_id(
             event_uid=event_uid,
@@ -86,7 +85,7 @@ def extract_features(
                 light_field_geometry_addon=light_field_geometry_addon,
                 prng=prng,
             )
-            lfft[snt.IDX] = event_uid
+            lfft["uid"] = event_uid
             evttab["features"].append_record(lfft)
         except Exception as excep:
             logger.critical(

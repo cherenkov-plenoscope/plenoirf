@@ -1,7 +1,6 @@
 import corsika_primary as cpw
 import numpy as np
 import os
-import sparse_numeric_table as snt
 
 from .. import bookkeeping
 from .. import event_table
@@ -124,7 +123,8 @@ def guess_aperture_radius_m(env):
 
 
 def init_particlepool_record(uid):
-    ppp = {snt.IDX: uid}
+    ppp = {}
+    ppp["uid"] = uid
     ppp["num_water_cherenkov"] = 0
     ppp["num_air_cherenkov"] = 0
     ppp["num_unknown"] = 0
@@ -132,7 +132,7 @@ def init_particlepool_record(uid):
 
 
 def init_particlepoolonaperture_record(uid):
-    aaa = {snt.IDX: uid}
+    aaa["uid"] = uid
     aaa["num_air_cherenkov_on_aperture"] = 0
     return aaa
 
@@ -171,7 +171,7 @@ def make_uid_from_evth(corsika_evth):
 
 def record_by_uid(dynamicsizerecarray, uid):
     for i in range(len(dynamicsizerecarray)):
-        if dynamicsizerecarray._recarray[snt.IDX][i] == uid:
+        if dynamicsizerecarray._recarray["uid"][i] == uid:
             out = {}
             for name in dynamicsizerecarray._recarray.dtype.names:
                 out[name] = dynamicsizerecarray._recarray[name][i]

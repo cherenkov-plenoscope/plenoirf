@@ -18,8 +18,8 @@ def cut_primary_direction_within_angle(
         )
     )
     inside = delta_deg <= radial_angle_deg
-    idxs_inside = primary_table[snt.IDX][inside]
-    return idxs_inside
+    uids_inside = primary_table["uid"][inside]
+    return uids_inside
 
 
 def cut_quality(
@@ -31,7 +31,7 @@ def cut_quality(
     # size
     # ----
     mask_sufficient_size = ft["num_photons"] >= min_reconstructed_photons
-    idxs_sufficient_size = ft[snt.IDX][mask_sufficient_size]
+    uids_sufficient_size = ft["uid"][mask_sufficient_size]
 
     # leakage
     # -------
@@ -40,6 +40,6 @@ def cut_quality(
         / ft["num_photons"]
     )
     mask_acceptable_leakage = relative_leakage <= max_relative_leakage
-    idxs_acceptable_leakage = ft[snt.IDX][mask_acceptable_leakage]
+    uids_acceptable_leakage = ft["uid"][mask_acceptable_leakage]
 
-    return snt.intersection([idxs_sufficient_size, idxs_acceptable_leakage])
+    return snt.intersection([uids_sufficient_size, uids_acceptable_leakage])

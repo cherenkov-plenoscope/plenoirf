@@ -44,7 +44,7 @@ NON_GAMMA_PARTICLES.pop("gamma")
 
 targets = {
     "energy": {
-        "idx": 0,
+        "power_index": 0,
         "start": 1e-1,
         "stop": 1e3,
         "num_bins": 20,
@@ -52,7 +52,7 @@ targets = {
         "unit": "GeV",
     },
     "airshower_maximum": {
-        "idx": 1,
+        "power_index": 1,
         "start": 7.5e3,
         "stop": 25e3,
         "num_bins": 20,
@@ -78,8 +78,8 @@ def read_event_frame(
     with res.open_event_table(particle_key=pk) as arc:
         airshower_table = arc.read_table(
             levels_and_columns={
-                "primary": [snt.IDX, "energy_GeV"],
-                "cherenkovpool": [snt.IDX, "z_emission_p50_m"],
+                "primary": ["uid", "energy_GeV"],
+                "cherenkovpool": ["uid", "z_emission_p50_m"],
                 "reconstructed_trajectory": "__all__",
             }
         )
@@ -98,19 +98,20 @@ def read_event_frame(
 
     out = {}
     for kk in ["test", "train"]:
-        idxs_valid_kk = snt.intersection(
+        uids_valid_kk = snt.intersection(
             [
-                passing_trigger[pk]["idx"],
-                passing_quality[pk]["idx"],
-                passing_trajectory[pk]["idx"],
+                passing_trigger[pk]["uid"],
+                passing_quality[pk]["uid"],
+                passing_trajectory[pk]["uid"],
                 train_test[pk][kk],
             ]
         )
         table_kk = snt.cut_and_sort_table_on_indices(
             table=airshower_table,
-            common_indices=idxs_valid_kk,
+            common_indices=uids_valid_kk,
+            index_key="uid",
         )
-        out[kk] = snt.make_rectangular_DataFrame(table_kk)
+        out[kk] = snt.make_rectangular_DataFrame(table_kk, index_key="uid")
 
     return out
 
@@ -235,15 +236,15 @@ for mk in models:
         _y_score = models[mk].predict(MA[pk]["test"]["x"])
 
         for tk in targets:
-            y_true = 10 ** MA[pk]["test"]["y"][:, targets[tk]["idx"]]
-            y_score = 10 ** _y_score[:, targets[tk]["idx"]]
+            y_true = 10 ** MA[pk]["test"]["y"][:, targets[tk]["power_index"]]
+            y_score = 10 ** _y_score[:, targets[tk]["power_index"]]
 
             out = {}
             out["comment"] = "Reconstructed from the test-set."
             out["learner"] = mk
             out[tk] = y_score
             out["unit"] = targets[tk]["unit"]
-            out["idx"] = np.array(particle_frames[pk]["test"]["idx"])
+            out["uid"] = np.array(particle_frames[pk]["test"]["uid"])
 
             pk_dir = os.path.join(paths["out_dir"], pk)
             os.makedirs(pk_dir, exist_ok=True)

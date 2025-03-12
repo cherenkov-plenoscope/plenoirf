@@ -119,7 +119,7 @@ for sk in SITES:
             structure=irf.table.STRUCTURE,
         )
         common_idx = snt.intersection(
-            [passing_trigger[sk][pk]["idx"], passing_quality[sk][pk]["idx"]]
+            [passing_trigger[sk][pk]["uid"], passing_quality[sk][pk]["uid"]]
         )
         events_truth = snt.cut_and_sort_table_on_indices(
             event_table,
@@ -162,10 +162,10 @@ for sk in SITES:
 
             # mandatory
             # ---------
-            if airshower_id not in passing_trigger[sk][pk]["idx"]:
+            if airshower_id not in passing_trigger[sk][pk]["uid"]:
                 continue
 
-            if airshower_id not in passing_quality[sk][pk]["idx"]:
+            if airshower_id not in passing_quality[sk][pk]["uid"]:
                 continue
 
             # optional for cherry picking

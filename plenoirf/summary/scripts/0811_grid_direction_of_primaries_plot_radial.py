@@ -72,8 +72,8 @@ for sk in SITES:
         )
 
         passed_trigger = snt.make_mask_of_right_in_left(
-            left_indices=evttab["primary"][snt.IDX],
-            right_indices=passing_trigger[sk][pk]["idx"],
+            left_indices=evttab["primary"]["uid"],
+            right_indices=passing_trigger[sk][pk]["uid"],
         )
 
         _scatter_rad = spherical_coordinates.angle_between_az_zd(

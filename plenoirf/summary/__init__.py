@@ -364,7 +364,7 @@ def _estimate_num_events_past_trigger_for_instrument(
 
             with snt.archive.open(path, mode="r") as arc:
                 pt_idx = arc.read_column(
-                    level_key="pasttrigger", column_key=snt.IDX
+                    level_key="pasttrigger", column_key="uid"
                 )
                 if pt_idx.shape[0] < num:
                     num = pt_idx.shape[0]
@@ -695,12 +695,12 @@ def read_train_test_frame(
         structure=features.TRANSFORMED_FEATURE_STRUCTURE,
     )["transformed_features"]
 
-    idxs_triggered = analysis.light_field_trigger_modi.make_indices(
+    uids_triggered = analysis.light_field_trigger_modi.make_indices(
         trigger_table=airshower_table["trigger"],
         threshold=trigger_config["threshold_pe"],
         modus=trigger_config["modus"],
     )
-    idxs_quality = analysis.cuts.cut_quality(
+    uids_quality = analysis.cuts.cut_quality(
         feature_table=airshower_table["features"],
         max_relative_leakage=quality_config["max_relative_leakage"],
         min_reconstructed_photons=quality_config["min_reconstructed_photons"],
@@ -713,19 +713,20 @@ def read_train_test_frame(
 
     out = {}
     for kk in ["test", "train"]:
-        idxs_valid_kk = snt.intersection(
+        uids_valid_kk = snt.intersection(
             [
-                idxs_triggered,
-                idxs_quality,
+                uids_triggered,
+                uids_quality,
                 train_test[sk][pk][kk],
             ]
         )
         table_kk = snt.cut_and_sort_table_on_indices(
             table=airshower_table,
-            common_indices=idxs_valid_kk,
+            common_indices=uids_valid_kk,
             level_keys=level_keys,
+            index_key="uid",
         )
-        out[kk] = snt.make_rectangular_DataFrame(table_kk)
+        out[kk] = snt.make_rectangular_DataFrame(table_kk, index_key="uid")
 
     return out
 

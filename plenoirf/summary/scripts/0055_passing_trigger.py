@@ -21,10 +21,10 @@ for pk in res.PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
         event_table = arc.read_table(levels_and_columns={"trigger": "__all__"})
 
-    idx_pasttrigger = irf.analysis.light_field_trigger_modi.make_indices(
+    uids_pasttrigger = irf.analysis.light_field_trigger_modi.make_indices(
         trigger_table=event_table["trigger"],
         threshold=trigger_threshold,
         modus=trigger_modus,
     )
 
-    json_utils.write(os.path.join(pk_dir, "idx.json"), idx_pasttrigger)
+    json_utils.write(os.path.join(pk_dir, "uid.json"), uids_pasttrigger)

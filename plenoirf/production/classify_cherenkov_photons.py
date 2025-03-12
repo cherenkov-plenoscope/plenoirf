@@ -3,7 +3,6 @@ import os
 import plenopy as pl
 import rename_after_writing as rnw
 import corsika_primary as cpw
-import sparse_numeric_table as snt
 from .. import bookkeeping
 from .. import event_table
 from . import simulate_hardware
@@ -80,7 +79,7 @@ def classify_cherenkov_photons(
         uid_num_digits=bookkeeping.uid.UID_NUM_DIGITS,
     ) as cer_phs_run:
         for ptp in evttab["pasttrigger"]:
-            event_uid = ptp[snt.IDX]
+            event_uid = ptp["uid"]
             merlict_event_id = simulate_hardware.make_merlict_event_id(
                 event_uid=event_uid,
                 event_uid_strs_in_block=event_uid_strs_in_block,
@@ -138,7 +137,7 @@ def classify_cherenkov_photons(
                 pulse_origins=event.simulation_truth.detector.pulse_origins,
                 photon_ids_cherenkov=cherenkov_photons.photon_ids,
             )
-            crcl[snt.IDX] = event_uid
+            crcl["uid"] = event_uid
             evttab["cherenkovclassification"].append_record(crcl)
 
             # export reconstructed Cherenkov photons

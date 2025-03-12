@@ -165,7 +165,7 @@ def align_values_with_event_frame(event_frame, idxs, values):
 
     aligned_values = np.nan * np.ones(event_frame.shape[0])
     for ii in range(event_frame.shape[0]):
-        aligned_values[ii] = Q[event_frame[snt.IDX][ii]]
+        aligned_values[ii] = Q[event_frame["uid"][ii]]
     return aligned_values
 
 
@@ -190,9 +190,9 @@ for sk in SITES:
         )
         idx_common = snt.intersection(
             [
-                passing_trigger[sk][pk][snt.IDX],
-                passing_quality[sk][pk][snt.IDX],
-                passing_trajectory[sk][pk]["trajectory_quality"][snt.IDX],
+                passing_trigger[sk][pk]["uid"],
+                passing_quality[sk][pk]["uid"],
+                passing_trajectory[sk][pk]["trajectory_quality"]["uid"],
             ]
         )
         event_table = snt.cut_and_sort_table_on_indices(
@@ -217,7 +217,7 @@ for sk in SITES:
 
         quality = align_values_with_event_frame(
             event_frame=event_frame,
-            idxs=passing_trajectory[sk][pk]["trajectory_quality"][snt.IDX],
+            idxs=passing_trajectory[sk][pk]["trajectory_quality"]["uid"],
             values=passing_trajectory[sk][pk]["trajectory_quality"]["quality"],
         )
 

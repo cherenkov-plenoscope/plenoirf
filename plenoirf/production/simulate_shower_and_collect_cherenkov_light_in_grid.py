@@ -8,7 +8,6 @@ import corsika_primary as cpw
 import json_utils
 from json_line_logger import xml
 import pickle
-import sparse_numeric_table as snt
 import atmospheric_cherenkov_response as acr
 import spherical_coordinates
 import dynamicsizerecarray
@@ -281,7 +280,7 @@ def nail_down_event_identity(
     uid_str = bookkeeping.uid.make_uid_str(run_id=run_id, event_id=event_id)
 
     out = {
-        "record": {snt.IDX: uid},
+        "record": {"uid": uid},
         "uid": uid,
         "uid_str": uid_str,
         "run_id": run_id,

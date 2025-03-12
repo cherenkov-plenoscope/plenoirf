@@ -1,7 +1,6 @@
 #!/usr/bin/python
 import sys
 import plenoirf as irf
-import sparse_numeric_table as snt
 import os
 import numpy as np
 import sebastians_matplotlib_addons as seb
@@ -82,7 +81,7 @@ for pk in PARTICLES:
 
     with res.open_event_table(particle_key=pk) as arc:
         _table = arc.read_table(
-            levels_and_columns={"primary": [snt.IDX, "energy_GeV"]}
+            levels_and_columns={"primary": ["uid", "energy_GeV"]}
         )
 
     thrown_spectrum["rates"][pk] = np.histogram(

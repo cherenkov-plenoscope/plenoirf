@@ -24,10 +24,10 @@ for pk in res.PARTICLES:
             levels_and_columns={"features": "__all__"}
         )
 
-    idx_pastquality = irf.analysis.cuts.cut_quality(
+    uids_pastquality = irf.analysis.cuts.cut_quality(
         feature_table=event_table["features"],
         max_relative_leakage=max_relative_leakage,
         min_reconstructed_photons=min_reconstructed_photons,
     )
 
-    json_utils.write(os.path.join(pk_dir, "idx.json"), idx_pastquality)
+    json_utils.write(os.path.join(pk_dir, "uid.json"), uids_pastquality)

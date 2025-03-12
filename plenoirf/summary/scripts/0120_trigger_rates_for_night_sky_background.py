@@ -57,7 +57,7 @@ for sk in SITES:
 
         # The true num of Cherenkov-photons in the light-field-sequence must be
         # below a critical threshold.
-        idx_nsb = airshower_table["trigger"][snt.IDX][
+        idx_nsb = airshower_table["trigger"]["uid"][
             airshower_table["trigger"]["num_cherenkov_pe"]
             <= MAX_CHERENKOV_IN_NSB_PE
         ]

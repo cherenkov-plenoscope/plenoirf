@@ -41,7 +41,7 @@ for pk in res.PARTICLES:
                 "Quality of reconstructed trajectory. "
                 "0 is worst, 1 is best."
             ),
-            snt.IDX: event_frame[snt.IDX],
+            "uid": event_frame["uid"],
             "unit": "1",
             "quality": quality,
         },
@@ -50,6 +50,6 @@ for pk in res.PARTICLES:
     # apply cut
     # ---------
     mask = quality >= res.analysis["quality"]["min_trajectory_quality"]
-    idx_passed = event_frame[snt.IDX][mask]
+    uids_passed = event_frame["uid"][mask]
 
-    json_utils.write(os.path.join(pk_dir, "idx.json"), idx_passed)
+    json_utils.write(os.path.join(pk_dir, "uid.json"), uids_passed)

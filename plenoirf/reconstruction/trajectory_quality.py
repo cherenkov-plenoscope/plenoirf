@@ -9,9 +9,10 @@ import sparse_numeric_table as snt
 def make_rectangular_table(event_table):
     tab = snt.cut_and_sort_table_on_indices(
         table=event_table,
-        common_indices=event_table["reconstructed_trajectory"][snt.IDX],
+        common_indices=event_table["reconstructed_trajectory"]["uid"],
+        index_key="uid",
     )
-    df = snt.make_rectangular_DataFrame(tab)
+    df = snt.make_rectangular_DataFrame(tab, index_key="uid")
 
     df["reconstructed_trajectory/r_m"] = np.hypot(
         df["reconstructed_trajectory/x_m"], df["reconstructed_trajectory/y_m"]
@@ -106,7 +107,7 @@ QUALITY_FEATURES = {
 
 def estimate_trajectory_quality(event_frame, quality_features):
     weight_sum = 0.0
-    quality = np.zeros(event_frame["idx"].shape[0])
+    quality = np.zeros(event_frame["uid"].shape[0])
     for qf_key in quality_features:
         weight_sum += quality_features[qf_key]["weight"]
 

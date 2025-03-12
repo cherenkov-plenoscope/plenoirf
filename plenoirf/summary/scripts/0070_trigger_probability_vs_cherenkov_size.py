@@ -28,8 +28,8 @@ for pk in res.PARTICLES:
     key = "trigger_probability_vs_cherenkov_size"
 
     mask_pasttrigger = snt.make_mask_of_right_in_left(
-        left_indices=event_table["trigger"][snt.IDX],
-        right_indices=passing_trigger[pk]["idx"],
+        left_indices=event_table["trigger"]["uid"],
+        right_indices=passing_trigger[pk]["uid"],
     ).astype(float)
 
     num_thrown = np.histogram(

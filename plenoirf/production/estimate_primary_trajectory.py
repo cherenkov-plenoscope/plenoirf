@@ -1,7 +1,6 @@
 import gamma_ray_reconstruction as gamrec
 import numpy as np
 import os
-import sparse_numeric_table as snt
 import plenopy
 from .. import bookkeeping
 from .. import event_table
@@ -73,7 +72,7 @@ def estimate_primary_trajectory(
         table=evttab,
         level_key="features",
         column_key="image_smallest_ellipse_object_distance",
-        index_key="idx",
+        index_key="uid",
     )
 
     run = plenopy.photon_stream.loph.LopfTarReader(
@@ -98,7 +97,7 @@ def estimate_primary_trajectory(
                 estimate=estimate
             ):
                 rec = {}
-                rec[snt.IDX] = uid
+                rec["uid"] = uid
 
                 rec["cx_rad"] = estimate["primary_particle_cx"]
                 rec["cy_rad"] = estimate["primary_particle_cy"]

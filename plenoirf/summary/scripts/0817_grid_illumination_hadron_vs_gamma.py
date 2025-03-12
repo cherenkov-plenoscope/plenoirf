@@ -77,7 +77,7 @@ for sk in SITES:
                 pk,
                 "grid.tar",
             ),
-            indices=passing_trigger[sk][pk]["idx"],
+            indices=passing_trigger[sk][pk]["uid"],
         )
         idx_passed_trigger_and_in_debug_output = np.array(
             list(detected_grid_histograms.keys())

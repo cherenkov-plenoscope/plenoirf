@@ -52,7 +52,7 @@ def make_indices(
         threshold,
         modus,
     )
-    return trigger_table[snt.IDX][mask]
+    return trigger_table["uid"][mask]
 
 
 def make_trigger_modus_str(analysis_trigger, production_trigger):

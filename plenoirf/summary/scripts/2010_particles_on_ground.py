@@ -52,7 +52,7 @@ for sk in ["chile"]:  # SITES:
 
         particlepool = snt.cut_level_on_indices(
             level=event_table["particlepool"],
-            indices=passing_trigger[sk][pk]["idx"],
+            indices=passing_trigger[sk][pk]["uid"],
         )
 
         print(
@@ -64,7 +64,7 @@ for sk in ["chile"]:  # SITES:
             np.median(particlepool["num_water_cherenkov"]),
         )
 
-        passing_trigger_set = set(passing_trigger[sk][pk]["idx"])
+        passing_trigger_set = set(passing_trigger[sk][pk]["uid"])
 
         RRR[sk][pk] = {}
         path_template = os.path.join(

@@ -39,7 +39,7 @@ def _num_events_in_runs(event_table, level_key, run_ids, key):
     for run_id in run_ids:
         num_events_in_run[run_id] = 0
     event_run_ids, _ = irf.unique.split_uid(
-        uid=event_table[level_key][snt.IDX]
+        uid=event_table[level_key]["uid"]
     )
     for event_run_id in event_run_ids:
         try:

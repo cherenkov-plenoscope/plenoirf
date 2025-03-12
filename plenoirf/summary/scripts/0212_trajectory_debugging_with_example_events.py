@@ -81,7 +81,7 @@ for sk in irf_config["config"]["sites"]:
             structure=irf.table.STRUCTURE,
         )
         common_idx = snt.intersection(
-            [passing_trigger[sk][pk]["idx"], passing_quality[sk][pk]["idx"]]
+            [passing_trigger[sk][pk]["uid"], passing_quality[sk][pk]["uid"]]
         )
         all_truth = snt.cut_and_sort_table_on_indices(
             event_table,
@@ -111,7 +111,7 @@ for sk in irf_config["config"]["sites"]:
         )
 
         for ii in range(all_truth["primary"].shape[0]):
-            airshower_id = all_truth["primary"][snt.IDX][ii]
+            airshower_id = all_truth["primary"]["uid"][ii]
             truth_by_index[sk][pk][airshower_id] = {
                 "cx": true_cx[ii],
                 "cy": true_cy[ii],

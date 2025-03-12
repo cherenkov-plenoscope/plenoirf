@@ -63,7 +63,7 @@ for pk in PARTICLES:
         _table = arc.read_table(levels_and_columns={"features": "__all__"})
         features = _table["features"]
 
-    transformed_features[pk][snt.IDX] = np.array(features[snt.IDX])
+    transformed_features[pk]["uid"] = np.array(features["uid"])
 
     for fk in ALL_FEATURES:
         if fk in ORIGINAL_FEATURES:

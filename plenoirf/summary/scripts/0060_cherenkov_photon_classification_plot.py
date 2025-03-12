@@ -44,23 +44,24 @@ for pk in res.PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
         event_table = arc.read_table(
             levels_and_columns={
-                "primary": [snt.IDX, "energy_GeV"],
-                "trigger": [snt.IDX, "num_cherenkov_pe"],
+                "primary": ["uid", "energy_GeV"],
+                "trigger": ["uid", "num_cherenkov_pe"],
                 CHCL: "__all__",
-                "features": [snt.IDX, "num_photons"],
+                "features": ["uid", "num_photons"],
             }
         )
 
-    idx_common = snt.intersection(
+    uid_common = snt.intersection(
         [
-            passing_trigger[pk]["idx"],
-            passing_quality[pk]["idx"],
+            passing_trigger[pk]["uid"],
+            passing_quality[pk]["uid"],
         ]
     )
 
     mrg_chc_fts = snt.cut_and_sort_table_on_indices(
         table=event_table,
-        common_indices=idx_common,
+        common_indices=uid_common,
+        index_key="uid",
     )
 
     # ---------------------------------------------------------------------

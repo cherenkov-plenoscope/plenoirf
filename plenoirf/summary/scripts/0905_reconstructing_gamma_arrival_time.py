@@ -68,9 +68,9 @@ for sk in SITES:
 
         valid_idx = snt.intersection(
             [
-                passing_trigger[sk][pk][snt.IDX],
-                passing_quality[sk][pk][snt.IDX],
-                passing_trajectory_quality[sk][pk][snt.IDX],
+                passing_trigger[sk][pk]["uid"],
+                passing_quality[sk][pk]["uid"],
+                passing_trajectory_quality[sk][pk]["uid"],
             ]
         )
 

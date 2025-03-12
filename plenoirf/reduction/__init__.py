@@ -172,7 +172,7 @@ def reduce_ground_grid_intensity(
                     mode="rb|gz",
                 )
                 run_evttab = snt.read(fileobj=buff, dynamic=False)
-                past_trigger_uids = run_evttab["pasttrigger"][snt.IDX]
+                past_trigger_uids = run_evttab["pasttrigger"]["uid"]
 
             suff = "_roi" if roi else ""
             internal_path = os.path.join(
@@ -207,7 +207,7 @@ def reduce_ground_grid_intensity(
 
 def _make_benchmarks_dtype():
     dtype = [
-        (snt.IDX, "<u8"),
+        ("uid", "<u8"),
         ("hostname_hash", "<i8"),
         ("time_unix_s", "<f8"),
         ("run_id", "<u8"),
@@ -261,7 +261,7 @@ def reduce_benchmarks(run_paths, out_path):
         rec["hostname_hash"] = hash(item["hostname"])
         rec["time_unix_s"] = item["time"]["unix"]
         rec["run_id"] = int(run_id_str)
-        rec[snt.IDX] = rec["run_id"]
+        rec["uid"] = rec["run_id"]
         ccc = bench["corsika"]
         rec["corsika/total_s"] = ccc["total"]
         rec["corsika/initializing_s"] = ccc["initializing"]

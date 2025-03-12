@@ -207,9 +207,9 @@ for sk in irf_config["config"]["sites"]:
         )
         idx_common = snt.intersection(
             [
-                passing_trigger[sk][pk]["idx"],
-                passing_quality[sk][pk]["idx"],
-                passing_trajectory_quality[sk][pk]["idx"],
+                passing_trigger[sk][pk]["uid"],
+                passing_quality[sk][pk]["uid"],
+                passing_trajectory_quality[sk][pk]["uid"],
             ]
         )
         _event_table = snt.cut_and_sort_table_on_indices(

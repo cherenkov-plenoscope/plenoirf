@@ -8,7 +8,6 @@ import corsika_primary as cpw
 import json_utils
 from json_line_logger import xml
 import pickle
-import sparse_numeric_table as snt
 import atmospheric_cherenkov_response as acr
 import spherical_coordinates
 import dynamicsizerecarray
@@ -131,11 +130,11 @@ def stage_two(
 
     evttab_groundgrid_by_uid = {}
     for rec in evttab["groundgrid"]:
-        evttab_groundgrid_by_uid[rec[snt.IDX]] = rec
+        evttab_groundgrid_by_uid[rec["uid"]] = rec
 
     evttab_groundgrid_result_by_uid = {}
     for rec in evttab["groundgrid_result"]:
-        evttab_groundgrid_result_by_uid[rec[snt.IDX]] = rec
+        evttab_groundgrid_result_by_uid[rec["uid"]] = rec
 
     with cpw.cherenkov.CherenkovEventTapeWriter(
         path=opj(work_dir, "cherenkov_pools.tar")

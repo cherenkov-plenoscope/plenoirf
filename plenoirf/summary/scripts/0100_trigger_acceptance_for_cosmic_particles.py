@@ -57,8 +57,8 @@ for pk in res.PARTICLES:
     )
 
     has_groundgrid_result = snt.make_mask_of_right_in_left(
-        left_indices=point_particle_table["primary"][snt.IDX],
-        right_indices=point_particle_table["groundgrid_result"][snt.IDX],
+        left_indices=point_particle_table["primary"]["uid"],
+        right_indices=point_particle_table["groundgrid_result"]["uid"],
     )
 
     energy_GeV = point_particle_table["primary"]["energy_GeV"]
@@ -83,7 +83,7 @@ for pk in res.PARTICLES:
             modus=trigger_modus,
         )
         mask_detected = snt.make_mask_of_right_in_left(
-            left_indices=point_particle_table["primary"][snt.IDX],
+            left_indices=point_particle_table["primary"]["uid"],
             right_indices=idx_detected,
         )
         (
@@ -120,8 +120,8 @@ for pk in res.PARTICLES:
     # --------------
 
     has_groundgrid_result = snt.make_mask_of_right_in_left(
-        left_indices=diffuse_particle_table["primary"][snt.IDX],
-        right_indices=diffuse_particle_table["groundgrid_result"][snt.IDX],
+        left_indices=diffuse_particle_table["primary"]["uid"],
+        right_indices=diffuse_particle_table["groundgrid_result"]["uid"],
     )
 
     energy_GeV = diffuse_particle_table["primary"]["energy_GeV"]
@@ -147,7 +147,7 @@ for pk in res.PARTICLES:
             modus=trigger_modus,
         )
         mask_detected = snt.make_mask_of_right_in_left(
-            left_indices=diffuse_particle_table["primary"][snt.IDX],
+            left_indices=diffuse_particle_table["primary"]["uid"],
             right_indices=idx_detected,
         )
         (

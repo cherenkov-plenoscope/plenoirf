@@ -3,6 +3,7 @@ import numpy as np
 import sparse_numeric_table as snt
 import dynamicsizerecarray
 
+UID_DTYPE = ("uid", "<u8")
 
 def init_event_table_structure():
     t = collections.OrderedDict()
@@ -65,7 +66,7 @@ def level_structure_to_dtype(level_structure, include_index=True):
     """
     out = []
     if include_index:
-        out.append(("idx", "<u8"))
+        out.append(UID_DTYPE)
     for key in level_structure:
         out.append((key, level_structure[key]["dtype"]))
     return out
@@ -232,7 +233,7 @@ def patch_groundgrid(groundgrid, groundgrid_result):
     new_groundgrid = np.recarray(
         shape=groundgrid.shape[0],
         dtype=[
-            (snt.IDX, snt.IDX_DTYPE),
+            UID_DTYPE,
             ("bin_width_m", "<f4"),
             ("num_bins_each_axis", "<i4"),
             ("center_x_m", "<f4"),
@@ -246,15 +247,15 @@ def patch_groundgrid(groundgrid, groundgrid_result):
     for key in groundgrid.dtype.names:
         new_groundgrid[key] = groundgrid[key]
 
-    idx_only_in_gg = set(groundgrid[snt.IDX]).difference(
-        groundgrid_result[snt.IDX]
+    uid_only_in_gg = set(groundgrid["uid"]).difference(
+        groundgrid_result["uid"]
     )
     dyn_gg_res = dynamicsizerecarray.DynamicSizeRecarray(
         recarray=groundgrid_result
     )
-    for iii in idx_only_in_gg:
+    for iii in uid_only_in_gg:
         rec = {}
-        rec[snt.IDX] = iii
+        rec["uid"] = iii
         rec["num_bins_above_threshold"] = 0
         dyn_gg_res.append_record(rec)
 
@@ -262,7 +263,8 @@ def patch_groundgrid(groundgrid, groundgrid_result):
 
     tmp = snt.sort_table_on_common_indices(
         table=tmp,
-        common_indices=new_groundgrid[snt.IDX],
+        common_indices=new_groundgrid["uid"],
+        index_key="uid",
     )
 
     new_groundgrid["num_bins_above_threshold"] = tmp["groundgrid_result"][

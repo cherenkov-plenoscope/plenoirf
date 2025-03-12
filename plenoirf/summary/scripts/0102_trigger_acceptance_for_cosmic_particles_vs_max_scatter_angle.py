@@ -39,14 +39,14 @@ for pk in res.PARTICLES:
         shower_table = arc.read_table(
             levels_and_columns={
                 "primary": [
-                    snt.IDX,
+                    "uid",
                     "energy_GeV",
                     "azimuth_rad",
                     "zenith_rad",
                 ],
                 "instrument_pointing": "__all__",
-                "groundgrid": [snt.IDX, "num_bins_thrown", "area_thrown_m2"],
-                "groundgrid_result": [snt.IDX, "num_bins_above_threshold"],
+                "groundgrid": ["uid", "num_bins_thrown", "area_thrown_m2"],
+                "groundgrid_result": ["uid", "num_bins_above_threshold"],
             }
         )
 
@@ -57,10 +57,10 @@ for pk in res.PARTICLES:
         "num_bins_above_threshold"
     ]
     total_num_grid_cells = shower_table["grid"]["num_bins_thrown"]
-    idx_detected = passing_trigger[sk][pk]["idx"]
+    idx_detected = passing_trigger[sk][pk]["uid"]
 
     mask_shower_passed_trigger = snt.make_mask_of_right_in_left(
-        left_indices=shower_table["primary"][snt.IDX],
+        left_indices=shower_table["primary"]["uid"],
         right_indices=idx_detected,
     )
     """
@@ -96,7 +96,7 @@ for pk in res.PARTICLES:
         mask_shower_within_max_scatter = (
             shower_table_scatter_angle_deg <= max_scatter_angle_deg
         )
-        idx_showers_within_max_scatter = shower_table["primary"][snt.IDX][
+        idx_showers_within_max_scatter = shower_table["primary"]["uid"][
             mask_shower_within_max_scatter
         ]
 
@@ -107,8 +107,8 @@ for pk in res.PARTICLES:
         )
 
         S_mask_shower_detected = snt.make_mask_of_right_in_left(
-            left_indices=S_shower_table["primary"][snt.IDX],
-            right_indices=passing_trigger[sk][pk]["idx"],
+            left_indices=S_shower_table["primary"]["uid"],
+            right_indices=passing_trigger[sk][pk]["uid"],
         )
 
         S_quantity_scatter = (

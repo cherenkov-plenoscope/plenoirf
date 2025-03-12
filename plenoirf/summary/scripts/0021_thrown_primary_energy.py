@@ -2,7 +2,6 @@
 import sys
 import numpy as np
 import plenoirf as irf
-import sparse_numeric_table as snt
 import os
 import cosmic_fluxes
 import json_utils
@@ -29,7 +28,7 @@ for pk in res.PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
         table = arc.read_table(
             levels_and_columns={
-                "primary": [snt.IDX, "energy_GeV", "azimuth_rad", "zenith_rad"]
+                "primary": ["uid", "energy_GeV", "azimuth_rad", "zenith_rad"]
             }
         )
 

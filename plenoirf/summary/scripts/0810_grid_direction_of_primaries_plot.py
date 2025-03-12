@@ -57,8 +57,8 @@ for site_key in irf_config["config"]["sites"]:
         # summarize
         # ---------
         mask_triggered = snt.make_mask_of_right_in_left(
-            left_indices=event_table["primary"][snt.IDX],
-            right_indices=passing_trigger[site_key][particle_key]["idx"],
+            left_indices=event_table["primary"]["uid"],
+            right_indices=passing_trigger[site_key][particle_key]["uid"],
         )
         (primary_cx, primary_cy) = spherical_coordinates.az_zd_to_cx_cy(
             azimuth_deg=np.rad2deg(event_table["primary"]["azimuth_rad"]),

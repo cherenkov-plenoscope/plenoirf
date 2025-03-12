@@ -61,15 +61,15 @@ def align_on_idx(input_idx, input_values, target_idxs):
 for pk in PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
         event_table = arc.read_table(
-            levels_and_columns={"primary": [snt.IDX, "energy_GeV"]}
+            levels_and_columns={"primary": ["uid", "energy_GeV"]}
         )
 
     idx_valid = snt.intersection(
         [
-            passing_trigger[pk]["idx"],
-            passing_quality[pk]["idx"],
-            passing_trajectory_quality[pk]["idx"],
-            reconstructed_energy[pk][mk]["idx"],
+            passing_trigger[pk]["uid"],
+            passing_quality[pk]["uid"],
+            passing_trajectory_quality[pk]["uid"],
+            reconstructed_energy[pk][mk]["uid"],
         ]
     )
 
@@ -80,9 +80,9 @@ for pk in PARTICLES:
 
     true_energy = valid_event_table["primary"]["energy_GeV"]
     reco_energy = align_on_idx(
-        input_idx=reconstructed_energy[pk][mk]["idx"],
+        input_idx=reconstructed_energy[pk][mk]["uid"],
         input_values=reconstructed_energy[pk][mk]["energy"],
-        target_idxs=valid_event_table["primary"]["idx"],
+        target_idxs=valid_event_table["primary"]["uid"],
     )
 
     cm = confusion_matrix.init(

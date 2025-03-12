@@ -74,10 +74,10 @@ for sk in irf_config["config"]["sites"]:
     )
     idx_valid = snt.intersection(
         [
-            passing_trigger[sk][pk]["idx"],
-            passing_quality[sk][pk]["idx"],
-            passing_trajectory_quality[sk][pk]["idx"],
-            reconstructed_energy[sk][pk][mk]["idx"],
+            passing_trigger[sk][pk]["uid"],
+            passing_quality[sk][pk]["uid"],
+            passing_trajectory_quality[sk][pk]["uid"],
+            reconstructed_energy[sk][pk][mk]["uid"],
         ]
     )
     event_table = snt.cut_and_sort_table_on_indices(
@@ -92,9 +92,9 @@ for sk in irf_config["config"]["sites"]:
 
     _true_energy = rectab["primary/energy_GeV"]
     _reco_energy = align_on_idx(
-        input_idx=reconstructed_energy[sk][pk][mk]["idx"],
+        input_idx=reconstructed_energy[sk][pk][mk]["uid"],
         input_values=reconstructed_energy[sk][pk][mk]["energy"],
-        target_idxs=rectab["idx"],
+        target_idxs=rectab["uid"],
     )
 
     energy = {

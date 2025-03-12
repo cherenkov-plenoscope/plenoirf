@@ -4,7 +4,6 @@ import tarfile
 
 import plenopy
 import corsika_primary as cpw
-import sparse_numeric_table as snt
 import rename_after_writing as rnw
 import json_utils
 from json_line_logger import xml
@@ -111,7 +110,7 @@ def simulate_loose_trigger(
         run_id = int(cevth[cpw.I.EVTH.RUN_NUMBER])
         event_id = int(cevth[cpw.I.EVTH.EVENT_NUMBER])
         uidrec = {
-            snt.IDX: bookkeeping.uid.make_uid(run_id=run_id, event_id=event_id)
+            "uid": bookkeeping.uid.make_uid(run_id=run_id, event_id=event_id)
         }
         uid_str = bookkeeping.uid.make_uid_str(
             run_id=run_id,
@@ -199,9 +198,7 @@ def simulate_loose_trigger(
         ):
             ptp = uidrec.copy()
             ptp["tmp_path"] = event._path
-            ptp["uid_str"] = bookkeeping.uid.UID_FOTMAT_STR.format(
-                ptp[snt.IDX]
-            )
+            ptp["uid_str"] = bookkeeping.uid.UID_FOTMAT_STR.format(ptp["uid"])
             table_past_trigger.append(ptp)
 
             patrec = uidrec.copy()

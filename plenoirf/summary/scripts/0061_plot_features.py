@@ -39,21 +39,22 @@ for pk in PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
         _table = arc.read_table(
             levels_and_columns={
-                "primary": [snt.IDX, "energy_GeV"],
+                "primary": ["uid", "energy_GeV"],
                 "features": "__all__",
             }
         )
 
-    idx_common = snt.intersection(
+    uid_common = snt.intersection(
         [
-            passing_trigger[pk]["idx"],
-            passing_quality[pk]["idx"],
+            passing_trigger[pk]["uid"],
+            passing_quality[pk]["uid"],
         ]
     )
 
     tables[pk] = snt.cut_and_sort_table_on_indices(
         table=_table,
-        common_indices=idx_common,
+        common_indices=uid_common,
+        index_key="uid",
     )
 
 # guess bin edges

@@ -46,11 +46,11 @@ for pk in PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
         event_table = arc.read_table(
             levels_and_columns={
-                "primary": [snt.IDX, "energy_GeV"],
-                "instrument_pointing": [snt.IDX, "zenith_rad"],
-                "cherenkovpool": [snt.IDX, "z_emission_p50_m"],
+                "primary": ["uid", "energy_GeV"],
+                "instrument_pointing": ["uid", "zenith_rad"],
+                "cherenkovpool": ["uid", "z_emission_p50_m"],
                 "features": [
-                    snt.IDX,
+                    "uid",
                     "image_smallest_ellipse_object_distance",
                 ],
             }
@@ -58,8 +58,8 @@ for pk in PARTICLES:
 
     idx_common = snt.intersection(
         [
-            passing_trigger[pk]["idx"],
-            passing_quality[pk]["idx"],
+            passing_trigger[pk]["uid"],
+            passing_quality[pk]["uid"],
         ]
     )
 

@@ -69,15 +69,15 @@ for sk in SITES:
             passing_plenoscope_and_not_array = np.array(
                 list(
                     set.difference(
-                        set(passing_plenoscope_trigger[sk][pk]["idx"]),
-                        set(passing_array_trigger[sk][pk][ak]["idx"]),
+                        set(passing_plenoscope_trigger[sk][pk]["uid"]),
+                        set(passing_array_trigger[sk][pk][ak]["uid"]),
                     )
                 )
             )
 
             pleno_table = snt.cut_table_on_indices(
                 table=event_table,
-                common_indices=passing_plenoscope_trigger[sk][pk]["idx"],
+                common_indices=passing_plenoscope_trigger[sk][pk]["uid"],
                 level_keys=[
                     "primary",
                 ],

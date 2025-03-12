@@ -54,7 +54,7 @@ for sk in SITES:
                 pk,
                 "grid.tar",
             ),
-            indices=passing_trigger[sk][pk]["idx"],
+            indices=passing_trigger[sk][pk]["uid"],
         )
         idx_passed_trigger_and_in_debug_output = np.array(
             list(detected_grid_histograms.keys())
@@ -97,7 +97,7 @@ for sk in SITES:
                 detected_events["primary"]["energy_GeV"] > energy_GeV_start,
                 detected_events["primary"]["energy_GeV"] <= energy_GeV_stop,
             )
-            idx_energy_range = detected_events["primary"][energy_mask][snt.IDX]
+            idx_energy_range = detected_events["primary"][energy_mask]["uid"]
             grid_intensity = np.zeros(
                 (num_grid_bins_on_edge, num_grid_bins_on_edge)
             )

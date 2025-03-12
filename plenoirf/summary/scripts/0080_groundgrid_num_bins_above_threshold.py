@@ -43,7 +43,7 @@ for pk in res.PARTICLES:
         table = arc.read_table(
             levels_and_columns={
                 "primary": [
-                    snt.IDX,
+                    "uid",
                     "energy_GeV",
                     "azimuth_rad",
                     "zenith_rad",
@@ -55,7 +55,7 @@ for pk in res.PARTICLES:
 
         _gg_res = arc.read_table(
             levels_and_columns={
-                "groundgrid_result": [snt.IDX, "num_bins_above_threshold"],
+                "groundgrid_result": ["uid", "num_bins_above_threshold"],
             }
         )
 
@@ -66,7 +66,7 @@ for pk in res.PARTICLES:
 
     table = snt.sort_table_on_common_indices(
         table=table,
-        common_indices=table["primary"][snt.IDX],
+        common_indices=table["primary"]["uid"],
     )
 
     huh[pk]["bin_edges"] = np.geomspace(
