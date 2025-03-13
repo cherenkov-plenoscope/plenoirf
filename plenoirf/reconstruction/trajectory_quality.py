@@ -7,12 +7,11 @@ import sparse_numeric_table as snt
 
 
 def make_rectangular_table(event_table):
-    tab = snt.cut_and_sort_table_on_indices(
+    tab = snt.logic.cut_and_sort_table_on_indices(
         table=event_table,
         common_indices=event_table["reconstructed_trajectory"]["uid"],
-        index_key="uid",
     )
-    df = snt.make_rectangular_DataFrame(tab, index_key="uid")
+    df = snt.logic.make_rectangular_DataFrame(tab, index_key="uid")
 
     df["reconstructed_trajectory/r_m"] = np.hypot(
         df["reconstructed_trajectory/x_m"], df["reconstructed_trajectory/y_m"]

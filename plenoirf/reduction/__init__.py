@@ -122,7 +122,7 @@ def zip_read_IO(file, internal_path, mode="rb"):
 
 
 def recude_event_table(run_paths, out_path):
-    with snt.archive.open(
+    with snt.open(
         out_path,
         mode="w",
         dtypes=event_table.structure.dtypes(),
@@ -133,10 +133,11 @@ def recude_event_table(run_paths, out_path):
             run_id_str = os.path.splitext(run_basename)[0]
             buff = zip_read_IO(
                 file=run_path,
-                internal_path=os.path.join(run_id_str, "event_table.tar.gz"),
-                mode="rb|gz",
+                internal_path=os.path.join(run_id_str, "event_table.zip"),
+                mode="rb",
             )
-            run_evttab = snt.read(fileobj=buff, dynamic=False)
+            with snt.open(file=buff, mode="r") as part:
+                run_evttab = part.query()
             arc.append_table(run_evttab)
 
 
@@ -174,7 +175,8 @@ def reduce_ground_grid_intensity(
                     ),
                     mode="rb|gz",
                 )
-                run_evttab = snt.read(fileobj=buff, dynamic=False)
+                with snt.open(file=buff, mode="r") as part:
+                    run_evttab = part.query()
                 past_trigger_uids = run_evttab["pasttrigger"]["uid"]
 
             suff = "_roi" if roi else ""
@@ -308,8 +310,11 @@ def reduce_benchmarks(run_paths, out_path):
         ]
         stats.append_record(rec)
 
-    with snt.archive.open(
-        file=out_path, mode="w", dtypes={"benchmark": _make_benchmarks_dtype()}
+    with snt.open(
+        file=out_path,
+        mode="w",
+        dtypes={"benchmark": _make_benchmarks_dtype()},
+        index_key="uid",
     ) as fout:
         fout.append_table({"benchmark": stats})
 

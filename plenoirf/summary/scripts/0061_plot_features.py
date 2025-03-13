@@ -44,17 +44,16 @@ for pk in PARTICLES:
             }
         )
 
-    uid_common = snt.intersection(
+    uid_common = snt.logic.intersection(
         [
             passing_trigger[pk]["uid"],
             passing_quality[pk]["uid"],
         ]
     )
 
-    tables[pk] = snt.cut_and_sort_table_on_indices(
+    tables[pk] = snt.logic.cut_and_sort_table_on_indices(
         table=_table,
         common_indices=uid_common,
-        index_key="uid",
     )
 
 # guess bin edges

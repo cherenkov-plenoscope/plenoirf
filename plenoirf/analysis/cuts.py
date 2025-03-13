@@ -42,4 +42,6 @@ def cut_quality(
     mask_acceptable_leakage = relative_leakage <= max_relative_leakage
     uids_acceptable_leakage = ft["uid"][mask_acceptable_leakage]
 
-    return snt.intersection([uids_sufficient_size, uids_acceptable_leakage])
+    return snt.logic.intersection(
+        [uids_sufficient_size, uids_acceptable_leakage]
+    )

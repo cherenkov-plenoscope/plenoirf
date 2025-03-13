@@ -270,7 +270,7 @@ def patch_groundgrid(groundgrid, groundgrid_result):
 
     tmp = {"groundgrid_result": dyn_gg_res.to_recarray()}
 
-    tmp = snt.sort_table_on_common_indices(
+    tmp = snt.logic.sort_table_on_common_indices(
         table=tmp,
         common_indices=new_groundgrid["uid"],
         index_key="uid",

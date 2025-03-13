@@ -148,7 +148,7 @@ class Resources:
         )
 
     def open_event_table(self, particle_key):
-        return snt.archive.open(
+        return snt.open(
             self.event_table_path(particle_key=particle_key),
             mode="r",
         )
@@ -362,7 +362,7 @@ def _estimate_num_events_past_trigger_for_instrument(
                 "event_table.zip",
             )
 
-            with snt.archive.open(path, mode="r") as arc:
+            with snt.open(path, mode="r") as arc:
                 pt_idx = arc.read_column(
                     level_key="pasttrigger", column_key="uid"
                 )
@@ -674,26 +674,28 @@ def read_train_test_frame(
     sk = site_key
     pk = particle_key
 
-    airshower_table = snt.read(
-        path=os.path.join(
+    with snt.open(
+        file=os.path.join(
             run_dir,
             "event_table",
             sk,
             pk,
-            "event_table.tar",
+            "event_table.zip",
         ),
-        structure=table.STRUCTURE,
-    )
+        mode="r",
+    ) as arc:
+        airshower_table = arc.query()
 
-    airshower_table["transformed_features"] = snt.read(
-        path=os.path.join(
+    with snt.open(
+        file=os.path.join(
             transformed_features_dir,
             sk,
             pk,
-            "transformed_features.tar",
+            "transformed_features.zip",
         ),
-        structure=features.TRANSFORMED_FEATURE_STRUCTURE,
-    )["transformed_features"]
+    ) as arc:
+        _part = arc.query()
+        airshower_table["transformed_features"] = _part["transformed_features"]
 
     uids_triggered = analysis.light_field_trigger_modi.make_indices(
         trigger_table=airshower_table["trigger"],
@@ -713,20 +715,19 @@ def read_train_test_frame(
 
     out = {}
     for kk in ["test", "train"]:
-        uids_valid_kk = snt.intersection(
+        uids_valid_kk = snt.logic.intersection(
             [
                 uids_triggered,
                 uids_quality,
                 train_test[sk][pk][kk],
             ]
         )
-        table_kk = snt.cut_and_sort_table_on_indices(
+        table_kk = snt.logic.cut_and_sort_table_on_indices(
             table=airshower_table,
             common_indices=uids_valid_kk,
             level_keys=level_keys,
-            index_key="uid",
         )
-        out[kk] = snt.make_rectangular_DataFrame(table_kk, index_key="uid")
+        out[kk] = snt.logic.make_rectangular_DataFrame(table_kk)
 
     return out
 

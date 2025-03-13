@@ -18,30 +18,28 @@ def add_empty_level(evttab, level_key):
 
 
 def add_levels_from_path(evttab, path):
-    add = snt.read(path=path)
+    with snt.open(file=path, mode="r") as arc:
+        add = arc.query()
     evttab.update(add)
     return evttab
 
 
 def append_to_levels_from_path(evttab, path):
-    add = snt.read(path=path)
-    for level_key in add:
-        add_level_recarray = add[level_key].to_recarray()
-        if level_key in evttab:
-            evttab[level_key].append_recarray(add_level_recarray)
-        else:
-            evttab[level_key] = dynamicsizerecarray.DynamicSizeRecarray(
-                recarray=add_level_recarray
-            )
+    with snt.open(file=path, mode="r") as arc:
+        add = arc.query()
+    evttab.append(add)
     return evttab
 
 
 def write_certain_levels_to_path(evttab, path, level_keys):
-    out = {}
+    out = snt.SparseNumericTable(index_key=evttab.index_key)
     for level_key in level_keys:
         out[level_key] = evttab[level_key]
     write_all_levels_to_path(evttab=out, path=path)
 
 
 def write_all_levels_to_path(evttab, path):
-    snt.write(path=path, table=evttab)
+    with snt.open(
+        path, mode="w", dtypes_and_index_key_from=evttab, compress=True
+    ) as arc:
+        arc.append_table(evttab)

@@ -89,7 +89,7 @@ def read_event_frame(
         pk,
         "transformed_features.zip",
     )
-    with snt.archive.open(transformed_features_path, "r") as arc:
+    with snt.open(transformed_features_path, "r") as arc:
         airshower_table["transformed_features"] = arc.read_table()[
             "transformed_features"
         ]

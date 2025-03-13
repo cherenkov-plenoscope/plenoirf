@@ -54,7 +54,7 @@ for pk in res.PARTICLES:
         groundgrid_result=_gg_res["groundgrid_result"],
     )
 
-    table = snt.sort_table_on_common_indices(
+    table = snt.logic.sort_table_on_common_indices(
         table=table,
         common_indices=table["primary"]["uid"],
         index_key="uid",

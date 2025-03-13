@@ -38,7 +38,7 @@ for pk in ["gamma"]:
     with res.open_event_table(particle_key=pk) as arc:
         _table = arc.read_table(levels_and_columns={"features": "__all__"})
 
-    features = snt.cut_table_on_indices(
+    features = snt.logic.cut_table_on_indices(
         table=_table,
         common_indices=train_test[pk]["train"],
     )["features"]
@@ -78,11 +78,13 @@ for pk in PARTICLES:
     pk_dir = os.path.join(paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
-    out_level = snt.dict_to_recarray(transformed_features[pk])
-    out_table = {"transformed_features": out_level}
-    out_dtypes = snt.get_dtypes(out_table)
+    out_level = snt.testing.dict_to_recarray(transformed_features[pk])
+    out_table = snt.SparseNumericTable(index_key="uid")
+    out_table["transformed_features"] = out_level
     with rnw.Path(os.path.join(pk_dir, "transformed_features.zip")) as path:
-        with snt.archive.open(file=path, mode="w", dtypes=out_dtypes) as arc:
+        with snt.open(
+            file=path, mode="w", dtypes_and_index_key_from=out_table
+        ) as arc:
             arc.append_table(out_table)
 
 
