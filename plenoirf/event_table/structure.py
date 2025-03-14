@@ -230,56 +230,16 @@ def init_groundgrid_level_structure():
         "Cherenkov-photons.",
     }
     t["area_thrown_m2"] = {"dtype": "<f4", "comment": ""}
+    t["num_bins_above_threshold"] = {
+        "dtype": "<i4",
+        "comment": (
+            "This many bins (three dimensional cubes) have been "
+            "intersected by enough Cherenkov photons to pass the threshold "
+            "of consideration for further simulating the instrument hardware."
+        ),
+    }
 
     return t
-
-
-def patch_groundgrid(groundgrid, groundgrid_result):
-    """
-    A temporary fix to get groundgrid_result/num_bins_above_threshold into
-    groundgrid.
-    """
-    new_groundgrid = np.recarray(
-        shape=groundgrid.shape[0],
-        dtype=[
-            UID_DTYPE,
-            ("bin_width_m", "<f4"),
-            ("num_bins_each_axis", "<i4"),
-            ("center_x_m", "<f4"),
-            ("center_y_m", "<f4"),
-            ("num_bins_thrown", "<i4"),
-            ("area_thrown_m2", "<f4"),
-            ("num_bins_above_threshold", "<i4"),
-        ],
-    )
-
-    for key in groundgrid.dtype.names:
-        new_groundgrid[key] = groundgrid[key]
-
-    uid_only_in_gg = set(groundgrid["uid"]).difference(
-        groundgrid_result["uid"]
-    )
-    dyn_gg_res = dynamicsizerecarray.DynamicSizeRecarray(
-        recarray=groundgrid_result
-    )
-    for iii in uid_only_in_gg:
-        rec = {}
-        rec["uid"] = iii
-        rec["num_bins_above_threshold"] = 0
-        dyn_gg_res.append_record(rec)
-
-    tmp = {"groundgrid_result": dyn_gg_res.to_recarray()}
-
-    tmp = snt.logic.sort_table_on_common_indices(
-        table=tmp,
-        common_indices=new_groundgrid["uid"],
-        index_key="uid",
-    )
-
-    new_groundgrid["num_bins_above_threshold"] = tmp["groundgrid_result"][
-        "num_bins_above_threshold"
-    ]
-    return new_groundgrid
 
 
 def init_groundgrid_result_level_structure():
@@ -291,8 +251,6 @@ def init_groundgrid_result_level_structure():
     t["bin_num_photons"] = {"dtype": "<f4", "comment": ""}
     t["core_x_m"] = {"dtype": "<f4", "comment": ""}
     t["core_y_m"] = {"dtype": "<f4", "comment": ""}
-
-    t["num_bins_above_threshold"] = {"dtype": "<i4", "comment": ""}
 
     # compare scatter
     num_scatter_bins = 16

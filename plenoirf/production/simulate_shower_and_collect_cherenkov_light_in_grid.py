@@ -148,11 +148,9 @@ def stage_one(
                     prng=prng,
                 )
                 groundgrid = ground_grid.GroundGrid(**groundgrid_config)
-                evttab["groundgrid"].append_record(
-                    make_groundgrid_record(
-                        uid=uid,
-                        groundgrid=groundgrid,
-                    )
+                groundgrid_record = make_groundgrid_record(
+                    uid=uid,
+                    groundgrid=groundgrid,
                 )
 
                 logger.debug(
@@ -222,6 +220,10 @@ def stage_one(
                         prng=prng,
                     )
 
+                    groundgrid_record["num_bins_above_threshold"] = (
+                        groundgrid_result["num_bins_above_threshold"]
+                    )
+
                     if groundgrid_result["choice"]:
                         logger.debug(
                             xml(
@@ -250,6 +252,8 @@ def stage_one(
                                 uid=uid,
                                 groundgrid_histogram=groundgrid_histogram,
                             )
+
+                evttab["groundgrid"].append_record(groundgrid_record)
 
                 logger.debug(
                     xml("EventTime", uid=uid["uid_str"], status="stop.")
@@ -381,14 +385,14 @@ def make_groundgrid_record(uid, groundgrid):
         rec[key] = groundgrid[key]
     rec["num_bins_thrown"] = groundgrid["num_bins_thrown"]
     rec["area_thrown_m2"] = groundgrid["area_thrown_m2"]
+
+    # This will be overwritten in case there are any bins above threshold.
+    rec["num_bins_above_threshold"] = 0
     return rec
 
 
 def make_groundgrid_result_record(uid, groundgrid_result):
     rec = uid["record"].copy()
-    rec["num_bins_above_threshold"] = groundgrid_result[
-        "num_bins_above_threshold"
-    ]
     choice = groundgrid_result["choice"]
     for key in choice:
         rec[key] = choice[key]
