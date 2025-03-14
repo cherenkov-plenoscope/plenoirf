@@ -8,6 +8,7 @@ import rename_after_writing as rnw
 import json_utils
 from json_line_logger import xml
 import sebastians_matplotlib_addons as sebplt
+import sparse_numeric_table as snt
 
 from .. import bookkeeping
 from .. import event_table
@@ -38,13 +39,13 @@ def run_block(env, blk, block_id, logger):
         )
     )
 
-    evttab = {}
+    evttab = snt.SparseNumericTable(index_key="uid")
     evttab = event_table.add_levels_from_path(
         evttab=evttab,
         path=opj(
             env["work_dir"],
             "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
-            "event_table.tar",
+            "event_table.snt.zip",
         ),
     )
     evttab = event_table.add_levels_from_path(
@@ -52,7 +53,7 @@ def run_block(env, blk, block_id, logger):
         path=opj(
             env["work_dir"],
             "plenoirf.production.inspect_particle_pool",
-            "event_table.tar",
+            "event_table.snt.zip",
         ),
     )
     evttab = event_table.add_empty_level(evttab, "instrument")
@@ -73,7 +74,7 @@ def run_block(env, blk, block_id, logger):
 
     event_table.write_certain_levels_to_path(
         evttab=evttab,
-        path=opj(sub_work_dir, "event_table.tar"),
+        path=opj(sub_work_dir, "event_table.snt.zip"),
         level_keys=["instrument", "trigger", "pasttrigger"],
     )
 

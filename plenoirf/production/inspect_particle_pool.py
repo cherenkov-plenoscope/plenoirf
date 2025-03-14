@@ -1,4 +1,5 @@
 import corsika_primary as cpw
+import sparse_numeric_table as snt
 import numpy as np
 import os
 
@@ -16,13 +17,13 @@ def run(env, logger):
         logger.info(__name__ + ": already done. skip computation.")
         return
 
-    evttab = {}
+    evttab = snt.SparseNumericTable(index_key="uid")
     evttab = event_table.add_levels_from_path(
         evttab=evttab,
         path=os.path.join(
             env["work_dir"],
             "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
-            "event_table.tar",
+            "event_table.snt.zip",
         ),
     )
     evttab = event_table.add_empty_level(
@@ -37,7 +38,7 @@ def run(env, logger):
     os.makedirs(sub_work_dir)
     event_table.write_certain_levels_to_path(
         evttab=evttab,
-        path=os.path.join(sub_work_dir, "event_table.tar"),
+        path=os.path.join(sub_work_dir, "event_table.snt.zip"),
         level_keys=["particlepool", "particlepoolonaperture"],
     )
 
@@ -132,6 +133,7 @@ def init_particlepool_record(uid):
 
 
 def init_particlepoolonaperture_record(uid):
+    aaa = {}
     aaa["uid"] = uid
     aaa["num_air_cherenkov_on_aperture"] = 0
     return aaa

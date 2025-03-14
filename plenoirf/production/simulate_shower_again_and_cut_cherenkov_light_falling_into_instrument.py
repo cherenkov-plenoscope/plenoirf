@@ -12,6 +12,7 @@ import atmospheric_cherenkov_response as acr
 import spherical_coordinates
 import dynamicsizerecarray
 import rename_after_writing as rnw
+import sparse_numeric_table as snt
 
 from .. import bookkeeping
 from .. import ground_grid
@@ -71,13 +72,13 @@ def run(env, seed, logger):
     ) as fin:
         cherenkovpools_md5 = json_utils.loads(fin.read())
 
-    evttab = {}
+    evttab = snt.SparseNumericTable(index_key="uid")
     evttab = event_table.add_levels_from_path(
         evttab=evttab,
         path=os.path.join(
             env["work_dir"],
             "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
-            "event_table.tar",
+            "event_table.snt.zip",
         ),
     )
     evttab = event_table.add_empty_level(evttab, "instrument_pointing")
@@ -99,7 +100,7 @@ def run(env, seed, logger):
 
     event_table.write_all_levels_to_path(
         evttab=evttab,
-        path=os.path.join(corsika_and_grid_work_dir, "event_table.tar"),
+        path=os.path.join(corsika_and_grid_work_dir, "event_table.snt.zip"),
     )
 
     cherenkov_bunch_storage.filter_by_event_uids(

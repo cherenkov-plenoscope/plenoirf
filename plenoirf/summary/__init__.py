@@ -144,7 +144,7 @@ class Resources:
             self.instrument_key,
             self.site_key,
             particle_key,
-            "event_table.zip",
+            "event_table.snt.zip",
         )
 
     def open_event_table(self, particle_key):
@@ -359,7 +359,7 @@ def _estimate_num_events_past_trigger_for_instrument(
                 instrument_key,
                 sk,
                 pk,
-                "event_table.zip",
+                "event_table.snt.zip",
             )
 
             with snt.open(path, mode="r") as arc:
@@ -680,7 +680,7 @@ def read_train_test_frame(
             "event_table",
             sk,
             pk,
-            "event_table.zip",
+            "event_table.snt.zip",
         ),
         mode="r",
     ) as arc:

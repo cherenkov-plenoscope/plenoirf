@@ -2,6 +2,7 @@ import numpy as np
 import os
 import plenopy
 import rename_after_writing as rnw
+import sparse_numeric_table as snt
 from .. import bookkeeping
 from .. import event_table
 from . import simulate_hardware
@@ -22,13 +23,13 @@ def run_block(env, blk, seed, block_id, logger):
     os.makedirs(sub_work_dir)
     prng = np.random.Generator(np.random.PCG64(seed))
 
-    evttab = {}
+    evttab = snt.SparseNumericTable(index_key="uid")
     evttab = event_table.add_levels_from_path(
         evttab=evttab,
         path=opj(
             block_dir,
             "plenoirf.production.simulate_loose_trigger",
-            "event_table.tar",
+            "event_table.snt.zip",
         ),
     )
     evttab = event_table.add_empty_level(evttab, "features")
@@ -45,7 +46,7 @@ def run_block(env, blk, seed, block_id, logger):
 
     event_table.write_certain_levels_to_path(
         evttab=evttab,
-        path=opj(sub_work_dir, "event_table.tar"),
+        path=opj(sub_work_dir, "event_table.snt.zip"),
         level_keys=["features"],
     )
 

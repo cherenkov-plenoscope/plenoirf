@@ -12,6 +12,7 @@ import atmospheric_cherenkov_response as acr
 import spherical_coordinates
 import dynamicsizerecarray
 import rename_after_writing as rnw
+import sparse_numeric_table as snt
 
 from .. import bookkeeping
 from .. import ground_grid
@@ -58,7 +59,7 @@ def run(env, seed, logger):
     ) as fin:
         event_uids_for_debugging = json_utils.loads(fin.read())
 
-    evttab = {}
+    evttab = snt.SparseNumericTable(index_key="uid")
     evttab = event_table.add_empty_level(evttab, "primary")
     evttab = event_table.add_empty_level(evttab, "cherenkovsize")
     evttab = event_table.add_empty_level(evttab, "cherenkovpool")
@@ -78,7 +79,7 @@ def run(env, seed, logger):
 
     event_table.write_all_levels_to_path(
         evttab=evttab,
-        path=os.path.join(corsika_and_grid_work_dir, "event_table.tar"),
+        path=os.path.join(corsika_and_grid_work_dir, "event_table.snt.zip"),
     )
 
     logger.info(__name__ + ": ... done.")

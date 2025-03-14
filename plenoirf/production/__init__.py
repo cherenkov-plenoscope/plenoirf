@@ -14,7 +14,7 @@ from json_line_logger import xml
 import merlict_development_kit_python as mlidev
 import rename_after_writing as rnw
 import plenopy
-import sparse_numeric_table
+import sparse_numeric_table as snt
 import gamma_ray_reconstruction as gamrec
 
 from .. import provenance
@@ -261,13 +261,13 @@ def run_job_in_dir(job, work_dir):
     # bundle event_table
     # ------------------
     with TimeDelta(logger, "bundling event_table.zip"):
-        evttab = {}
+        evttab = snt.SparseNumericTable(index_key="uid")
         evttab = event_table.add_levels_from_path(
             evttab=evttab,
             path=opj(
                 env["work_dir"],
                 "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
-                "event_table.zip",
+                "event_table.snt.zip",
             ),
         )
         evttab = event_table.add_levels_from_path(
@@ -275,7 +275,7 @@ def run_job_in_dir(job, work_dir):
             path=opj(
                 env["work_dir"],
                 "plenoirf.production.simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument",
-                "event_table.zip",
+                "event_table.snt.zip",
             ),
         )
         evttab = event_table.add_levels_from_path(
@@ -283,7 +283,7 @@ def run_job_in_dir(job, work_dir):
             path=opj(
                 env["work_dir"],
                 "plenoirf.production.inspect_particle_pool",
-                "event_table.zip",
+                "event_table.snt.zip",
             ),
         )
         for block_id_str in blk["event_uid_strs_in_block"]:
@@ -294,7 +294,7 @@ def run_job_in_dir(job, work_dir):
                     "blocks",
                     block_id_str,
                     "plenoirf.production.simulate_loose_trigger",
-                    "event_table.zip",
+                    "event_table.snt.zip",
                 ),
             )
             evttab = event_table.append_to_levels_from_path(
@@ -304,7 +304,7 @@ def run_job_in_dir(job, work_dir):
                     "blocks",
                     block_id_str,
                     "plenoirf.production.classify_cherenkov_photons",
-                    "event_table.zip",
+                    "event_table.snt.zip",
                 ),
             )
             evttab = event_table.append_to_levels_from_path(
@@ -314,7 +314,7 @@ def run_job_in_dir(job, work_dir):
                     "blocks",
                     block_id_str,
                     "plenoirf.production.extract_features_from_light_field",
-                    "event_table.zip",
+                    "event_table.snt.zip",
                 ),
             )
             evttab = event_table.append_to_levels_from_path(
@@ -324,12 +324,12 @@ def run_job_in_dir(job, work_dir):
                     "blocks",
                     block_id_str,
                     "plenoirf.production.estimate_primary_trajectory",
-                    "event_table.zip",
+                    "event_table.snt.zip",
                 ),
             )
         event_table.write_all_levels_to_path(
             evttab=evttab,
-            path=opj(env["work_dir"], "event_table.zip"),
+            path=opj(env["work_dir"], "event_table.snt.zip"),
         )
 
     # bundle reconstructed cherenkov light (loph)
@@ -357,8 +357,8 @@ def run_job_in_dir(job, work_dir):
         logger.info("Writing results to {:s}.".format(result_path))
         zip_write_gz(
             zout,
-            opj(env["work_dir"], "event_table.zip"),
-            opj(env["run_id_str"], "event_table.zip" + ".gz"),
+            opj(env["work_dir"], "event_table.snt.zip"),
+            opj(env["run_id_str"], "event_table.snt.zip" + ".gz"),
         )
         zip_write(
             zout,
@@ -367,7 +367,7 @@ def run_job_in_dir(job, work_dir):
         )
         base = opj(
             "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
-            "particle_pools.zip.gz",
+            "particle_pools.tar.gz",
         )
         zip_write(
             zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)

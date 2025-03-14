@@ -2,6 +2,7 @@ import numpy as np
 import os
 import plenopy as pl
 import rename_after_writing as rnw
+import sparse_numeric_table as snt
 import corsika_primary as cpw
 from .. import bookkeeping
 from .. import event_table
@@ -22,13 +23,13 @@ def run_block(env, blk, block_id, logger):
 
     os.makedirs(sub_work_dir)
 
-    evttab = {}
+    evttab = snt.SparseNumericTable(index_key="uid")
     evttab = event_table.add_levels_from_path(
         evttab=evttab,
         path=opj(
             block_dir,
             "plenoirf.production.simulate_loose_trigger",
-            "event_table.tar",
+            "event_table.snt.zip",
         ),
     )
     evttab = event_table.add_empty_level(evttab, "cherenkovclassification")
@@ -51,7 +52,7 @@ def run_block(env, blk, block_id, logger):
 
     event_table.write_certain_levels_to_path(
         evttab=evttab,
-        path=opj(sub_work_dir, "event_table.tar"),
+        path=opj(sub_work_dir, "event_table.snt.zip"),
         level_keys=["cherenkovclassification"],
     )
 
