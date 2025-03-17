@@ -53,17 +53,6 @@ for pk in res.PARTICLES:
             }
         )
 
-        _gg_res = arc.read_table(
-            levels_and_columns={
-                "groundgrid_result": ["uid", "num_bins_above_threshold"],
-            }
-        )
-
-    table["groundgrid"] = irf.event_table.structure.patch_groundgrid(
-        groundgrid=table["groundgrid"],
-        groundgrid_result=_gg_res["groundgrid_result"],
-    )
-
     table = snt.sort_table_on_common_indices(
         table=table,
         common_indices=table["primary"]["uid"],

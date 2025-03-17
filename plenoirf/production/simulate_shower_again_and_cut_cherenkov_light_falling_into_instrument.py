@@ -133,9 +133,9 @@ def stage_two(
     for rec in evttab["groundgrid"]:
         evttab_groundgrid_by_uid[rec["uid"]] = rec
 
-    evttab_groundgrid_result_by_uid = {}
-    for rec in evttab["groundgrid_result"]:
-        evttab_groundgrid_result_by_uid[rec["uid"]] = rec
+    evttab_groundgrid_choice_by_uid = {}
+    for rec in evttab["groundgrid_choice"]:
+        evttab_groundgrid_choice_by_uid[rec["uid"]] = rec
 
     with cpw.cherenkov.CherenkovEventTapeWriter(
         path=opj(work_dir, "cherenkov_pools.tar")
@@ -174,7 +174,7 @@ def stage_two(
             )
 
             cherenkovmd5 = hashlib.md5()
-            if uid["uid"] in evttab_groundgrid_result_by_uid:
+            if uid["uid"] in evttab_groundgrid_choice_by_uid:
                 logger.debug(
                     xml(
                         "EventTime",
@@ -183,7 +183,7 @@ def stage_two(
                     )
                 )
 
-                groundgrid_result = evttab_groundgrid_result_by_uid[uid["uid"]]
+                groundgrid_choice = evttab_groundgrid_choice_by_uid[uid["uid"]]
                 cherenkovsizepartstats = (
                     cherenkov_bunch_storage.CherenkovSizeStatistics()
                 )
@@ -193,8 +193,8 @@ def stage_two(
 
                 custom_evth = make_evth_with_core(
                     corsika_evth=corsika_evth,
-                    core_x_m=groundgrid_result["core_x_m"],
-                    core_y_m=groundgrid_result["core_y_m"],
+                    core_x_m=groundgrid_choice["core_x_m"],
+                    core_y_m=groundgrid_choice["core_y_m"],
                 )
                 evttar.write_evth(evth=custom_evth)
 
@@ -203,8 +203,8 @@ def stage_two(
                     cherenkov_in_sphere_block = (
                         cherenkov_bunch_storage.cut_in_sphere(
                             cherenkov_bunches=cherenkov_block,
-                            sphere_obs_level_x_m=groundgrid_result["core_x_m"],
-                            sphere_obs_level_y_m=groundgrid_result["core_y_m"],
+                            sphere_obs_level_x_m=groundgrid_choice["core_x_m"],
+                            sphere_obs_level_y_m=groundgrid_choice["core_y_m"],
                             sphere_radius_m=groundgrid[
                                 "bin_smallest_enclosing_radius_m"
                             ],
@@ -224,8 +224,8 @@ def stage_two(
                             instrument_pointing_model=env["config"][
                                 "pointing"
                             ]["model"],
-                            instrument_x_m=groundgrid_result["core_x_m"],
-                            instrument_y_m=groundgrid_result["core_y_m"],
+                            instrument_x_m=groundgrid_choice["core_x_m"],
+                            instrument_y_m=groundgrid_choice["core_y_m"],
                             speed_of_ligth_m_per_s=env["instrument"][
                                 "local_speed_of_light_m_per_s"
                             ],
@@ -246,7 +246,7 @@ def stage_two(
 
                 assert_expected_num_photons_in_sphere(
                     num_photons_in_sphere=cherenkovsizepartstats.num_photons,
-                    num_photons_in_groundgrid_bin=groundgrid_result[
+                    num_photons_in_groundgrid_bin=groundgrid_choice[
                         "bin_num_photons"
                     ],
                 )

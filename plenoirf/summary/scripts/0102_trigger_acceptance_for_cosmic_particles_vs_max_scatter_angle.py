@@ -45,8 +45,12 @@ for pk in res.PARTICLES:
                     "zenith_rad",
                 ],
                 "instrument_pointing": "__all__",
-                "groundgrid": ["uid", "num_bins_thrown", "area_thrown_m2"],
-                "groundgrid_result": ["uid", "num_bins_above_threshold"],
+                "groundgrid": [
+                    "uid",
+                    "num_bins_thrown",
+                    "area_thrown_m2",
+                    "num_bins_above_threshold",
+                ],
             }
         )
 

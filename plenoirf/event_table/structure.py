@@ -15,7 +15,7 @@ def init_event_table_structure():
     t["cherenkovpool"] = init_cherenkovpool_level_structure()
 
     t["groundgrid"] = init_groundgrid_level_structure()
-    t["groundgrid_result"] = init_groundgrid_result_level_structure()
+    t["groundgrid_choice"] = init_groundgrid_choice_level_structure()
 
     t["cherenkovsizepart"] = init_cherenkovsizepart_level_structure()
     t["cherenkovpoolpart"] = init_cherenkovpoolpart_level_structure()
@@ -242,7 +242,7 @@ def init_groundgrid_level_structure():
     return t
 
 
-def init_groundgrid_result_level_structure():
+def init_groundgrid_choice_level_structure():
     t = collections.OrderedDict()
     # arguments to init GroundGrid
 

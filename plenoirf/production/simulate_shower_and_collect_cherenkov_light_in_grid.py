@@ -64,7 +64,7 @@ def run(env, seed, logger):
     evttab = event_table.add_empty_level(evttab, "cherenkovsize")
     evttab = event_table.add_empty_level(evttab, "cherenkovpool")
     evttab = event_table.add_empty_level(evttab, "groundgrid")
-    evttab = event_table.add_empty_level(evttab, "groundgrid_result")
+    evttab = event_table.add_empty_level(evttab, "groundgrid_choice")
 
     evttab = stage_one(
         env=env,
@@ -233,8 +233,8 @@ def stage_one(
                             )
                         )
 
-                        evttab["groundgrid_result"].append_record(
-                            make_groundgrid_result_record(
+                        evttab["groundgrid_choice"].append_record(
+                            make_groundgrid_choice_record(
                                 uid=uid,
                                 groundgrid_result=groundgrid_result,
                             )
@@ -391,7 +391,7 @@ def make_groundgrid_record(uid, groundgrid):
     return rec
 
 
-def make_groundgrid_result_record(uid, groundgrid_result):
+def make_groundgrid_choice_record(uid, groundgrid_result):
     rec = uid["record"].copy()
     choice = groundgrid_result["choice"]
     for key in choice:

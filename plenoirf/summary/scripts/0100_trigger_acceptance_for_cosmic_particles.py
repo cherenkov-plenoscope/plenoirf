@@ -31,8 +31,14 @@ for pk in res.PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
         diffuse_particle_table = arc.read_table(
             levels_and_columns={
-                "primary": "__all__",
-                "instrument_pointing": "__all__",
+                "primary": ("uid", "energy_GeV", "azimuth_rad", "zenith_rad"),
+                "instrument_pointing": ("uid", "azimuth_rad", "zenith_rad"),
+                "groundgrid": (
+                    "uid",
+                    "area_thrown_m2",
+                    "num_bins_thrown",
+                    "num_bins_above_threshold",
+                ),
             }
         )
 
@@ -40,7 +46,7 @@ for pk in res.PARTICLES:
 
     # point source
     # ------------
-    idx_possible_onregion = (
+    uid_possible_onregion = (
         irf.analysis.cuts.cut_primary_direction_within_angle(
             primary_table=_diff["primary"],
             radial_angle_deg=MAX_SOURCE_ANGLE_DEG,
@@ -53,22 +59,16 @@ for pk in res.PARTICLES:
 
     point_particle_table = snt.cut_table_on_indices(
         table=diffuse_particle_table,
-        common_indices=idx_possible_onregion,
-    )
-
-    has_groundgrid_result = snt.make_mask_of_right_in_left(
-        left_indices=point_particle_table["primary"]["uid"],
-        right_indices=point_particle_table["groundgrid_result"]["uid"],
+        common_indices=uid_possible_onregion,
     )
 
     energy_GeV = point_particle_table["primary"]["energy_GeV"]
     quantity_scatter = point_particle_table["groundgrid"][
         "area_thrown_m2"
     ] * np.cos(point_particle_table["primary"]["zenith_rad"])
-    num_grid_cells_above_lose_threshold = np.zeros(shape=len(energy_GeV))
-    num_grid_cells_above_lose_threshold[has_groundgrid_result] = (
-        point_particle_table["groundgrid_result"]["num_bins_above_threshold"]
-    )
+    num_grid_cells_above_lose_threshold = point_particle_table["groundgrid"][
+        "num_bins_above_threshold"
+    ]
     total_num_grid_cells = point_particle_table["groundgrid"][
         "num_bins_thrown"
     ]
@@ -118,22 +118,15 @@ for pk in res.PARTICLES:
 
     # diffuse source
     # --------------
-
-    has_groundgrid_result = snt.make_mask_of_right_in_left(
-        left_indices=diffuse_particle_table["primary"]["uid"],
-        right_indices=diffuse_particle_table["groundgrid_result"]["uid"],
-    )
-
     energy_GeV = diffuse_particle_table["primary"]["energy_GeV"]
     quantity_scatter = (
         diffuse_particle_table["groundgrid"]["area_thrown_m2"]
         * np.cos(diffuse_particle_table["primary"]["zenith_rad"])
         * diffuse_particle_table["primary"]["solid_angle_thrown_sr"]
     )
-    num_grid_cells_above_lose_threshold = np.zeros(shape=len(energy_GeV))
-    num_grid_cells_above_lose_threshold[has_groundgrid_result] = (
-        diffuse_particle_table["groundgrid_result"]["num_bins_above_threshold"]
-    )
+    num_grid_cells_above_lose_threshold = diffuse_particle_table["groundgrid"][
+        "num_bins_above_threshold"
+    ]
     total_num_grid_cells = diffuse_particle_table["groundgrid"][
         "num_bins_thrown"
     ]
