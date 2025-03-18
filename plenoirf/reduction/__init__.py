@@ -22,7 +22,7 @@ def list_items():
         "reconstructed_cherenkov.tar",
         "ground_grid_intensity.zip",
         "ground_grid_intensity_roi.zip",
-        "benchmark.zip",
+        "benchmark.snt.zip",
         "event_uids_for_debugging.txt",
     ]
 
@@ -47,7 +47,7 @@ def reduce_item(map_dir, out_path, item_key):
             roi=True,
             only_past_trigger=True,
         )
-    elif item_key == "benchmark.zip":
+    elif item_key == "benchmark.snt.zip":
         reduce_benchmarks(run_paths=run_paths, out_path=out_path)
     elif item_key == "event_uids_for_debugging.txt":
         reduce_event_uids_for_debugging(run_paths=run_paths, out_path=out_path)
@@ -330,6 +330,7 @@ def reduce_benchmarks(run_paths, out_path):
         mode="w",
         dtypes={"benchmark": _make_benchmarks_dtype()},
         index_key="run_id",
+        compress=True,
     ) as fout:
         fout.append_table({"benchmark": stats})
 
