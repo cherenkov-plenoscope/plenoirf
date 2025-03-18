@@ -358,10 +358,10 @@ def run_job_in_dir(job, work_dir):
     result_path = opj(env["stage_dir"], env["run_id_str"] + ".zip")
     with zipfile.ZipFile(file=result_path, mode="w") as zout:
         logger.info("Writing results to {:s}.".format(result_path))
-        zip_write_gz(
+        zip_write(
             zout,
             opj(env["work_dir"], "event_table.snt.zip"),
-            opj(env["run_id_str"], "event_table.snt.zip" + ".gz"),
+            opj(env["run_id_str"], "event_table.snt.zip"),
         )
         zip_write(
             zout,
