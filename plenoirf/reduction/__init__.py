@@ -126,6 +126,7 @@ def recude_event_table(run_paths, out_path):
         out_path,
         mode="w",
         dtypes=event_table.structure.dtypes(),
+        index_key=event_table.structure.UID_DTYPE[0],
         compress=True,
     ) as arc:
         for run_path in run_paths:
