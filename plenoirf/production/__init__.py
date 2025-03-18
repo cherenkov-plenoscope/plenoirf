@@ -44,9 +44,9 @@ from . import estimate_primary_trajectory
 from . import benchmark_compute_environment
 
 
-def make_example_job(
+def make_example_jobs(
     plenoirf_dir,
-    run_id=1221,
+    run_ids=[1221],
     site_key="chile",
     particle_key="gamma",
     instrument_key="diag9_default_default",
@@ -54,16 +54,19 @@ def make_example_job(
     max_num_events_in_merlict_run=100,
     debugging_figures=True,
 ):
-    job = {}
-    job["run_id"] = run_id
-    job["plenoirf_dir"] = plenoirf_dir
-    job["site_key"] = site_key
-    job["particle_key"] = particle_key
-    job["instrument_key"] = instrument_key
-    job["num_events"] = num_events
-    job["max_num_events_in_merlict_run"] = max_num_events_in_merlict_run
-    job["debugging_figures"] = debugging_figures
-    return job
+    jobs = []
+    for run_id in run_ids:
+        job = {}
+        job["run_id"] = run_id
+        job["plenoirf_dir"] = plenoirf_dir
+        job["site_key"] = site_key
+        job["particle_key"] = particle_key
+        job["instrument_key"] = instrument_key
+        job["num_events"] = num_events
+        job["max_num_events_in_merlict_run"] = max_num_events_in_merlict_run
+        job["debugging_figures"] = debugging_figures
+        jobs.append(job)
+    return jobs
 
 
 def run_job(job):
