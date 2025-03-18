@@ -63,27 +63,43 @@ def make_jobs(plenoirf_dir, config=None, lazy=False):
     for instrument_key in config["instruments"]:
         for site_key in config["sites"]["instruemnt_response"]:
             for particle_key in config["particles"]:
-                for item_key in list_items():
-                    if lazy:
-                        job_out_path = os.path.join(
-                            plenoirf_dir,
-                            "response",
-                            instrument_key,
-                            site_key,
-                            particle_key,
-                            item_key,
-                        )
-                        if os.path.exists(job_out_path):
-                            continue
-                    job = {
-                        "plenoirf_dir": plenoirf_dir,
-                        "instrument_key": instrument_key,
-                        "site_key": site_key,
-                        "particle_key": particle_key,
-                        "item_key": item_key,
-                    }
-                    jobs.append(job)
+                stage_dir = os.path.join(
+                    plenoirf_dir,
+                    "response",
+                    instrument_key,
+                    site_key,
+                    particle_key,
+                    "stage",
+                )
+                if has_filenames_of_certain_pattern_in_path(
+                    path=stage_dir, filename_wildcard="*.zip"
+                ):
+                    for item_key in list_items():
+                        if lazy:
+                            job_out_path = os.path.join(
+                                plenoirf_dir,
+                                "response",
+                                instrument_key,
+                                site_key,
+                                particle_key,
+                                item_key,
+                            )
+                            if os.path.exists(job_out_path):
+                                continue
+                        job = {
+                            "plenoirf_dir": plenoirf_dir,
+                            "instrument_key": instrument_key,
+                            "site_key": site_key,
+                            "particle_key": particle_key,
+                            "item_key": item_key,
+                        }
+                        jobs.append(job)
     return jobs
+
+
+def has_filenames_of_certain_pattern_in_path(path, filename_wildcard):
+    matching_paths = glob.glob(os.path.join(path, filename_wildcard))
+    return len(matching_paths) > 0
 
 
 def run_job(job):
