@@ -188,9 +188,9 @@ def reduce_ground_grid_intensity(
                 buff = zip_read_IO(
                     file=run_path,
                     internal_path=os.path.join(
-                        run_id_str, "event_table.snt.zip.gz"
+                        run_id_str, "event_table.snt.zip"
                     ),
-                    mode="rb|gz",
+                    mode="rb",
                 )
                 with snt.open(file=buff, mode="r") as part:
                     run_evttab = part.query()
