@@ -37,7 +37,7 @@ def init_event_table_structure():
     return t
 
 
-def dtypes(table_structure=None, include_index=False):
+def dtypes(table_structure=None, include_index=True):
     if table_structure is None:
         table_structure = init_event_table_structure()
 
