@@ -229,10 +229,9 @@ def reduce_ground_grid_intensity(
 
 def _make_benchmarks_dtype():
     dtype = [
-        ("uid", "<u8"),
+        ("run_id", "<u8"),
         ("hostname_hash", "<i8"),
         ("time_unix_s", "<f8"),
-        ("run_id", "<u8"),
         ("corsika/total_s", "<f4"),
         ("corsika/initializing_s", "<f4"),
         ("corsika/energy_rate_GeV_per_s/avg", "<f4"),
@@ -283,7 +282,6 @@ def reduce_benchmarks(run_paths, out_path):
         rec["hostname_hash"] = hash(item["hostname"])
         rec["time_unix_s"] = item["time"]["unix"]
         rec["run_id"] = int(run_id_str)
-        rec["uid"] = rec["run_id"]
         ccc = bench["corsika"]
         rec["corsika/total_s"] = ccc["total"]
         rec["corsika/initializing_s"] = ccc["initializing"]
@@ -331,7 +329,7 @@ def reduce_benchmarks(run_paths, out_path):
         file=out_path,
         mode="w",
         dtypes={"benchmark": _make_benchmarks_dtype()},
-        index_key="uid",
+        index_key="run_id",
     ) as fout:
         fout.append_table({"benchmark": stats})
 
