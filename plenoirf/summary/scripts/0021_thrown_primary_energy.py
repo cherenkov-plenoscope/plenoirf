@@ -26,7 +26,7 @@ POINTNIG_ZENITH_BIN = res.ZenithBinning("once")
 eee = {}
 for pk in res.PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
-        table = arc.read_table(
+        table = arc.query(
             levels_and_columns={
                 "primary": ["uid", "energy_GeV", "azimuth_rad", "zenith_rad"]
             }
