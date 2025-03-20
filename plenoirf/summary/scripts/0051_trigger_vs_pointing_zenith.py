@@ -12,6 +12,7 @@ import copy
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
+sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 energy_bin = json_utils.read(
     os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
