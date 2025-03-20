@@ -80,7 +80,7 @@ for pk in PARTICLES:
     energy_ranges[pk] = {}
 
     with res.open_event_table(particle_key=pk) as arc:
-        _table = arc.read_table(
+        _table = arc.query(
             levels_and_columns={"primary": ["uid", "energy_GeV"]}
         )
 
@@ -126,8 +126,8 @@ for pk in PARTICLES:
 
 weights = json_utils.tree.read(paths["out_dir"])
 
-fig = seb.figure(seb.FIGURE_16_9)
-ax = seb.add_axes(fig=fig, span=(0.1, 0.1, 0.8, 0.8))
+fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
+ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 for pk in PARTICLES:
     ax.plot(
         weights[pk]["weights_vs_energy"]["energy_GeV"],
@@ -136,7 +136,7 @@ for pk in PARTICLES:
     )
 ax.loglog()
 ax.set_xlabel("energy / GeV")
-ax.set_ylabel("relative re-weights/ 1")
+ax.set_ylabel("relative re-weights / 1")
 ax.set_xlim([1e-1, 1e4])
 ax.set_ylim([1e-6, 1.0])
 ax.text(
