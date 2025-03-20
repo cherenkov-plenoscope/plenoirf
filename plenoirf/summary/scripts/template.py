@@ -1,30 +1,18 @@
 #!/usr/bin/python
 import sys
-import copy
 import plenoirf as irf
 import sparse_numeric_table as snt
 import os
 import json_utils
+import numpy as np
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
 
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-
+paths = irf.summary.paths_from_argv(sys.argv)
+res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 
-for site_key in irf_config["config"]["sites"]:
-    for particle_key in irf_config["config"]["particles"]:
-        event_table = snt.read(
-            path=os.path.join(
-                paths["plenoirf_dir"],
-                "event_table",
-                site_key,
-                particle_key,
-                "event_table.tar",
-            ),
-            structure=irf.table.STRUCTURE,
+for pk in res.PARTICLES:
+    with res.open_event_table(particle_key=pk) as arc:
+        table = arc.query(
+            levels_and_columns={"primary": ["uid", "energy_GeV"]}
         )
