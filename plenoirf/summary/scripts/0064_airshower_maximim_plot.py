@@ -56,16 +56,16 @@ for pk in PARTICLES:
             }
         )
 
-    idx_common = snt.intersection(
+    uid_common = snt.logic.intersection(
         [
             passing_trigger[pk]["uid"],
             passing_quality[pk]["uid"],
         ]
     )
 
-    table = snt.cut_and_sort_table_on_indices(
+    table = snt.logic.cut_and_sort_table_on_indices(
         table=event_table,
-        common_indices=idx_common,
+        common_indices=uid_common,
     )
 
     true_airshower_maximum_altitude = table["cherenkovpool"][

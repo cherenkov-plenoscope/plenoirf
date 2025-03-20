@@ -64,7 +64,7 @@ for pk in PARTICLES:
             levels_and_columns={"primary": ["uid", "energy_GeV"]}
         )
 
-    idx_valid = snt.intersection(
+    uid_valid = snt.logic.intersection(
         [
             passing_trigger[pk]["uid"],
             passing_quality[pk]["uid"],
@@ -73,9 +73,9 @@ for pk in PARTICLES:
         ]
     )
 
-    valid_event_table = snt.cut_and_sort_table_on_indices(
+    valid_event_table = snt.logic.cut_and_sort_table_on_indices(
         table=event_table,
-        common_indices=idx_valid,
+        common_indices=uid_valid,
     )
 
     true_energy = valid_event_table["primary"]["energy_GeV"]

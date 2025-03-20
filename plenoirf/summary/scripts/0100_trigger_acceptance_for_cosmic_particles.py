@@ -31,7 +31,13 @@ for pk in res.PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
         diffuse_particle_table = arc.query(
             levels_and_columns={
-                "primary": ("uid", "energy_GeV", "azimuth_rad", "zenith_rad"),
+                "primary": (
+                    "uid",
+                    "energy_GeV",
+                    "azimuth_rad",
+                    "zenith_rad",
+                    "solid_angle_thrown_sr",
+                ),
                 "instrument_pointing": ("uid", "azimuth_rad", "zenith_rad"),
                 "groundgrid": (
                     "uid",
@@ -39,10 +45,11 @@ for pk in res.PARTICLES:
                     "num_bins_thrown",
                     "num_bins_above_threshold",
                 ),
+                "trigger": "__all__",
             }
         )
 
-    _diff = snt.cut_on_common_indices(table=diffuse_particle_table)
+    _diff = snt.logic.cut_on_common_indices(table=diffuse_particle_table)
 
     # point source
     # ------------
@@ -57,7 +64,7 @@ for pk in res.PARTICLES:
         )
     )
 
-    point_particle_table = snt.cut_table_on_indices(
+    point_particle_table = snt.logic.cut_table_on_indices(
         table=diffuse_particle_table,
         common_indices=uid_possible_onregion,
     )
@@ -82,7 +89,7 @@ for pk in res.PARTICLES:
             threshold=threshold,
             modus=trigger_modus,
         )
-        mask_detected = snt.make_mask_of_right_in_left(
+        mask_detected = snt.logic.make_mask_of_right_in_left(
             left_indices=point_particle_table["primary"]["uid"],
             right_indices=idx_detected,
         )
@@ -139,7 +146,7 @@ for pk in res.PARTICLES:
             threshold=threshold,
             modus=trigger_modus,
         )
-        mask_detected = snt.make_mask_of_right_in_left(
+        mask_detected = snt.logic.make_mask_of_right_in_left(
             left_indices=diffuse_particle_table["primary"]["uid"],
             right_indices=idx_detected,
         )

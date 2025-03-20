@@ -307,7 +307,7 @@ def _run_instrument_site(plenoirf_dir, instrument_key, site_key):
     for script_abspath in script_abspaths:
         script_basename = os.path.basename(script_abspath)
         script_id = int(script_basename[0:4])
-        if script_id >= 101:
+        if script_id > 101:
             print(f"Skipping scipt {script_id:d}.")
             continue
         script_name = str.split(script_basename, ".")[0]

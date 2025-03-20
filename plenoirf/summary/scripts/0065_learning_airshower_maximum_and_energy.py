@@ -98,7 +98,7 @@ def read_event_frame(
 
     out = {}
     for kk in ["test", "train"]:
-        uids_valid_kk = snt.intersection(
+        uids_valid_kk = snt.logic.intersection(
             [
                 passing_trigger[pk]["uid"],
                 passing_quality[pk]["uid"],
@@ -106,12 +106,15 @@ def read_event_frame(
                 train_test[pk][kk],
             ]
         )
-        table_kk = snt.cut_and_sort_table_on_indices(
+        table_kk = snt.logic.cut_and_sort_table_on_indices(
             table=airshower_table,
             common_indices=uids_valid_kk,
             index_key="uid",
         )
-        out[kk] = snt.make_rectangular_DataFrame(table_kk, index_key="uid")
+        out[kk] = snt.logic.make_rectangular_DataFrame(
+            table_kk,
+            index_key="uid",
+        )
 
     return out
 

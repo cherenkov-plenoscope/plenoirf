@@ -53,7 +53,7 @@ for pk in res.PARTICLES:
             }
         )
 
-    table = snt.sort_table_on_common_indices(
+    table = snt.logic.sort_table_on_common_indices(
         table=table,
         common_indices=table["primary"]["uid"],
     )

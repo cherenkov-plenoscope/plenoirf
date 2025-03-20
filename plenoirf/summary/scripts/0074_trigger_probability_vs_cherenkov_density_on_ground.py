@@ -40,14 +40,14 @@ for pk in res.PARTICLES:
             }
         )
 
-    event_table = snt.cut_and_sort_table_on_indices(
+    event_table = snt.logic.cut_and_sort_table_on_indices(
         table=event_table,
         common_indices=event_table["trigger"]["uid"],
     )
-    df = snt.make_rectangular_DataFrame(table=event_table)
+    df = snt.logic.make_rectangular_DataFrame(table=event_table)
 
     for tm in trigger_modi:
-        mask_pasttrigger = snt.make_mask_of_right_in_left(
+        mask_pasttrigger = snt.logic.make_mask_of_right_in_left(
             left_indices=df["uid"].values,
             right_indices=trigger_modi[tm][pk]["uid"],
         ).astype(float)
