@@ -13,7 +13,7 @@ os.makedirs(paths["out_dir"], exist_ok=True)
 
 for pk in res.PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.read_table(levels_and_columns={"primary": ["uid"]})
+        event_table = arc.query(levels_and_columns={"primary": ["uid"]})
 
     train_uids, test_uids = sklearn.model_selection.train_test_split(
         event_table["primary"]["uid"],
