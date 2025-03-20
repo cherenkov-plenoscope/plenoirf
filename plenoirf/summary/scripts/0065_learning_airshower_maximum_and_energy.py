@@ -76,7 +76,7 @@ def read_event_frame(
     pk = particle_key
 
     with res.open_event_table(particle_key=pk) as arc:
-        airshower_table = arc.read_table(
+        airshower_table = arc.query(
             levels_and_columns={
                 "primary": ["uid", "energy_GeV"],
                 "cherenkovpool": ["uid", "z_emission_p50_m"],
@@ -90,7 +90,7 @@ def read_event_frame(
         "transformed_features.zip",
     )
     with snt.open(transformed_features_path, "r") as arc:
-        airshower_table["transformed_features"] = arc.read_table()[
+        airshower_table["transformed_features"] = arc.query()[
             "transformed_features"
         ]
 

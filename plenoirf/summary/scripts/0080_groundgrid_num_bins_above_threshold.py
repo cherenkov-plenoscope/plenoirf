@@ -40,7 +40,7 @@ for pk in res.PARTICLES:
     huh[pk] = {}
 
     with res.open_event_table(particle_key=pk) as arc:
-        table = arc.read_table(
+        table = arc.query(
             levels_and_columns={
                 "primary": [
                     "uid",

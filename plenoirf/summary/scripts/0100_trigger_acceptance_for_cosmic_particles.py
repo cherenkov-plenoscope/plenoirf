@@ -29,7 +29,7 @@ for pk in res.PARTICLES:
     os.makedirs(pk_dir, exist_ok=True)
 
     with res.open_event_table(particle_key=pk) as arc:
-        diffuse_particle_table = arc.read_table(
+        diffuse_particle_table = arc.query(
             levels_and_columns={
                 "primary": ("uid", "energy_GeV", "azimuth_rad", "zenith_rad"),
                 "instrument_pointing": ("uid", "azimuth_rad", "zenith_rad"),

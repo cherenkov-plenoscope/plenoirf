@@ -20,9 +20,7 @@ for pk in res.PARTICLES:
     os.makedirs(pk_dir, exist_ok=True)
 
     with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.read_table(
-            levels_and_columns={"features": "__all__"}
-        )
+        event_table = arc.query(levels_and_columns={"features": "__all__"})
 
     uids_pastquality = irf.analysis.cuts.cut_quality(
         feature_table=event_table["features"],

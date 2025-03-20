@@ -37,7 +37,7 @@ tables = {}
 
 for pk in PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
-        _table = arc.read_table(
+        _table = arc.query(
             levels_and_columns={
                 "primary": ["uid", "energy_GeV"],
                 "features": "__all__",

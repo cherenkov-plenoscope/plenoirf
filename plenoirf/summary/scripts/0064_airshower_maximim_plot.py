@@ -44,7 +44,7 @@ STRUCTURE = irf.event_table.structure.init_event_table_structure()
 
 for pk in PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.read_table(
+        event_table = arc.query(
             levels_and_columns={
                 "primary": ["uid", "energy_GeV"],
                 "instrument_pointing": ["uid", "zenith_rad"],

@@ -15,7 +15,7 @@ for pk in res.PARTICLES:
     os.makedirs(pk_dir, exist_ok=True)
 
     with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.read_table(
+        event_table = arc.query(
             levels_and_columns={
                 "reconstructed_trajectory": "__all__",
                 "features": "__all__",

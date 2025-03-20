@@ -36,7 +36,7 @@ particle_colors = res.analysis["plot"]["particle_colors"]
 ft_trafo = {}
 for pk in ["gamma"]:
     with res.open_event_table(particle_key=pk) as arc:
-        _table = arc.read_table(levels_and_columns={"features": "__all__"})
+        _table = arc.query(levels_and_columns={"features": "__all__"})
 
     features = snt.logic.cut_table_on_indices(
         table=_table,
@@ -60,7 +60,7 @@ for pk in PARTICLES:
     transformed_features[pk] = {}
 
     with res.open_event_table(particle_key=pk) as arc:
-        _table = arc.read_table(levels_and_columns={"features": "__all__"})
+        _table = arc.query(levels_and_columns={"features": "__all__"})
         features = _table["features"]
 
     transformed_features[pk]["uid"] = np.array(features["uid"])
