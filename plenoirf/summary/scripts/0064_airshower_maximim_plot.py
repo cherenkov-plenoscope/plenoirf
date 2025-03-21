@@ -6,13 +6,13 @@ import confusion_matrix
 import os
 from os.path import join as opj
 import numpy as np
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
-seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 PARTICLES = res.PARTICLES
 
@@ -94,24 +94,24 @@ for pk in PARTICLES:
         default_low_exposure=0.0,
     )
 
-    fig = seb.figure(style=seb.FIGURE_1_1)
-    ax_c = seb.add_axes(fig=fig, span=[0.25, 0.27, 0.55, 0.65])
-    ax_h = seb.add_axes(fig=fig, span=[0.25, 0.11, 0.55, 0.1])
-    ax_cb = seb.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
+    fig = sebplt.figure(style=sebplt.FIGURE_1_1)
+    ax_c = sebplt.add_axes(fig=fig, span=[0.25, 0.27, 0.55, 0.65])
+    ax_h = sebplt.add_axes(fig=fig, span=[0.25, 0.11, 0.55, 0.1])
+    ax_cb = sebplt.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
     _pcm_confusion = ax_c.pcolormesh(
         cm["ax0_bin_edges"],
         cm["ax1_bin_edges"],
         np.transpose(cm["counts_normalized_on_ax0"]),
         cmap="Greys",
-        norm=seb.plt_colors.PowerNorm(gamma=0.5),
+        norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
     )
-    seb.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
+    sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
     irf.summary.figure.mark_ax_airshower_spectrum(ax=ax_c)
     ax_c.set_aspect("equal")
     ax_c.set_title("normalized for each column")
     ax_c.set_ylabel("(depth of smallest ellipse) cos(zenith) / m")
     ax_c.loglog()
-    seb.ax_add_grid(ax_c)
+    sebplt.ax_add_grid(ax_c)
 
     ax_h.semilogx()
     ax_h.set_xlim([np.min(cm["ax0_bin_edges"]), np.max(cm["ax0_bin_edges"])])
@@ -119,7 +119,7 @@ for pk in PARTICLES:
     ax_h.set_ylabel("num. events / 1")
     irf.summary.figure.mark_ax_thrown_spectrum(ax_h)
     ax_h.axhline(min_number_samples, linestyle=":", color="k")
-    seb.ax_add_histogram(
+    sebplt.ax_add_histogram(
         ax=ax_h,
         bin_edges=cm["ax0_bin_edges"],
         bincounts=cm["exposure_ax0"],
@@ -127,4 +127,4 @@ for pk in PARTICLES:
         linecolor="k",
     )
     fig.savefig(opj(paths["out_dir"], f"{pk}_maximum.jpg"))
-    seb.close(fig)
+    sebplt.close(fig)

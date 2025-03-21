@@ -8,7 +8,7 @@ import pandas
 import plenopy as pl
 import iminuit
 import scipy
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 
@@ -19,7 +19,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -192,12 +192,12 @@ for sk in SITES:
         Y_LIM = [-0.05, 0.5]
         ALPHA_ALL_ENERGY = 0.33
         # plot all energies
-        fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-        ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+        fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+        ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
         bincounts = np.histogram(a=tDelta_rel, bins=TIME_BIN_EDGES)[0]
         numall = np.sum(bincounts)
         bincounts = bincounts / numall
-        seb.ax_add_histogram(
+        sebplt.ax_add_histogram(
             ax=ax,
             bin_edges=TIME_BIN_EDGES * 1e9,
             bincounts=bincounts,
@@ -221,7 +221,7 @@ for sk in SITES:
         bincounts10 = np.histogram(a=tDelta_rel_10, bins=TIME_BIN_EDGES)[0]
         num10 = np.sum(bincounts10)
         bincounts10 = bincounts10 / num10
-        seb.ax_add_histogram(
+        sebplt.ax_add_histogram(
             ax=ax,
             bin_edges=TIME_BIN_EDGES * 1e9,
             bincounts=bincounts10,
@@ -264,4 +264,4 @@ for sk in SITES:
                 "{:s}_{:s}_arrival_time_spread.jpg".format(sk, pk),
             )
         )
-        seb.close(fig)
+        sebplt.close(fig)

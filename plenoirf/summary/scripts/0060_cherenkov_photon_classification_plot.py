@@ -5,7 +5,7 @@ import os
 import plenoirf as irf
 import sparse_numeric_table as snt
 from os.path import join as opj
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 
@@ -13,7 +13,7 @@ paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 
-seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 
 passing_trigger = json_utils.tree.read(
@@ -83,25 +83,25 @@ for pk in res.PARTICLES:
         if np_exposure_bins[true_bin] > 0:
             np_bins_normalized[true_bin, :] /= np_exposure_bins[true_bin]
 
-    fig = seb.figure(style=seb.FIGURE_1_1)
-    ax = seb.add_axes(fig=fig, span=[0.15, 0.27, 0.65, 0.65])
-    ax_h = seb.add_axes(fig=fig, span=[0.15, 0.11, 0.65, 0.1])
-    ax_cb = seb.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
+    fig = sebplt.figure(style=sebplt.FIGURE_1_1)
+    ax = sebplt.add_axes(fig=fig, span=[0.15, 0.27, 0.65, 0.65])
+    ax_h = sebplt.add_axes(fig=fig, span=[0.15, 0.11, 0.65, 0.1])
+    ax_cb = sebplt.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
     _pcm_confusion = ax.pcolormesh(
         size_bin_edges,
         size_bin_edges,
         np.transpose(np_bins_normalized),
         cmap="Greys",
-        norm=seb.plt_colors.PowerNorm(gamma=0.5),
+        norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
     )
-    seb.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
+    sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
     ax.set_aspect("equal")
     ax.set_title("normalized for each column")
     ax.set_ylabel("reconstructed Cherenkov-size / p.e.")
     ax.loglog()
     ax.set_xticklabels([])
-    seb.ax_add_grid(ax)
-    seb.ax_add_histogram(
+    sebplt.ax_add_grid(ax)
+    sebplt.ax_add_histogram(
         ax=ax_h,
         bin_edges=size_bin_edges,
         bincounts=np_exposure_bins,
@@ -113,7 +113,7 @@ for pk in res.PARTICLES:
     ax_h.set_xlabel("true Cherenkov-size / p.e.")
     ax_h.set_ylabel("num. events")
     fig.savefig(opj(paths["out_dir"], pk + "_" + key + ".jpg"))
-    seb.close(fig)
+    sebplt.close(fig)
 
     # ---------------------------------------------------------------------
     key = "sensitivity_vs_true_energy"
@@ -149,9 +149,9 @@ for pk in res.PARTICLES:
     _v = num_events > 0
     num_events_relunc[_v] = np.sqrt(num_events[_v]) / num_events[_v]
 
-    fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-    seb.ax_add_histogram(
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=energy_bin["edges"],
         bincounts=tprs,
@@ -162,7 +162,7 @@ for pk in res.PARTICLES:
         face_color="k",
         face_alpha=0.05,
     )
-    seb.ax_add_histogram(
+    sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=energy_bin["edges"],
         bincounts=ppvs,
@@ -179,7 +179,7 @@ for pk in res.PARTICLES:
     ax.set_ylim([0, 1])
     ax.semilogx()
     fig.savefig(opj(paths["out_dir"], pk + "_" + key + ".jpg"))
-    seb.close(fig)
+    sebplt.close(fig)
 
     json_utils.write(
         opj(pk_dir, key + ".json"),
@@ -221,9 +221,9 @@ for pk in res.PARTICLES:
     _v = num_events > 0
     num_events_relunc[_v] = np.sqrt(num_events[_v]) / num_events[_v]
 
-    fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-    seb.ax_add_histogram(
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=energy_bin["edges"],
         bincounts=true_over_reco_ratios,
@@ -240,7 +240,7 @@ for pk in res.PARTICLES:
     ax.set_xlim(energy_bin["limits"])
     ax.semilogx()
     fig.savefig(opj(paths["out_dir"], pk + "_" + key + ".jpg"))
-    seb.close(fig)
+    sebplt.close(fig)
 
     json_utils.write(
         opj(pk_dir, key + ".json"),
@@ -281,9 +281,9 @@ for pk in res.PARTICLES:
     _v = num_events > 0
     num_events_relunc[_v] = np.sqrt(num_events[_v]) / num_events[_v]
 
-    fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-    seb.ax_add_histogram(
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=size_bin_edges,
         bincounts=num_ratios,
@@ -300,7 +300,7 @@ for pk in res.PARTICLES:
     ax.set_xlim([np.min(size_bin_edges), np.max(size_bin_edges)])
     ax.semilogx()
     fig.savefig(opj(paths["out_dir"], pk + "_" + key + ".jpg"))
-    seb.close(fig)
+    sebplt.close(fig)
 
     json_utils.write(
         opj(pk_dir, key + ".json"),

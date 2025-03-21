@@ -2,7 +2,7 @@
 import sys
 import plenoirf as irf
 import sparse_numeric_table as snt
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import os
 import copy
 import json_utils
@@ -17,7 +17,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 SITES = irf_config["config"]["sites"]
 PARTICLES = irf_config["config"]["particles"]
@@ -60,8 +60,8 @@ NB = irf.outer_telescope_array.NUM_BINS_ON_EDGE
 
 ROI_RADIUS = np.ceil(3) + 1
 for ak in ARRAY_CONFIGS:
-    fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = seb.add_axes(
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(
         fig=fig,
         span=irf.summary.figure.AX_SPAN,
         style={
@@ -70,7 +70,7 @@ for ak in ARRAY_CONFIGS:
             "grid": False,
         },
     )
-    seb.ax_add_grid_with_explicit_ticks(
+    sebplt.ax_add_grid_with_explicit_ticks(
         ax=ax,
         xticks=np.arange(-CB - 0.5, CB + 1.5, 1),
         yticks=np.arange(-CB - 0.5, CB + 1.5, 1),
@@ -79,7 +79,7 @@ for ak in ARRAY_CONFIGS:
         linewidth=0.11,
         alpha=0.33,
     )
-    seb.ax_add_circle(
+    sebplt.ax_add_circle(
         ax=ax,
         x=0,
         y=0,
@@ -95,7 +95,7 @@ for ak in ARRAY_CONFIGS:
     for iix in np.arange(NB):
         for iiy in np.arange(NB):
             if ARRAY_CONFIGS[ak]["mask"][iix, iiy]:
-                seb.ax_add_circle(
+                sebplt.ax_add_circle(
                     ax=ax,
                     x=iix - CB,
                     y=iiy - CB,
@@ -125,7 +125,7 @@ for ak in ARRAY_CONFIGS:
             "array_configuration_" + ak + ".jpg",
         )
     )
-    seb.close(fig)
+    sebplt.close(fig)
 
 
 # estimate trigger probability of individual telescope in array
@@ -174,8 +174,8 @@ for sk in SITES:
 # ---------------------------------------------------------
 for sk in SITES:
     for ak in ARRAY_CONFIGS:
-        fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-        ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+        fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+        ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
         for pk in PARTICLES:
             ax.plot(
                 telescope_trigger[sk][pk][ak]["cherenkov_density_per_m2"],
@@ -195,7 +195,7 @@ for sk in SITES:
                 sk + "_" + ak + "_telescope_trigger_probability" + ".jpg",
             )
         )
-        seb.close(fig)
+        sebplt.close(fig)
 
 
 # simulate telescope triggers

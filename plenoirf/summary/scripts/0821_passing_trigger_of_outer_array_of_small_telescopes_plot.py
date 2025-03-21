@@ -2,7 +2,7 @@
 import sys
 import plenoirf as irf
 import sparse_numeric_table as snt
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import os
 import copy
 import json_utils
@@ -17,7 +17,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 SITES = irf_config["config"]["sites"]
 PARTICLES = irf_config["config"]["particles"]
@@ -124,10 +124,10 @@ for sk in SITES:
     for ak in ARRAY_CONFIGS:
         print("plot trigger ratio all particles", sk, ak)
 
-        fig = seb.figure(style=irf.summary.figure.FIGURE_STYLE)
-        ax = seb.add_axes(fig=fig, span=AX_SPAN)
+        fig = sebplt.figure(style=irf.summary.figure.FIGURE_STYLE)
+        ax = sebplt.add_axes(fig=fig, span=AX_SPAN)
         for pk in PARTICLES:
-            seb.ax_add_histogram(
+            sebplt.ax_add_histogram(
                 ax=ax,
                 bin_edges=energy_bin["edges"],
                 bincounts=pv[sk][pk][ak]["ratio"],
@@ -156,4 +156,4 @@ for sk in SITES:
                 "{:s}_{:s}.jpg".format(sk, ak),
             )
         )
-        seb.close(fig)
+        sebplt.close(fig)

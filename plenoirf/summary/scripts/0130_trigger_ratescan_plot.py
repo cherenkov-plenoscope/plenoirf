@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -13,7 +13,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -53,8 +53,8 @@ for sk in SITES:
 
     tr = trigger_rates[sk]
 
-    fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
     ax.plot(
         trigger_thresholds,
         tr["night_sky_background"]
@@ -85,4 +85,4 @@ for sk in SITES:
     )
     ax.set_ylim([1e0, 1e7])
     fig.savefig(os.path.join(paths["out_dir"], "{:s}_ratescan.jpg".format(sk)))
-    seb.close(fig)
+    sebplt.close(fig)

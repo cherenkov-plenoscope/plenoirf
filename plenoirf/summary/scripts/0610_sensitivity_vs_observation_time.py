@@ -7,7 +7,7 @@ import spectral_energy_distribution_units as sed
 from plenoirf.analysis import spectral_energy_distribution as sed_styles
 import cosmic_fluxes
 import os
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -17,7 +17,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -160,7 +160,9 @@ for pe in pivot_energies:
                 )
                 com["observation_time"] = odnde["observation_times"]["value"]
                 com["differential_flux"] = odnde["dnde"]["value"][:, lo_ebin]
-                com["label"] = irf.other_instruments.fermi_lat.LABEL + "seb."
+                com["label"] = (
+                    irf.other_instruments.fermi_lat.LABEL + "sebplt."
+                )
                 com["color"] = irf.other_instruments.fermi_lat.COLOR
                 com["alpha"] = 1.0
                 com["linestyle"] = "-"
@@ -225,8 +227,8 @@ for pe in pivot_energies:
                 # figure
                 # ------
 
-                fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-                ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+                fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+                ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
                 for com in components:
                     _energy, _dFdE = sed.convert_units_with_style(
@@ -275,4 +277,4 @@ for pe in pivot_energies:
                         ),
                     )
                 )
-                seb.close(fig)
+                sebplt.close(fig)

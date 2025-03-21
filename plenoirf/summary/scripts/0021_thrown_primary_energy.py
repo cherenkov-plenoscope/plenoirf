@@ -9,13 +9,13 @@ import spherical_coordinates
 import solid_angle_utils
 import binning_utils
 import spherical_histogram
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 
 
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
-seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 energy_bin = json_utils.read(
     os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
@@ -54,8 +54,8 @@ for pk in res.PARTICLES:
 # differential SED style histogram
 # --------------------------------
 linestyles = ["-", "--", ":"]
-fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 for pk in res.PARTICLES:
     for zdbin in range(POINTNIG_ZENITH_BIN.num):
         ax.plot(
@@ -80,15 +80,15 @@ fig.savefig(
         "thrown_primary_energy_differential_spectral_energy_distribution.jpg",
     )
 )
-seb.close(fig)
+sebplt.close(fig)
 
 # simple histogram
 # ----------------
-fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 for pk in res.PARTICLES:
     for zdbin in range(POINTNIG_ZENITH_BIN.num):
-        seb.ax_add_histogram(
+        sebplt.ax_add_histogram(
             ax=ax,
             bin_edges=energy_bin["edges"],
             bincounts=eee[pk]["bin_counts"][zdbin, :],
@@ -107,11 +107,13 @@ ax.set_xlim(energy_bin["limits"])
 ax.set_xlabel("energy / GeV")
 ax.set_ylabel(r"intensity / 1")
 fig.savefig(os.path.join(paths["out_dir"], "thrown_primary_energy.jpg"))
-seb.close(fig)
+sebplt.close(fig)
 
 
-fig = seb.figure({"rows": 64, "cols": 1280, "fontsize": 1.0})
-ax = seb.add_axes(fig=fig, span=[0.0, 0.0, 1.0, 1.0], style=seb.AXES_BLANK)
+fig = sebplt.figure({"rows": 64, "cols": 1280, "fontsize": 1.0})
+ax = sebplt.add_axes(
+    fig=fig, span=[0.0, 0.0, 1.0, 1.0], style=sebplt.AXES_BLANK
+)
 ax.set_xlim([0, 1])
 ax.set_ylim([0, 1])
 xpos = 0.0
@@ -131,10 +133,12 @@ for pk in res.PARTICLES:
     )
     xpos += 0.25
 fig.savefig(os.path.join(paths["out_dir"], "particle_labels.jpg"))
-seb.close(fig)
+sebplt.close(fig)
 
-fig = seb.figure({"rows": 64, "cols": 1280, "fontsize": 1.0})
-ax = seb.add_axes(fig=fig, span=[0.0, 0.0, 1.0, 1.0], style=seb.AXES_BLANK)
+fig = sebplt.figure({"rows": 64, "cols": 1280, "fontsize": 1.0})
+ax = sebplt.add_axes(
+    fig=fig, span=[0.0, 0.0, 1.0, 1.0], style=sebplt.AXES_BLANK
+)
 ax.set_xlim([0, 1])
 ax.set_ylim([0, 1])
 xpos = 0.0
@@ -158,4 +162,4 @@ for zdbin in range(POINTNIG_ZENITH_BIN.num):
     )
     xpos += 0.33
 fig.savefig(os.path.join(paths["out_dir"], "zenith_range_labels.jpg"))
-seb.close(fig)
+sebplt.close(fig)

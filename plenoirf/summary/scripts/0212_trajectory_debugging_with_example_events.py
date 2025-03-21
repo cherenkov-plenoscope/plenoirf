@@ -6,7 +6,7 @@ import sparse_numeric_table as snt
 import os
 import plenopy as pl
 import gamma_ray_reconstruction as gamrec
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -16,7 +16,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 passing_trigger = json_utils.tree.read(
     os.path.join(paths["analysis_dir"], "0055_passing_trigger")
@@ -212,8 +212,8 @@ for sk in irf_config["config"]["sites"]:
             )
 
             if PLOT_RING:
-                fig = seb.figure(seb.FIGURE_16_9)
-                ax = seb.add_axes(fig=fig, span=[0.1, 0.1, 0.8, 0.8])
+                fig = sebplt.figure(sebplt.FIGURE_16_9)
+                ax = sebplt.add_axes(fig=fig, span=[0.1, 0.1, 0.8, 0.8])
                 add_axes_fuzzy_debug(
                     ax=ax,
                     ring_binning=fuzzy_config["azimuth_ring"],
@@ -229,7 +229,7 @@ for sk in irf_config["config"]["sites"]:
                     ),
                 )
                 fig.savefig(path)
-                seb.close(fig)
+                sebplt.close(fig)
 
             if PLOT_OVERVIEW:
                 split_light_field = (
@@ -243,11 +243,11 @@ for sk in irf_config["config"]["sites"]:
                 fit_x = fit["primary_particle_x"]
                 fit_y = fit["primary_particle_y"]
 
-                fig = seb.figure(seb.FIGURE_16_9)
-                ax = seb.add_axes(
+                fig = sebplt.figure(sebplt.FIGURE_16_9)
+                ax = sebplt.add_axes(
                     fig=fig, span=[0.075, 0.1, 0.4, 0.8], style=axes_style
                 )
-                ax_core = seb.add_axes(
+                ax_core = sebplt.add_axes(
                     fig=fig, span=[0.575, 0.1, 0.4, 0.8], style=axes_style
                 )
                 for pax in range(split_light_field["number_paxel"]):
@@ -267,8 +267,8 @@ for sk in irf_config["config"]["sites"]:
                     debug["fuzzy_debug"]["fuzzy_image_smooth"],
                     cmap="Reds",
                 )
-                seb.ax_add_grid(ax)
-                seb.ax_add_circle(ax=ax, x=0.0, y=0.0, r=fov_radius_deg)
+                sebplt.ax_add_grid(ax)
+                sebplt.ax_add_circle(ax=ax, x=0.0, y=0.0, r=fov_radius_deg)
                 ax.plot(
                     [
                         np.rad2deg(fit["main_axis_support_cx"]),
@@ -364,4 +364,4 @@ for sk in irf_config["config"]["sites"]:
                 )
 
                 fig.savefig(path)
-                seb.close(fig)
+                sebplt.close(fig)

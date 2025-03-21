@@ -9,13 +9,13 @@ import spherical_coordinates
 import solid_angle_utils
 import binning_utils
 import spherical_histogram
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 
 
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
-seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 energy_bin = json_utils.read(
     os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
@@ -104,10 +104,10 @@ for key in PLOTS:
     y_label = PLOTS[key]["y_label"]
     y_lim = PLOTS[key]["y_lim"]
 
-    fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
     for pk in res.PARTICLES:
-        seb.ax_add_histogram(
+        sebplt.ax_add_histogram(
             ax=ax,
             bin_edges=energy_bin["edges"],
             bincounts=hist[pk]["p50"],
@@ -124,4 +124,4 @@ for key in PLOTS:
     ax.semilogx()
     ax.set_xlim(energy_bin["limits"])
     fig.savefig(os.path.join(paths["out_dir"], f"{key:s}.jpg"))
-    seb.close(fig)
+    sebplt.close(fig)

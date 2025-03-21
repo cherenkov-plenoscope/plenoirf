@@ -6,7 +6,7 @@ import os
 import numpy as np
 import json_utils
 import json
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import matplotlib
 from matplotlib.collections import PolyCollection
 from plenopy.light_field_geometry.LightFieldGeometry import init_lixel_polygons
@@ -20,7 +20,7 @@ res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 if DARKMODE:
-    seb.plt.style.use("dark_background")
+    sebplt.plt.style.use("dark_background")
     stroke = "white"
     backc = "black"
     EXT = ".dark.png"
@@ -35,7 +35,7 @@ else:
     BEAM_ALPHA = 0.2
     colors = ["k", "g", "b", "r", "c", "m", "orange"]
 
-seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 light_field_geometry = pl.LightFieldGeometry(
     os.path.join(
@@ -112,13 +112,13 @@ poseye = irf.summary.figure.positions_of_eyes_in_roi(
 AXES_STYLE = {"spines": ["left", "bottom"], "axes": ["x", "y"], "grid": False}
 
 for obj, object_distance in enumerate(object_distances):
-    fig = seb.figure(
+    fig = sebplt.figure(
         style={"rows": 960 * rrr, "cols": 1280 * rrr, "fontsize": 1.244 * rrr}
     )
-    ax = seb.add_axes(
+    ax = sebplt.add_axes(
         fig=fig, span=[0.15, 0.15, 0.85 * (3 / 4), 0.85], style=AXES_STYLE
     )
-    ax2 = seb.add_axes(fig=fig, span=[0.82, 0.15, 0.2 * (3 / 4), 0.85])
+    ax2 = sebplt.add_axes(fig=fig, span=[0.82, 0.15, 0.2 * (3 / 4), 0.85])
 
     cpath = os.path.join(
         paths["out_dir"], "lixel_to_pixel_{:06d}.json".format(obj)
@@ -187,7 +187,7 @@ for obj, object_distance in enumerate(object_distances):
 
     for peye in poseye:
         (_x, _y) = poseye[peye]
-        seb.ax_add_hexagon(
+        sebplt.ax_add_hexagon(
             ax=ax,
             x=_x,
             y=_y,
@@ -254,4 +254,4 @@ for obj, object_distance in enumerate(object_distances):
             ),
         )
     )
-    seb.close("all")
+    sebplt.close("all")

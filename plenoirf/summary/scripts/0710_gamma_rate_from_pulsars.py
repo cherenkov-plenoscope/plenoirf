@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import lima1983analysis
 import cosmic_fluxes
 import json_utils
@@ -19,7 +19,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -139,8 +139,8 @@ for sk in SITES:
                     sk_ok_pk_dir, "dKdE_per_m2_per_s_per_GeV.txt"
                 ),
             )
-            fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-            ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+            fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+            ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
             ax.plot(
                 energy_fine_bin["edges"][0:-1],
                 dKdE_per_m2_per_s_per_GeV,
@@ -157,7 +157,7 @@ for sk in SITES:
             fig.savefig(
                 os.path.join(sk_ok_pk_dir, "dKdE_per_m2_per_s_per_GeV.jpg")
             )
-            seb.close(fig)
+            sebplt.close(fig)
 
             dRdE_per_s_per_GeV = np.zeros(energy_fine_bin["num_bins"])
             for ebin in range(energy_fine_bin["num_bins"]):
@@ -169,8 +169,8 @@ for sk in SITES:
                 arr=dRdE_per_s_per_GeV,
                 path=os.path.join(sk_ok_pk_dir, "dRdE_per_s_per_GeV.txt"),
             )
-            fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-            ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+            fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+            ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
             ax.plot(
                 energy_fine_bin["edges"][0:-1],
                 dRdE_per_s_per_GeV,
@@ -185,7 +185,7 @@ for sk in SITES:
                 r"$\frac{\mathrm{d\,R}}{\mathrm{d\,E}}$ / s$^{-1}$ (GeV)$^{-1}$"
             )
             fig.savefig(os.path.join(sk_ok_pk_dir, "dRdE_per_s_per_GeV.jpg"))
-            seb.close(fig)
+            sebplt.close(fig)
 
             R_per_s = 0.0
             for ebin in range(energy_fine_bin["num_bins"]):

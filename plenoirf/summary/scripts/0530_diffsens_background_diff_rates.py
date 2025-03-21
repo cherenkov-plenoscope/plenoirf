@@ -6,7 +6,7 @@ import propagate_uncertainties as pru
 import flux_sensitivity
 import plenoirf as irf
 import os
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 
@@ -17,7 +17,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -175,10 +175,10 @@ for sk in SITES:
 # ----
 for sk in SITES:
     for ok in ONREGION_TYPES:
-        fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-        ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+        fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+        ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
         for pk in COSMIC_RAYS:
-            seb.ax_add_histogram(
+            sebplt.ax_add_histogram(
                 ax=ax,
                 bin_edges=energy_bin["edges"],
                 bincounts=Rreco[sk][ok][pk],
@@ -191,7 +191,7 @@ for sk in SITES:
             )
 
             alpha = 0.25
-            seb.ax_add_histogram(
+            sebplt.ax_add_histogram(
                 ax=ax,
                 bin_edges=energy_bin["edges"],
                 bincounts=Rtrue[sk][ok][pk],
@@ -214,4 +214,4 @@ for sk in SITES:
                 sk + "_" + ok + "_differential_rates_vs_reco_energy.jpg",
             )
         )
-        seb.close(fig)
+        sebplt.close(fig)

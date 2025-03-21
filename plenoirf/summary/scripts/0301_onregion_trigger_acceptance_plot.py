@@ -4,7 +4,7 @@ import numpy as np
 import plenoirf as irf
 import os
 from os.path import join as opj
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -14,7 +14,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -55,15 +55,15 @@ for sk in SITES:
 
     for ok in ONREGION_TYPES:
         for gk in irf.summary.figure.SOURCES:
-            fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-            ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+            fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+            ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
             text_y = 0
             for pk in PARTICLES:
                 Q = G[sk][ok][pk][gk]["mean"]
                 Q_au = G[sk][ok][pk][gk]["absolute_uncertainty"]
 
-                seb.ax_add_histogram(
+                sebplt.ax_add_histogram(
                     ax=ax,
                     bin_edges=G_energy_bin["edges"],
                     bincounts=Q,
@@ -103,7 +103,7 @@ for sk in SITES:
                     "{:s}_{:s}_{:s}.jpg".format(sk, ok, gk),
                 )
             )
-            seb.close(fig)
+            sebplt.close(fig)
 
 
 for sk in irf_config["config"]["sites"]:
@@ -119,10 +119,10 @@ for sk in irf_config["config"]["sites"]:
                 acc_trg_onregion = G[sk][ok][pk][gk]["mean"]
                 acc_trg_onregion_au = G[sk][ok][pk][gk]["absolute_uncertainty"]
 
-                fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-                ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+                fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+                ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
-                seb.ax_add_histogram(
+                sebplt.ax_add_histogram(
                     ax=ax,
                     bin_edges=A_energy_bin["edges"],
                     bincounts=acc_trg,
@@ -133,7 +133,7 @@ for sk in irf_config["config"]["sites"]:
                     face_color=particle_colors[pk],
                     face_alpha=0.05,
                 )
-                seb.ax_add_histogram(
+                sebplt.ax_add_histogram(
                     ax=ax,
                     bin_edges=G_energy_bin["edges"],
                     bincounts=acc_trg_onregion,
@@ -172,4 +172,4 @@ for sk in irf_config["config"]["sites"]:
                         "{:s}_{:s}_{:s}_{:s}.jpg".format(sk, ok, pk, gk),
                     )
                 )
-                seb.close(fig)
+                sebplt.close(fig)

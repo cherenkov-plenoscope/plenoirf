@@ -7,7 +7,7 @@ import os
 import numpy as np
 import json_utils
 import sparse_numeric_table as snt
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import glob
 import tempfile
 import tarfile
@@ -171,7 +171,7 @@ def ax_add_tomography(ax, binning, reconstruction, simulation_truth):
             intensity_rgb[:, :, 0] * intensity_rgb[:, :, 1]
         ) ** (1 / 3)
 
-        seb.pseudo3d.ax_add_mesh_intensity_to_alpha(
+        sebplt.pseudo3d.ax_add_mesh_intensity_to_alpha(
             ax=ax,
             projection=projection,
             x_bin_edges=np.rad2deg(binning["cx_bin_edges"]),
@@ -180,7 +180,7 @@ def ax_add_tomography(ax, binning, reconstruction, simulation_truth):
             threshold=0.01,
             gamma=0.5,
         )
-        seb.pseudo3d.ax_add_grid(
+        sebplt.pseudo3d.ax_add_grid(
             ax=ax,
             projection=projection,
             x_bin_edges=np.rad2deg(binning["cx_bin_edges"]),
@@ -190,7 +190,7 @@ def ax_add_tomography(ax, binning, reconstruction, simulation_truth):
             color="k",
             linestyle="-",
         )
-        seb.pseudo3d.ax_add_circle(
+        sebplt.pseudo3d.ax_add_circle(
             ax=ax,
             projection=projection,
             x=0.0,
@@ -206,8 +206,8 @@ def ax_add_tomography(ax, binning, reconstruction, simulation_truth):
 def write_figure_tomography(path, binning, reconstruction, simulation_truth):
     RRR = 1280
     axes_style = {"spines": [], "axes": [], "grid": False}
-    fig = seb.figure({"rows": 4 * RRR, "cols": RRR, "fontsize": 1})
-    ax = seb.add_axes(fig=fig, span=[0.0, 0.0, 1.0, 1.0], style=axes_style)
+    fig = sebplt.figure({"rows": 4 * RRR, "cols": RRR, "fontsize": 1})
+    ax = sebplt.add_axes(fig=fig, span=[0.0, 0.0, 1.0, 1.0], style=axes_style)
     ax_add_tomography(
         ax=ax,
         binning=binning,
@@ -216,7 +216,7 @@ def write_figure_tomography(path, binning, reconstruction, simulation_truth):
     )
     ax.set_aspect("equal")
     fig.savefig(path, transparent=True)
-    seb.close(fig)
+    sebplt.close(fig)
 
 
 binning = make_binning_from_ligh_field_geometry(

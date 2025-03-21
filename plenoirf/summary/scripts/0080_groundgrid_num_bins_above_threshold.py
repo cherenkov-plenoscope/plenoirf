@@ -10,13 +10,13 @@ import magnetic_deflection as mdfl
 import spherical_coordinates
 import solid_angle_utils
 import binning_utils
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import confusion_matrix
 
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
-seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 energy_bin = json_utils.read(
     os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
@@ -116,18 +116,18 @@ for pk in res.PARTICLES:
             default_low_exposure=0.0,
         )
 
-        fig = seb.figure(style=seb.FIGURE_1_1)
-        ax_c = seb.add_axes(fig=fig, span=[0.25, 0.27, 0.55, 0.65])
-        ax_h = seb.add_axes(fig=fig, span=[0.25, 0.11, 0.55, 0.1])
-        ax_cb = seb.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
+        fig = sebplt.figure(style=sebplt.FIGURE_1_1)
+        ax_c = sebplt.add_axes(fig=fig, span=[0.25, 0.27, 0.55, 0.65])
+        ax_h = sebplt.add_axes(fig=fig, span=[0.25, 0.11, 0.55, 0.1])
+        ax_cb = sebplt.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
         _pcm_confusion = ax_c.pcolormesh(
             cm["ax0_bin_edges"],
             cm["ax1_bin_edges"],
             np.transpose(cm["counts_normalized_on_ax0"]),
             cmap=res.PARTICLE_COLORMAPS[pk],
-            norm=seb.plt_colors.PowerNorm(gamma=0.5),
+            norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
         )
-        seb.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
+        sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
 
         zenith_range_str = irf.summary.make_angle_range_str(
             start_rad=POINTNIG_ZENITH_BIN.edges[zdbin],
@@ -137,7 +137,7 @@ for pk in res.PARTICLES:
         ax_c.set_ylabel("num. bins above threshod / 1")
         ax_c.loglog()
         res.ax_add_site_marker(ax_c, x=0.2, y=0.1)
-        seb.ax_add_grid(ax_c)
+        sebplt.ax_add_grid(ax_c)
         ax_c.text(
             x=0.2,
             y=0.05,
@@ -155,7 +155,7 @@ for pk in res.PARTICLES:
         ax_h.set_xlabel("energy / GeV")
         ax_h.set_ylabel("num. events / 1")
         ax_h.axhline(min_number_samples, linestyle=":", color="k")
-        seb.ax_add_histogram(
+        sebplt.ax_add_histogram(
             ax=ax_h,
             bin_edges=cm["ax0_bin_edges"],
             bincounts=cm["exposure_ax0"],
@@ -167,13 +167,13 @@ for pk in res.PARTICLES:
                 paths["out_dir"], f"{pk:s}_zenith{zdbin:03d}_grid.jpg"
             )
         )
-        seb.close(fig)
+        sebplt.close(fig)
 
 
-fig = seb.figure(style=irf.summary.figure.FIGURE_STYLE)
-ax = seb.add_axes(fig=fig, span=[0.175, 0.15, 0.6, 0.8])
-ax_legend = seb.add_axes(
-    fig=fig, span=[0.8, 0.15, 0.1, 0.8], style=seb.AXES_BLANK
+fig = sebplt.figure(style=irf.summary.figure.FIGURE_STYLE)
+ax = sebplt.add_axes(fig=fig, span=[0.175, 0.15, 0.6, 0.8])
+ax_legend = sebplt.add_axes(
+    fig=fig, span=[0.8, 0.15, 0.1, 0.8], style=sebplt.AXES_BLANK
 )
 linestyles = ["-", "--", ":"]
 for pk in res.PARTICLES:
@@ -236,13 +236,13 @@ ax.loglog()
 ax.set_xlabel("energy / GeV")
 ax.set_ylabel("num. bins above threshold / 1")
 fig.savefig(os.path.join(paths["out_dir"], "num_bins_above_threshold.jpg"))
-seb.close(fig)
+sebplt.close(fig)
 
 
-fig = seb.figure(style=seb.FIGURE_1_1)
-ax = seb.add_axes(fig=fig, span=[0.175, 0.15, 0.75, 0.8])
+fig = sebplt.figure(style=sebplt.FIGURE_1_1)
+ax = sebplt.add_axes(fig=fig, span=[0.175, 0.15, 0.75, 0.8])
 for pk in res.PARTICLES:
-    seb.ax_add_histogram(
+    sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=huh[pk]["bin_edges"],
         bincounts=huh[pk]["bin_counts"] / np.sum(huh[pk]["bin_counts"]),
@@ -259,4 +259,4 @@ ax.loglog()
 ax.set_xlabel("num. bins above threshold / 1")
 ax.set_ylabel("relative intensity / 1")
 fig.savefig(os.path.join(paths["out_dir"], "what_was_throwm.jpg"))
-seb.close(fig)
+sebplt.close(fig)

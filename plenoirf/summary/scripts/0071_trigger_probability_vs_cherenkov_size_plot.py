@@ -4,13 +4,13 @@ import plenoirf as irf
 import os
 import numpy as np
 from os.path import join as opj
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
-seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 trigger_vs_size = json_utils.tree.read(
     os.path.join(
@@ -22,8 +22,8 @@ particle_colors = res.analysis["plot"]["particle_colors"]
 
 # all particles together
 # ----------------------
-fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
 text_y = 0
 for pk in res.PARTICLES:
@@ -42,7 +42,7 @@ for pk in res.PARTICLES:
         ]
     )
 
-    seb.ax_add_histogram(
+    sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=size_bin_edges,
         bincounts=prob,
@@ -73,4 +73,4 @@ fig.savefig(
         "trigger_probability_vs_cherenkov_size.jpg",
     )
 )
-seb.close(fig)
+sebplt.close(fig)

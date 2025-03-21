@@ -5,7 +5,7 @@ import plenoirf as irf
 import os
 import copy
 import propagate_uncertainties as pu
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -15,7 +15,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -46,13 +46,13 @@ for pk in COSMIC_RAYS:
     )
 
 for sk in SITES:
-    fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
     for pk in COSMIC_RAYS:
         R = rates[sk][pk]["integral"]["R"]
         R_au = rates[sk][pk]["integral"]["R_au"]
 
-        seb.ax_add_histogram(
+        sebplt.ax_add_histogram(
             ax=ax,
             bin_edges=1e3 * scatter_bin[pk]["edges"],
             bincounts=1e-3 * (R),
@@ -75,12 +75,12 @@ for sk in SITES:
     fig.savefig(
         os.path.join(paths["out_dir"], sk + "_trigger-rate_vs_scatter.jpg")
     )
-    seb.close(fig)
+    sebplt.close(fig)
 
 
 for sk in SITES:
-    fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
     for pk in COSMIC_RAYS:
         R = rates[sk][pk]["integral"]["R"]
         R_au = rates[sk][pk]["integral"]["R_au"]
@@ -115,7 +115,7 @@ for sk in SITES:
                 y_au=Rmean_au,
             )
 
-        seb.ax_add_histogram(
+        sebplt.ax_add_histogram(
             ax=ax,
             bin_edges=1e3 * scatter_bin[pk]["edges"][0:-1],
             bincounts=dRdS,
@@ -148,7 +148,7 @@ for sk in SITES:
             paths["out_dir"], sk + "_diff-trigger-rate_vs_scatter.jpg"
         )
     )
-    seb.close(fig)
+    sebplt.close(fig)
 
 
 AXSPAN = copy.deepcopy(irf.summary.figure.AX_SPAN)
@@ -181,13 +181,13 @@ for sk in SITES:
 
         dRdS[np.isnan(dRdS)] = 0.0
 
-        fig = seb.figure(style=irf.summary.figure.FIGURE_STYLE)
-        ax = seb.add_axes(fig=fig, span=[AXSPAN[0], AXSPAN[1], 0.55, 0.7])
+        fig = sebplt.figure(style=irf.summary.figure.FIGURE_STYLE)
+        ax = sebplt.add_axes(fig=fig, span=[AXSPAN[0], AXSPAN[1], 0.55, 0.7])
 
-        ax_cb = seb.add_axes(
+        ax_cb = sebplt.add_axes(
             fig=fig,
             span=[0.8, AXSPAN[1], 0.02, 0.7],
-            # style=seb.AXES_BLANK,
+            # style=sebplt.AXES_BLANK,
         )
 
         ax.set_xlim(energy_bin["limits"])
@@ -207,13 +207,13 @@ for sk in SITES:
             energy_bin["edges"],
             1e3 * scatter_bin[pk]["edges"][0:-1],
             dRdS,
-            norm=seb.plt_colors.LogNorm(),
+            norm=sebplt.plt_colors.LogNorm(),
             cmap="terrain_r",
             vmin=1e-4,
             vmax=1e0,
         )
 
-        seb.plt.colorbar(
+        sebplt.plt.colorbar(
             pcm_ratio,
             cax=ax_cb,
             label=(
@@ -222,7 +222,7 @@ for sk in SITES:
                 "dR/dS R$^{-1}$ / (msr)$^{-1}$"
             ),
         )
-        seb.ax_add_grid(ax=ax)
+        sebplt.ax_add_grid(ax=ax)
 
         fig.savefig(
             os.path.join(
@@ -233,4 +233,4 @@ for sk in SITES:
                 ),
             )
         )
-        seb.close(fig)
+        sebplt.close(fig)

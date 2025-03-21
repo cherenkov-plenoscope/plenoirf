@@ -7,7 +7,7 @@ import spectral_energy_distribution_units as sed
 from plenoirf.analysis import spectral_energy_distribution as sed_styles
 import cosmic_fluxes
 import os
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -17,7 +17,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -254,8 +254,10 @@ for obsk in observation_times:
                 for sedk in SED_STYLES:
                     sed_style = SED_STYLES[sedk]
 
-                    fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-                    ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+                    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+                    ax = sebplt.add_axes(
+                        fig=fig, span=irf.summary.figure.AX_SPAN
+                    )
 
                     for com in components:
                         for ii in range(len(com["energy"])):
@@ -330,4 +332,4 @@ for obsk in observation_times:
                             ),
                         )
                     )
-                    seb.close(fig)
+                    sebplt.close(fig)

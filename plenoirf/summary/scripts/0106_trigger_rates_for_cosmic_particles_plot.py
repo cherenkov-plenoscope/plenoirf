@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -13,7 +13,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -43,8 +43,8 @@ for sk in irf_config["config"]["sites"]:
         if trigger_threshold == analysis_trigger_threshold:
             break
 
-    fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
     text_y = 0.7
     for pk in irf_config["config"]["particles"]:
@@ -97,4 +97,4 @@ for sk in irf_config["config"]["sites"]:
             "{:s}_differential_trigger_rate.jpg".format(sk),
         )
     )
-    seb.close(fig)
+    sebplt.close(fig)

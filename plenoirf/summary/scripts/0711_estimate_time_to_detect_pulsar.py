@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import lima1983analysis
 import cosmic_fluxes
 import json_utils
@@ -19,7 +19,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -56,8 +56,8 @@ pulsar = irf.analysis.pulsar_timing.ppog_init_from_profiles(
 )
 
 
-fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 ax.plot(
     pulsar["energy_bin_edges"][0:-1],
     pulsar["differential_flux_vs_energy"],
@@ -73,11 +73,11 @@ ax.set_ylabel(
 fig.savefig(
     os.path.join(paths["out_dir"], "pulsar_{:s}_flux.jpg".format(pulsar_name))
 )
-seb.close(fig)
+sebplt.close(fig)
 
 
-fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 ax.plot(
     binning_utils.centers(bin_edges=pulsar["phase_bin_edges"]) / (2 * np.pi),
     pulsar["relative_amplitude_vs_phase"],
@@ -92,11 +92,11 @@ fig.savefig(
         paths["out_dir"], "pulsar_{:s}_phaseogram.jpg".format(pulsar_name)
     )
 )
-seb.close(fig)
+sebplt.close(fig)
 
 
-fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 ax.plot(
     pulsar["relative_amplitude_vs_phase_cdf"],
     pulsar["phase_bin_edges"] / (2 * np.pi),
@@ -115,7 +115,7 @@ fig.savefig(
         ),
     )
 )
-seb.close(fig)
+sebplt.close(fig)
 
 
 TEST_DRAW_RANDOM_PHASE = False
@@ -132,9 +132,9 @@ if TEST_DRAW_RANDOM_PHASE:
         arrival_phases_counts
     )
 
-    fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-    seb.ax_add_histogram(
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=pulsar["phase_bin_edges"] / (2 * np.pi),
         bincounts=pulsar["relative_amplitude_vs_phase"],
@@ -142,7 +142,7 @@ if TEST_DRAW_RANDOM_PHASE:
         linecolor="k",
         draw_bin_walls=True,
     )
-    seb.ax_add_histogram(
+    sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=pulsar["phase_bin_edges"] / (2 * np.pi),
         bincounts=arrival_phases_counts,
@@ -159,7 +159,7 @@ if TEST_DRAW_RANDOM_PHASE:
             "pulsar_{:s}_phaseogram_test_draw.jpg".format(pulsar_name),
         )
     )
-    seb.close(fig)
+    sebplt.close(fig)
 
 
 run_observation_time_s = 3600
@@ -328,8 +328,8 @@ for sk in SITES:
                 A_gamma_fine_m2[ebin] * dKdE_per_m2_per_s_per_GeV[ebin]
             )
 
-        fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-        ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+        fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+        ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
         ax.plot(
             energy_fine_bin["centers"],
             dRdE_per_s_per_GeV,
@@ -351,7 +351,7 @@ for sk in SITES:
                 ),
             )
         )
-        seb.close(fig)
+        sebplt.close(fig)
 
         rate_gamma_rays_per_s = 0.0
         for ebin in range(energy_fine_bin["num_bins"]):
@@ -390,9 +390,9 @@ for sk in SITES:
             if np.mod(np.log(len(runs)) / np.log(2), 1) <= 1e-6:
                 hist = histogram_runs(runs, a=1e-2)
 
-                fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-                ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-                seb.ax_add_histogram(
+                fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+                ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+                sebplt.ax_add_histogram(
                     ax=ax,
                     bin_edges=hist["phaseogram"]["bin"]["edges"] / (2 * np.pi),
                     bincounts=hist["phaseogram"]["rate"]["total"],
@@ -418,7 +418,7 @@ for sk in SITES:
                         ),
                     )
                 )
-                seb.close(fig)
+                sebplt.close(fig)
 
                 # significance
                 # ------------
@@ -454,9 +454,9 @@ for sk in SITES:
                         print(err)
                         sign[b] = float("nan")
 
-                fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-                ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-                seb.ax_add_histogram(
+                fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+                ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+                sebplt.ax_add_histogram(
                     ax=ax,
                     bin_edges=hist["phaseogram"]["bin"]["edges"] / (2 * np.pi),
                     bincounts=sign,
@@ -476,7 +476,7 @@ for sk in SITES:
                         ),
                     )
                 )
-                seb.close(fig)
+                sebplt.close(fig)
 
         print(
             "Site: ",

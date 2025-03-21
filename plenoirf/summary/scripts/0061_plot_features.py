@@ -4,14 +4,14 @@ import plenoirf as irf
 import sparse_numeric_table as snt
 import os
 import numpy as np
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
-seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 weights_thrown2expected = json_utils.tree.read(
     os.path.join(
@@ -103,8 +103,8 @@ for fk in Sfeatures:
         lims[fk][pk]["bin_edges"]["num"] = num
 
 for fk in Sfeatures:
-    fig = seb.figure(style=seb.FIGURE_1_1)
-    ax = seb.add_axes(fig=fig, span=[0.175, 0.15, 0.75, 0.8])
+    fig = sebplt.figure(style=sebplt.FIGURE_1_1)
+    ax = sebplt.add_axes(fig=fig, span=[0.175, 0.15, 0.75, 0.8])
 
     for pk in PARTICLES:
         reweight_spectrum = np.interp(
@@ -143,7 +143,7 @@ for fk in Sfeatures:
             default=0,
         )
 
-        seb.ax_add_histogram(
+        sebplt.ax_add_histogram(
             ax=ax,
             bin_edges=bin_edges_fk,
             bincounts=bin_counts_weight_norm_fk,
@@ -166,7 +166,7 @@ for fk in Sfeatures:
     irf.summary.figure.mark_ax_airshower_spectrum(ax=ax)
     ax.set_xlabel("{:s} / {:s}".format(fk, Sfeatures[fk]["unit"]))
     ax.set_ylabel("relative intensity / 1")
-    seb.ax_add_grid(ax)
+    sebplt.ax_add_grid(ax)
     ax.set_xlim(
         [
             lims[fk][pk]["bin_edges"]["start"],
@@ -175,4 +175,4 @@ for fk in Sfeatures:
     )
     ax.set_ylim([1e-5, 1.0])
     fig.savefig(os.path.join(paths["out_dir"], f"{fk:s}.jpg"))
-    seb.close(fig)
+    sebplt.close(fig)

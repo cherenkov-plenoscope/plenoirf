@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import lima1983analysis
 import json_utils
 
@@ -14,7 +14,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -39,8 +39,8 @@ unc_key = "absolute_uncertainty"
 
 for sk in SITES:
     for ok in ONREGION_TYPES:
-        fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-        ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+        fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+        ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
         text_y = 0.7
 
@@ -90,4 +90,4 @@ for sk in SITES:
                 "{:s}_{:s}_differential_event_rates.jpg".format(sk, ok),
             )
         )
-        seb.close(fig)
+        sebplt.close(fig)

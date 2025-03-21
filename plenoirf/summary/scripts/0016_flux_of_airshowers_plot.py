@@ -4,14 +4,14 @@ import numpy as np
 import plenoirf as irf
 import os
 import json_utils
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 
 
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 
-seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 airshower_fluxes = json_utils.tree.read(
     os.path.join(paths["analysis_dir"], "0015_flux_of_airshowers")
@@ -24,8 +24,8 @@ energy_bin = json_utils.read(
 particle_colors = res.analysis["plot"]["particle_colors"]
 
 
-fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 for pk in airshower_fluxes:
     dFdE = airshower_fluxes[pk]["differential_flux"]["values"]
     dFdE_au = airshower_fluxes[pk]["differential_flux"]["absolute_uncertainty"]
@@ -67,4 +67,4 @@ fig.savefig(
         "airshower_differential_flux.jpg",
     )
 )
-seb.close(fig)
+sebplt.close(fig)

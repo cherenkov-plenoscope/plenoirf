@@ -6,7 +6,7 @@ import sparse_numeric_table as snt
 import os
 import plenopy as pl
 import gamma_ray_reconstruction as gamrec
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -16,7 +16,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 passing_trigger = json_utils.tree.read(
     os.path.join(paths["analysis_dir"], "0055_passing_trigger")
@@ -241,16 +241,16 @@ for sk in SITES:
 
                 depth = depths[dek]
 
-                fig = seb.figure(
+                fig = sebplt.figure(
                     style={
                         "rows": FIG_ROWS,
                         "cols": FIG_COLS,
                         "fontsize": 0.5 * FIC_SCALE,
                     }
                 )
-                ax = seb.add_axes(fig=fig, span=[0.175, 0.1, 0.7, 0.85])
-                axr = seb.add_axes(fig=fig, span=[0.1, 0.1, 0.05, 0.85])
-                cax = seb.add_axes(fig=fig, span=[0.8, 0.15, 0.025, 0.75])
+                ax = sebplt.add_axes(fig=fig, span=[0.175, 0.1, 0.7, 0.85])
+                axr = sebplt.add_axes(fig=fig, span=[0.1, 0.1, 0.05, 0.85])
+                cax = sebplt.add_axes(fig=fig, span=[0.8, 0.15, 0.025, 0.75])
 
                 colbar = pl.plot.image.add2ax(
                     ax=ax,
@@ -262,10 +262,10 @@ for sk in SITES:
                     vmin=0,
                     vmax=np.max(image_stack),
                     colorbar=False,
-                    norm=seb.plt_colors.PowerNorm(gamma=CMAP_GAMMA),
+                    norm=sebplt.plt_colors.PowerNorm(gamma=CMAP_GAMMA),
                 )
                 ax.set_aspect("equal")
-                seb.plt.colorbar(colbar, cax=cax)
+                sebplt.plt.colorbar(colbar, cax=cax)
 
                 # region of interest
                 roi_cx_deg = np.rad2deg(event_cx)
@@ -296,4 +296,4 @@ for sk in SITES:
                 )
 
                 fig.savefig(figpath)
-                seb.close(fig)
+                sebplt.close(fig)

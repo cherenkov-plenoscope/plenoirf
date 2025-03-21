@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -13,7 +13,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -53,9 +53,9 @@ def write_theta_square_figure(
         tts_label = r"$" + theta_label + r"$ / $1^\circ{}$"
         tts = np.sqrt(theta_square_bin_edges_deg2)
 
-    fig = seb.figure({"rows": 540, "cols": 960, "fontsize": 0.5})
-    ax = seb.add_axes(fig=fig, span=(0.1, 0.12, 0.8, 0.8))
-    seb.ax_add_histogram(
+    fig = sebplt.figure({"rows": 540, "cols": 960, "fontsize": 0.5})
+    ax = sebplt.add_axes(fig=fig, span=(0.1, 0.12, 0.8, 0.8))
+    sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=tts,
         bincounts=bin_count,
@@ -92,7 +92,7 @@ def write_theta_square_figure(
     ax.set_ylim([0.0, ylim_stop])
     ax.set_xlim([0.0, np.max(tts)])
     fig.savefig(path)
-    seb.close(fig)
+    sebplt.close(fig)
 
 
 for site_key in psf:

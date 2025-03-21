@@ -14,12 +14,12 @@ from sklearn import neural_network
 from sklearn import ensemble
 from sklearn import model_selection
 from sklearn import utils
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
-seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 PARTICLES = res.PARTICLES
 
@@ -115,10 +115,10 @@ for pk in PARTICLES:
             containment_fraction=0.68,
         )
 
-        fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-        ax1 = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+        fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+        ax1 = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
-        seb.ax_add_histogram(
+        sebplt.ax_add_histogram(
             ax=ax1,
             bin_edges=energy_bin["edges"],
             bincounts=delta_energy,
@@ -151,21 +151,21 @@ for pk in PARTICLES:
         # ax1.legend(loc="best", fontsize=10)
 
         fig.savefig(os.path.join(paths["out_dir"], f"{pk}_resolution.jpg"))
-        seb.close(fig)
+        sebplt.close(fig)
 
-    fig = seb.figure(seb.FIGURE_1_1)
-    ax_c = seb.add_axes(fig=fig, span=[0.15, 0.27, 0.65, 0.65])
-    ax_h = seb.add_axes(fig=fig, span=[0.15, 0.11, 0.65, 0.1])
-    ax_cb = seb.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
+    fig = sebplt.figure(sebplt.FIGURE_1_1)
+    ax_c = sebplt.add_axes(fig=fig, span=[0.15, 0.27, 0.65, 0.65])
+    ax_h = sebplt.add_axes(fig=fig, span=[0.15, 0.11, 0.65, 0.1])
+    ax_cb = sebplt.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
     _pcm_confusion = ax_c.pcolormesh(
         cm["ax0_bin_edges"],
         cm["ax1_bin_edges"],
         np.transpose(cm["reco_given_true"]),
         cmap="Greys",
-        norm=seb.plt_colors.PowerNorm(gamma=0.5),
+        norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
     )
     ax_c.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1)
-    seb.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
+    sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
     irf.summary.figure.mark_ax_thrown_spectrum(ax=ax_c)
     ax_c.set_aspect("equal")
     ax_c.set_title(r"$P(E_\mathrm{reco} \vert E_\mathrm{true})$")
@@ -178,7 +178,7 @@ for pk in PARTICLES:
     ax_h.set_ylabel("num. events / 1")
     irf.summary.figure.mark_ax_thrown_spectrum(ax_h)
     ax_h.axhline(min_number_samples, linestyle=":", color="k")
-    seb.ax_add_histogram(
+    sebplt.ax_add_histogram(
         ax=ax_h,
         bin_edges=cm["ax0_bin_edges"],
         bincounts=cm["exposure_ax0"],
@@ -186,23 +186,23 @@ for pk in PARTICLES:
         linecolor="k",
     )
     fig.savefig(os.path.join(paths["out_dir"], f"{pk}.jpg"))
-    seb.close(fig)
+    sebplt.close(fig)
 
     # unc
     numE = energy_bin["num_bins"]
     ax_step = 0.8 * 1 / numE
-    fig = seb.figure(seb.FIGURE_1_1)
+    fig = sebplt.figure(sebplt.FIGURE_1_1)
     axstyle_stack = {"spines": ["bottom"], "axes": [], "grid": False}
     axstyle_bottom = {"spines": ["bottom"], "axes": ["x"], "grid": False}
     for ebin in range(numE):
-        axe = seb.add_axes(
+        axe = sebplt.add_axes(
             fig=fig,
             span=[0.1, 0.1 + ax_step * ebin, 0.8, ax_step],
             style=axstyle_bottom if ebin == 0 else axstyle_stack,
         )
         mm = cm["reco_given_true"][:, ebin]
         mm_abs_unc = cm["reco_given_true_abs_unc"][:, ebin]
-        seb.ax_add_histogram(
+        sebplt.ax_add_histogram(
             ax=axe,
             bin_edges=cm["ax0_bin_edges"],
             bincounts=mm,
@@ -222,4 +222,4 @@ for pk in PARTICLES:
     fig.savefig(
         os.path.join(paths["out_dir"], f"{pk}_confusion_matrix_unc.jpg")
     )
-    seb.close(fig)
+    sebplt.close(fig)

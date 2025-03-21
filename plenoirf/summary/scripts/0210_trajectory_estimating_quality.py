@@ -5,7 +5,7 @@ import plenoirf as irf
 import confusion_matrix
 import sparse_numeric_table as snt
 import os
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -15,7 +15,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -112,18 +112,18 @@ def write_correlation_figure(
         default_low_exposure=0.0,
     )
 
-    fig = seb.figure(seb.FIGURE_1_1)
-    ax = seb.add_axes(fig=fig, span=[0.25, 0.27, 0.55, 0.65])
-    ax_h = seb.add_axes(fig=fig, span=[0.25, 0.11, 0.55, 0.1])
-    ax_cb = seb.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
+    fig = sebplt.figure(sebplt.FIGURE_1_1)
+    ax = sebplt.add_axes(fig=fig, span=[0.25, 0.27, 0.55, 0.65])
+    ax_h = sebplt.add_axes(fig=fig, span=[0.25, 0.11, 0.55, 0.1])
+    ax_cb = sebplt.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
     _pcm_confusion = ax.pcolormesh(
         cm["ax0_bin_edges"],
         cm["ax1_bin_edges"],
         np.transpose(cm["counts_normalized_on_ax0"]),
         cmap="Greys",
-        norm=seb.plt_colors.PowerNorm(gamma=0.5),
+        norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
     )
-    seb.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
+    sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
     ax.set_title("normalized for each column")
     ax.set_ylabel(y_label)
     ax.set_xticklabels([])
@@ -132,7 +132,7 @@ def write_correlation_figure(
     ax_h.set_xlabel(x_label)
     ax_h.set_ylabel("num. events / 1")
     ax_h.axhline(cm["min_exposure_ax0"], linestyle=":", color="k")
-    seb.ax_add_histogram(
+    sebplt.ax_add_histogram(
         ax=ax_h,
         bin_edges=cm["ax0_bin_edges"],
         bincounts=cm["exposure_ax0"],
@@ -155,7 +155,7 @@ def write_correlation_figure(
         ax_h.semilogy()
 
     fig.savefig(path)
-    seb.close(fig)
+    sebplt.close(fig)
 
 
 def align_values_with_event_frame(event_frame, idxs, values):
@@ -307,8 +307,8 @@ for sk in SITES:
 
 
 for sk in SITES:
-    fig = seb.figure(seb.FIGURE_1_1)
-    ax = seb.add_axes(fig=fig, span=[0.16, 0.11, 0.8, 0.8])
+    fig = sebplt.figure(sebplt.FIGURE_1_1)
+    ax = sebplt.add_axes(fig=fig, span=[0.16, 0.11, 0.8, 0.8])
     for pk in PARTICLES:
         ax.plot(
             QP["quality_cuts"],
@@ -321,4 +321,4 @@ for sk in SITES:
     ax.set_xlabel("trajectory-quality-cut / 1")
     ax.set_ylabel("passing cut / 1")
     fig.savefig(os.path.join(paths["out_dir"], "{:s}_passing.jpg".format(sk)))
-    seb.close(fig)
+    sebplt.close(fig)

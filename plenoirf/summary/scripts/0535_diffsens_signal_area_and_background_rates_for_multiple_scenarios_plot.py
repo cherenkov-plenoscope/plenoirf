@@ -4,7 +4,7 @@ import numpy as np
 import plenoirf as irf
 import flux_sensitivity
 import os
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -14,7 +14,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -55,14 +55,14 @@ for sk in SITES:
                 "energy_axes_label"
             ]
 
-            fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-            ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+            fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+            ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
             for ck in COSMIC_RAYS:
                 ck_Rt = scenarios[sk][ok][dk][ck]["rate"]["mean"]
                 ck_Rt_au = scenarios[sk][ok][dk][ck]["rate"][
                     "absolute_uncertainty"
                 ]
-                seb.ax_add_histogram(
+                sebplt.ax_add_histogram(
                     ax=ax,
                     bin_edges=energy_bin["edges"],
                     bincounts=ck_Rt,
@@ -88,10 +88,10 @@ for sk in SITES:
                     dk + "_background_rate_vs_reco_energy.jpg",
                 )
             )
-            seb.close(fig)
+            sebplt.close(fig)
 
-            fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-            ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+            fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+            ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
             A_gamma_scenario = scenarios[sk][ok][dk]["gamma"]["area"]["mean"]
             A_gamma_scenario_au = scenarios[sk][ok][dk]["gamma"]["area"][
                 "absolute_uncertainty"
@@ -102,7 +102,7 @@ for sk in SITES:
                 "absolute_uncertainty"
             ]
 
-            seb.ax_add_histogram(
+            sebplt.ax_add_histogram(
                 ax=ax,
                 bin_edges=energy_bin["edges"],
                 bincounts=A_gamma_scenario,
@@ -129,25 +129,25 @@ for sk in SITES:
                     dk + "_area_gamma.jpg",
                 )
             )
-            seb.close(fig)
+            sebplt.close(fig)
 
             # G_matrix
             # ---------------------------
             G_matrix = scenarios[sk][ok][dk]["gamma"]["scenario"]["G_matrix"]
-            fig = seb.figure(seb.FIGURE_1_1)
-            ax_c = seb.add_axes(fig=fig, span=[0.16, 0.16, 0.7, 0.7])
-            ax_cb = seb.add_axes(fig=fig, span=[0.88, 0.16, 0.02, 0.7])
+            fig = sebplt.figure(sebplt.FIGURE_1_1)
+            ax_c = sebplt.add_axes(fig=fig, span=[0.16, 0.16, 0.7, 0.7])
+            ax_cb = sebplt.add_axes(fig=fig, span=[0.88, 0.16, 0.02, 0.7])
             _pcm_confusion = ax_c.pcolormesh(
                 energy_bin["edges"],
                 energy_bin["edges"],
                 np.transpose(G_matrix),
                 cmap="Greys",
-                norm=seb.plt_colors.PowerNorm(gamma=0.5),
+                norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
                 vmin=0,
                 vmax=1,
             )
             ax_c.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1)
-            seb.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
+            sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
             ax_c.set_aspect("equal")
             ax_c.set_ylabel("reco. energy / GeV")
             ax_c.loglog()
@@ -160,25 +160,25 @@ for sk in SITES:
                     dk + "_G_matrix.jpg",
                 )
             )
-            seb.close(fig)
+            sebplt.close(fig)
 
             # B_matrix
             # --------
             B_matrix = scenarios[sk][ok][dk]["gamma"]["scenario"]["B_matrix"]
-            fig = seb.figure(seb.FIGURE_1_1)
-            ax_c = seb.add_axes(fig=fig, span=[0.16, 0.16, 0.7, 0.7])
-            ax_cb = seb.add_axes(fig=fig, span=[0.88, 0.16, 0.02, 0.7])
+            fig = sebplt.figure(sebplt.FIGURE_1_1)
+            ax_c = sebplt.add_axes(fig=fig, span=[0.16, 0.16, 0.7, 0.7])
+            ax_cb = sebplt.add_axes(fig=fig, span=[0.88, 0.16, 0.02, 0.7])
             _pcm_confusion = ax_c.pcolormesh(
                 energy_bin["edges"],
                 energy_bin["edges"],
                 np.transpose(B_matrix),
                 cmap="Greys",
-                norm=seb.plt_colors.PowerNorm(gamma=0.5),
+                norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
                 vmin=0,
                 vmax=1,
             )
             ax_c.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1)
-            seb.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
+            sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
             ax_c.set_aspect("equal")
             ax_c.set_ylabel("reco. energy / GeV")
             ax_c.loglog()
@@ -191,4 +191,4 @@ for sk in SITES:
                     dk + "_B_matrix.jpg",
                 )
             )
-            seb.close(fig)
+            sebplt.close(fig)

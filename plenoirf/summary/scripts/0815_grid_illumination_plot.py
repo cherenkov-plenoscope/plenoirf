@@ -5,7 +5,7 @@ from os.path import join as opj
 import numpy as np
 import sparse_numeric_table as snt
 import plenoirf as irf
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -15,7 +15,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -126,20 +126,20 @@ for sk in SITES:
             if num_airshower > 0:
                 normalized_grid_intensity /= num_airshower
 
-            fig = seb.figure(style=FIGURE_STYLE)
-            ax = seb.add_axes(fig=fig, span=[0.1, 0.1, 0.8, 0.8])
-            ax_cb = seb.add_axes(fig=fig, span=[0.85, 0.1, 0.02, 0.8])
+            fig = sebplt.figure(style=FIGURE_STYLE)
+            ax = sebplt.add_axes(fig=fig, span=[0.1, 0.1, 0.8, 0.8])
+            ax_cb = sebplt.add_axes(fig=fig, span=[0.85, 0.1, 0.02, 0.8])
             ax.set_aspect("equal")
             _pcm_grid = ax.pcolormesh(
                 irf_config["grid_geometry"]["xy_bin_edges"] * 1e-3,
                 irf_config["grid_geometry"]["xy_bin_edges"] * 1e-3,
                 np.transpose(normalized_grid_intensity),
-                norm=seb.plt_colors.PowerNorm(gamma=1.0 / 4.0),
+                norm=sebplt.plt_colors.PowerNorm(gamma=1.0 / 4.0),
                 cmap="Blues",
                 vmin=0,
                 vmax=MAX_CHERENKOV_INTENSITY,
             )
-            seb.plt.colorbar(_pcm_grid, cax=ax_cb, extend="max")
+            sebplt.plt.colorbar(_pcm_grid, cax=ax_cb, extend="max")
             ax.set_title(
                 "num. airshower {: 6d}, energy {: 7.1f} - {: 7.1f} GeV".format(
                     num_airshower,
@@ -150,7 +150,7 @@ for sk in SITES:
             )
             ax.set_xlabel("$x$ / km")
             ax.set_ylabel("$y$ / km")
-            seb.ax_add_grid(ax)
+            sebplt.ax_add_grid(ax)
             fig.savefig(
                 opj(
                     paths["out_dir"],
@@ -161,4 +161,4 @@ for sk in SITES:
                     ),
                 )
             )
-            seb.close(fig)
+            sebplt.close(fig)

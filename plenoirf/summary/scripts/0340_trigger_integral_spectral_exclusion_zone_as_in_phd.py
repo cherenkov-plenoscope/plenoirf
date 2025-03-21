@@ -8,7 +8,7 @@ from plenoirf.analysis import spectral_energy_distribution as sed_styles
 import cosmic_fluxes
 import os
 import scipy
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -18,7 +18,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -201,8 +201,8 @@ for sk in SITES:
     for sed_style_key in output_sed_styles:
         sed_style = output_sed_styles[sed_style_key]
 
-        fig = seb.figure(seb.FIGURE_16_9)
-        ax = seb.add_axes(fig, (0.1, 0.1, 0.8, 0.8))
+        fig = sebplt.figure(sebplt.FIGURE_16_9)
+        ax = sebplt.add_axes(fig, (0.1, 0.1, 0.8, 0.8))
         ax.set_title(
             "Analysis as in Sebastian's phd-thesis.\n"
             "Only protons and electrons, "
@@ -250,4 +250,4 @@ for sk in SITES:
                 ),
             )
         )
-        seb.close(fig)
+        sebplt.close(fig)

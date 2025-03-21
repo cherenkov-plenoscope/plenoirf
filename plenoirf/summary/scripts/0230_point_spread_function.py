@@ -5,7 +5,7 @@ import plenoirf as irf
 import sparse_numeric_table as snt
 import os
 import plenopy as pl
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 
@@ -16,7 +16,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -146,13 +146,13 @@ for sk in irf_config["config"]["sites"]:
         out,
     )
 
-    fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
     con = 0
     tt_deg = np.rad2deg(out["theta68_rad"])
     tt_relunc = out["theta68_relunc"]
-    seb.ax_add_histogram(
+    sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=energy_bin["edges"],
         bincounts=tt_deg,
@@ -193,4 +193,4 @@ for sk in irf_config["config"]["sites"]:
     ax.set_ylabel(r"$\Theta{}$ 68%$\,/\,$1$^\circ{}$")
 
     fig.savefig(os.path.join(paths["out_dir"], sk + "_" + pk + ".jpg"))
-    seb.close(fig)
+    sebplt.close(fig)

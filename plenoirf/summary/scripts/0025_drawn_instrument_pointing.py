@@ -9,13 +9,13 @@ import spherical_coordinates
 import solid_angle_utils
 import binning_utils
 import spherical_histogram
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 
 
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
-seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 energy_bin = json_utils.read(
     os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
@@ -26,7 +26,7 @@ hh = spherical_histogram.HemisphereHistogram(
     max_zenith_distance_rad=np.deg2rad(90),
 )
 
-cmap = seb.plt.colormaps["inferno"].resampled(256)
+cmap = sebplt.plt.colormaps["inferno"].resampled(256)
 
 for pk in res.PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
@@ -41,14 +41,16 @@ for pk in res.PARTICLES:
     )
 
     pointing_range_color = "yellowgreen"
-    fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = seb.add_axes(fig=fig, span=[0.0, 0.0, 1, 1], style=seb.AXES_BLANK)
-    ax_legend = seb.add_axes(
-        fig=fig, span=[0.8, 0.05, 0.2, 0.9], style=seb.AXES_BLANK
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(
+        fig=fig, span=[0.0, 0.0, 1, 1], style=sebplt.AXES_BLANK
+    )
+    ax_legend = sebplt.add_axes(
+        fig=fig, span=[0.8, 0.05, 0.2, 0.9], style=sebplt.AXES_BLANK
     )
     ax_legend.set_xlim([0, 1])
     ax_legend.set_ylim([0, 1])
-    ax_colorbar = seb.add_axes(
+    ax_colorbar = sebplt.add_axes(
         fig=fig,
         span=[0.8, 0.4, 0.02, 0.5],
     )
@@ -64,7 +66,7 @@ for pk in res.PARTICLES:
     faces_colors = cmap(
         faces_counts_per_solid_angle / faces_counts_per_solid_angle_p99
     )
-    seb.hemisphere.ax_add_faces(
+    sebplt.hemisphere.ax_add_faces(
         ax=ax,
         azimuths_rad=vaz,
         zeniths_rad=vzd,
@@ -76,17 +78,17 @@ for pk in res.PARTICLES:
     ptg_circ_zd = res.config["pointing"]["range"][
         "max_zenith_distance_rad"
     ] * np.ones(shape=ptg_circ_az.shape)
-    seb.hemisphere.ax_add_plot(
+    sebplt.hemisphere.ax_add_plot(
         ax=ax,
         azimuths_rad=ptg_circ_az,
         zeniths_rad=ptg_circ_zd,
         linewidth=0.66,
         color=pointing_range_color,
     )
-    seb.hemisphere.ax_add_grid_stellarium_style(
+    sebplt.hemisphere.ax_add_grid_stellarium_style(
         ax=ax, color="grey", linewidth=0.33
     )
-    seb.hemisphere.ax_add_ticklabel_text(ax=ax, color="grey")
+    sebplt.hemisphere.ax_add_ticklabel_text(ax=ax, color="grey")
     ax_legend.plot(
         [0.0, 0.1],
         [0.1, 0.1],
@@ -114,11 +116,11 @@ for pk in res.PARTICLES:
         fontsize=9,
         verticalalignment="center",
     )
-    _norm = seb.plt_colors.Normalize(
+    _norm = sebplt.plt_colors.Normalize(
         vmin=0.0, vmax=faces_counts_per_solid_angle_p99, clip=False
     )
-    _mappable = seb.plt.cm.ScalarMappable(norm=_norm, cmap=cmap)
-    seb.plt.colorbar(mappable=_mappable, cax=ax_colorbar)
+    _mappable = sebplt.plt.cm.ScalarMappable(norm=_norm, cmap=cmap)
+    sebplt.plt.colorbar(mappable=_mappable, cax=ax_colorbar)
     ax_colorbar.set_ylabel(r"intensity / sr$^{-1}$")
     fig.savefig(os.path.join(paths["out_dir"], f"{pk:s}_pointings_drawn.jpg"))
-    seb.close(fig)
+    sebplt.close(fig)

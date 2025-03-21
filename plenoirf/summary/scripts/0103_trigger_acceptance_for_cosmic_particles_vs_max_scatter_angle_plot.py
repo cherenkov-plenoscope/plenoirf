@@ -4,7 +4,7 @@ import numpy as np
 import plenoirf as irf
 import os
 import copy
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -14,7 +14,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -70,13 +70,13 @@ for sk in SITES:
 
             dQdScatter[np.isnan(dQdScatter)] = 0.0
 
-        fig = seb.figure(style=irf.summary.figure.FIGURE_STYLE)
-        ax = seb.add_axes(fig=fig, span=[AXSPAN[0], AXSPAN[1], 0.55, 0.7])
+        fig = sebplt.figure(style=irf.summary.figure.FIGURE_STYLE)
+        ax = sebplt.add_axes(fig=fig, span=[AXSPAN[0], AXSPAN[1], 0.55, 0.7])
 
-        ax_cb = seb.add_axes(
+        ax_cb = sebplt.add_axes(
             fig=fig,
             span=[0.8, AXSPAN[1], 0.02, 0.7],
-            # style=seb.AXES_BLANK,
+            # style=sebplt.AXES_BLANK,
         )
 
         ax.set_xlim(energy_bin["limits"])
@@ -101,13 +101,13 @@ for sk in SITES:
             energy_bin["edges"],
             1e3 * scatter_bin[pk]["edges"][0:-1],
             dQdScatter,
-            norm=seb.plt_colors.LogNorm(),
+            norm=sebplt.plt_colors.LogNorm(),
             cmap="terrain_r",
             vmin=1e-4,
             vmax=1e0,
         )
 
-        seb.plt.colorbar(
+        sebplt.plt.colorbar(
             pcm_ratio,
             cax=ax_cb,
             label=(
@@ -116,7 +116,7 @@ for sk in SITES:
                 "dQ/dS Q$^{-1}$ / (msr)$^{-1}$"
             ),
         )
-        seb.ax_add_grid(ax=ax)
+        sebplt.ax_add_grid(ax=ax)
 
         fig.savefig(
             os.path.join(
@@ -127,4 +127,4 @@ for sk in SITES:
                 ),
             )
         )
-        seb.close(fig)
+        sebplt.close(fig)

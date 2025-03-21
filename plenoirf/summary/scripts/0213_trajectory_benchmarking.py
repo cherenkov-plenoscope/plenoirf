@@ -8,7 +8,7 @@ import pandas
 import plenopy as pl
 import iminuit
 import scipy
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 """
@@ -43,7 +43,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -404,7 +404,7 @@ for sk in irf_config["config"]["sites"]:
         num_cols = 4
         num_rows = num_panels // num_cols
 
-        fig = seb.figure(
+        fig = sebplt.figure(
             {
                 "rows": (1 + num_rows) * 200,
                 "cols": num_cols * 200,
@@ -428,7 +428,7 @@ for sk in irf_config["config"]["sites"]:
             _xx = _xi * _colw
             _yy = 1.0 - ((_yi + 1) * _colh)
 
-            ax1 = seb.add_axes(
+            ax1 = sebplt.add_axes(
                 fig=fig,
                 span=[_xx, _yy, _colw * 0.95, _colh * 0.95],
                 style={"spines": [], "axes": [], "grid": False},
@@ -483,7 +483,7 @@ for sk in irf_config["config"]["sites"]:
                     vmax=None,
                 )
 
-            seb.ax_add_grid_with_explicit_ticks(
+            sebplt.ax_add_grid_with_explicit_ticks(
                 ax=ax1,
                 xticks=np.linspace(-2, 2, 5),
                 yticks=np.linspace(-2, 2, 5),
@@ -503,4 +503,4 @@ for sk in irf_config["config"]["sites"]:
                 "{:s}_{:s}_psf_image_all.jpg".format(sk, pk),
             )
         )
-        seb.close(fig)
+        sebplt.close(fig)

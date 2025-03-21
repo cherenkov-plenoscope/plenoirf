@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 """
@@ -15,7 +15,7 @@ paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 
-seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 COSMIC_RAYS = res.COSMIC_RAYS
 
@@ -73,15 +73,15 @@ for pk in COSMIC_RAYS:
 # plot
 # ----
 
-fig = seb.figure(irf.summary.figure.FIGURE_STYLE)
-ax = seb.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 for pk in COSMIC_RAYS:
     ax.plot(
         fine_energy_bin["centers"],
         airshower_fluxes[pk]["differential_flux"]["values"],
         color=res.analysis["plot"]["particle_colors"][pk],
     )
-    seb.ax_add_histogram(
+    sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=energy_bin["edges"],
         bincounts=diff_flux[pk],
@@ -106,4 +106,4 @@ ax.text(
 fig.savefig(
     os.path.join(paths["out_dir"], "airshower_differential_flux_rebinned.jpg")
 )
-seb.close(fig)
+sebplt.close(fig)

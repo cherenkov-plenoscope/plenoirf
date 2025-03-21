@@ -6,13 +6,13 @@ import rename_after_writing as rnw
 import os
 import pandas
 import numpy as np
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
-seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 train_test = json_utils.tree.read(
     os.path.join(
@@ -92,8 +92,8 @@ for fk in ALL_FEATURES:
     fig_path = os.path.join(paths["out_dir"], f"{fk}.jpg")
 
     if not os.path.exists(fig_path):
-        fig = seb.figure(seb.FIGURE_16_9)
-        ax = seb.add_axes(fig=fig, span=(0.1, 0.1, 0.8, 0.8))
+        fig = sebplt.figure(sebplt.FIGURE_16_9)
+        ax = sebplt.add_axes(fig=fig, span=(0.1, 0.1, 0.8, 0.8))
 
         for pk in PARTICLES:
             start = -5
@@ -120,7 +120,7 @@ for fk in ALL_FEATURES:
             bincounts_lower = bin_counts_norm_fk * (1 - bin_counts_unc_fk)
             bincounts_lower[bincounts_lower < 0] = 0
 
-            seb.ax_add_histogram(
+            sebplt.ax_add_histogram(
                 ax=ax,
                 bin_edges=bin_edges_fk,
                 bincounts=bin_counts_norm_fk,
@@ -140,4 +140,4 @@ for fk in ALL_FEATURES:
         ax.set_xlim([start, stop])
         ax.set_ylim([1e-5, 1.0])
         fig.savefig(fig_path)
-        seb.close(fig)
+        sebplt.close(fig)

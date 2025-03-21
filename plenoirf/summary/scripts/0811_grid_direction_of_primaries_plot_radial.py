@@ -8,7 +8,7 @@ import spherical_coordinates
 import sparse_numeric_table as snt
 import plenoirf as irf
 import copy
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -18,7 +18,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -141,9 +141,9 @@ for sk in SITES:
         for ex in range(energy_bin["num_bins"]):
             print("plot", sk, pk, "energy", ex)
 
-            fig = seb.figure(style=irf.summary.figure.FIGURE_STYLE)
+            fig = sebplt.figure(style=irf.summary.figure.FIGURE_STYLE)
 
-            axr = seb.add_axes(
+            axr = sebplt.add_axes(
                 fig=fig,
                 span=[AXSPAN[0], 0.6, AXSPAN[2], 0.3],
                 style={
@@ -152,7 +152,7 @@ for sk in SITES:
                     "grid": True,
                 },
             )
-            axi = seb.add_axes(
+            axi = sebplt.add_axes(
                 fig=fig,
                 span=[AXSPAN[0], AXSPAN[1], AXSPAN[2], 0.33],
                 style={
@@ -177,7 +177,7 @@ for sk in SITES:
             axr.semilogy()
             axr.set_ylabel("(detected\n/ thrown) / 1")
 
-            seb.ax_add_histogram(
+            sebplt.ax_add_histogram(
                 ax=axi,
                 bin_edges=c_bin_edges_deg[pk],
                 bincounts=o[sk][pk]["thrown"][ex],
@@ -192,7 +192,7 @@ for sk in SITES:
                 draw_bin_walls=False,
             )
 
-            seb.ax_add_histogram(
+            sebplt.ax_add_histogram(
                 ax=axi,
                 bin_edges=c_bin_edges_deg[pk],
                 bincounts=o[sk][pk]["detected"][ex],
@@ -209,7 +209,7 @@ for sk in SITES:
                 draw_bin_walls=False,
             )
 
-            seb.ax_add_histogram(
+            sebplt.ax_add_histogram(
                 ax=axr,
                 bin_edges=c_bin_edges_deg[pk],
                 bincounts=o[sk][pk]["ratio"][ex],
@@ -243,20 +243,20 @@ for sk in SITES:
                     ),
                 )
             )
-            seb.close(fig)
+            sebplt.close(fig)
 
 
 for sk in SITES:
     for pk in PARTICLES:
         print("plot 2D", sk, pk)
 
-        fig = seb.figure(style=irf.summary.figure.FIGURE_STYLE)
-        ax = seb.add_axes(fig=fig, span=[AXSPAN[0], AXSPAN[1], 0.6, 0.7])
+        fig = sebplt.figure(style=irf.summary.figure.FIGURE_STYLE)
+        ax = sebplt.add_axes(fig=fig, span=[AXSPAN[0], AXSPAN[1], 0.6, 0.7])
 
-        ax_cb = seb.add_axes(
+        ax_cb = sebplt.add_axes(
             fig=fig,
             span=[0.85, AXSPAN[1], 0.02, 0.7],
-            # style=seb.AXES_BLANK,
+            # style=sebplt.AXES_BLANK,
         )
 
         ax.set_xlim(energy_bin["limits"])
@@ -272,13 +272,13 @@ for sk in SITES:
             energy_bin["edges"],
             c_bin_edges_deg[pk],
             np.transpose(ratio),
-            norm=seb.plt_colors.LogNorm(),
+            norm=sebplt.plt_colors.LogNorm(),
             cmap="terrain_r",
             vmin=1e-4,
             vmax=1e-0,
         )
 
-        seb.plt.colorbar(
+        sebplt.plt.colorbar(
             pcm_ratio,
             cax=ax_cb,
             extend="max",
@@ -291,7 +291,7 @@ for sk in SITES:
         for iy in range(num_c_bins):
             for ix in range(energy_bin["num_bins"]):
                 if ratio_ru[ix][iy] > 0.1 or np.isnan(ratio_ru[ix][iy]):
-                    seb.ax_add_hatches(
+                    sebplt.ax_add_hatches(
                         ax=ax,
                         ix=ix,
                         iy=iy,
@@ -337,4 +337,4 @@ for sk in SITES:
                 ),
             )
         )
-        seb.close(fig)
+        sebplt.close(fig)

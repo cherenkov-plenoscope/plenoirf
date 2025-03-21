@@ -5,7 +5,7 @@ from os.path import join as opj
 import numpy as np
 import sparse_numeric_table as snt
 import plenoirf as irf
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -15,7 +15,7 @@ irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
 )
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -211,9 +211,9 @@ for sk in SITES:
             pv[pk]["ratio_upper"][pv[pk]["ratio_upper"] > 1] = 1
             pv[pk]["ratio_lower"][pv[pk]["ratio_lower"] < 0] = 0
 
-        fig = seb.figure(style=irf.summary.figure.FIGURE_STYLE)
-        ax = seb.add_axes(fig=fig, span=AX_SPAN)
-        seb.ax_add_histogram(
+        fig = sebplt.figure(style=irf.summary.figure.FIGURE_STYLE)
+        ax = sebplt.add_axes(fig=fig, span=AX_SPAN)
+        sebplt.ax_add_histogram(
             ax=ax,
             bin_edges=energy_bin["edges"],
             bincounts=pv[pk]["ratio"],
@@ -241,4 +241,4 @@ for sk in SITES:
                 "{:s}_{:s}.jpg".format(sk, pk),
             )
         )
-        seb.close(fig)
+        sebplt.close(fig)

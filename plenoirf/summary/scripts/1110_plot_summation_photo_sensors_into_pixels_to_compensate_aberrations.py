@@ -6,7 +6,7 @@ import scipy
 import os
 import json_utils
 import numpy as np
-import sebastians_matplotlib_addons as seb
+import sebastians_matplotlib_addons as sebplt
 from plenopy.light_field_geometry.LightFieldGeometry import init_lixel_polygons
 
 DARKMODE = True
@@ -17,7 +17,7 @@ res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 if DARKMODE:
-    seb.plt.style.use("dark_background")
+    sebplt.plt.style.use("dark_background")
     stroke = "white"
     EXT = ".dark.png"
     cmap = "binary_r"
@@ -26,7 +26,7 @@ else:
     stroke = "black"
     cmap = "binary"
 
-seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 AXES_STYLE = {"spines": ["left", "bottom"], "axes": ["x", "y"], "grid": False}
 
@@ -113,10 +113,10 @@ lixel_polygons = init_lixel_polygons(
 )
 
 for pixel in pixels:
-    fig = seb.figure(
+    fig = sebplt.figure(
         style={"rows": 360 * rrr, "cols": 360 * rrr, "fontsize": 0.7 * rrr}
     )
-    ax = seb.add_axes(fig=fig, span=[0.0, 0.0, 1, 1], style=AXES_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=[0.0, 0.0, 1, 1], style=AXES_STYLE)
 
     _x, _y = pixel["mean_position_of_photosensors_on_sensor_plane"]
     xlim = [_x - ROI_RADIUS, _x + ROI_RADIUS]
@@ -142,7 +142,7 @@ for pixel in pixels:
 
     for peye in poseye:
         (_x, _y) = poseye[peye]
-        seb.ax_add_hexagon(
+        sebplt.ax_add_hexagon(
             ax=ax,
             x=_x,
             y=_y,
@@ -173,14 +173,14 @@ for pixel in pixels:
             ),
         ),
     )
-    seb.close("all")
+    sebplt.close("all")
 
 # plot all pixels overview
 # -------------------------
-fig = fig = seb.figure(
+fig = fig = sebplt.figure(
     style={"rows": 720 * rrr, "cols": 720 * rrr, "fontsize": 0.7 * rrr}
 )
-ax = seb.add_axes(fig=fig, span=[0.16, 0.16, 0.82, 0.82])
+ax = sebplt.add_axes(fig=fig, span=[0.16, 0.16, 0.82, 0.82])
 
 overview_photosensor_mask = np.zeros(
     light_field_geometry.number_lixel, dtype=bool
@@ -206,7 +206,7 @@ poseye = irf.summary.figure.positions_of_eyes_in_roi(
 
 for peye in poseye:
     (_x, _y) = poseye[peye]
-    seb.ax_add_hexagon(
+    sebplt.ax_add_hexagon(
         ax=ax,
         x=_x,
         y=_y,
@@ -249,7 +249,7 @@ ax.set_xlabel("$x\\,/\\,$m")
 ax.set_ylabel("$y\\,/\\,$m")
 
 fig.savefig(os.path.join(paths["out_dir"], "aberration_overview" + EXT))
-seb.close("all")
+sebplt.close("all")
 
 # export table
 # ------------
