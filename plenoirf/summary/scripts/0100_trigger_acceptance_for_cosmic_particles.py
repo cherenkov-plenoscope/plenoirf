@@ -48,8 +48,19 @@ for pk in res.PARTICLES:
                 "trigger": "__all__",
             }
         )
+    uid_common = snt.logic.intersection(
+        [
+            diffuse_particle_table["primary"]["uid"],
+            diffuse_particle_table["instrument_pointing"]["uid"],
+            diffuse_particle_table["groundgrid"]["uid"],
+            diffuse_particle_table["trigger"]["uid"],
+        ]
+    )
 
-    _diff = snt.logic.cut_on_common_indices(table=diffuse_particle_table)
+    _diff = snt.logic.cut_and_sort_table_on_indices(
+        table=diffuse_particle_table,
+        common_indices=uid_common,
+    )
 
     # point source
     # ------------
