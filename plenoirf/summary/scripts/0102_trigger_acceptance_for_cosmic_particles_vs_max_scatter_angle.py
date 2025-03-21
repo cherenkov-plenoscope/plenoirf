@@ -13,7 +13,6 @@ import solid_angle_utils
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
-seb.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 MAX_SOURCE_ANGLE_DEG = res.analysis["gamma_ray_source_direction"][
     "max_angle_relative_to_pointing_deg"
@@ -61,9 +60,9 @@ for pk in res.PARTICLES:
         "num_bins_above_threshold"
     ]
     total_num_grid_cells = shower_table["grid"]["num_bins_thrown"]
-    idx_detected = passing_trigger[sk][pk]["uid"]
+    idx_detected = passing_trigger[pk]["uid"]
 
-    mask_shower_passed_trigger = snt.make_mask_of_right_in_left(
+    mask_shower_passed_trigger = snt.logic.make_mask_of_right_in_left(
         left_indices=shower_table["primary"]["uid"],
         right_indices=idx_detected,
     )
@@ -88,7 +87,6 @@ for pk in res.PARTICLES:
         max_scatter_angle_deg = np.rad2deg(max_scatter_angle_rad)
 
         print(
-            sk,
             pk,
             "max. scatter cone opening angle {:.3}deg".format(
                 max_scatter_angle_deg
@@ -104,27 +102,29 @@ for pk in res.PARTICLES:
             mask_shower_within_max_scatter
         ]
 
-        S_shower_table = snt.cut_and_sort_table_on_indices(
+        S_shower_table = snt.logic.cut_and_sort_table_on_indices(
             table=shower_table,
             common_indices=idx_showers_within_max_scatter,
-            level_keys=["primary", "grid"],
+            level_keys=["primary", "groundgrid"],
         )
 
-        S_mask_shower_detected = snt.make_mask_of_right_in_left(
+        S_mask_shower_detected = snt.logic.make_mask_of_right_in_left(
             left_indices=S_shower_table["primary"]["uid"],
-            right_indices=passing_trigger[sk][pk]["uid"],
+            right_indices=passing_trigger[pk]["uid"],
         )
 
         S_quantity_scatter = (
-            S_shower_table["grid"]["area_thrown_m2"]
+            S_shower_table["groundgrid"]["area_thrown_m2"]
             * scatter_cone_solid_angle_sr
         )
 
-        S_num_grid_cells_above_lose_threshold = S_shower_table["grid"][
+        S_num_grid_cells_above_lose_threshold = S_shower_table["groundgrid"][
             "num_bins_above_threshold"
         ]
 
-        S_total_num_grid_cells = S_shower_table["grid"]["num_bins_thrown"]
+        S_total_num_grid_cells = S_shower_table["groundgrid"][
+            "num_bins_thrown"
+        ]
 
         (
             S_Q,
