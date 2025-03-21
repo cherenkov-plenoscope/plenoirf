@@ -5,14 +5,8 @@ import plenoirf as irf
 import os
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
-
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-
+paths = irf.summary.paths_from_argv(sys.argv)
+res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 cosmic_rates = json_utils.tree.read(
@@ -26,40 +20,36 @@ nsb_rates = json_utils.tree.read(
     )
 )
 
-SITES = irf_config["config"]["sites"]
-PARTICLES = irf_config["config"]["particles"]
-TRIGGER = sum_config["trigger"]
+TRIGGER = res.analysis["trigger"][res.site_key]
 
 trigger_rates = {}
-for sk in SITES:
-    trigger_thresholds = np.array(TRIGGER[sk]["ratescan_thresholds_pe"])
-    analysis_trigger_threshold = TRIGGER[sk]["threshold_pe"]
+trigger_thresholds = np.array(TRIGGER["ratescan_thresholds_pe"])
+analysis_trigger_threshold = TRIGGER["threshold_pe"]
 
-    assert analysis_trigger_threshold in trigger_thresholds
-    analysis_trigger_threshold_idx = (
-        irf.utils.find_closest_index_in_array_for_value(
-            arr=trigger_thresholds, val=analysis_trigger_threshold
-        )
+assert analysis_trigger_threshold in trigger_thresholds
+analysis_trigger_threshold_idx = (
+    irf.utils.find_closest_index_in_array_for_value(
+        arr=trigger_thresholds, val=analysis_trigger_threshold
     )
+)
 
-    os.makedirs(os.path.join(paths["out_dir"], sk), exist_ok=True)
-    trigger_rates[sk] = {}
-    trigger_rates[sk]["night_sky_background"] = nsb_rates[sk][
-        "night_sky_background_rates"
-    ]["mean"]
+trigger_rates = {}
+trigger_rates["night_sky_background"] = nsb_rates[
+    "night_sky_background_rates"
+]["mean"]
 
-    for pk in PARTICLES:
-        trigger_rates[sk][pk] = cosmic_rates[sk][pk]["integral_rate"]["mean"]
+for pk in res.PARTICLES:
+    trigger_rates[pk] = cosmic_rates[pk]["integral_rate"]["mean"]
 
-    json_utils.write(
-        os.path.join(paths["out_dir"], sk, "trigger_rates_by_origin.json"),
-        {
-            "comment": (
-                "Trigger-rates by origin VS. trigger-threshold. "
-                "Including the analysis_trigger_threshold."
-            ),
-            "analysis_trigger_threshold_idx": analysis_trigger_threshold_idx,
-            "unit": "s$^{-1}$",
-            "origins": trigger_rates[sk],
-        },
-    )
+json_utils.write(
+    os.path.join(paths["out_dir"], "trigger_rates_by_origin.json"),
+    {
+        "comment": (
+            "Trigger-rates by origin VS. trigger-threshold. "
+            "Including the analysis_trigger_threshold."
+        ),
+        "analysis_trigger_threshold_idx": analysis_trigger_threshold_idx,
+        "unit": "s$^{-1}$",
+        "origins": trigger_rates,
+    },
+)
