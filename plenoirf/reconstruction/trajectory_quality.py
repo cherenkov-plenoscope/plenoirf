@@ -1,12 +1,44 @@
 from .. import event_table as table
 from .. import analysis
+from .. import production
 
 import numpy as np
 import airshower_template_generator as atg
 import sparse_numeric_table as snt
+import homogeneous_transformation
+import atmospheric_cherenkov_response
+import corsika_primary as cpw
 
 
-def make_rectangular_table(event_table):
+def from_observation_level_to_instrument(
+    particle_momentum,
+    particle_core_position,
+    instrument_pointing,
+    instrument_pointing_model,
+):
+    cm2m = 1e2
+    BUNCH = cpw.cherenkov_bunches.BUNCH
+    particle_bunches = np.zeros(shape=(1, len(BUNCH.DTYPE)), dtype=np.float32)
+    particle_bunches[0, BUNCH.X_CM] = particle_core_position[0] * cm2m
+    particle_bunches[0, BUNCH.Y_CM] = particle_core_position[1] * cm2m
+    particle_bunches[0, BUNCH.UX_1] = 0.0
+    particle_bunches[0, BUNCH.VY_1] = 0.0
+    particle_bunches[0, TIME_NS] = 0.0
+    particle_bunches[0, EMISSOION_ALTITUDE_ASL_CM] = 0.0
+    particle_bunches[0, BUNCH_SIZE_1] = 0.0
+    particle_bunches[0, WAVELENGTH_NM] = 0.0
+
+    production.transform_cherenkov_bunches.from_obervation_level_to_instrument(
+        cherenkov_bunches=particle_bunches,
+        instrument_pointing=instrument_pointing,
+        instrument_pointing_model=instrument_pointing_model,
+        instrument_x_m=0.0,
+        instrument_y_m=0.0,
+        speed_of_ligth_m_per_s=1.0,
+    )
+
+
+def make_rectangular_table(event_table, pointing_model):
     tab = snt.logic.cut_and_sort_table_on_indices(
         table=event_table,
         common_indices=event_table["reconstructed_trajectory"]["uid"],
@@ -14,7 +46,8 @@ def make_rectangular_table(event_table):
     df = snt.logic.make_rectangular_DataFrame(tab, index_key="uid")
 
     df["reconstructed_trajectory/r_m"] = np.hypot(
-        df["reconstructed_trajectory/x_m"], df["reconstructed_trajectory/y_m"]
+        df["reconstructed_trajectory/x_m"],
+        df["reconstructed_trajectory/y_m"],
     )
 
     df["features/image_half_depth_shift_c"] = np.hypot(
@@ -57,8 +90,6 @@ def make_rectangular_table(event_table):
         df["reconstructed_trajectory/cx_rad"] - df["true_trajectory/cx_rad"],
         df["reconstructed_trajectory/cy_rad"] - df["true_trajectory/cy_rad"],
     )
-
-
     """
 
     return df.to_records(index=False)
