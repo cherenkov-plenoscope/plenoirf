@@ -11,9 +11,11 @@ paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 
-MAX_SOURCE_ANGLE_DEG = res.analysis["gamma_ray_source_direction"][
-    "max_angle_relative_to_pointing_deg"
-]
+MAX_SOURCE_ANGLE_RAD = np.deg2rad(
+    res.analysis["gamma_ray_source_direction"][
+        "max_angle_relative_to_pointing_deg"
+    ]
+)
 
 energy_bin = json_utils.read(
     os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
@@ -66,12 +68,8 @@ for pk in res.PARTICLES:
     # ------------
     uid_possible_onregion = (
         irf.analysis.cuts.cut_primary_direction_within_angle(
-            primary_table=_diff["primary"],
-            radial_angle_deg=MAX_SOURCE_ANGLE_DEG,
-            azimuth_deg=np.rad2deg(
-                _diff["instrument_pointing"]["azimuth_rad"]
-            ),
-            zenith_deg=np.rad2deg(_diff["instrument_pointing"]["zenith_rad"]),
+            event_table=_diff,
+            max_angle_between_primary_and_pointing_rad=MAX_SOURCE_ANGLE_RAD,
         )
     )
 
