@@ -45,10 +45,25 @@ def run_block(env, blk, block_id, logger):
         stdout_path=opj(block_dir, "merlict.stdout.txt"),
         stderr_path=opj(block_dir, "merlict.stderr.txt"),
     )
-    assert rc == 0, "Expected merlict's return code to be zero."
+
+    """
+    2025-03-22: 1 out 25,000 merlict calls returned non zero. This was added in
+    the hope of finding out why.
+    """
+    errmsg = f"Expected merlict's return code to be zero, but it is '{rc:d}'."
+    if rc != 0:
+        logger.critical(__name__ + errmsg)
+        logger.critical(__name__ + ": Rescue merlict stdout and stderr.")
+        filename = f"{env["run_id_str"]:s}.block_{block_id:03d}.merlict"
+        for extension in [".stdout.txt", ".stderr.txt"]:
+            rnw.copy(
+                src=opj(block_dir, "merlict" + extension),
+                dst=opj(env["stage_dir"], filename + extension),
+            )
+
+    assert rc == 0, errmsg
 
     logger.info(__name__ + ": make debug output.")
-
     make_debug_output(env=env, blk=blk, block_id=block_id, logger=logger)
     logger.info(__name__ + ": ... done.")
 
