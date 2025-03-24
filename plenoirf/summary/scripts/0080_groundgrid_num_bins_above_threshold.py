@@ -30,7 +30,7 @@ nat_bin = binning_utils.Binning(
     bin_edges=np.geomspace(1, 100_000, energy_bin["num_bins"])
 )
 
-POINTNIG_ZENITH_BIN = res.ZenithBinning("once")
+zenith_bin = res.ZenithBinning("once")
 
 
 bbb = {}
@@ -61,23 +61,25 @@ for pk in res.PARTICLES:
     huh[pk]["bin_edges"] = np.geomspace(
         1e0,
         1e6,
-        int(np.sqrt(table["groundgrid"].shape[0])),
+        int(np.sqrt(table["groundgrid"].shape[0]) / zenith_bin.num),
     )
 
-    huh[pk]["bin_counts"] = np.histogram(
-        table["groundgrid"]["num_bins_above_threshold"],
-        bins=huh[pk]["bin_edges"],
-    )[0]
+    huh[pk]["bin_counts"] = {}
 
     min_number_samples = 10
-    for zdbin in range(POINTNIG_ZENITH_BIN.num):
-        zd_start = POINTNIG_ZENITH_BIN.edges[zdbin]
-        zd_stop = POINTNIG_ZENITH_BIN.edges[zdbin + 1]
+    for zd in range(zenith_bin.num):
+        zd_start = zenith_bin.edges[zd]
+        zd_stop = zenith_bin.edges[zd + 1]
 
         mask = np.logical_and(
             table["instrument_pointing"]["zenith_rad"] >= zd_start,
             table["instrument_pointing"]["zenith_rad"] < zd_stop,
         )
+
+        huh[pk]["bin_counts"][zd] = np.histogram(
+            table["groundgrid"]["num_bins_above_threshold"][mask],
+            bins=huh[pk]["bin_edges"],
+        )[0]
 
         # 1D VS energy
         # ------------
@@ -120,6 +122,14 @@ for pk in res.PARTICLES:
         ax_c = sebplt.add_axes(fig=fig, span=[0.25, 0.27, 0.55, 0.65])
         ax_h = sebplt.add_axes(fig=fig, span=[0.25, 0.11, 0.55, 0.1])
         ax_cb = sebplt.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
+        ax_zd = sebplt.add_axes_zenith_range_indicator(
+            fig=fig,
+            span=[0.85, 0.11, 0.1, 0.1],
+            zenith_bin_edges_rad=zenith_bin.edges,
+            zenith_bin=zd,
+            fontsize=5,
+        )
+
         _pcm_confusion = ax_c.pcolormesh(
             cm["ax0_bin_edges"],
             cm["ax1_bin_edges"],
@@ -129,11 +139,6 @@ for pk in res.PARTICLES:
         )
         sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
 
-        zenith_range_str = irf.summary.make_angle_range_str(
-            start_rad=POINTNIG_ZENITH_BIN.edges[zdbin],
-            stop_rad=POINTNIG_ZENITH_BIN.edges[zdbin + 1],
-        )
-        ax_c.set_title("zenith: " + zenith_range_str)
         ax_c.set_ylabel("num. bins above threshod / 1")
         ax_c.loglog()
         res.ax_add_site_marker(ax_c, x=0.2, y=0.1)
@@ -163,9 +168,7 @@ for pk in res.PARTICLES:
             linecolor="k",
         )
         fig.savefig(
-            os.path.join(
-                paths["out_dir"], f"{pk:s}_zenith{zdbin:03d}_grid.jpg"
-            )
+            os.path.join(paths["out_dir"], f"{pk:s}_zenith{zd:03d}_grid.jpg")
         )
         sebplt.close(fig)
 
@@ -177,7 +180,7 @@ ax_legend = sebplt.add_axes(
 )
 linestyles = ["-", "--", ":"]
 for pk in res.PARTICLES:
-    for zdbin in range(POINTNIG_ZENITH_BIN.num):
+    for zdbin in range(zenith_bin.num):
         ax.plot(
             energy_bin["centers"],
             bbb[pk]["avg"][zdbin],
@@ -210,7 +213,7 @@ ax_legend.text(
     verticalalignment="center",
 )
 
-for zdbin in range(POINTNIG_ZENITH_BIN.num):
+for zdbin in range(zenith_bin.num):
     _yy -= 0.1
     ax_legend.plot(
         [0, 0.3],
@@ -222,8 +225,8 @@ for zdbin in range(POINTNIG_ZENITH_BIN.num):
         x=0.4,
         y=_yy,
         s=irf.summary.make_angle_range_str(
-            start_rad=POINTNIG_ZENITH_BIN.edges[zdbin],
-            stop_rad=POINTNIG_ZENITH_BIN.edges[zdbin + 1],
+            start_rad=zenith_bin.edges[zdbin],
+            stop_rad=zenith_bin.edges[zdbin + 1],
         ),
         fontsize=8,
         verticalalignment="center",
@@ -239,24 +242,47 @@ fig.savefig(os.path.join(paths["out_dir"], "num_bins_above_threshold.jpg"))
 sebplt.close(fig)
 
 
-fig = sebplt.figure(style=sebplt.FIGURE_1_1)
-ax = sebplt.add_axes(fig=fig, span=[0.175, 0.15, 0.75, 0.8])
-for pk in res.PARTICLES:
-    sebplt.ax_add_histogram(
-        ax=ax,
-        bin_edges=huh[pk]["bin_edges"],
-        bincounts=huh[pk]["bin_counts"] / np.sum(huh[pk]["bin_counts"]),
-        linestyle="-",
-        linecolor=res.PARTICLE_COLORS[pk],
-        linealpha=1.0,
-        bincounts_upper=None,
-        bincounts_lower=None,
-        face_color=res.PARTICLE_COLORS[pk],
-        face_alpha=0.3,
+# what was thrown
+# ---------------
+_ylim = []
+for zd in range(zenith_bin.num):
+    for pk in res.PARTICLES:
+        val = huh[pk]["bin_counts"][zd] / np.sum(huh[pk]["bin_counts"][zd])
+        _ylim.append(irf.utils.find_decade_limits(x=val))
+_ylim = np.asarray(_ylim)
+ylim = (np.min(_ylim[:, 0]), np.max(_ylim[:, 1]))
+
+
+for zd in range(zenith_bin.num):
+    fig = sebplt.figure(style=sebplt.FIGURE_1_1)
+    ax = sebplt.add_axes(fig=fig, span=[0.175, 0.15, 0.70, 0.8])
+    ax_zd = sebplt.add_axes_zenith_range_indicator(
+        fig=fig,
+        zenith_bin_edges_rad=zenith_bin.edges,
+        zenith_bin=zd,
+        span=[0.85, 0.8, 0.15, 0.15],
+        fontsize=5,
     )
-res.ax_add_site_marker(ax)
-ax.loglog()
-ax.set_xlabel("num. bins above threshold / 1")
-ax.set_ylabel("relative intensity / 1")
-fig.savefig(os.path.join(paths["out_dir"], "what_was_throwm.jpg"))
-sebplt.close(fig)
+    for pk in res.PARTICLES:
+        sebplt.ax_add_histogram(
+            ax=ax,
+            bin_edges=huh[pk]["bin_edges"],
+            bincounts=huh[pk]["bin_counts"][zd]
+            / np.sum(huh[pk]["bin_counts"][zd]),
+            linestyle="-",
+            linecolor=res.PARTICLE_COLORS[pk],
+            linealpha=1.0,
+            bincounts_upper=None,
+            bincounts_lower=None,
+            face_color=res.PARTICLE_COLORS[pk],
+            face_alpha=0.3,
+        )
+    res.ax_add_site_marker(ax)
+    ax.loglog()
+    ax.set_ylim(ylim)
+    ax.set_xlabel("num. bins above threshold / 1")
+    ax.set_ylabel("relative intensity / 1")
+    fig.savefig(
+        os.path.join(paths["out_dir"], f"what_was_throwm_zd{zd:d}.jpg")
+    )
+    sebplt.close(fig)
