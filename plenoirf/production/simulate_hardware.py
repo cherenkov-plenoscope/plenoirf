@@ -54,7 +54,7 @@ def run_block(env, blk, block_id, logger):
     if rc != 0:
         logger.critical(__name__ + errmsg)
         logger.critical(__name__ + ": Rescue merlict stdout and stderr.")
-        filename = f"{env["run_id_str"]:s}.block_{block_id:03d}.merlict"
+        filename = f"{env['run_id_str']:s}.block_{block_id:03d}.merlict"
         for extension in [".stdout.txt", ".stderr.txt"]:
             rnw.copy(
                 src=opj(block_dir, "merlict" + extension),
