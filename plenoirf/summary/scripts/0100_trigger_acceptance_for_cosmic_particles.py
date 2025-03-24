@@ -27,6 +27,7 @@ trigger_thresholds = res.analysis["trigger"][res.site_key][
 trigger_modus = res.analysis["trigger"][res.site_key]["modus"]
 
 for pk in res.PARTICLES:
+    print(f"{pk:s} [", end="")
     pk_dir = os.path.join(paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
@@ -92,7 +93,8 @@ for pk in res.PARTICLES:
     value = []
     absolute_uncertainty = []
     for threshold in trigger_thresholds:
-        print(pk, threshold)
+        print(f"{threshold:d},", end="", flush=True)
+
         idx_detected = irf.analysis.light_field_trigger_modi.make_indices(
             trigger_table=point_particle_table["trigger"],
             threshold=threshold,
@@ -131,6 +133,7 @@ for pk in res.PARTICLES:
             "absolute_uncertainty": absolute_uncertainty,
         },
     )
+    print(f"] p.e.", end="\n")
 
     # diffuse source
     # --------------
