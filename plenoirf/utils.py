@@ -319,3 +319,25 @@ class SerialPool:
     def __repr__(self):
         out = "{:s}()".format(self.__class__.__name__)
         return out
+
+
+def find_limits(x, ignore_non_positive=False):
+    not_nan = np.logical_not(np.isnan(x))
+    not_inf = np.logical_not(np.isinf(x))
+    valid = np.logical_and(not_nan, not_inf)
+
+    if ignore_non_positive:
+        is_positive = x > 0
+        valid = np.logical_and(valid, is_positive)
+
+    return np.min(x[valid]), np.max(x[valid])
+
+
+def find_decade_power_limits(x):
+    start, stop = find_limits(x=x, ignore_non_positive=True)
+    return np.floor(np.log10(start)), np.ceil(np.log10(stop))
+
+
+def find_decade_limits(x):
+    start_power, stop_power = find_decade_power_limits(x=x)
+    return 10**start_power, 10**stop_power
