@@ -87,7 +87,7 @@ for sk in irf_config["config"]["sites"]:
 
     rectab = irf.reconstruction.trajectory_quality.make_rectangular_table(
         event_table=event_table,
-        plenoscope_pointing=irf_config["config"]["plenoscope_pointing"],
+        instrument_pointing_model=res.config["pointing"]["model"],
     )
 
     _true_energy = rectab["primary/energy_GeV"]

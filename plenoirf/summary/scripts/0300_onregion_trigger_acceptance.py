@@ -137,9 +137,7 @@ for sk in SITES:
         poicanarr = (
             irf.reconstruction.trajectory_quality.make_rectangular_table(
                 event_table=point_candidate,
-                plenoscope_pointing=irf_config["config"][
-                    "plenoscope_pointing"
-                ],
+                instrument_pointing_model=res.config["pointing"]["model"],
             )
         )
 
@@ -219,9 +217,7 @@ for sk in SITES:
         difcanarr = (
             irf.reconstruction.trajectory_quality.make_rectangular_table(
                 event_table=diffuse_candidate,
-                plenoscope_pointing=irf_config["config"][
-                    "plenoscope_pointing"
-                ],
+                instrument_pointing_model=res.config["pointing"]["model"],
             )
         )
 

@@ -24,6 +24,7 @@ for pk in res.PARTICLES:
 
     event_frame = irf.reconstruction.trajectory_quality.make_rectangular_table(
         event_table=event_table,
+        instrument_pointing_model=res.config["pointing"]["model"],
     )
 
     # estimate_quality

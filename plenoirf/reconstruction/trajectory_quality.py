@@ -38,7 +38,7 @@ def from_observation_level_to_instrument(
     )
 
 
-def make_rectangular_table(event_table, pointing_model):
+def make_rectangular_table(event_table, instrument_pointing_model):
     tab = snt.logic.cut_and_sort_table_on_indices(
         table=event_table,
         common_indices=event_table["reconstructed_trajectory"]["uid"],

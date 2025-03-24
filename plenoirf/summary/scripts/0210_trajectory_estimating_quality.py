@@ -201,7 +201,7 @@ for pk in res.PARTICLES:
 
     event_frame = irf.reconstruction.trajectory_quality.make_rectangular_table(
         event_table=event_table,
-        pointing_model=res.config["pointing"]["model"],
+        instrument_pointing_model=res.config["pointing"]["model"],
     )
 
     quality = align_values_with_event_frame(
