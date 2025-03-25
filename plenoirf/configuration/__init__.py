@@ -250,31 +250,52 @@ def make_pointing():
     }
 
 
+def make_sum_trigger_object_distance_geomspace_binning(start_m, stop_m, num):
+    """
+    make a dict similar to binning_utils.Binning
+    """
+    assert start_m > 0.0
+    assert stop_m > 0.0
+    assert start_m < stop_m
+    assert num > 1
+
+    out = {}
+
+    out["num"] = num
+    out["centers"] = np.geomspace(start_m, stop_m, out["num"])
+
+    out["_decade_step"] = np.sqrt(out["centers"][1] / out["centers"][0])
+    out["start"] = start_m / out["_decade_step"]
+    out["stop"] = stop_m * out["_decade_step"]
+    out["limits"] = [out["start"], out["stop"]]
+
+    _edges = np.geomspace(
+        out["start"],
+        out["stop"],
+        len(out["centers"]) * 2 + 1,
+    )
+    _mask = np.arange(0, len(_edges), 2)
+    out["edges"] = _edges[_mask]
+    return out
+
+
 def make_sum_trigger():
-    return {
-        "object_distances_m": [
-            5000.0,
-            6164.0,
-            7600.0,
-            9369.0,
-            11551.0,
-            14240.0,
-            17556.0,
-            21644.0,
-            26683.0,
-            32897.0,
-            40557.0,
-            50000.0,
-        ],
-        "threshold_pe": 105,
-        "integration_time_slices": 10,
-        "image": {
-            "image_outer_radius_rad": np.deg2rad(3.25 - 0.033335),
-            "pixel_spacing_rad": np.deg2rad(0.06667),
-            "pixel_radius_rad": np.deg2rad(0.146674),
-            "max_number_nearest_lixel_in_pixel": 7,
-        },
+    out = {}
+    out["object_distances"] = {"start_m": 5e3, "stop_m": 30e3, "num": 12}
+    out["object_distances_m"] = (
+        make_sum_trigger_object_distance_geomspace_binning(
+            **out["object_distances"]
+        )["centers"]
+    )
+    out["threshold_pe"] = 105
+    out["integration_time_slices"] = 10
+    out["image"] = {
+        "image_outer_radius_rad": np.deg2rad(3.25 - 0.033335),
+        "pixel_spacing_rad": np.deg2rad(0.06667),
+        "pixel_radius_rad": np.deg2rad(0.146674),
+        "max_number_nearest_lixel_in_pixel": 7,
     }
+    return out
 
 
 def make_ground_grid():
@@ -283,7 +304,7 @@ def make_ground_grid():
             "bin_width_m": 1e2,
             "num_bins_each_axis": 1024,
         },
-        "threshold_num_photons": 10,
+        "threshold_num_photons": 25,
     }
 
 
