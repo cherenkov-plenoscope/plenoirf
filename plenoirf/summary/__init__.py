@@ -64,6 +64,7 @@ def paths_from_argv(argv):
         "script_name": script_name,
         "analysis_dir": analysis_dir,
         "out_dir": os.path.join(analysis_dir, script_name),
+        "cache_dir": os.path.join(analysis_dir, script_name, "__cache__"),
     }
 
 
