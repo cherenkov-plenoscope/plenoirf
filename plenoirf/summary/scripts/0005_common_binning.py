@@ -23,21 +23,12 @@ for scenario_key in analysis["energy_binning"]["fine"]:
         binning=analysis["energy_binning"],
         fine=analysis["energy_binning"]["fine"][scenario_key],
     )
-
     assert len(edges) >= 2
     assert np.all(np.gradient(edges) > 0.0)
 
-    energy[scenario_key] = {
-        "key": scenario_key,
-        "edges": edges,
-        "num": num_bins,
-        "centers": binning_utils.centers(edges),
-        "widths": binning_utils.widths(edges),
-        "start": edges[0],
-        "stop": edges[-1],
-        "limits": [edges[0], edges[-1]],
-        "unit": "GeV",
-    }
+    energy[scenario_key] = binning_utils.Binning(bin_edges=edges)
+    energy[scenario_key]["key"] = scenario_key
+    energy[scenario_key]["unit"] = "GeV"
 
 json_utils.write(os.path.join(paths["out_dir"], "energy.json"), energy)
 
