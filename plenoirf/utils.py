@@ -25,7 +25,7 @@ def power10space_bin_edges(binning, fine):
         stop_bin=binning["stop"]["bin"] * fine,
         num_bins_per_decade=binning["num_bins_per_decade"] * fine,
     )
-    return space, len(space) - 1
+    return space
 
 
 def _divide_silent(numerator, denominator, default):

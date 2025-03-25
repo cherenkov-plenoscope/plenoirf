@@ -192,6 +192,30 @@ class Resources:
             )
         return self._PARTICLE_COLORMAPS
 
+    def energy_binning(self, key):
+        edges = utils.power10space_bin_edges(
+            binning=self.analysis["energy_binning"],
+            fine=self.analysis["energy_binning"]["fine"][key],
+        )
+        assert len(edges) >= 2
+        assert np.all(edges > 0.0)
+        assert np.all(np.gradient(edges) > 0.0)
+        return binning_utils.Binning(bin_edges=edges)
+
+    def scatter_binning(self, particle_key):
+        num_scatter_bins = 20
+        max_scatter_solid_angle_sr = np.max(
+            self.config["particles_scatter_solid_angle"][particle_key][
+                "solid_angle_sr"
+            ]
+        )
+        edges = np.linspace(
+            start=0.0,
+            stop=max_scatter_solid_angle_sr,
+            num=num_scatter_bins + 1,
+        )
+        return binning_utils.Binning(bin_edges=edges)
+
     def __repr__(self):
         return f"{self.__class__.__name__}()"
 

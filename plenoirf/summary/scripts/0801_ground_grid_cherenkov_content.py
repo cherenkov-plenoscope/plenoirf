@@ -67,11 +67,8 @@ class Reader:
 
 size_bin = binning_utils.Binning(bin_edges=np.geomspace(1, 1e6, 13))
 
-energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["trigger_acceptance_onregion"]
-
-zenith_bin = res.ZenithBinning("once")
+energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+zenith_bin = res.ZenithBinning(key="once")
 
 hist_cache_path = os.path.join(paths["cache_dir"], "hist.pkl")
 expo_cache_path = os.path.join(paths["cache_dir"], "expo.pkl")
