@@ -53,12 +53,10 @@ for pk in COSMIC_RAYS:
         rigidity_GV=SITE["geomagnetic_cutoff_rigidity_GV"]
     )
 
-    shower_fluxes[pk]["differential_flux"] = np.zeros(energy_bin["num_bins"])
-    shower_fluxes[pk]["differential_flux_au"] = np.zeros(
-        energy_bin["num_bins"]
-    )
+    shower_fluxes[pk]["differential_flux"] = np.zeros(energy_bin["num"])
+    shower_fluxes[pk]["differential_flux_au"] = np.zeros(energy_bin["num"])
 
-    for ebin in range(energy_bin["num_bins"]):
+    for ebin in range(energy_bin["num"]):
         if energy_bin["centers"][ebin] < cutoff_energy:
             shower_fluxes[pk]["differential_flux"][ebin] = (
                 cosmic_ray_fluxes[pk]["differential_flux"][ebin]

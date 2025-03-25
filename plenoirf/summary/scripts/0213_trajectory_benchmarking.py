@@ -234,28 +234,24 @@ for sk in irf_config["config"]["sites"]:
         hist_ene_rad = {
             "energy_bin_edges_GeV": energy_bin["edges"],
             "core_radius_square_bin_edges_m2": core_radius_square_bin_edges_m2,
-            "histogram": empty_dim2(
-                energy_bin["num_bins"], num_core_radius_bins
-            ),
+            "histogram": empty_dim2(energy_bin["num"], num_core_radius_bins),
         }
 
         hist_ene = {
             "energy_bin_edges_GeV": energy_bin["edges"],
-            "histogram": [None for ii in range(energy_bin["num_bins"])],
+            "histogram": [None for ii in range(energy_bin["num"])],
         }
 
         cont_ene_rad = {
             "energy_bin_edges_GeV": energy_bin["edges"],
             "core_radius_square_bin_edges_m2": core_radius_square_bin_edges_m2,
             "containment_fractions": containment_fractions,
-            "containment": empty_dim2(
-                energy_bin["num_bins"], num_core_radius_bins
-            ),
+            "containment": empty_dim2(energy_bin["num"], num_core_radius_bins),
         }
         cont_ene = {
             "energy_bin_edges_GeV": energy_bin["edges"],
             "containment_fractions": containment_fractions,
-            "containment": [None for ii in range(energy_bin["num_bins"])],
+            "containment": [None for ii in range(energy_bin["num"])],
         }
 
         for the in ["theta", "theta_para", "theta_perp"]:
@@ -265,7 +261,7 @@ for sk in irf_config["config"]["sites"]:
             c_ene_rad = dict(cont_ene_rad)
             c_ene = dict(cont_ene)
 
-            for ene in range(energy_bin["num_bins"]):
+            for ene in range(energy_bin["num"]):
                 energy_start = energy_bin["edges"][ene]
                 energy_stop = energy_bin["edges"][ene + 1]
                 ene_mask = np.logical_and(
@@ -400,7 +396,7 @@ for sk in irf_config["config"]["sites"]:
             - rectab["true_trajectory/cy_rad"]
         )
 
-        num_panels = energy_bin["num_bins"] + 1
+        num_panels = energy_bin["num"] + 1
         num_cols = 4
         num_rows = num_panels // num_cols
 
@@ -434,7 +430,7 @@ for sk in irf_config["config"]["sites"]:
                 style={"spines": [], "axes": [], "grid": False},
             )
 
-            if ene == energy_bin["num_bins"]:
+            if ene == energy_bin["num"]:
                 fig.text(
                     s="1$^{\circ}$",
                     x=_xx + 0.5 * _colw,

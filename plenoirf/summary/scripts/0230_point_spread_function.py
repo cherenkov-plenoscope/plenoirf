@@ -112,10 +112,10 @@ for sk in irf_config["config"]["sites"]:
     out["energy_bin_edges_GeV"] = energy_bin["edges"]
     for con in range(num_containment_fractions):
         tkey = "theta{:02d}".format(containment_percents[con])
-        out[tkey + "_rad"] = np.nan * np.ones(shape=energy_bin["num_bins"])
-        out[tkey + "_relunc"] = np.nan * np.ones(shape=energy_bin["num_bins"])
+        out[tkey + "_rad"] = np.nan * np.ones(shape=energy_bin["num"])
+        out[tkey + "_relunc"] = np.nan * np.ones(shape=energy_bin["num"])
 
-    for ebin in range(energy_bin["num_bins"]):
+    for ebin in range(energy_bin["num"]):
         energy_bin_start = energy_bin["edges"][ebin]
         energy_bin_stop = energy_bin["edges"][ebin + 1]
         energy_bin_mask = np.logical_and(

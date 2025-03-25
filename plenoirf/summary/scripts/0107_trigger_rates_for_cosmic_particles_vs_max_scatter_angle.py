@@ -58,14 +58,14 @@ for ck in res.COSMIC_RAYS:
 
     R = np.zeros(num_max_scatter_angles)
     R_au = np.zeros(R.shape)
-    dRdE = np.zeros(shape=(num_max_scatter_angles, energy_bin["num_bins"]))
+    dRdE = np.zeros(shape=(num_max_scatter_angles, energy_bin["num"]))
     dRdE_au = np.zeros(shape=dRdE.shape)
 
     cosmic_dFdE = airshower_fluxes[ck]["differential_flux"]
     cosmic_dFdE_au = airshower_fluxes[ck]["absolute_uncertainty"]
 
     for sc in range(num_max_scatter_angles):
-        for eb in range(energy_bin["num_bins"]):
+        for eb in range(energy_bin["num"]):
             dRdE[sc, eb], dRdE_au[sc, eb] = pru.multiply(
                 x=cosmic_dFdE[eb],
                 x_au=cosmic_dFdE_au[eb],

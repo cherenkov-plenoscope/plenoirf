@@ -32,7 +32,7 @@ energy_binning = json_utils.read(
     os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance_onregion"]
-energy_bin_width_au = np.zeros(energy_bin["num_bins"])
+energy_bin_width_au = np.zeros(energy_bin["num"])
 
 S = json_utils.tree.read(
     os.path.join(
@@ -102,7 +102,7 @@ for sk in SITES:
 
             critical_dVdE = np.nan * np.ones(
                 shape=(
-                    energy_bin["num_bins"],
+                    energy_bin["num"],
                     num_observation_times,
                     num_systematic_uncertainties,
                 )

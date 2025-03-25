@@ -151,7 +151,7 @@ for pk in res.COSMIC_RAYS:
     # differentiate w.r.t. scatter
     # ----------------------------
     dRdS = np.zeros(shape=(R.shape[0] - 1, R.shape[1]))
-    for eb in range(energy_bin["num_bins"]):
+    for eb in range(energy_bin["num"]):
         for sc in range(scatter_bin[pk]["num_bins"] - 1):
             dR = R[sc + 1, eb] - R[sc, eb]
             Rmean = 0.5 * (R[sc + 1, eb] + R[sc, eb])

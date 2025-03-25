@@ -189,7 +189,7 @@ for pk in PARTICLES:
     sebplt.close(fig)
 
     # unc
-    numE = energy_bin["num_bins"]
+    numE = energy_bin["num"]
     ax_step = 0.8 * 1 / numE
     fig = sebplt.figure(sebplt.FIGURE_1_1)
     axstyle_stack = {"spines": ["bottom"], "axes": [], "grid": False}

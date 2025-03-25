@@ -91,9 +91,9 @@ else:
         )
 
         hist[pk] = np.zeros(
-            shape=(zenith_bin.num, energy_bin["num_bins"], size_bin["num"])
+            shape=(zenith_bin.num, energy_bin["num"], size_bin["num"])
         )
-        expo[pk] = np.zeros(shape=(zenith_bin.num, energy_bin["num_bins"]))
+        expo[pk] = np.zeros(shape=(zenith_bin.num, energy_bin["num"]))
 
         with res.open_event_table(particle_key=pk) as arc:
             event_table = arc.query(
@@ -153,7 +153,7 @@ for pk in res.PARTICLES:
 
         vals = hist[pk][zd]
         vals_norm_in_energy = np.sum(vals, axis=1)
-        for ebin in range(energy_bin["num_bins"]):
+        for ebin in range(energy_bin["num"]):
             if vals_norm_in_energy[ebin] > 0:
                 vals[ebin, :] /= vals_norm_in_energy[ebin]
 

@@ -38,9 +38,9 @@ def p16_p50_p84(x):
 
 def init_hist(energy_bin):
     return {
-        "p16": np.zeros(energy_bin["num_bins"]),
-        "p50": np.zeros(energy_bin["num_bins"]),
-        "p84": np.zeros(energy_bin["num_bins"]),
+        "p16": np.zeros(energy_bin["num"]),
+        "p50": np.zeros(energy_bin["num"]),
+        "p84": np.zeros(energy_bin["num"]),
     }
 
 
@@ -63,7 +63,7 @@ for pk in res.PARTICLES:
 
     thrown[pk] = init_hist(energy_bin=energy_bin)
     containment[pk] = init_hist(energy_bin=energy_bin)
-    for eee in range(energy_bin["num_bins"]):
+    for eee in range(energy_bin["num"]):
         energy_start_GeV = energy_bin["edges"][eee]
         energy_stop_GeV = energy_bin["edges"][eee + 1]
         energy_mask = np.logical_and(

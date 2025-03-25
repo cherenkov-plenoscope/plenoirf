@@ -34,7 +34,7 @@ for pk in res.PARTICLES:
 
     eee[pk] = {}
     eee[pk]["bin_counts"] = np.zeros(
-        shape=(POINTNIG_ZENITH_BIN.num, energy_bin["num_bins"])
+        shape=(POINTNIG_ZENITH_BIN.num, energy_bin["num"])
     )
 
     for zdbin in range(POINTNIG_ZENITH_BIN.num):

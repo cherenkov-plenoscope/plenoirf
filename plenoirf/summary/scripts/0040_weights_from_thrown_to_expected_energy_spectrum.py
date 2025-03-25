@@ -98,7 +98,7 @@ for pk in PARTICLES:
     w_energy = np.geomspace(
         energy_ranges[pk]["min"],
         energy_ranges[pk]["max"],
-        fine_energy_bin["num_bins"],
+        fine_energy_bin["num"],
     )
     w_weight = irf.analysis.reweight.reweight(
         initial_energies=thrown_spectrum["energy_bin_centers"],

@@ -30,7 +30,7 @@ for scenario_key in analysis["energy_binning"]["fine"]:
     energy[scenario_key] = {
         "key": scenario_key,
         "edges": edges,
-        "num_bins": num_bins,
+        "num": num_bins,
         "centers": binning_utils.centers(edges),
         "widths": binning_utils.widths(edges),
         "start": edges[0],

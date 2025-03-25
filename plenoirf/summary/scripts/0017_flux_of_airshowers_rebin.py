@@ -48,10 +48,10 @@ for pk in COSMIC_RAYS:
     fine_dFdE_au = airshower_fluxes[pk]["differential_flux"][
         "absolute_uncertainty"
     ]
-    dFdE = np.zeros(energy_bin["num_bins"])
-    dFdE_au = np.zeros(energy_bin["num_bins"])
+    dFdE = np.zeros(energy_bin["num"])
+    dFdE_au = np.zeros(energy_bin["num"])
 
-    for ebin in range(energy_bin["num_bins"]):
+    for ebin in range(energy_bin["num"]):
         fe_start = fine_energy_bin_matches[ebin]
         fe_stop = fine_energy_bin_matches[ebin + 1]
         dFdE[ebin] = np.mean(fine_dFdE[fe_start:fe_stop])

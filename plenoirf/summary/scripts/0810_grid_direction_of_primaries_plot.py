@@ -68,7 +68,7 @@ for site_key in irf_config["config"]["sites"]:
         intensity_cube = []
         exposure_cube = []
         num_events_stack = []
-        for ex in range(energy_bin["num_bins"]):
+        for ex in range(energy_bin["num"]):
             energy_mask = np.logical_and(
                 event_table["primary"]["energy_GeV"]
                 >= energy_bin["edges"][ex],
@@ -103,7 +103,7 @@ for site_key in irf_config["config"]["sites"]:
         # -----
         vmax = np.max(intensity_cube)
 
-        for energy_idx in range(energy_bin["num_bins"]):
+        for energy_idx in range(energy_bin["num"]):
             fig = sebplt.figure(style=FIGURE_STYLE)
             ax = sebplt.add_axes(fig=fig, span=[0.1, 0.1, 0.8, 0.8])
             ax_cb = fig.add_axes([0.85, 0.1, 0.02, 0.8])

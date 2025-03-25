@@ -110,8 +110,8 @@ for sk in SITES:
         )
 
         pv[pk] = {}
-        pv[pk]["num_thrown"] = np.zeros(energy_bin["num_bins"])
-        pv[pk]["num_passed"] = np.zeros(energy_bin["num_bins"])
+        pv[pk]["num_thrown"] = np.zeros(energy_bin["num"])
+        pv[pk]["num_passed"] = np.zeros(energy_bin["num"])
 
         particle_counter = 0
         for shower_idx in idx_passed_trigger_and_in_debug_output:
@@ -135,7 +135,7 @@ for sk in SITES:
             energy_GeV = shower_table["primary"]["energy_GeV"][0]
 
             energy_bin_idx = np.digitize(energy_GeV, bins=energy_bin["edges"])
-            if energy_bin_idx >= energy_bin["num_bins"]:
+            if energy_bin_idx >= energy_bin["num"]:
                 continue
 
             assert (

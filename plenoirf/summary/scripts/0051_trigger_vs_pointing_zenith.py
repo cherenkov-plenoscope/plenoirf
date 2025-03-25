@@ -66,16 +66,14 @@ for pk in res.PARTICLES:
     ttt[pk]["ratio"] = np.zeros(
         shape=(
             zenith_bin.num,
-            energy_bin["num_bins"],
+            energy_bin["num"],
             len(trigger_object_distances_m),
         )
     )
-    ttt[pk]["num_thrown"] = np.zeros(
-        shape=(zenith_bin.num, energy_bin["num_bins"])
-    )
+    ttt[pk]["num_thrown"] = np.zeros(shape=(zenith_bin.num, energy_bin["num"]))
 
     ttt[pk]["num_have_at_least_one_focus_trigger"] = np.zeros(
-        shape=(zenith_bin.num, energy_bin["num_bins"])
+        shape=(zenith_bin.num, energy_bin["num"])
     )
 
     for zzz in range(zenith_bin.num):
@@ -87,7 +85,7 @@ for pk in res.PARTICLES:
             et["instrument_pointing"]["zenith_rad"] < zenith_stop_rad,
         )
 
-        for eee in range(energy_bin["num_bins"]):
+        for eee in range(energy_bin["num"]):
             energy_start_GeV = energy_bin["edges"][eee]
             energy_stop_GeV = energy_bin["edges"][eee + 1]
 
@@ -140,7 +138,7 @@ for pk in ttt:
             ttt[pk]["num_have_at_least_one_focus_trigger"][zzz] >= 15
         )
         ratio = copy.copy(ttt[pk]["ratio"][zzz])
-        for eee in range(energy_bin["num_bins"]):
+        for eee in range(energy_bin["num"]):
             if not valid_statistics[eee]:
                 ratio[eee, :] = float("nan")
 

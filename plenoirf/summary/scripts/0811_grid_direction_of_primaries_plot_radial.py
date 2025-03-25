@@ -87,7 +87,7 @@ for sk in SITES:
         o[sk][pk]["thrown"] = []
         o[sk][pk]["detected"] = []
 
-        for ex in range(energy_bin["num_bins"]):
+        for ex in range(energy_bin["num"]):
             print("histogram", sk, pk, "energy", ex)
             emask = np.logical_and(
                 evttab["primary"]["energy_GeV"] >= energy_bin["edges"][ex],
@@ -138,7 +138,7 @@ for sk in SITES:
         sk_pk_dir = os.path.join(paths["out_dir"], sk, pk)
         os.makedirs(sk_pk_dir, exist_ok=True)
 
-        for ex in range(energy_bin["num_bins"]):
+        for ex in range(energy_bin["num"]):
             print("plot", sk, pk, "energy", ex)
 
             fig = sebplt.figure(style=irf.summary.figure.FIGURE_STYLE)
@@ -289,7 +289,7 @@ for sk in SITES:
 
         num_c_bins = len(c_bin_edges_deg[pk]) - 1
         for iy in range(num_c_bins):
-            for ix in range(energy_bin["num_bins"]):
+            for ix in range(energy_bin["num"]):
                 if ratio_ru[ix][iy] > 0.1 or np.isnan(ratio_ru[ix][iy]):
                     sebplt.ax_add_hatches(
                         ax=ax,

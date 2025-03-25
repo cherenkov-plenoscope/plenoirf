@@ -83,7 +83,7 @@ _A_au = acceptance["gamma"]["point"]["absolute_uncertainty"]
 
 R = np.zeros(num_trigger_thresholds)
 R_au = np.zeros(R.shape)
-dRdE = np.zeros(shape=(num_trigger_thresholds, fine_energy_bin["num_bins"]))
+dRdE = np.zeros(shape=(num_trigger_thresholds, fine_energy_bin["num"]))
 dRdE_au = np.zeros(shape=dRdE.shape)
 for tt in range(num_trigger_thresholds):
     A = np.interp(
@@ -140,9 +140,7 @@ for ck in airshower_fluxes:
 
     R = np.zeros(num_trigger_thresholds)
     R_au = np.zeros(R.shape)
-    dRdE = np.zeros(
-        shape=(num_trigger_thresholds, fine_energy_bin["num_bins"])
-    )
+    dRdE = np.zeros(shape=(num_trigger_thresholds, fine_energy_bin["num"]))
     dRdE_au = np.zeros(shape=dRdE.shape)
 
     cosmic_dFdE = airshower_fluxes[ck]["differential_flux"]["values"]

@@ -120,7 +120,7 @@ for pk in res.PARTICLES:
     tprs = []
     ppvs = []
     num_events = []
-    for i in range(energy_bin["num_bins"]):
+    for i in range(energy_bin["num"]):
         e_start = energy_bin["edges"][i]
         e_stop = energy_bin["edges"][i + 1]
         e_mask = np.logical_and(
@@ -195,7 +195,7 @@ for pk in res.PARTICLES:
     key = "true_size_over_extracted_size_vs_true_energy"
     true_over_reco_ratios = []
     num_events = []
-    for i in range(energy_bin["num_bins"]):
+    for i in range(energy_bin["num"]):
         e_start = energy_bin["edges"][i]
         e_stop = energy_bin["edges"][i + 1]
         e_mask = np.logical_and(

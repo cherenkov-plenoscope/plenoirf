@@ -27,7 +27,7 @@ passing_trigger = json_utils.tree.read(
 )
 
 nat_bin = binning_utils.Binning(
-    bin_edges=np.geomspace(1, 100_000, energy_bin["num_bins"])
+    bin_edges=np.geomspace(1, 100_000, energy_bin["num"])
 )
 
 zenith_bin = res.ZenithBinning("once")

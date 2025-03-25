@@ -90,7 +90,7 @@ for sk in SITES:
         # ---------
         grid_intensities = []
         num_airshowers = []
-        for energy_idx in range(energy_bin["num_bins"]):
+        for energy_idx in range(energy_bin["num"]):
             energy_GeV_start = energy_bin["edges"][energy_idx]
             energy_GeV_stop = energy_bin["edges"][energy_idx + 1]
             energy_mask = np.logical_and(
@@ -118,7 +118,7 @@ for sk in SITES:
 
         # write
         # -----
-        for energy_idx in range(energy_bin["num_bins"]):
+        for energy_idx in range(energy_bin["num"]):
             grid_intensity = grid_intensities[energy_idx]
             num_airshower = num_airshowers[energy_idx]
 
