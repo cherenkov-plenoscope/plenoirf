@@ -71,9 +71,9 @@ for pk in res.COSMIC_RAYS:
     R = rates[pk]["integral"]["R"]
     R_au = rates[pk]["integral"]["R_au"]
 
-    dRdS = np.zeros(scatter_bin[pk]["num_bins"] - 1)
+    dRdS = np.zeros(scatter_bin[pk]["num"] - 1)
     dRdS_au = np.zeros(dRdS.shape)
-    for sc in range(scatter_bin[pk]["num_bins"] - 1):
+    for sc in range(scatter_bin[pk]["num"] - 1):
         dR, dR_au = pru.add(
             x=R[sc + 1],
             x_au=R_au[sc + 1],
@@ -145,14 +145,14 @@ for pk in res.COSMIC_RAYS:
     # integrate along energy to get rate
     # ----------------------------------
     R = np.zeros(shape=dRdE.shape)
-    for sc in range(scatter_bin[pk]["num_bins"]):
+    for sc in range(scatter_bin[pk]["num"]):
         R[sc, :] = dRdE[sc, :] * energy_bin["widths"]
 
     # differentiate w.r.t. scatter
     # ----------------------------
     dRdS = np.zeros(shape=(R.shape[0] - 1, R.shape[1]))
     for eb in range(energy_bin["num"]):
-        for sc in range(scatter_bin[pk]["num_bins"] - 1):
+        for sc in range(scatter_bin[pk]["num"] - 1):
             dR = R[sc + 1, eb] - R[sc, eb]
             Rmean = 0.5 * (R[sc + 1, eb] + R[sc, eb])
             dS = 1e3 * scatter_bin[pk]["widths"][sc]

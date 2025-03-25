@@ -50,7 +50,7 @@ for pk in res.PARTICLES:
     Q_au = acc["absolute_uncertainty"]
 
     dQdScatter = np.zeros(shape=(Q.shape[0] - 1, Q.shape[1]))
-    for isc in range(scatter_bin[pk]["num_bins"] - 1):
+    for isc in range(scatter_bin[pk]["num"] - 1):
         dQ = Q[isc + 1, :] - Q[isc, :]
         Qmean = 0.5 * (Q[isc + 1, :] + Q[isc, :])
         dS = 1e3 * scatter_bin[pk]["widths"][isc]

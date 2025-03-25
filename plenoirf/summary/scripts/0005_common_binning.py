@@ -46,7 +46,7 @@ for pk in PARTICLES:
     _sc["stop"] = max_scatter_solid_angle_sr
     _sc["limits"] = [_sc["start"], _sc["stop"]]
     _sc["unit"] = "sr"
-    _sc["num_bins"] = NUM_MAX_SCATTER_ANGLES
+    _sc["num"] = NUM_MAX_SCATTER_ANGLES
 
     solid_angle_step_sr = max_scatter_solid_angle_sr / NUM_MAX_SCATTER_ANGLES
     _sc["edges"] = np.zeros(NUM_MAX_SCATTER_ANGLES + 1)
