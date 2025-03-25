@@ -14,12 +14,7 @@ raw_cosmic_ray_fluxes = json_utils.tree.read(
     os.path.join(paths["analysis_dir"], "0010_flux_of_cosmic_rays")
 )
 
-energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["interpolation"]
-
-SITE = res.SITE
-COSMIC_RAYS = res.COSMIC_RAYS
+energy_bin = res.energy_binning(key="interpolation")
 
 fraction_of_flux_below_geomagnetic_cutoff = res.analysis["airshower_flux"][
     "fraction_of_flux_below_geomagnetic_cutoff"
@@ -36,7 +31,7 @@ def _rigidity_to_total_energy(rigidity_GV):
 # interpolate
 # -----------
 cosmic_ray_fluxes = {}
-for pk in COSMIC_RAYS:
+for pk in res.COSMIC_RAYS:
     cosmic_ray_fluxes[pk] = {}
     cosmic_ray_fluxes[pk]["differential_flux"] = np.interp(
         x=energy_bin["centers"],
@@ -47,10 +42,10 @@ for pk in COSMIC_RAYS:
 # earth's geomagnetic cutoff
 # --------------------------
 shower_fluxes = {}
-for pk in COSMIC_RAYS:
+for pk in res.COSMIC_RAYS:
     shower_fluxes[pk] = {}
     cutoff_energy = _rigidity_to_total_energy(
-        rigidity_GV=SITE["geomagnetic_cutoff_rigidity_GV"]
+        rigidity_GV=res.SITE["geomagnetic_cutoff_rigidity_GV"]
     )
 
     shower_fluxes[pk]["differential_flux"] = np.zeros(energy_bin["num"])
@@ -74,7 +69,7 @@ for pk in COSMIC_RAYS:
 
 # export
 # ------
-for pk in COSMIC_RAYS:
+for pk in res.COSMIC_RAYS:
     pk_dir = os.path.join(paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
     json_utils.write(

@@ -10,19 +10,13 @@ import sebastians_matplotlib_addons as sebplt
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
-
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 airshower_fluxes = json_utils.tree.read(
     os.path.join(paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 
-energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["interpolation"]
-
-particle_colors = res.analysis["plot"]["particle_colors"]
-
+energy_bin = res.energy_binning(key="interpolation")
 
 fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
 ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
@@ -34,13 +28,13 @@ for pk in airshower_fluxes:
         energy_bin["centers"],
         dFdE,
         label=pk,
-        color=particle_colors[pk],
+        color=res.PARTICLE_COLORS[pk],
     )
     ax.fill_between(
         x=energy_bin["centers"],
         y1=dFdE - dFdE_au,
         y2=dFdE + dFdE_au,
-        facecolor=particle_colors[pk],
+        facecolor=res.PARTICLE_COLORS[pk],
         alpha=0.2,
         linewidth=0.0,
     )

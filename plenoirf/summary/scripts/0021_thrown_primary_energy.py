@@ -17,11 +17,8 @@ res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
-energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["trigger_acceptance"]
-
-POINTNIG_ZENITH_BIN = res.ZenithBinning("once")
+energy_bin = res.energy_binning(key="trigger_acceptance")
+zenith_bin = res.ZenithBinning(key="once")
 
 eee = {}
 for pk in res.PARTICLES:
@@ -33,13 +30,11 @@ for pk in res.PARTICLES:
         )
 
     eee[pk] = {}
-    eee[pk]["bin_counts"] = np.zeros(
-        shape=(POINTNIG_ZENITH_BIN.num, energy_bin["num"])
-    )
+    eee[pk]["bin_counts"] = np.zeros(shape=(zenith_bin.num, energy_bin["num"]))
 
-    for zdbin in range(POINTNIG_ZENITH_BIN.num):
-        zenith_start_rad = POINTNIG_ZENITH_BIN.edges[zdbin]
-        zenith_stop_rad = POINTNIG_ZENITH_BIN.edges[zdbin + 1]
+    for zdbin in range(zenith_bin.num):
+        zenith_start_rad = zenith_bin.edges[zdbin]
+        zenith_stop_rad = zenith_bin.edges[zdbin + 1]
 
         mask = np.logical_and(
             table["primary"]["zenith_rad"] >= zenith_start_rad,
@@ -57,7 +52,7 @@ linestyles = ["-", "--", ":"]
 fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
 ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 for pk in res.PARTICLES:
-    for zdbin in range(POINTNIG_ZENITH_BIN.num):
+    for zdbin in range(zenith_bin.num):
         ax.plot(
             energy_bin["centers"],
             (eee[pk]["bin_counts"][zdbin, :] / energy_bin["widths"])
@@ -87,7 +82,7 @@ sebplt.close(fig)
 fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
 ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 for pk in res.PARTICLES:
-    for zdbin in range(POINTNIG_ZENITH_BIN.num):
+    for zdbin in range(zenith_bin.num):
         sebplt.ax_add_histogram(
             ax=ax,
             bin_edges=energy_bin["edges"],
@@ -142,7 +137,7 @@ ax = sebplt.add_axes(
 ax.set_xlim([0, 1])
 ax.set_ylim([0, 1])
 xpos = 0.0
-for zdbin in range(POINTNIG_ZENITH_BIN.num):
+for zdbin in range(zenith_bin.num):
     ax.plot(
         [xpos, xpos + 0.05],
         [0.5, 0.5],
@@ -150,8 +145,8 @@ for zdbin in range(POINTNIG_ZENITH_BIN.num):
         color="grey",
     )
     zd_str = irf.summary.make_angle_range_str(
-        start_rad=POINTNIG_ZENITH_BIN.edges[zdbin],
-        stop_rad=POINTNIG_ZENITH_BIN.edges[zdbin + 1],
+        start_rad=zenith_bin.edges[zdbin],
+        stop_rad=zenith_bin.edges[zdbin + 1],
     )
     ax.text(
         x=xpos + 0.075,

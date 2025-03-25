@@ -14,10 +14,7 @@ for the diff. sensitivity.
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
-
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
-
-COSMIC_RAYS = res.COSMIC_RAYS
 
 # load
 # ----
@@ -25,14 +22,11 @@ airshower_fluxes = json_utils.tree.read(
     os.path.join(paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 
-energy_binning = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)
-
 # prepare
 # -------
-energy_bin = energy_binning["trigger_acceptance_onregion"]
-fine_energy_bin = energy_binning["interpolation"]
+energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+fine_energy_bin = res.energy_binning(key="interpolation")
+
 fine_energy_bin_matches = []
 for E in energy_bin["edges"]:
     match = np.argmin(np.abs(fine_energy_bin["edges"] - E))
@@ -43,7 +37,7 @@ for E in energy_bin["edges"]:
 diff_flux = {}
 diff_flux_au = {}
 
-for pk in COSMIC_RAYS:
+for pk in res.COSMIC_RAYS:
     fine_dFdE = airshower_fluxes[pk]["differential_flux"]["values"]
     fine_dFdE_au = airshower_fluxes[pk]["differential_flux"][
         "absolute_uncertainty"
@@ -75,7 +69,7 @@ for pk in COSMIC_RAYS:
 
 fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
 ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-for pk in COSMIC_RAYS:
+for pk in res.COSMIC_RAYS:
     ax.plot(
         fine_energy_bin["centers"],
         airshower_fluxes[pk]["differential_flux"]["values"],
