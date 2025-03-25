@@ -18,20 +18,15 @@ res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
-energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["trigger_acceptance"]
-
-passing_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
-)
-
+energy_bin = res.energy_binning(key="trigger_acceptance")
+zenith_bin = res.zenith_binning("once")
 nat_bin = binning_utils.Binning(
     bin_edges=np.geomspace(1, 100_000, energy_bin["num"])
 )
 
-zenith_bin = res.ZenithBinning("once")
-
+passing_trigger = json_utils.tree.read(
+    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+)
 
 bbb = {}
 huh = {}
@@ -61,15 +56,15 @@ for pk in res.PARTICLES:
     huh[pk]["bin_edges"] = np.geomspace(
         1e0,
         1e6,
-        int(np.sqrt(table["groundgrid"].shape[0]) / zenith_bin.num),
+        int(np.sqrt(table["groundgrid"].shape[0]) / zenith_bin["num"]),
     )
 
     huh[pk]["bin_counts"] = {}
 
     min_number_samples = 10
-    for zd in range(zenith_bin.num):
-        zd_start = zenith_bin.edges[zd]
-        zd_stop = zenith_bin.edges[zd + 1]
+    for zd in range(zenith_bin["num"]):
+        zd_start = zenith_bin["edges"][zd]
+        zd_stop = zenith_bin["edges"][zd + 1]
 
         mask = np.logical_and(
             table["instrument_pointing"]["zenith_rad"] >= zd_start,
@@ -125,7 +120,7 @@ for pk in res.PARTICLES:
         ax_zd = sebplt.add_axes_zenith_range_indicator(
             fig=fig,
             span=[0.85, 0.11, 0.1, 0.1],
-            zenith_bin_edges_rad=zenith_bin.edges,
+            zenith_bin_edges_rad=zenith_bin["edges"],
             zenith_bin=zd,
             fontsize=5,
         )
@@ -180,7 +175,7 @@ ax_legend = sebplt.add_axes(
 )
 linestyles = ["-", "--", ":"]
 for pk in res.PARTICLES:
-    for zdbin in range(zenith_bin.num):
+    for zdbin in range(zenith_bin["num"]):
         ax.plot(
             energy_bin["centers"],
             bbb[pk]["avg"][zdbin],
@@ -213,7 +208,7 @@ ax_legend.text(
     verticalalignment="center",
 )
 
-for zdbin in range(zenith_bin.num):
+for zdbin in range(zenith_bin["num"]):
     _yy -= 0.1
     ax_legend.plot(
         [0, 0.3],
@@ -225,8 +220,8 @@ for zdbin in range(zenith_bin.num):
         x=0.4,
         y=_yy,
         s=irf.summary.make_angle_range_str(
-            start_rad=zenith_bin.edges[zdbin],
-            stop_rad=zenith_bin.edges[zdbin + 1],
+            start_rad=zenith_bin["edges"][zdbin],
+            stop_rad=zenith_bin["edges"][zdbin + 1],
         ),
         fontsize=8,
         verticalalignment="center",
@@ -245,7 +240,7 @@ sebplt.close(fig)
 # what was thrown
 # ---------------
 _ylim = []
-for zd in range(zenith_bin.num):
+for zd in range(zenith_bin["num"]):
     for pk in res.PARTICLES:
         val = huh[pk]["bin_counts"][zd] / np.sum(huh[pk]["bin_counts"][zd])
         _ylim.append(irf.utils.find_decade_limits(x=val))
@@ -253,12 +248,12 @@ _ylim = np.asarray(_ylim)
 ylim = (np.min(_ylim[:, 0]), np.max(_ylim[:, 1]))
 
 
-for zd in range(zenith_bin.num):
+for zd in range(zenith_bin["num"]):
     fig = sebplt.figure(style=sebplt.FIGURE_1_1)
     ax = sebplt.add_axes(fig=fig, span=[0.175, 0.15, 0.70, 0.8])
     ax_zd = sebplt.add_axes_zenith_range_indicator(
         fig=fig,
-        zenith_bin_edges_rad=zenith_bin.edges,
+        zenith_bin_edges_rad=zenith_bin["edges"],
         zenith_bin=zd,
         span=[0.85, 0.8, 0.15, 0.15],
         fontsize=5,

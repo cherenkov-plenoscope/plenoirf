@@ -14,11 +14,9 @@ res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
-energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["trigger_acceptance_onregion"]
+energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+zenith_bin = res.zenith_binning(key="once")
 
-zenith_bin = res.ZenithBinning(key="once")
 trigger_object_distances_m = res.config["sum_trigger"]["object_distances_m"]
 trigger_decade_step = 10 ** (1 / 22)
 trigger_object_distances_bin_edges_m = np.geomspace(
@@ -35,7 +33,6 @@ trigger_object_distances_bin_edges_m = trigger_object_distances_bin_edges_m[
 
 TRIGGER_THRESHOLD_PE = res.analysis["trigger"][res.site_key]["threshold_pe"]
 SOFT_TRIGGER_THRESHOLD_PE = TRIGGER_THRESHOLD_PE
-
 
 ttt = {}
 for pk in res.PARTICLES:
@@ -65,20 +62,22 @@ for pk in res.PARTICLES:
 
     ttt[pk]["ratio"] = np.zeros(
         shape=(
-            zenith_bin.num,
+            zenith_bin["num"],
             energy_bin["num"],
             len(trigger_object_distances_m),
         )
     )
-    ttt[pk]["num_thrown"] = np.zeros(shape=(zenith_bin.num, energy_bin["num"]))
-
-    ttt[pk]["num_have_at_least_one_focus_trigger"] = np.zeros(
-        shape=(zenith_bin.num, energy_bin["num"])
+    ttt[pk]["num_thrown"] = np.zeros(
+        shape=(zenith_bin["num"], energy_bin["num"])
     )
 
-    for zzz in range(zenith_bin.num):
-        zenith_start_rad = zenith_bin.edges[zzz]
-        zenith_stop_rad = zenith_bin.edges[zzz + 1]
+    ttt[pk]["num_have_at_least_one_focus_trigger"] = np.zeros(
+        shape=(zenith_bin["num"], energy_bin["num"])
+    )
+
+    for zzz in range(zenith_bin["num"]):
+        zenith_start_rad = zenith_bin["edges"][zzz]
+        zenith_stop_rad = zenith_bin["edges"][zzz + 1]
 
         zenith_mask = np.logical_and(
             et["instrument_pointing"]["zenith_rad"] >= zenith_start_rad,
@@ -133,7 +132,7 @@ cmap = irf.summary.figure.make_particle_colormaps(
 )
 
 for pk in ttt:
-    for zzz in range(zenith_bin.num):
+    for zzz in range(zenith_bin["num"]):
         valid_statistics = (
             ttt[pk]["num_have_at_least_one_focus_trigger"][zzz] >= 15
         )
@@ -148,7 +147,7 @@ for pk in ttt:
         ax_cb = sebplt.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
         ax_zd = sebplt.add_axes_zenith_range_indicator(
             fig=fig,
-            zenith_bin_edges_rad=zenith_bin.edges,
+            zenith_bin_edges_rad=zenith_bin["edges"],
             zenith_bin=zzz,
             span=[0.85, 0.1, 0.12, 0.12],
             fontsize=6,
@@ -198,12 +197,12 @@ for pk in ttt:
         sebplt.close(fig)
 
 
-for zzz in range(zenith_bin.num):
+for zzz in range(zenith_bin["num"]):
     fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
     ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
     ax_zd = sebplt.add_axes_zenith_range_indicator(
         fig=fig,
-        zenith_bin_edges_rad=zenith_bin.edges,
+        zenith_bin_edges_rad=zenith_bin["edges"],
         zenith_bin=zzz,
         span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
         fontsize=5,

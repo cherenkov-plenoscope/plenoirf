@@ -17,13 +17,8 @@ res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
-energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["trigger_acceptance"]
-
-particle_colors = res.analysis["plot"]["particle_colors"]
-
-POINTNIG_ZENITH_BIN = res.ZenithBinning("once")
+energy_bin = res.energy_binning(key="trigger_acceptance")
+zenith_bin = res.zenith_binning(key="once")
 
 
 def percentile(x, p):
@@ -112,10 +107,10 @@ for key in PLOTS:
             bin_edges=energy_bin["edges"],
             bincounts=hist[pk]["p50"],
             linestyle="-",
-            linecolor=particle_colors[pk],
+            linecolor=res.PARTICLE_COLORS[pk],
             bincounts_upper=hist[pk]["p16"],
             bincounts_lower=hist[pk]["p84"],
-            face_color=particle_colors[pk],
+            face_color=res.PARTICLE_COLORS[pk],
             face_alpha=0.25,
         )
     ax.set_xlabel("energy / GeV")

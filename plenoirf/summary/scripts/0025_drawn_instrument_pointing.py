@@ -17,9 +17,7 @@ res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
-energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["trigger_acceptance"]
+energy_bin = res.energy_binning(key="trigger_acceptance")
 
 hh = spherical_histogram.HemisphereHistogram(
     num_vertices=12_000,

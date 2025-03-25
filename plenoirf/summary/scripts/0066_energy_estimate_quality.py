@@ -21,8 +21,6 @@ res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
-PARTICLES = res.PARTICLES
-
 passing_trigger = json_utils.tree.read(
     os.path.join(paths["analysis_dir"], "0055_passing_trigger")
 )
@@ -37,9 +35,8 @@ reconstructed_energy = json_utils.tree.read(
         paths["analysis_dir"], "0065_learning_airshower_maximum_and_energy"
     ),
 )
-energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["trigger_acceptance_onregion"]
+
+energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 
 cta = irf.other_instruments.cherenkov_telescope_array_south
 fermi_lat = irf.other_instruments.fermi_lat
@@ -58,7 +55,7 @@ def align_on_idx(input_idx, input_values, target_idxs):
     return aligned_values
 
 
-for pk in PARTICLES:
+for pk in res.PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
         event_table = arc.query(
             levels_and_columns={"primary": ["uid", "energy_GeV"]}

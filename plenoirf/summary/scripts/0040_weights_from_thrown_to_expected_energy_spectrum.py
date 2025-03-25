@@ -10,23 +10,13 @@ import json_utils
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
-
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
-
-energy_binning = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)
-energy_bin = energy_binning["trigger_acceptance"]
-fine_energy_bin = energy_binning["interpolation"]
-
-PARTICLES = res.PARTICLES
-
-particle_colors = res.analysis["plot"]["particle_colors"]
+energy_bin = res.energy_binning(key="trigger_acceptance")
+fine_energy_bin = res.energy_binning(key="interpolation")
 
 # AIRSHOWER RATES
 # ===============
-
 airshower_rates = {}
 airshower_rates["energy_bin_centers"] = fine_energy_bin["centers"]
 
@@ -54,7 +44,7 @@ _airshower_differential_fluxes["gamma"]["differential_flux"] = (
 airshower_rates["rates"] = {}
 
 airshower_rates["rates"] = {}
-for pk in PARTICLES:
+for pk in res.PARTICLES:
     airshower_rates["rates"][pk] = (
         airshower_rates["energy_bin_centers"]
         * _airshower_differential_fluxes[pk]["differential_flux"]["values"]
@@ -75,7 +65,7 @@ energy_ranges = {}
 tables = {}
 thrown_spectrum["rates"] = {}
 energy_ranges = {}
-for pk in PARTICLES:
+for pk in res.PARTICLES:
     thrown_spectrum["rates"][pk] = {}
     energy_ranges[pk] = {}
 
@@ -91,7 +81,7 @@ for pk in PARTICLES:
     energy_ranges[pk]["min"] = np.min(_table["primary"]["energy_GeV"])
     energy_ranges[pk]["max"] = np.max(_table["primary"]["energy_GeV"])
 
-for pk in PARTICLES:
+for pk in res.PARTICLES:
     particle_dir = os.path.join(paths["out_dir"], pk)
     os.makedirs(particle_dir, exist_ok=True)
 
@@ -128,11 +118,11 @@ weights = json_utils.tree.read(paths["out_dir"])
 
 fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
 ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-for pk in PARTICLES:
+for pk in res.PARTICLES:
     ax.plot(
         weights[pk]["weights_vs_energy"]["energy_GeV"],
         weights[pk]["weights_vs_energy"]["mean"],
-        color=particle_colors[pk],
+        color=res.PARTICLE_COLORS[pk],
     )
 ax.loglog()
 ax.set_xlabel("energy / GeV")

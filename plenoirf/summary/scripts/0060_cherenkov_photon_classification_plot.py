@@ -12,7 +12,6 @@ import json_utils
 paths = irf.summary.paths_from_argv(sys.argv)
 res = irf.summary.Resources.from_argv(sys.argv)
 os.makedirs(paths["out_dir"], exist_ok=True)
-
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 
@@ -23,9 +22,7 @@ passing_quality = json_utils.tree.read(
     os.path.join(paths["analysis_dir"], "0056_passing_basic_quality")
 )
 
-energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["point_spread_function"]
+energy_bin = res.energy_binning(key="point_spread_function")
 
 span_hist_1_1 = [0.2, 0.15, 0.75, 0.8]
 
