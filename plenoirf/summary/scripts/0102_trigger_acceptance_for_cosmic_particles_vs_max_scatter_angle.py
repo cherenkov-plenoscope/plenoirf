@@ -18,21 +18,17 @@ MAX_SOURCE_ANGLE_DEG = res.analysis["gamma_ray_source_direction"][
     "max_angle_relative_to_pointing_deg"
 ]
 
-energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["trigger_acceptance_onregion"]
+energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 
 passing_trigger = json_utils.tree.read(
     os.path.join(paths["analysis_dir"], "0055_passing_trigger")
 )
 
-scatter_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "scatter.json")
-)
-
 for pk in res.PARTICLES:
     pk_dir = os.path.join(paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
+
+    scatter_bin = res.scatter_binning(particle_key=pk)
 
     with res.open_event_table(particle_key=pk) as arc:
         shower_table = arc.query(

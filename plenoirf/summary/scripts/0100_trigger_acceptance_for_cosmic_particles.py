@@ -116,14 +116,14 @@ for zd in range(zenith_bin["num"]):
         for threshold in trigger_thresholds:
             print(f"{threshold:d},", end="", flush=True)
 
-            idx_detected = irf.analysis.light_field_trigger_modi.make_indices(
+            uid_detected = irf.analysis.light_field_trigger_modi.make_indices(
                 trigger_table=point_particle_table["trigger"],
                 threshold=threshold,
                 modus=trigger_modus,
             )
             mask_detected = snt.logic.make_mask_of_right_in_left(
                 left_indices=point_particle_table["primary"]["uid"],
-                right_indices=idx_detected,
+                right_indices=uid_detected,
             )
             (
                 _q_eff,
@@ -174,14 +174,14 @@ for zd in range(zenith_bin["num"]):
         value = []
         absolute_uncertainty = []
         for threshold in trigger_thresholds:
-            idx_detected = irf.analysis.light_field_trigger_modi.make_indices(
+            uid_detected = irf.analysis.light_field_trigger_modi.make_indices(
                 trigger_table=diffuse_particle_table["trigger"],
                 threshold=threshold,
                 modus=trigger_modus,
             )
             mask_detected = snt.logic.make_mask_of_right_in_left(
                 left_indices=diffuse_particle_table["primary"]["uid"],
-                right_indices=idx_detected,
+                right_indices=uid_detected,
             )
             (
                 _q_eff,
