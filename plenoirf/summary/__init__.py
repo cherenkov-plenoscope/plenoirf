@@ -138,13 +138,18 @@ class Resources:
             self._analysis = json_utils.tree.read(path)
         return self._analysis
 
-    def event_table_path(self, particle_key):
+    def response_path(self, particle_key):
         return os.path.join(
             self.plenoirf_dir,
             "response",
             self.instrument_key,
             self.site_key,
             particle_key,
+        )
+
+    def event_table_path(self, particle_key):
+        return os.path.join(
+            self.response_path(particle_key=particle_key),
             "event_table.snt.zip",
         )
 
