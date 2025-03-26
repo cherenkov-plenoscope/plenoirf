@@ -9,19 +9,18 @@ import numpy as np
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 train_test = json_utils.tree.read(
     os.path.join(
-        paths["analysis_dir"],
+        res.paths["analysis_dir"],
         "0030_splitting_train_and_test_sample",
     )
 )
 
-os.makedirs(paths["out_dir"], exist_ok=True)
+os.makedirs(res.paths["out_dir"], exist_ok=True)
 
 PARTICLES = res.PARTICLES
 SITES = res.SITES
@@ -75,7 +74,7 @@ for pk in PARTICLES:
             feature_raw=f_raw, transformation=ft_trafo[fk]
         )
 
-    pk_dir = os.path.join(paths["out_dir"], pk)
+    pk_dir = os.path.join(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
     out_level = snt.testing.dict_to_recarray(transformed_features[pk])
@@ -89,7 +88,7 @@ for pk in PARTICLES:
 
 
 for fk in ALL_FEATURES:
-    fig_path = os.path.join(paths["out_dir"], f"{fk}.jpg")
+    fig_path = os.path.join(res.paths["out_dir"], f"{fk}.jpg")
 
     if not os.path.exists(fig_path):
         fig = sebplt.figure(sebplt.FIGURE_16_9)
@@ -141,3 +140,5 @@ for fk in ALL_FEATURES:
         ax.set_ylim([1e-5, 1.0])
         fig.savefig(fig_path)
         sebplt.close(fig)
+
+res.stop()

@@ -13,27 +13,26 @@ from sklearn import ensemble
 from sklearn import model_selection
 from sklearn import utils
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 train_test = json_utils.tree.read(
     os.path.join(
-        paths["analysis_dir"],
+        res.paths["analysis_dir"],
         "0030_splitting_train_and_test_sample",
     )
 )
 transformed_features_dir = os.path.join(
-    paths["analysis_dir"], "0062_transform_features"
+    res.paths["analysis_dir"], "0062_transform_features"
 )
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    os.path.join(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0056_passing_basic_quality")
+    os.path.join(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
 passing_trajectory = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0059_passing_trajectory_quality")
+    os.path.join(res.paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
 
 random_seed = res.analysis["random_seed"]
@@ -185,7 +184,7 @@ for pk in PARTICLES:
     particle_frames[pk] = read_event_frame(
         res=res,
         particle_key=pk,
-        run_dir=paths["plenoirf_dir"],
+        run_dir=res.paths["plenoirf_dir"],
         transformed_features_dir=transformed_features_dir,
         passing_trigger=passing_trigger,
         passing_quality=passing_quality,
@@ -231,7 +230,7 @@ _X_shuffle, _y_shuffle = sklearn.utils.shuffle(
 for mk in models:
     models[mk].fit(_X_shuffle, _y_shuffle)
 
-    model_path = os.path.join(paths["out_dir"], mk + ".pkl")
+    model_path = os.path.join(res.paths["out_dir"], mk + ".pkl")
     with open(model_path, "wb") as fout:
         fout.write(pickle.dumps(models[mk]))
 
@@ -249,6 +248,8 @@ for mk in models:
             out["unit"] = targets[tk]["unit"]
             out["uid"] = np.array(particle_frames[pk]["test"]["uid"])
 
-            pk_dir = os.path.join(paths["out_dir"], pk)
+            pk_dir = os.path.join(res.paths["out_dir"], pk)
             os.makedirs(pk_dir, exist_ok=True)
             json_utils.write(os.path.join(pk_dir, tk + ".json"), out)
+
+res.stop()

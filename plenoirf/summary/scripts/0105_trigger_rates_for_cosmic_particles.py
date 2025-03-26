@@ -8,18 +8,20 @@ import json_utils
 import propagate_uncertainties as pru
 
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 acceptance = json_utils.tree.read(
     os.path.join(
-        paths["analysis_dir"], "0100_trigger_acceptance_for_cosmic_particles"
+        res.paths["analysis_dir"],
+        "0100_trigger_acceptance_for_cosmic_particles",
     )
 )
 
 energy_binning = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    os.path.join(
+        res.paths["analysis_dir"], "0005_common_binning", "energy.json"
+    )
 )
 energy_bin = energy_binning["trigger_acceptance"]
 fine_energy_bin = energy_binning["interpolation"]
@@ -27,14 +29,14 @@ fine_energy_bin = energy_binning["interpolation"]
 # cosmic-ray-flux
 # ----------------
 airshower_fluxes = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0015_flux_of_airshowers")
+    os.path.join(res.paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 
 # gamma-ray-flux of reference source
 # ----------------------------------
 gamma_source = json_utils.read(
     os.path.join(
-        paths["analysis_dir"],
+        res.paths["analysis_dir"],
         "0009_flux_of_gamma_rays",
         "reference_source.json",
     )
@@ -75,7 +77,7 @@ num_trigger_thresholds = len(trigger_thresholds)
 
 # gamma-ray
 # ---------
-gamma_dir = os.path.join(paths["out_dir"], "gamma")
+gamma_dir = os.path.join(res.paths["out_dir"], "gamma")
 os.makedirs(gamma_dir, exist_ok=True)
 
 _A = acceptance["gamma"]["point"]["mean"]
@@ -132,7 +134,7 @@ json_utils.write(
 # cosmic-rays
 # -----------
 for ck in airshower_fluxes:
-    ck_dir = os.path.join(paths["out_dir"], ck)
+    ck_dir = os.path.join(res.paths["out_dir"], ck)
     os.makedirs(ck_dir, exist_ok=True)
 
     _Q = acceptance[ck]["diffuse"]["mean"]
@@ -191,3 +193,5 @@ for ck in airshower_fluxes:
             "absolute_uncertainty": R_au,
         },
     )
+
+res.stop()

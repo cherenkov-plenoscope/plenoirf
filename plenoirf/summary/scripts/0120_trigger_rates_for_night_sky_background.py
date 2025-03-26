@@ -6,9 +6,8 @@ import sparse_numeric_table as snt
 import os
 import json_utils
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 MAX_CHERENKOV_IN_NSB_PE = res.analysis["night_sky_background"][
     "max_num_true_cherenkov_photons"
@@ -66,7 +65,7 @@ relative_uncertainty = irf.utils._divide_silent(
 )
 
 json_utils.write(
-    os.path.join(paths["out_dir"], "night_sky_background_rates.json"),
+    os.path.join(res.paths["out_dir"], "night_sky_background_rates.json"),
     {
         "comment": (
             "Trigger rate for night-sky-background"
@@ -78,3 +77,5 @@ json_utils.write(
         "relative_uncertainty": relative_uncertainty,
     },
 )
+
+res.stop()

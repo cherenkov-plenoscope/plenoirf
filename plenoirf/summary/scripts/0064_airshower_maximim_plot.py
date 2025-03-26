@@ -9,25 +9,24 @@ import numpy as np
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 PARTICLES = res.PARTICLES
 
 weights_thrown2expected = json_utils.tree.read(
     os.path.join(
-        paths["analysis_dir"],
+        res.paths["analysis_dir"],
         "0040_weights_from_thrown_to_expected_energy_spectrum",
     )
 )
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    os.path.join(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0056_passing_basic_quality")
+    os.path.join(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
 
 num_bins = 32
@@ -126,5 +125,7 @@ for pk in PARTICLES:
         linestyle="-",
         linecolor="k",
     )
-    fig.savefig(opj(paths["out_dir"], f"{pk}_maximum.jpg"))
+    fig.savefig(opj(res.paths["out_dir"], f"{pk}_maximum.jpg"))
     sebplt.close(fig)
+
+res.stop()

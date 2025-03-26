@@ -11,15 +11,14 @@ Rebin the diff. flux of cosmic-rays dFdE into the energy-binning used
 for the diff. sensitivity.
 """
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 # load
 # ----
 airshower_fluxes = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0015_flux_of_airshowers")
+    os.path.join(res.paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 
 # prepare
@@ -56,7 +55,7 @@ for pk in res.COSMIC_RAYS:
     diff_flux_au[pk] = dFdE_au
 
     json_utils.write(
-        os.path.join(paths["out_dir"], pk + ".json"),
+        os.path.join(res.paths["out_dir"], pk + ".json"),
         {
             "energy_binning_key": energy_binning_key,
             "differential_flux": dFdE,
@@ -99,6 +98,10 @@ ax.text(
     transform=ax.transAxes,
 )
 fig.savefig(
-    os.path.join(paths["out_dir"], "airshower_differential_flux_rebinned.jpg")
+    os.path.join(
+        res.paths["out_dir"], "airshower_differential_flux_rebinned.jpg"
+    )
 )
 sebplt.close(fig)
+
+res.stop()

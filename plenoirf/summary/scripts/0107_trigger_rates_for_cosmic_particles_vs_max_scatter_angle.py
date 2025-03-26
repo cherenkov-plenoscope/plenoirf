@@ -8,25 +8,26 @@ import json_utils
 import propagate_uncertainties as pru
 
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 acceptance = json_utils.tree.read(
     os.path.join(
-        paths["analysis_dir"],
+        res.paths["analysis_dir"],
         "0102_trigger_acceptance_for_cosmic_particles_vs_max_scatter_angle",
     )
 )
 
 energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    os.path.join(
+        res.paths["analysis_dir"], "0005_common_binning", "energy.json"
+    )
 )["trigger_acceptance_onregion"]
 
 # cosmic-ray-flux
 # ----------------
 airshower_fluxes = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0017_flux_of_airshowers_rebin")
+    os.path.join(res.paths["analysis_dir"], "0017_flux_of_airshowers_rebin")
 )
 
 """
@@ -48,7 +49,7 @@ source_key = "diffuse"
 # cosmic-rays
 # -----------
 for ck in res.COSMIC_RAYS:
-    ck_dir = os.path.join(paths["out_dir"], ck)
+    ck_dir = os.path.join(res.paths["out_dir"], ck)
     os.makedirs(ck_dir, exist_ok=True)
 
     Q = acceptance[ck][source_key]["mean"]
@@ -97,3 +98,5 @@ for ck in res.COSMIC_RAYS:
             "R_au": R_au,
         },
     )
+
+res.stop()

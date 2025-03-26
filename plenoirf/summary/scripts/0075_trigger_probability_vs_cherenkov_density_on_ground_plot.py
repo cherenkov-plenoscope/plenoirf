@@ -7,14 +7,13 @@ from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 trigger_vs_size = json_utils.tree.read(
     os.path.join(
-        paths["analysis_dir"],
+        res.paths["analysis_dir"],
         "0074_trigger_probability_vs_cherenkov_density_on_ground",
     )
 )
@@ -67,5 +66,7 @@ for tm in trigger_modi:
     ax.set_ylim([1e-6, 1.5e-0])
     ax.set_xlabel("density of Cherenkov photons on mirror / m$^{-2}$")
     ax.set_ylabel("{:s} / 1".format(trigger_modi[tm]))
-    fig.savefig(opj(paths["out_dir"], f"{tm}.jpg"))
+    fig.savefig(opj(res.paths["out_dir"], f"{tm}.jpg"))
     sebplt.close(fig)
+
+res.stop()

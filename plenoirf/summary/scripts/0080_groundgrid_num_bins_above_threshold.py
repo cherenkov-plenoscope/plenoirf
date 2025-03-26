@@ -13,9 +13,8 @@ import binning_utils
 import sebastians_matplotlib_addons as sebplt
 import confusion_matrix
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 energy_bin = res.energy_binning(key="trigger_acceptance")
@@ -25,7 +24,7 @@ nat_bin = binning_utils.Binning(
 )
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    os.path.join(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 
 bbb = {}
@@ -163,7 +162,9 @@ for pk in res.PARTICLES:
             linecolor="k",
         )
         fig.savefig(
-            os.path.join(paths["out_dir"], f"{pk:s}_zenith{zd:03d}_grid.jpg")
+            os.path.join(
+                res.paths["out_dir"], f"{pk:s}_zenith{zd:03d}_grid.jpg"
+            )
         )
         sebplt.close(fig)
 
@@ -233,7 +234,7 @@ ax.set_ylim([1e0, 1e5])
 ax.loglog()
 ax.set_xlabel("energy / GeV")
 ax.set_ylabel("num. bins above threshold / 1")
-fig.savefig(os.path.join(paths["out_dir"], "num_bins_above_threshold.jpg"))
+fig.savefig(os.path.join(res.paths["out_dir"], "num_bins_above_threshold.jpg"))
 sebplt.close(fig)
 
 
@@ -278,6 +279,8 @@ for zd in range(zenith_bin["num"]):
     ax.set_xlabel("num. bins above threshold / 1")
     ax.set_ylabel("relative intensity / 1")
     fig.savefig(
-        os.path.join(paths["out_dir"], f"what_was_throwm_zd{zd:d}.jpg")
+        os.path.join(res.paths["out_dir"], f"what_was_throwm_zd{zd:d}.jpg")
     )
     sebplt.close(fig)
+
+res.stop()

@@ -7,9 +7,8 @@ import sparse_numeric_table as snt
 import os
 import json_utils
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 MAX_SOURCE_ANGLE_RAD = np.deg2rad(
     res.analysis["gamma_ray_source_direction"][
@@ -31,7 +30,7 @@ for zd in range(zenith_bin["num"]):
     zenith_start_rad = zenith_bin["edges"][zd]
     zenith_stop_rad = zenith_bin["edges"][zd + 1]
 
-    zd_dir = os.path.join(paths["out_dir"], f"zd{zd:d}")
+    zd_dir = os.path.join(res.paths["out_dir"], f"zd{zd:d}")
     os.makedirs(zd_dir, exist_ok=True)
 
     for pk in res.PARTICLES:
@@ -212,3 +211,5 @@ for zd in range(zenith_bin["num"]):
                 "absolute_uncertainty": absolute_uncertainty,
             },
         )
+
+res.stop()

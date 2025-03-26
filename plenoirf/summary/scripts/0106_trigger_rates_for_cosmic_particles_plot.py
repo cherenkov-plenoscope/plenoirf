@@ -6,19 +6,20 @@ import os
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 cosmic_rates = json_utils.tree.read(
     os.path.join(
-        paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles"
+        res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles"
     )
 )
 
 fine_energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    os.path.join(
+        res.paths["analysis_dir"], "0005_common_binning", "energy.json"
+    )
 )["interpolation"]
 
 mean_key = "mean"
@@ -82,5 +83,9 @@ ax.set_ylabel("differential trigger-rate /\ns$^{-1}$ (GeV)$^{-1}$")
 ax.loglog()
 ax.set_xlim(fine_energy_bin["limits"])
 ax.set_ylim([1e-3, 1e5])
-fig.savefig(os.path.join(paths["out_dir"], "differential_trigger_rate.jpg"))
+fig.savefig(
+    os.path.join(res.paths["out_dir"], "differential_trigger_rate.jpg")
+)
 sebplt.close(fig)
+
+res.stop()

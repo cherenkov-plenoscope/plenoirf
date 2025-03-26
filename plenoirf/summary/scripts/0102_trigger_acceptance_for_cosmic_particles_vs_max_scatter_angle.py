@@ -10,9 +10,8 @@ import magnetic_deflection as mdfl
 import spherical_coordinates
 import solid_angle_utils
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 MAX_SOURCE_ANGLE_DEG = res.analysis["gamma_ray_source_direction"][
     "max_angle_relative_to_pointing_deg"
@@ -21,11 +20,11 @@ MAX_SOURCE_ANGLE_DEG = res.analysis["gamma_ray_source_direction"][
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    os.path.join(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 
 for pk in res.PARTICLES:
-    pk_dir = os.path.join(paths["out_dir"], pk)
+    pk_dir = os.path.join(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
     scatter_bin = res.scatter_binning(particle_key=pk)
@@ -151,3 +150,5 @@ for pk in res.PARTICLES:
             "absolute_uncertainty": Q_au,
         },
     )
+
+res.stop()

@@ -9,9 +9,8 @@ import sebastians_matplotlib_addons as sebplt
 import copy
 
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
@@ -190,7 +189,7 @@ for pk in ttt:
 
         fig.savefig(
             os.path.join(
-                paths["out_dir"],
+                res.paths["out_dir"],
                 f"{pk:s}_trigger_probability_vs_object_distance_in_zenith_bin_{zzz:02d}.jpg",
             )
         )
@@ -241,8 +240,10 @@ for zzz in range(zenith_bin["num"]):
 
     fig.savefig(
         os.path.join(
-            paths["out_dir"],
+            res.paths["out_dir"],
             f"trigger_probability_in_zenith_bin_{zzz:02d}.jpg",
         )
     )
     sebplt.close(fig)
+
+res.stop()

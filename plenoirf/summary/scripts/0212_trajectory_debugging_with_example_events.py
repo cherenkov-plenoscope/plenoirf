@@ -9,8 +9,8 @@ import gamma_ray_reconstruction as gamrec
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 irf_config = irf.summary.read_instrument_response_config(
     run_dir=paths["plenoirf_dir"]
@@ -365,3 +365,5 @@ for sk in irf_config["config"]["sites"]:
 
                 fig.savefig(path)
                 sebplt.close(fig)
+
+res.stop()

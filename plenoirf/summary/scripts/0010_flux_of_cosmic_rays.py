@@ -5,8 +5,8 @@ import os
 import json_utils
 import cosmic_fluxes
 
-paths = irf.summary.paths_from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 STOP_ENERGY = 1e4
 
@@ -47,5 +47,7 @@ for ck in cosmic_rays:
     assert out["energy"]["values"][-1] >= STOP_ENERGY
 
     json_utils.write(
-        os.path.join(paths["out_dir"], ck + ".json"), out, indent=4
+        os.path.join(res.paths["out_dir"], ck + ".json"), out, indent=4
     )
+
+res.stop()

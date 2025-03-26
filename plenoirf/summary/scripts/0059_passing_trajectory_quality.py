@@ -6,12 +6,11 @@ import sparse_numeric_table as snt
 import os
 import json_utils
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 for pk in res.PARTICLES:
-    pk_dir = os.path.join(paths["out_dir"], pk)
+    pk_dir = os.path.join(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
     with res.open_event_table(particle_key=pk) as arc:
@@ -54,3 +53,5 @@ for pk in res.PARTICLES:
     uids_passed = event_frame["uid"][mask]
 
     json_utils.write(os.path.join(pk_dir, "uid.json"), uids_passed)
+
+res.stop()

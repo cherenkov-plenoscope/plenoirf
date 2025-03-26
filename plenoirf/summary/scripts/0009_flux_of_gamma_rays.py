@@ -5,24 +5,17 @@ import os
 import json_utils
 import cosmic_fluxes
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 energy_bin = res.energy_binning(key="interpolation")
 
-# load catalog
-# ------------
 fermi_3fgl = cosmic_fluxes.fermi_3fgl_catalog()
 
-# export catalog locally
-# ----------------------
 json_utils.write(
-    os.path.join(paths["out_dir"], "fermi_3fgl_catalog.json"), fermi_3fgl
+    os.path.join(res.paths["out_dir"], "fermi_3fgl_catalog.json"), fermi_3fgl
 )
 
-# make reference source
-# ---------------------
 (
     differential_flux_per_m2_per_s_per_GeV,
     name,
@@ -33,7 +26,7 @@ json_utils.write(
 )
 
 json_utils.write(
-    os.path.join(os.path.join(paths["out_dir"], "reference_source.json")),
+    os.path.join(res.paths["out_dir"], "reference_source.json"),
     {
         "name": name,
         "differential_flux": {
@@ -47,3 +40,5 @@ json_utils.write(
         "energy_implicit": {"fine": "interpolation", "supports": "centers"},
     },
 )
+
+res.stop()

@@ -12,9 +12,8 @@ import spherical_histogram
 import sebastians_matplotlib_addons as sebplt
 
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 energy_bin = res.energy_binning(key="trigger_acceptance")
@@ -118,5 +117,7 @@ for key in PLOTS:
     ax.set_ylim(y_lim)
     ax.semilogx()
     ax.set_xlim(energy_bin["limits"])
-    fig.savefig(os.path.join(paths["out_dir"], f"{key:s}.jpg"))
+    fig.savefig(os.path.join(res.paths["out_dir"], f"{key:s}.jpg"))
     sebplt.close(fig)
+
+res.stop()

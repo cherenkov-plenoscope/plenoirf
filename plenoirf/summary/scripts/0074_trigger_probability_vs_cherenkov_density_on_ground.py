@@ -7,18 +7,17 @@ import sparse_numeric_table as snt
 import plenoirf as irf
 import json_utils
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 trigger_modi = {}
 trigger_modi["passing_trigger"] = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 trigger_modi["passing_trigger_if_only_accepting_not_rejecting"] = (
     json_utils.tree.read(
-        os.path.join(
-            paths["analysis_dir"],
+        opj(
+            res.paths["analysis_dir"],
             "0054_passing_trigger_if_only_accepting_not_rejecting",
         )
     )
@@ -28,7 +27,7 @@ grid_bin_area_m2 = res.config["ground_grid"]["geometry"]["bin_width_m"] ** 2.0
 density_bin_edges_per_m2 = np.geomspace(1e-3, 1e4, 7 * 5 + 1)
 
 for pk in res.PARTICLES:
-    pk_dir = opj(paths["out_dir"], pk)
+    pk_dir = opj(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
     with res.open_event_table(particle_key=pk) as arc:
@@ -88,3 +87,5 @@ for pk in res.PARTICLES:
                 "relative_uncertainty": trigger_probability_unc,
             },
         )
+
+res.stop()

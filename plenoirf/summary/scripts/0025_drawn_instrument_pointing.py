@@ -12,9 +12,8 @@ import spherical_histogram
 import sebastians_matplotlib_addons as sebplt
 
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 energy_bin = res.energy_binning(key="trigger_acceptance")
@@ -120,5 +119,9 @@ for pk in res.PARTICLES:
     _mappable = sebplt.plt.cm.ScalarMappable(norm=_norm, cmap=cmap)
     sebplt.plt.colorbar(mappable=_mappable, cax=ax_colorbar)
     ax_colorbar.set_ylabel(r"intensity / sr$^{-1}$")
-    fig.savefig(os.path.join(paths["out_dir"], f"{pk:s}_pointings_drawn.jpg"))
+    fig.savefig(
+        os.path.join(res.paths["out_dir"], f"{pk:s}_pointings_drawn.jpg")
+    )
     sebplt.close(fig)
+
+res.stop()

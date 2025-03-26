@@ -9,17 +9,15 @@ import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
-
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    os.path.join(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0056_passing_basic_quality")
+    os.path.join(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
 
 energy_bin = res.energy_binning(key="point_spread_function")
@@ -35,7 +33,7 @@ def guess_num_bins(num_events):
 CHCL = "cherenkovclassification"
 
 for pk in res.PARTICLES:
-    pk_dir = opj(paths["out_dir"], pk)
+    pk_dir = opj(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
     with res.open_event_table(particle_key=pk) as arc:
@@ -109,7 +107,7 @@ for pk in res.PARTICLES:
     ax_h.set_xlim([np.min(size_bin_edges), np.max(size_bin_edges)])
     ax_h.set_xlabel("true Cherenkov-size / p.e.")
     ax_h.set_ylabel("num. events")
-    fig.savefig(opj(paths["out_dir"], pk + "_" + key + ".jpg"))
+    fig.savefig(opj(res.paths["out_dir"], pk + "_" + key + ".jpg"))
     sebplt.close(fig)
 
     # ---------------------------------------------------------------------
@@ -175,7 +173,7 @@ for pk in res.PARTICLES:
     ax.set_xlim(energy_bin["limits"])
     ax.set_ylim([0, 1])
     ax.semilogx()
-    fig.savefig(opj(paths["out_dir"], pk + "_" + key + ".jpg"))
+    fig.savefig(opj(res.paths["out_dir"], pk + "_" + key + ".jpg"))
     sebplt.close(fig)
 
     json_utils.write(
@@ -236,7 +234,7 @@ for pk in res.PARTICLES:
     ax.set_ylabel("Cherenkov-size true/extracted / 1")
     ax.set_xlim(energy_bin["limits"])
     ax.semilogx()
-    fig.savefig(opj(paths["out_dir"], pk + "_" + key + ".jpg"))
+    fig.savefig(opj(res.paths["out_dir"], pk + "_" + key + ".jpg"))
     sebplt.close(fig)
 
     json_utils.write(
@@ -296,7 +294,7 @@ for pk in res.PARTICLES:
     ax.set_ylabel("Cherenkov-size true/extracted / 1")
     ax.set_xlim([np.min(size_bin_edges), np.max(size_bin_edges)])
     ax.semilogx()
-    fig.savefig(opj(paths["out_dir"], pk + "_" + key + ".jpg"))
+    fig.savefig(opj(res.paths["out_dir"], pk + "_" + key + ".jpg"))
     sebplt.close(fig)
 
     json_utils.write(
@@ -307,3 +305,5 @@ for pk in res.PARTICLES:
             "true_over_reco_ratios": num_ratios,
         },
     )
+
+res.stop()

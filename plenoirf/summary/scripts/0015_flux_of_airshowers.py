@@ -6,12 +6,11 @@ import plenoirf as irf
 import os
 import json_utils
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 raw_cosmic_ray_fluxes = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0010_flux_of_cosmic_rays")
+    os.path.join(res.paths["analysis_dir"], "0010_flux_of_cosmic_rays")
 )
 
 energy_bin = res.energy_binning(key="interpolation")
@@ -70,7 +69,7 @@ for pk in res.COSMIC_RAYS:
 # export
 # ------
 for pk in res.COSMIC_RAYS:
-    pk_dir = os.path.join(paths["out_dir"], pk)
+    pk_dir = os.path.join(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
     json_utils.write(
         os.path.join(pk_dir, "differential_flux.json"),
@@ -85,3 +84,5 @@ for pk in res.COSMIC_RAYS:
             "unit": raw_cosmic_ray_fluxes[pk]["differential_flux"]["unit"],
         },
     )
+
+res.stop()

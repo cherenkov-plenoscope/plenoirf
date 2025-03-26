@@ -7,14 +7,13 @@ from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 trigger_vs_size = json_utils.tree.read(
-    os.path.join(
-        paths["analysis_dir"], "0070_trigger_probability_vs_cherenkov_size"
+    opj(
+        res.paths["analysis_dir"], "0070_trigger_probability_vs_cherenkov_size"
     )
 )
 
@@ -69,8 +68,10 @@ ax.set_xlabel("true Cherenkov-size / p.e.")
 ax.set_ylabel("trigger-probability / 1")
 fig.savefig(
     opj(
-        paths["out_dir"],
+        res.paths["out_dir"],
         "trigger_probability_vs_cherenkov_size.jpg",
     )
 )
 sebplt.close(fig)
+
+res.stop()

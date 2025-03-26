@@ -8,22 +8,20 @@ import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
-sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 weights_thrown2expected = json_utils.tree.read(
     os.path.join(
-        paths["analysis_dir"],
+        res.paths["analysis_dir"],
         "0040_weights_from_thrown_to_expected_energy_spectrum",
     )
 )
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    os.path.join(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0056_passing_basic_quality")
+    os.path.join(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
 
 particle_colors = res.analysis["plot"]["particle_colors"]
@@ -174,5 +172,7 @@ for fk in Sfeatures:
         ]
     )
     ax.set_ylim([1e-5, 1.0])
-    fig.savefig(os.path.join(paths["out_dir"], f"{fk:s}.jpg"))
+    fig.savefig(os.path.join(res.paths["out_dir"], f"{fk:s}.jpg"))
     sebplt.close(fig)
+
+res.stop()

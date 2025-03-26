@@ -47,56 +47,59 @@ def argv_since_py(argv):
     return _argv
 
 
-def paths_from_argv(argv):
-    argv = argv_since_py(argv)
-
-    assert len(argv) == 4
-    plenoirf_dir = argv[1]
-    instrument_key = argv[2]
-    site_key = argv[3]
-    analysis_dir = os.path.join(
-        plenoirf_dir, "analysis", instrument_key, site_key
-    )
-    script_name = str.split(os.path.basename(argv[0]), ".")[0]
-    return {
-        "plenoirf_dir": plenoirf_dir,
-        "instrument_key": instrument_key,
-        "script_name": script_name,
-        "analysis_dir": analysis_dir,
-        "out_dir": os.path.join(analysis_dir, script_name),
-        "cache_dir": os.path.join(analysis_dir, script_name, "__cache__"),
-    }
-
-
-class Resources:
+class ScriptResources:
     """
     Lazy
     """
 
-    def __init__(self, plenoirf_dir, instrument_key, site_key):
-        self.plenoirf_dir = plenoirf_dir
+    def __init__(self, plenoirf_dir, instrument_key, site_key, script_name):
         self.instrument_key = instrument_key
         self.site_key = site_key
+        self.script_name = script_name
+
+        self.paths = {}
+        self.paths["plenoirf_dir"] = plenoirf_dir
+        self.paths["analysis_dir"] = os.path.join(
+            plenoirf_dir, "analysis", instrument_key, site_key
+        )
+        self.paths["final_out_dir"] = os.path.join(
+            self.paths["analysis_dir"], script_name
+        )
+        self.paths["out_dir"] = os.path.join(
+            self.paths["analysis_dir"], f".{script_name:s}.incomplete"
+        )
+
+    def start(self):
+        os.makedirs(self.paths["out_dir"], exist_ok=True)
+
+    def stop(self):
+        os.rename(src=self.paths["out_dir"], dst=self.paths["final_out_dir"])
 
     @classmethod
     def from_argv(cls, argv):
         argv = argv_since_py(argv)
         assert len(argv) == 4
+        script_name = str.split(os.path.basename(argv[0]), ".")[0]
         return cls(
-            plenoirf_dir=argv[1], instrument_key=argv[2], site_key=argv[3]
+            plenoirf_dir=argv[1],
+            instrument_key=argv[2],
+            site_key=argv[3],
+            script_name=script_name,
         )
 
     @property
     def config(self):
         if not hasattr(self, "_config"):
-            self._config = configuration.read(plenoirf_dir=self.plenoirf_dir)
+            self._config = configuration.read(
+                plenoirf_dir=self.paths["plenoirf_dir"]
+            )
         return self._config
 
     @property
     def instrument(self):
         if not hasattr(self, "_instrument"):
             self._instrument = read_instrument_config(
-                plenoirf_dir=self.plenoirf_dir,
+                plenoirf_dir=self.paths["plenoirf_dir"],
                 instrument_key=self.instrument_key,
             )
         return self._instrument
@@ -131,7 +134,7 @@ class Resources:
     def analysis(self):
         if not hasattr(self, "_analysis"):
             path = os.path.join(
-                self.plenoirf_dir,
+                self.paths["plenoirf_dir"],
                 "analysis",
                 self.instrument_key,
                 "config",
@@ -141,7 +144,7 @@ class Resources:
 
     def response_path(self, particle_key):
         return os.path.join(
-            self.plenoirf_dir,
+            self.paths["plenoirf_dir"],
             "response",
             self.instrument_key,
             self.site_key,
