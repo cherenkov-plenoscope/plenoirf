@@ -12,18 +12,15 @@ import propagate_uncertainties as pru
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
+energy_bin = res.energy_binning(key="trigger_acceptance")
+fine_energy_bin = res.energy_binning(key="interpolation")
+
 acceptance = json_utils.tree.read(
     opj(
         res.paths["analysis_dir"],
         "0100_trigger_acceptance_for_cosmic_particles",
     )
 )
-
-energy_binning = json_utils.read(
-    opj(res.paths["analysis_dir"], "0005_common_binning", "energy.json")
-)
-energy_bin = energy_binning["trigger_acceptance"]
-fine_energy_bin = energy_binning["interpolation"]
 
 # cosmic-ray-flux
 # ----------------

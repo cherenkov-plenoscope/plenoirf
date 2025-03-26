@@ -11,15 +11,7 @@ import copy
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-
-energy_bin = json_utils.read(
-    opj(res.paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["trigger_acceptance_onregion"]
-
-scatter_bin = json_utils.read(
-    opj(res.paths["analysis_dir"], "0005_common_binning", "scatter.json")
-)
-
+energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 acceptance = json_utils.tree.read(
     opj(
         res.paths["analysis_dir"],
@@ -33,8 +25,9 @@ source_key = "diffuse"
 # --------------------
 MAX_SCATTER_SOLID_ANGLE_SR = 0.0
 for pk in res.PARTICLES:
+    scatter_bin = res.scatter_binning(particle_key=pk)
     MAX_SCATTER_SOLID_ANGLE_SR = np.max(
-        [MAX_SCATTER_SOLID_ANGLE_SR, scatter_bin[pk]["stop"]]
+        [MAX_SCATTER_SOLID_ANGLE_SR, scatter_bin["stop"]]
     )
 
 AXSPAN = copy.deepcopy(irf.summary.figure.AX_SPAN)
@@ -42,6 +35,7 @@ AXSPAN = [AXSPAN[0], AXSPAN[1], AXSPAN[2], AXSPAN[3]]
 
 for pk in res.PARTICLES:
     print("plot 2D", pk)
+    scatter_bin = res.scatter_binning(particle_key=pk)
 
     acc = acceptance[pk][source_key]
 
@@ -49,10 +43,10 @@ for pk in res.PARTICLES:
     Q_au = acc["absolute_uncertainty"]
 
     dQdScatter = np.zeros(shape=(Q.shape[0] - 1, Q.shape[1]))
-    for isc in range(scatter_bin[pk]["num"] - 1):
+    for isc in range(scatter_bin["num"] - 1):
         dQ = Q[isc + 1, :] - Q[isc, :]
         Qmean = 0.5 * (Q[isc + 1, :] + Q[isc, :])
-        dS = 1e3 * scatter_bin[pk]["widths"][isc]
+        dS = 1e3 * scatter_bin["widths"][isc]
 
         with np.errstate(divide="ignore", invalid="ignore"):
             dQdScatter[isc, :] = (dQ / dS) / Qmean
@@ -88,7 +82,7 @@ for pk in res.PARTICLES:
     )
     pcm_ratio = ax.pcolormesh(
         energy_bin["edges"],
-        1e3 * scatter_bin[pk]["edges"][0:-1],
+        1e3 * scatter_bin["edges"][0:-1],
         dQdScatter,
         norm=sebplt.plt_colors.LogNorm(vmin=1e-4, vmax=1e0),
         cmap="terrain_r",

@@ -10,13 +10,11 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
+fine_energy_bin = res.energy_binning(key="interpolation")
+
 cosmic_rates = json_utils.tree.read(
     opj(res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles")
 )
-
-fine_energy_bin = json_utils.read(
-    opj(res.paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["interpolation"]
 
 mean_key = "mean"
 unc_key = "absolute_uncertainty"

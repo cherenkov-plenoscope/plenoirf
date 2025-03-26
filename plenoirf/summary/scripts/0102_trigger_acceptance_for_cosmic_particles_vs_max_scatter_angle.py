@@ -75,8 +75,8 @@ for pk in res.PARTICLES:
 
     Q = []
     Q_au = []
-    for ci in range(scatter_bin[pk]["num"]):
-        scatter_cone_solid_angle_sr = scatter_bin[pk]["edges"][ci + 1]
+    for ci in range(scatter_bin["num"]):
+        scatter_cone_solid_angle_sr = scatter_bin["edges"][ci + 1]
         max_scatter_angle_rad = solid_angle_utils.cone.half_angle(
             solid_angle_sr=scatter_cone_solid_angle_sr
         )
