@@ -8,6 +8,7 @@ import os
 from os.path import join as opj
 import json_utils
 import magnetic_deflection as mdfl
+import binning_utils
 import spherical_coordinates
 import solid_angle_utils
 import binning_utils
@@ -26,6 +27,36 @@ nat_bin = binning_utils.Binning(
 passing_trigger = json_utils.tree.read(
     opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
+
+
+def histogram(x, uid, bin_edges):
+    assert len(x) == len(uid)
+
+    _hist, _ = np.histogram(x, bins=bin_edges)
+    _hist_bin_indices = np.digitize(x, bins=bin_edges)
+
+    _hist_bin_uids = {}
+    for i in range(len(x)):
+        _hist_bin_index = int(_hist_bin_indices[i])
+        _uid = uid[i]
+
+        if _hist_bin_index in _hist_bin_uids:
+            _hist_bin_uids[_hist_bin_index].append(_uid)
+        else:
+            _hist_bin_uids[_hist_bin_index] = [_uid]
+
+    for _hist_bin_index in _hist_bin_uids:
+        _hist_bin_uids[_hist_bin_index] = np.asarray(
+            _hist_bin_uids[_hist_bin_index]
+        )
+
+    return _hist, _hist_bin_uids
+
+
+def size_num_bin_edges(start_decade, stop_decade, num_steps_per_decade):
+    num_decades = stop_decade - start_decade
+    return num_decades * num_steps_per_decade + 1
+
 
 bbb = {}
 huh = {}
@@ -55,10 +86,13 @@ for pk in res.PARTICLES:
     huh[pk]["bin_edges"] = np.geomspace(
         1e0,
         1e6,
-        int(np.sqrt(table["groundgrid"].shape[0]) / zenith_bin["num"]),
+        size_num_bin_edges(
+            start_decade=0, stop_decade=6, num_steps_per_decade=10
+        ),
     )
 
     huh[pk]["bin_counts"] = {}
+    huh[pk]["bin_indices"] = {}
 
     min_number_samples = 10
     for zd in range(zenith_bin["num"]):
@@ -70,10 +104,11 @@ for pk in res.PARTICLES:
             table["instrument_pointing"]["zenith_rad"] < zd_stop,
         )
 
-        huh[pk]["bin_counts"][zd] = np.histogram(
-            table["groundgrid"]["num_bins_above_threshold"][mask],
-            bins=huh[pk]["bin_edges"],
-        )[0]
+        huh[pk]["bin_counts"][zd], huh[pk]["bin_indices"][zd] = histogram(
+            x=table["groundgrid"]["num_bins_above_threshold"][mask],
+            uid=table["groundgrid"]["uid"][mask],
+            bin_edges=huh[pk]["bin_edges"],
+        )
 
         # 1D VS energy
         # ------------

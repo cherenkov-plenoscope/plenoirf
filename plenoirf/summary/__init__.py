@@ -17,7 +17,7 @@ import atmospheric_cherenkov_response
 import merlict_development_kit_python
 import solid_angle_utils
 import binning_utils
-import sys
+import shutil
 
 from .. import utils
 
@@ -78,7 +78,15 @@ class ScriptResources:
             )
 
     def stop(self):
+        obsolete_dir = None
+        if os.path.exists(self.paths["final_out_dir"]):
+            obsolete_dir = self.paths["final_out_dir"] + ".trash"
+            os.rename(src=self.paths["final_out_dir"], dst=obsolete_dir)
+
         os.rename(src=self.paths["out_dir"], dst=self.paths["final_out_dir"])
+
+        if obsolete_dir is not None:
+            shutil.rmtree(path=obsolete_dir)
 
     @classmethod
     def from_argv(cls, argv):
