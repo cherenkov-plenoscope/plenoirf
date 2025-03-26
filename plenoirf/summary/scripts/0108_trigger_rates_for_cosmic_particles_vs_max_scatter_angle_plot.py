@@ -10,8 +10,7 @@ import copy
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
-res.start()
-sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+res.start(sebplt=sebplt)
 
 energy_bin = json_utils.read(
     os.path.join(

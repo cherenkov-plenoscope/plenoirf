@@ -9,8 +9,7 @@ import json_utils
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
-res.start()
-sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+res.start(sebplt=sebplt)
 
 TRIGGER = res.analysis["trigger"][res.site_key]
 

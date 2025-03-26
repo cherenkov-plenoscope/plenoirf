@@ -10,8 +10,7 @@ import copy
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
-res.start()
-sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+res.start(sebplt=sebplt)
 
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 zenith_bin = res.zenith_binning(key="once")

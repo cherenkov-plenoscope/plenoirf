@@ -13,8 +13,7 @@ import sebastians_matplotlib_addons as sebplt
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
-res.start()
-sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+res.start(sebplt=sebplt)
 
 hh = spherical_histogram.HemisphereHistogram(
     num_vertices=12_000,

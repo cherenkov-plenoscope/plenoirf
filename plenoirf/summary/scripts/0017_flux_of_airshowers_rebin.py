@@ -12,8 +12,7 @@ for the diff. sensitivity.
 """
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
-res.start()
-sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+res.start(sebplt=sebplt)
 
 # load
 # ----

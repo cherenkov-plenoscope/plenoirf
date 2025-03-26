@@ -8,8 +8,7 @@ import sebastians_matplotlib_addons as sebplt
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
-res.start()
-sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+res.start(sebplt=sebplt)
 
 airshower_fluxes = json_utils.tree.read(
     os.path.join(res.paths["analysis_dir"], "0015_flux_of_airshowers")

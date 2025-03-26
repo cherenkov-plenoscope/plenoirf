@@ -17,6 +17,7 @@ import atmospheric_cherenkov_response
 import merlict_development_kit_python
 import solid_angle_utils
 import binning_utils
+import sys
 
 from .. import utils
 
@@ -69,8 +70,12 @@ class ScriptResources:
             self.paths["analysis_dir"], f".{script_name:s}.incomplete"
         )
 
-    def start(self):
+    def start(self, sebplt=None):
         os.makedirs(self.paths["out_dir"], exist_ok=True)
+        if sebplt is not None:
+            sebplt.matplotlib.rcParams.update(
+                self.analysis["plot"]["matplotlib"]
+            )
 
     def stop(self):
         os.rename(src=self.paths["out_dir"], dst=self.paths["final_out_dir"])

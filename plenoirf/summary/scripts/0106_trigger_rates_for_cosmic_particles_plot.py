@@ -7,8 +7,7 @@ import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
-res.start()
-sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+res.start(sebplt=sebplt)
 
 cosmic_rates = json_utils.tree.read(
     os.path.join(

@@ -10,8 +10,7 @@ import json_utils
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
-res.start()
-sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+res.start(sebplt=sebplt)
 
 passing_trigger = json_utils.tree.read(
     os.path.join(res.paths["analysis_dir"], "0055_passing_trigger")
