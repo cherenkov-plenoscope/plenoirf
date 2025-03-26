@@ -35,7 +35,7 @@ G = json_utils.tree.read(
 )
 
 energy_binning = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )
 A_energy_bin = energy_binning["trigger_acceptance"]
 G_energy_bin = energy_binning["trigger_acceptance_onregion"]
@@ -98,7 +98,7 @@ for sk in SITES:
             ax.set_xlim(G_energy_bin["limits"])
 
             fig.savefig(
-                os.path.join(
+                opj(
                     paths["out_dir"],
                     "{:s}_{:s}_{:s}.jpg".format(sk, ok, gk),
                 )

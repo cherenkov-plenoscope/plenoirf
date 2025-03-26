@@ -15,17 +15,17 @@ res.start(sebplt=sebplt)
 PARTICLES = res.PARTICLES
 
 weights_thrown2expected = json_utils.tree.read(
-    os.path.join(
+    opj(
         res.paths["analysis_dir"],
         "0040_weights_from_thrown_to_expected_energy_spectrum",
     )
 )
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(res.paths["analysis_dir"], "0055_passing_trigger")
+    opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(res.paths["analysis_dir"], "0056_passing_basic_quality")
+    opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
 
 num_bins = 32

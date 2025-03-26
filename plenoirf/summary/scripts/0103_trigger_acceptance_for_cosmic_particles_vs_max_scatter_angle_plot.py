@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 import copy
@@ -12,19 +13,15 @@ res.start(sebplt=sebplt)
 
 
 energy_bin = json_utils.read(
-    os.path.join(
-        res.paths["analysis_dir"], "0005_common_binning", "energy.json"
-    )
+    opj(res.paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["trigger_acceptance_onregion"]
 
 scatter_bin = json_utils.read(
-    os.path.join(
-        res.paths["analysis_dir"], "0005_common_binning", "scatter.json"
-    )
+    opj(res.paths["analysis_dir"], "0005_common_binning", "scatter.json")
 )
 
 acceptance = json_utils.tree.read(
-    os.path.join(
+    opj(
         res.paths["analysis_dir"],
         "0102_trigger_acceptance_for_cosmic_particles_vs_max_scatter_angle",
     )
@@ -109,7 +106,7 @@ for pk in res.PARTICLES:
     sebplt.ax_add_grid(ax=ax)
 
     fig.savefig(
-        os.path.join(
+        opj(
             res.paths["out_dir"],
             f"{pk:s}_acceptance_vs_scatter_vs_energy.jpg",
         )

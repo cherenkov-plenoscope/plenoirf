@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import json_utils
 import sebastians_matplotlib_addons as sebplt
 
@@ -11,7 +12,7 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 airshower_fluxes = json_utils.tree.read(
-    os.path.join(res.paths["analysis_dir"], "0015_flux_of_airshowers")
+    opj(res.paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 
 energy_bin = res.energy_binning(key="interpolation")
@@ -54,7 +55,7 @@ ax.loglog()
 ax.set_xlim(energy_bin["limits"])
 ax.legend()
 fig.savefig(
-    os.path.join(
+    opj(
         res.paths["out_dir"],
         "airshower_differential_flux.jpg",
     )

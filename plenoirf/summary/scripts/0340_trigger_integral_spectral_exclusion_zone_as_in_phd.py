@@ -7,6 +7,7 @@ import spectral_energy_distribution_units as sed
 from plenoirf.analysis import spectral_energy_distribution as sed_styles
 import cosmic_fluxes
 import os
+from os.path import join as opj
 import scipy
 import sebastians_matplotlib_addons as sebplt
 import json_utils
@@ -48,15 +49,11 @@ PHD_ON_OVER_OFF_RATIO = 1.0 / 5.0
 PHD_OBSERVATION_TIME_S = 50 * 3600
 
 all_fov_acceptance = json_utils.tree.read(
-    os.path.join(
-        paths["analysis_dir"], "0100_trigger_acceptance_for_cosmic_particles"
-    )
+    opj(paths["analysis_dir"], "0100_trigger_acceptance_for_cosmic_particles")
 )
 
 all_fov_rates = json_utils.tree.read(
-    os.path.join(
-        paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles"
-    )
+    opj(paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles")
 )
 
 cosmic_ray_keys = list(irf_config["config"]["particles"].keys())
@@ -243,7 +240,7 @@ for sk in SITES:
         ax.set_xlabel(sed_style["x_label"] + " / " + sed_style["x_unit"])
         ax.set_ylabel(sed_style["y_label"] + " / " + sed_style["y_unit"])
         fig.savefig(
-            os.path.join(
+            opj(
                 paths["out_dir"],
                 "{:s}_integral_spectral_exclusion_zone_style_{:s}.jpg".format(
                     sk, sed_style_key

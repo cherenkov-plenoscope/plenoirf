@@ -5,6 +5,7 @@ import plenoirf as irf
 import atmospheric_cherenkov_response
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import json_utils
 import magnetic_deflection as mdfl
 import spherical_coordinates
@@ -20,11 +21,11 @@ MAX_SOURCE_ANGLE_DEG = res.analysis["gamma_ray_source_direction"][
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(res.paths["analysis_dir"], "0055_passing_trigger")
+    opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 
 for pk in res.PARTICLES:
-    pk_dir = os.path.join(res.paths["out_dir"], pk)
+    pk_dir = opj(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
     scatter_bin = res.scatter_binning(particle_key=pk)
@@ -138,7 +139,7 @@ for pk in res.PARTICLES:
         Q_au.append(S_Q_au)
 
     json_utils.write(
-        os.path.join(pk_dir, "diffuse.json"),
+        opj(pk_dir, "diffuse.json"),
         {
             "comment": (
                 "Effective acceptance (area x solid angle) "

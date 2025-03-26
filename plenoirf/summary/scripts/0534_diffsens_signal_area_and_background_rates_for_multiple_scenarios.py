@@ -5,6 +5,7 @@ import numpy as np
 import plenoirf as irf
 import flux_sensitivity
 import os
+from os.path import join as opj
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -25,20 +26,20 @@ ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 # load
 # ----
 energy_binning = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance_onregion"]
 
 Q = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
+    opj(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 
 M = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0066_energy_estimate_quality")
+    opj(paths["analysis_dir"], "0066_energy_estimate_quality")
 )
 
 R = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0530_diffsens_background_diff_rates")
+    opj(paths["analysis_dir"], "0530_diffsens_background_diff_rates")
 )
 
 # prepare
@@ -48,7 +49,7 @@ for sk in SITES:
         for dk in flux_sensitivity.differential.SCENARIOS:
             for pk in PARTICLES:
                 os.makedirs(
-                    os.path.join(paths["out_dir"], sk, ok, dk, pk),
+                    opj(paths["out_dir"], sk, ok, dk, pk),
                     exist_ok=True,
                 )
 
@@ -68,9 +69,7 @@ for sk in SITES:
             )
 
             json_utils.write(
-                os.path.join(
-                    paths["out_dir"], sk, ok, dk, "gamma", "scenario.json"
-                ),
+                opj(paths["out_dir"], sk, ok, dk, "gamma", "scenario.json"),
                 scenario,
             )
 
@@ -87,9 +86,7 @@ for sk in SITES:
             )
 
             json_utils.write(
-                os.path.join(
-                    paths["out_dir"], sk, ok, dk, "gamma", "area.json"
-                ),
+                opj(paths["out_dir"], sk, ok, dk, "gamma", "area.json"),
                 {
                     "energy_binning_key": energy_bin["key"],
                     "mean": A_gamma_scenario,
@@ -113,9 +110,7 @@ for sk in SITES:
                 )
 
                 json_utils.write(
-                    os.path.join(
-                        paths["out_dir"], sk, ok, dk, ck, "rate.json"
-                    ),
+                    opj(paths["out_dir"], sk, ok, dk, ck, "rate.json"),
                     {
                         "energy_binning_key": energy_bin["key"],
                         "mean": R_cosmic_ray_scenario,

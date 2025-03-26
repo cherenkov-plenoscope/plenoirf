@@ -2,8 +2,8 @@
 import sys
 import plenoirf as irf
 import os
-import numpy as np
 from os.path import join as opj
+import numpy as np
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
@@ -11,7 +11,7 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 trigger_vs_size = json_utils.tree.read(
-    os.path.join(
+    opj(
         res.paths["analysis_dir"],
         "0074_trigger_probability_vs_cherenkov_density_on_ground",
     )

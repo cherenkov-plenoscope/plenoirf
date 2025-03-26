@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 import propagate_uncertainties as pru
@@ -12,16 +13,14 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
 acceptance = json_utils.tree.read(
-    os.path.join(
+    opj(
         res.paths["analysis_dir"],
         "0100_trigger_acceptance_for_cosmic_particles",
     )
 )
 
 energy_binning = json_utils.read(
-    os.path.join(
-        res.paths["analysis_dir"], "0005_common_binning", "energy.json"
-    )
+    opj(res.paths["analysis_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance"]
 fine_energy_bin = energy_binning["interpolation"]
@@ -29,13 +28,13 @@ fine_energy_bin = energy_binning["interpolation"]
 # cosmic-ray-flux
 # ----------------
 airshower_fluxes = json_utils.tree.read(
-    os.path.join(res.paths["analysis_dir"], "0015_flux_of_airshowers")
+    opj(res.paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 
 # gamma-ray-flux of reference source
 # ----------------------------------
 gamma_source = json_utils.read(
-    os.path.join(
+    opj(
         res.paths["analysis_dir"],
         "0009_flux_of_gamma_rays",
         "reference_source.json",
@@ -77,7 +76,7 @@ num_trigger_thresholds = len(trigger_thresholds)
 
 # gamma-ray
 # ---------
-gamma_dir = os.path.join(res.paths["out_dir"], "gamma")
+gamma_dir = opj(res.paths["out_dir"], "gamma")
 os.makedirs(gamma_dir, exist_ok=True)
 
 _A = acceptance["gamma"]["point"]["mean"]
@@ -113,7 +112,7 @@ for tt in range(num_trigger_thresholds):
     )
 
 json_utils.write(
-    os.path.join(gamma_dir, "differential_rate.json"),
+    opj(gamma_dir, "differential_rate.json"),
     {
         "comment": comment_differential + ", " + gamma_source["name"],
         "unit": "s$^{-1} (GeV)$^{-1}$",
@@ -122,7 +121,7 @@ json_utils.write(
     },
 )
 json_utils.write(
-    os.path.join(gamma_dir, "integral_rate.json"),
+    opj(gamma_dir, "integral_rate.json"),
     {
         "comment": comment_integral + ", " + gamma_source["name"],
         "unit": "s$^{-1}$",
@@ -134,7 +133,7 @@ json_utils.write(
 # cosmic-rays
 # -----------
 for ck in airshower_fluxes:
-    ck_dir = os.path.join(res.paths["out_dir"], ck)
+    ck_dir = opj(res.paths["out_dir"], ck)
     os.makedirs(ck_dir, exist_ok=True)
 
     _Q = acceptance[ck]["diffuse"]["mean"]
@@ -176,7 +175,7 @@ for ck in airshower_fluxes:
         )
 
     json_utils.write(
-        os.path.join(ck_dir, "differential_rate.json"),
+        opj(ck_dir, "differential_rate.json"),
         {
             "comment": comment_differential,
             "unit": "s$^{-1} (GeV)$^{-1}$",
@@ -185,7 +184,7 @@ for ck in airshower_fluxes:
         },
     )
     json_utils.write(
-        os.path.join(ck_dir, "integral_rate.json"),
+        opj(ck_dir, "integral_rate.json"),
         {
             "comment": comment_integral,
             "unit": "s$^{-1}$",

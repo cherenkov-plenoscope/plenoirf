@@ -4,6 +4,7 @@ import plenoirf as irf
 import sparse_numeric_table as snt
 import sebastians_matplotlib_addons as sebplt
 import os
+from os.path import join as opj
 import copy
 import json_utils
 import numpy as np
@@ -26,7 +27,7 @@ PLT = sum_config["plot"]
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 plenoscope_trigger_vs_cherenkov_density = json_utils.tree.read(
-    os.path.join(
+    opj(
         paths["analysis_dir"],
         "0074_trigger_probability_vs_cherenkov_density_on_ground",
     )
@@ -120,7 +121,7 @@ for ak in ARRAY_CONFIGS:
         "y / {:.1f}m".format(irf_config["grid_geometry"]["bin_width"])
     )
     fig.savefig(
-        os.path.join(
+        opj(
             paths["out_dir"],
             "array_configuration_" + ak + ".jpg",
         )
@@ -190,7 +191,7 @@ for sk in SITES:
         ax.set_xlabel("density of Cherenkov-photons / m$^{-2}$")
         ax.set_ylabel("telescope\ntrigger-probability / 1")
         fig.savefig(
-            os.path.join(
+            opj(
                 paths["out_dir"],
                 sk + "_" + ak + "_telescope_trigger_probability" + ".jpg",
             )
@@ -210,7 +211,7 @@ for sk in SITES:
 
         grid_reader = (
             atmospheric_cherenkov_response.grid.serialization.GridReader(
-                path=os.path.join(
+                path=opj(
                     paths["plenoirf_dir"],
                     "event_table",
                     sk,
@@ -256,10 +257,10 @@ for sk in SITES:
 for sk in SITES:
     for pk in PARTICLES:
         for ak in ARRAY_CONFIGS:
-            sk_pk_ak_dir = os.path.join(paths["out_dir"], sk, pk, ak)
+            sk_pk_ak_dir = opj(paths["out_dir"], sk, pk, ak)
             os.makedirs(sk_pk_ak_dir, exist_ok=True)
 
             json_utils.write(
-                path=os.path.join(sk_pk_ak_dir, "idx.json"),
+                path=opj(sk_pk_ak_dir, "idx.json"),
                 out_dict=out[sk][pk][ak],
             )

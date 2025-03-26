@@ -4,6 +4,7 @@ import plenoirf as irf
 import plenopy as pl
 import scipy
 import os
+from os.path import join as opj
 import numpy as np
 import json_utils
 import sparse_numeric_table as snt
@@ -25,7 +26,7 @@ irf_config = irf.summary.read_instrument_response_config(
 sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 
 production_key = "demo_helium_for_tomography"
-demo_helium_dir = os.path.join(paths["plenoirf_dir"], production_key)
+demo_helium_dir = opj(paths["plenoirf_dir"], production_key)
 
 if not os.path.exists(demo_helium_dir):
     job = irf.production.example.make_helium_demo_for_tomography(
@@ -54,7 +55,7 @@ NUM_THREADS = 6
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 light_field_geometry = pl.LightFieldGeometry(
-    os.path.join(paths["plenoirf_dir"], "light_field_geometry")
+    opj(paths["plenoirf_dir"], "light_field_geometry")
 )
 FIELD_OF_VIEW_RADIUS_DEG = 0.5 * np.rad2deg(
     light_field_geometry.sensor_plane2imaging_system.max_FoV_diameter
@@ -62,7 +63,7 @@ FIELD_OF_VIEW_RADIUS_DEG = 0.5 * np.rad2deg(
 
 
 def get_airshower_uids_in_directory(directory, wildcard="*.tar"):
-    raw_sensor_paths = glob.glob(os.path.join(directory, wildcard))
+    raw_sensor_paths = glob.glob(opj(directory, wildcard))
     filenames = [os.path.split(raw_path)[1] for raw_path in raw_sensor_paths]
     airshower_uid_strs = [os.path.splitext(fn)[0] for fn in filenames]
     airshower_uids = [int(uidstr) for uidstr in airshower_uid_strs]
@@ -74,10 +75,8 @@ def read_simulation_truth_for_tomography(
 ):
     with tempfile.TemporaryDirectory() as tmpdir:
         uid_str = irf.unique.UID_FOTMAT_STR.format(uid)
-        response_path = os.path.join(tmpdir, uid_str)
-        response_tar_path = os.path.join(
-            raw_sensor_response_dir, uid_str + ".tar"
-        )
+        response_path = opj(tmpdir, uid_str)
+        response_tar_path = opj(raw_sensor_response_dir, uid_str + ".tar")
         with tarfile.open(response_tar_path, "r") as tf:
             tf.extractall(response_path)
             event = pl.Event(
@@ -225,12 +224,10 @@ binning = make_binning_from_ligh_field_geometry(
 
 pl.Tomography.Image_Domain.Binning.write(
     binning=binning,
-    path=os.path.join(
-        paths["out_dir"], "binning_for_tomography_in_image_domain.json"
-    ),
+    path=opj(paths["out_dir"], "binning_for_tomography_in_image_domain.json"),
 )
 
-system_matrix_path = os.path.join(
+system_matrix_path = opj(
     paths["out_dir"], "system_matrix_for_tomography_in_image_domain.bin"
 )
 
@@ -264,13 +261,13 @@ tomo_psf = pl.Tomography.Image_Domain.Point_Spread_Function.init(
 
 for sk in ["namibia"]:
     for pk in ["helium"]:
-        sk_pk_dir = os.path.join(paths["plenoirf_dir"], production_key, sk, pk)
+        sk_pk_dir = opj(paths["plenoirf_dir"], production_key, sk, pk)
 
         print("===", sk, pk, "===")
 
         print("- read event_table")
         event_table = snt.read(
-            path=os.path.join(
+            path=opj(
                 sk_pk_dir,
                 "event_table.tar",
             ),
@@ -278,14 +275,14 @@ for sk in ["namibia"]:
         )
 
         print("- find events with full output")
-        raw_sensor_response_dir = os.path.join(sk_pk_dir, "past_trigger.map")
+        raw_sensor_response_dir = opj(sk_pk_dir, "past_trigger.map")
         have_raw_sensor_response_uids = get_airshower_uids_in_directory(
             directory=raw_sensor_response_dir
         )
 
         print("- read list-of-photons")
         run = pl.photon_stream.loph.LopfTarReader(
-            os.path.join(sk_pk_dir, "cherenkov.phs.loph.tar")
+            opj(sk_pk_dir, "cherenkov.phs.loph.tar")
         )
 
         event_counter = 0
@@ -330,14 +327,12 @@ for sk in ["namibia"]:
                 tomography_binning=binning,
             )
 
-            result_dir = os.path.join(
+            result_dir = opj(
                 paths["out_dir"], sk, pk, irf.unique.UID_FOTMAT_STR.format(uid)
             )
 
             os.makedirs(result_dir, exist_ok=True)
-            reconstruction_path = os.path.join(
-                result_dir, "reconstruction.json"
-            )
+            reconstruction_path = opj(result_dir, "reconstruction.json")
 
             if not os.path.exists(reconstruction_path):
                 reconstruction = (
@@ -365,7 +360,7 @@ for sk in ["namibia"]:
                         )
                     )
                     if reconstruction["iteration"] % 25 == 0:
-                        stack_path = os.path.join(
+                        stack_path = opj(
                             result_dir,
                             "stack_{:06d}.jpg".format(
                                 reconstruction["iteration"]

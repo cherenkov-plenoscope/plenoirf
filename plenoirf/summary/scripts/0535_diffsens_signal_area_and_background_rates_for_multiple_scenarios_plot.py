@@ -4,6 +4,7 @@ import numpy as np
 import plenoirf as irf
 import flux_sensitivity
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
@@ -26,16 +27,16 @@ ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 # load
 # ----
 energy_binning = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance_onregion"]
 
 acceptance = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
+    opj(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 
 scenarios = json_utils.tree.read(
-    os.path.join(
+    opj(
         paths["analysis_dir"],
         "0534_diffsens_signal_area_and_background_rates_for_multiple_scenarios",
     )
@@ -45,7 +46,7 @@ scenarios = json_utils.tree.read(
 # ----
 for sk in SITES:
     for ok in ONREGION_TYPES:
-        os.makedirs(os.path.join(paths["out_dir"], sk, ok), exist_ok=True)
+        os.makedirs(opj(paths["out_dir"], sk, ok), exist_ok=True)
 
 
 for sk in SITES:
@@ -81,7 +82,7 @@ for sk in SITES:
             ax.set_ylim([1e-5, 1e5])
             ax.loglog()
             fig.savefig(
-                os.path.join(
+                opj(
                     paths["out_dir"],
                     sk,
                     ok,
@@ -122,7 +123,7 @@ for sk in SITES:
             ax.set_ylim([1e0, 1e6])
             ax.loglog()
             fig.savefig(
-                os.path.join(
+                opj(
                     paths["out_dir"],
                     sk,
                     ok,
@@ -153,7 +154,7 @@ for sk in SITES:
             ax_c.loglog()
             ax_c.set_xlabel("energy / GeV")
             fig.savefig(
-                os.path.join(
+                opj(
                     paths["out_dir"],
                     sk,
                     ok,
@@ -184,7 +185,7 @@ for sk in SITES:
             ax_c.loglog()
             ax_c.set_xlabel("energy / GeV")
             fig.savefig(
-                os.path.join(
+                opj(
                     paths["out_dir"],
                     sk,
                     ok,

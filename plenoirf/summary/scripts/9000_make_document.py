@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import pylatex as ltx
 import warnings
 import json_utils
@@ -46,7 +47,7 @@ ok = ["small", "medium", "large"][0]
 dk = "bell_spectrum"
 
 energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["point_spread_function"]
 
 
@@ -55,7 +56,7 @@ def noesc(text):
 
 
 def ppath(*args):
-    p1 = os.path.join(*args)
+    p1 = opj(*args)
     p2 = os.path.normpath(p1)
     return os.path.abspath(p2)
 
@@ -73,10 +74,10 @@ def verbatim(string):
 
 
 production_provenance = irf.utils.read_json_but_forgive(
-    path=os.path.join(paths["plenoirf_dir"], "event_table", "provenance.json")
+    path=opj(paths["plenoirf_dir"], "event_table", "provenance.json")
 )
 analysis_provenance = irf.utils.read_json_but_forgive(
-    path=os.path.join(paths["analysis_dir"], "provenance.json")
+    path=opj(paths["analysis_dir"], "provenance.json")
 )
 
 for sk in SITES:
@@ -89,7 +90,7 @@ for sk in SITES:
         real=total_trigger_rate_per_s, format_template="{:.3e}"
     )
 
-    fname = os.path.join(
+    fname = opj(
         paths["analysis_dir"], "{:s}_{:s}".format(production_dirname, sk)
     )
 
@@ -131,7 +132,7 @@ for sk in SITES:
 
         with doc.create(ltx.Figure(position="H")) as fig:
             fig.add_image(
-                os.path.join(
+                opj(
                     STARTER_KIT_DIR,
                     "portal-corporate-identity",
                     "images",
@@ -630,9 +631,7 @@ for sk in SITES:
     doc.append(
         noesc(
             r"\bibliography{"
-            + os.path.join(
-                STARTER_KIT_DIR, "sebastians_references", "references"
-            )
+            + opj(STARTER_KIT_DIR, "sebastians_references", "references")
             + "}"
         )
     )

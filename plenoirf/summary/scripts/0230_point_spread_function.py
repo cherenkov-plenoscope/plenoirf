@@ -4,6 +4,7 @@ import numpy as np
 import plenoirf as irf
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import plenopy as pl
 import sebastians_matplotlib_addons as sebplt
 import json_utils
@@ -21,24 +22,22 @@ sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    opj(paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0056_passing_basic_quality")
+    opj(paths["analysis_dir"], "0056_passing_basic_quality")
 )
 passing_trajectory_quality = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0059_passing_trajectory_quality")
+    opj(paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
 reconstructed_energy = json_utils.tree.read(
-    os.path.join(
-        paths["analysis_dir"], "0065_learning_airshower_maximum_and_energy"
-    ),
+    opj(paths["analysis_dir"], "0065_learning_airshower_maximum_and_energy"),
 )
 
 # energy
 # ------
 energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["trigger_acceptance_onregion"]
 
 containment_percents = [68, 95]
@@ -63,11 +62,11 @@ def align_on_idx(input_idx, input_values, target_idxs):
 for sk in irf_config["config"]["sites"]:
     pk = "gamma"
 
-    site_particle_dir = os.path.join(paths["out_dir"], sk, pk)
+    site_particle_dir = opj(paths["out_dir"], sk, pk)
     os.makedirs(site_particle_dir, exist_ok=True)
 
     event_table = snt.read(
-        path=os.path.join(
+        path=opj(
             paths["plenoirf_dir"], "event_table", sk, pk, "event_table.tar"
         ),
         structure=irf.table.STRUCTURE,
@@ -139,7 +138,7 @@ for sk in irf_config["config"]["sites"]:
             out[tkey + "_relunc"][ebin] = t_relunc
 
     json_utils.write(
-        os.path.join(
+        opj(
             site_particle_dir,
             "angular_resolution.json".format(containment_percents[con]),
         ),
@@ -192,5 +191,5 @@ for sk in irf_config["config"]["sites"]:
     ax.set_xlabel(enelabels[enekey] + r"energy$\,/\,$GeV")
     ax.set_ylabel(r"$\Theta{}$ 68%$\,/\,$1$^\circ{}$")
 
-    fig.savefig(os.path.join(paths["out_dir"], sk + "_" + pk + ".jpg"))
+    fig.savefig(opj(paths["out_dir"], sk + "_" + pk + ".jpg"))
     sebplt.close(fig)

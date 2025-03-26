@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
@@ -17,7 +18,7 @@ res.start(sebplt=sebplt)
 # load
 # ----
 airshower_fluxes = json_utils.tree.read(
-    os.path.join(res.paths["analysis_dir"], "0015_flux_of_airshowers")
+    opj(res.paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 
 # prepare
@@ -54,7 +55,7 @@ for pk in res.COSMIC_RAYS:
     diff_flux_au[pk] = dFdE_au
 
     json_utils.write(
-        os.path.join(res.paths["out_dir"], pk + ".json"),
+        opj(res.paths["out_dir"], pk + ".json"),
         {
             "energy_binning_key": energy_binning_key,
             "differential_flux": dFdE,
@@ -97,9 +98,7 @@ ax.text(
     transform=ax.transAxes,
 )
 fig.savefig(
-    os.path.join(
-        res.paths["out_dir"], "airshower_differential_flux_rebinned.jpg"
-    )
+    opj(res.paths["out_dir"], "airshower_differential_flux_rebinned.jpg")
 )
 sebplt.close(fig)
 

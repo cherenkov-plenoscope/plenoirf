@@ -5,6 +5,7 @@ import propagate_uncertainties as pru
 import plenoirf as irf
 import cosmic_fluxes
 import os
+from os.path import join as opj
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -22,11 +23,11 @@ PARTICLES = irf_config["config"]["particles"]
 ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 
 onregion_acceptance = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
+    opj(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 
 energy_binning = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance_onregion"]
 fenergy_bin = energy_binning["interpolation"]
@@ -34,13 +35,13 @@ fenergy_bin = energy_binning["interpolation"]
 # cosmic-ray-flux
 # ----------------
 airshower_fluxes = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0015_flux_of_airshowers")
+    opj(paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 
 # gamma-ray-flux of reference source
 # ----------------------------------
 gamma_source = json_utils.read(
-    os.path.join(
+    opj(
         paths["analysis_dir"],
         "0009_flux_of_gamma_rays",
         "reference_source.json",
@@ -70,9 +71,7 @@ dKdE / s^{-1} m^{-2} (GeV)^{-1}
 for sk in SITES:
     for ok in ONREGION_TYPES:
         for pk in PARTICLES:
-            os.makedirs(
-                os.path.join(paths["out_dir"], sk, ok, pk), exist_ok=True
-            )
+            os.makedirs(opj(paths["out_dir"], sk, ok, pk), exist_ok=True)
 
 for sk in SITES:
     # gamma-ray
@@ -104,9 +103,7 @@ for sk in SITES:
         )
 
         json_utils.write(
-            os.path.join(
-                paths["out_dir"], sk, ok, "gamma", "differential_rate.json"
-            ),
+            opj(paths["out_dir"], sk, ok, "gamma", "differential_rate.json"),
             {
                 "comment": comment_differential
                 + ", "
@@ -118,9 +115,7 @@ for sk in SITES:
             },
         )
         json_utils.write(
-            os.path.join(
-                paths["out_dir"], sk, ok, "gamma", "integral_rate.json"
-            ),
+            opj(paths["out_dir"], sk, ok, "gamma", "integral_rate.json"),
             {
                 "comment": comment_integral
                 + ", "
@@ -172,9 +167,7 @@ for sk in SITES:
             )
 
             json_utils.write(
-                os.path.join(
-                    paths["out_dir"], sk, ok, ck, "differential_rate.json"
-                ),
+                opj(paths["out_dir"], sk, ok, ck, "differential_rate.json"),
                 {
                     "comment": comment_differential + " VS onregion-radius",
                     "unit": "s$^{-1} (GeV)$^{-1}$",
@@ -183,9 +176,7 @@ for sk in SITES:
                 },
             )
             json_utils.write(
-                os.path.join(
-                    paths["out_dir"], sk, ok, ck, "integral_rate.json"
-                ),
+                opj(paths["out_dir"], sk, ok, ck, "integral_rate.json"),
                 {
                     "comment": comment_integral + " VS onregion-radius",
                     "unit": "s$^{-1}$",

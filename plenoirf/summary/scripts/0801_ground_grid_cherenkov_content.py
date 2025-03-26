@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import json_utils
 import zipfile
 import gzip
@@ -70,8 +71,8 @@ size_bin = binning_utils.Binning(bin_edges=np.geomspace(1, 1e6, 13))
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 zenith_bin = res.ZenithBinning(key="once")
 
-hist_cache_path = os.path.join(paths["cache_dir"], "hist.pkl")
-expo_cache_path = os.path.join(paths["cache_dir"], "expo.pkl")
+hist_cache_path = opj(paths["cache_dir"], "hist.pkl")
+expo_cache_path = opj(paths["cache_dir"], "expo.pkl")
 
 if os.path.exists(hist_cache_path) and os.path.exists(expo_cache_path):
     with open(hist_cache_path, "rb") as f:
@@ -83,7 +84,7 @@ else:
     hist = {}
     expo = {}
     for pk in res.PARTICLES:
-        gpath = os.path.join(
+        gpath = opj(
             res.response_path(particle_key=pk), "ground_grid_intensity.zip"
         )
 
@@ -216,7 +217,7 @@ for pk in res.PARTICLES:
             linecolor="k",
         )
         fig.savefig(
-            os.path.join(
+            opj(
                 paths["out_dir"],
                 f"{pk:s}_zd{zd:d}_ground_grid_cherenkov_content.jpg",
             )

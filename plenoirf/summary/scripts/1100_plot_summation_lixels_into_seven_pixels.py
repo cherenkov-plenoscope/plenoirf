@@ -3,6 +3,7 @@ import sys
 import plenoirf as irf
 import plenopy as pl
 import os
+from os.path import join as opj
 import numpy as np
 import json_utils
 import json
@@ -38,7 +39,7 @@ else:
 sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
 
 light_field_geometry = pl.LightFieldGeometry(
-    os.path.join(
+    opj(
         paths["plenoirf_dir"],
         "plenoptics",
         "instruments",
@@ -120,9 +121,7 @@ for obj, object_distance in enumerate(object_distances):
     )
     ax2 = sebplt.add_axes(fig=fig, span=[0.82, 0.15, 0.2 * (3 / 4), 0.85])
 
-    cpath = os.path.join(
-        paths["out_dir"], "lixel_to_pixel_{:06d}.json".format(obj)
-    )
+    cpath = opj(paths["out_dir"], "lixel_to_pixel_{:06d}.json".format(obj))
 
     # compute a list of pixels where a lixel contributes to.
     if not os.path.exists(cpath):
@@ -247,7 +246,7 @@ for obj, object_distance in enumerate(object_distances):
         ax2.text(x=-0.6, y=3.7, s="infinity", fontsize=12)
 
     fig.savefig(
-        os.path.join(
+        opj(
             paths["out_dir"],
             "refocus_lixel_summation_7_{obj:d}{ext:s}".format(
                 obj=obj, ext=EXT

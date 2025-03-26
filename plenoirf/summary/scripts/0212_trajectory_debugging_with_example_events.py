@@ -4,6 +4,7 @@ import numpy as np
 import plenoirf as irf
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import plenopy as pl
 import gamma_ray_reconstruction as gamrec
 import sebastians_matplotlib_addons as sebplt
@@ -19,19 +20,17 @@ sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    opj(paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0056_passing_basic_quality")
+    opj(paths["analysis_dir"], "0056_passing_basic_quality")
 )
 
 onreion_config = sum_config["on_off_measuremnent"]["onregion_types"]["large"]
 
 # READ light-field-geometry
 # =========================
-lfg = pl.LightFieldGeometry(
-    os.path.join(paths["plenoirf_dir"], "light_field_geometry")
-)
+lfg = pl.LightFieldGeometry(opj(paths["plenoirf_dir"], "light_field_geometry"))
 
 fov_radius_deg = np.rad2deg(
     0.5 * lfg.sensor_plane2imaging_system.max_FoV_diameter
@@ -75,7 +74,7 @@ for sk in irf_config["config"]["sites"]:
         truth_by_index[sk][pk] = {}
 
         event_table = snt.read(
-            path=os.path.join(
+            path=opj(
                 paths["plenoirf_dir"], "event_table", sk, pk, "event_table.tar"
             ),
             structure=irf.table.STRUCTURE,
@@ -127,7 +126,7 @@ def read_shower_maximum_object_distance(
     site_key, particle_key, key="image_smallest_ellipse_object_distance"
 ):
     event_table = snt.read(
-        path=os.path.join(
+        path=opj(
             paths["plenoirf_dir"],
             "event_table",
             site_key,
@@ -159,7 +158,7 @@ for sk in irf_config["config"]["sites"]:
         )
 
         run = pl.photon_stream.loph.LopfTarReader(
-            os.path.join(
+            opj(
                 paths["plenoirf_dir"],
                 "event_table",
                 sk,
@@ -168,7 +167,7 @@ for sk in irf_config["config"]["sites"]:
             )
         )
 
-        site_particle_dir = os.path.join(paths["out_dir"], sk, pk)
+        site_particle_dir = opj(paths["out_dir"], sk, pk)
         os.makedirs(site_particle_dir, exist_ok=True)
 
         event_counter = 0
@@ -220,7 +219,7 @@ for sk in irf_config["config"]["sites"]:
                     fuzzy_result=debug["fuzzy_result"],
                     fuzzy_debug=debug["fuzzy_debug"],
                 )
-                path = os.path.join(
+                path = opj(
                     paths["out_dir"],
                     sk,
                     pk,
@@ -354,7 +353,7 @@ for sk in irf_config["config"]["sites"]:
                 ax_core.set_aspect("equal")
                 ax_core.set_xlabel("x / m")
                 ax_core.set_ylabel("y / m")
-                path = os.path.join(
+                path = opj(
                     paths["out_dir"],
                     sk,
                     pk,

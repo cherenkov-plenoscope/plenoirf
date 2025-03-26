@@ -2,6 +2,7 @@
 import sys
 import plenoirf as irf
 import os
+from os.path import join as opj
 import numpy as np
 import sebastians_matplotlib_addons as sebplt
 import json_utils
@@ -21,13 +22,13 @@ airshower_rates["energy_bin_centers"] = fine_energy_bin["centers"]
 # cosmic-ray-flux
 # ----------------
 _airshower_differential_fluxes = json_utils.tree.read(
-    os.path.join(res.paths["analysis_dir"], "0015_flux_of_airshowers")
+    opj(res.paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 
 # gamma-ray-flux of reference source
 # ----------------------------------
 gamma_reference_source = json_utils.read(
-    os.path.join(
+    opj(
         res.paths["analysis_dir"],
         "0009_flux_of_gamma_rays",
         "reference_source.json",
@@ -80,7 +81,7 @@ for pk in res.PARTICLES:
     energy_ranges[pk]["max"] = np.max(_table["primary"]["energy_GeV"])
 
 for pk in res.PARTICLES:
-    particle_dir = os.path.join(res.paths["out_dir"], pk)
+    particle_dir = opj(res.paths["out_dir"], pk)
     os.makedirs(particle_dir, exist_ok=True)
 
     w_energy = np.geomspace(
@@ -97,7 +98,7 @@ for pk in res.PARTICLES:
     )
 
     json_utils.write(
-        os.path.join(particle_dir, "weights_vs_energy.json"),
+        opj(particle_dir, "weights_vs_energy.json"),
         {
             "comment": (
                 "Weights vs. energy to transform from thrown "
@@ -135,7 +136,7 @@ ax.text(
     # verticalalignment="center",
     transform=ax.transAxes,
 )
-fig.savefig(os.path.join(res.paths["out_dir"], "weights.jpg"))
+fig.savefig(opj(res.paths["out_dir"], "weights.jpg"))
 sebplt.close(fig)
 
 res.stop()

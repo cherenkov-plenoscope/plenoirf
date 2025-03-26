@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 import propagate_uncertainties as pru
@@ -13,19 +14,15 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 energy_bin = json_utils.read(
-    os.path.join(
-        res.paths["analysis_dir"], "0005_common_binning", "energy.json"
-    )
+    opj(res.paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["trigger_acceptance_onregion"]
 
 scatter_bin = json_utils.read(
-    os.path.join(
-        res.paths["analysis_dir"], "0005_common_binning", "scatter.json"
-    )
+    opj(res.paths["analysis_dir"], "0005_common_binning", "scatter.json")
 )
 
 rates = json_utils.tree.read(
-    os.path.join(
+    opj(
         res.paths["analysis_dir"],
         "0107_trigger_rates_for_cosmic_particles_vs_max_scatter_angle",
     )
@@ -63,7 +60,7 @@ ax.set_ylabel("trigger rate / 1k s$^{-1}$")
 ax.set_xlabel("scatter solid angle / msr")
 ax.set_xlim(1e3 * scatter_bin[pk]["limits"])
 ax.set_ylim([0, 1e2])
-fig.savefig(os.path.join(res.paths["out_dir"], "trigger-rate_vs_scatter.jpg"))
+fig.savefig(opj(res.paths["out_dir"], "trigger-rate_vs_scatter.jpg"))
 sebplt.close(fig)
 
 
@@ -131,9 +128,7 @@ ax.set_xlabel("scatter solid angle / msr")
 ax.set_xlim(1e3 * scatter_bin[pk]["limits"])
 ax.set_ylim([1e-4, 1e0])
 ax.semilogy()
-fig.savefig(
-    os.path.join(res.paths["out_dir"], "diff-trigger-rate_vs_scatter.jpg")
-)
+fig.savefig(opj(res.paths["out_dir"], "diff-trigger-rate_vs_scatter.jpg"))
 sebplt.close(fig)
 
 
@@ -208,7 +203,7 @@ for pk in res.COSMIC_RAYS:
     sebplt.ax_add_grid(ax=ax)
 
     fig.savefig(
-        os.path.join(
+        opj(
             res.paths["out_dir"],
             "{:s}_diff-trigger-rate_vs_scatter_vs_energy.jpg".format(
                 pk,

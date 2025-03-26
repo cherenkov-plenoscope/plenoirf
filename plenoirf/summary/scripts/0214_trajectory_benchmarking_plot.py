@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
@@ -18,7 +19,7 @@ sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 psf = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0213_trajectory_benchmarking")
+    opj(paths["analysis_dir"], "0213_trajectory_benchmarking")
 )
 
 fov_radius_deg = (
@@ -101,7 +102,7 @@ for site_key in psf:
         # -------------------------------------
 
         for theta_key in ["theta", "theta_para", "theta_perp"]:
-            scenario_dir = os.path.join(
+            scenario_dir = opj(
                 paths["out_dir"], site_key, particle_key, theta_key
             )
             os.makedirs(scenario_dir, exist_ok=True)
@@ -153,7 +154,7 @@ for site_key in psf:
                     bin_count_relunc = np.array(bin_count_relunc)
 
                     write_theta_square_figure(
-                        path=os.path.join(
+                        path=opj(
                             paths["out_dir"],
                             site_key,
                             particle_key,

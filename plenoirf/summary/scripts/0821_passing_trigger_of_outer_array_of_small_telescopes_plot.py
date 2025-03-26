@@ -4,6 +4,7 @@ import plenoirf as irf
 import sparse_numeric_table as snt
 import sebastians_matplotlib_addons as sebplt
 import os
+from os.path import join as opj
 import copy
 import json_utils
 import numpy as np
@@ -26,17 +27,17 @@ PLT = sum_config["plot"]
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["point_spread_function"]
 
 passing_array_trigger = json_utils.tree.read(
-    os.path.join(
+    opj(
         paths["analysis_dir"],
         "0820_passing_trigger_of_outer_array_of_small_telescopes",
     )
 )
 passing_plenoscope_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    opj(paths["analysis_dir"], "0055_passing_trigger")
 )
 
 ARRAY_CONFIGS = copy.deepcopy(
@@ -53,7 +54,7 @@ for sk in SITES:
         pv[sk][pk] = {}
 
         event_table = snt.read(
-            path=os.path.join(
+            path=opj(
                 paths["plenoirf_dir"],
                 "event_table",
                 sk,
@@ -151,7 +152,7 @@ for sk in SITES:
             "trigger(plenoscope)\nAND NOT\nany(trigger(outer telescopes)) / 1"
         )
         fig.savefig(
-            os.path.join(
+            opj(
                 paths["out_dir"],
                 "{:s}_{:s}.jpg".format(sk, ak),
             )

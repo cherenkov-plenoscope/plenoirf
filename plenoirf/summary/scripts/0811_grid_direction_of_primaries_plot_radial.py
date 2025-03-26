@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import sys
 import os
+from os.path import join as opj
 import propagate_uncertainties
 import numpy as np
 import magnetic_deflection as mdfl
@@ -27,11 +28,11 @@ PARTICLES = irf_config["config"]["particles"]
 PLT = sum_config["plot"]
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    opj(paths["analysis_dir"], "0055_passing_trigger")
 )
 
 energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["point_spread_function"]
 
 MAX_SCATTER_DEG = 20
@@ -61,7 +62,7 @@ for sk in SITES:
         o[sk][pk] = {}
 
         evttab = snt.read(
-            path=os.path.join(
+            path=opj(
                 paths["plenoirf_dir"],
                 "event_table",
                 sk,
@@ -135,7 +136,7 @@ AXSPAN = [AXSPAN[0], AXSPAN[1], AXSPAN[2], AXSPAN[3]]
 
 for sk in SITES:
     for pk in PARTICLES:
-        sk_pk_dir = os.path.join(paths["out_dir"], sk, pk)
+        sk_pk_dir = opj(paths["out_dir"], sk, pk)
         os.makedirs(sk_pk_dir, exist_ok=True)
 
         for ex in range(energy_bin["num"]):
@@ -234,7 +235,7 @@ for sk in SITES:
             )
 
             fig.savefig(
-                os.path.join(
+                opj(
                     sk_pk_dir,
                     "{:s}_{:s}_energy{:06d}.jpg".format(
                         sk,
@@ -329,7 +330,7 @@ for sk in SITES:
         )
 
         fig.savefig(
-            os.path.join(
+            opj(
                 paths["out_dir"],
                 "{:s}_{:s}.jpg".format(
                     sk,

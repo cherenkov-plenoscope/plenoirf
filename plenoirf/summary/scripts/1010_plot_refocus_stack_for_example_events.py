@@ -4,6 +4,7 @@ import numpy as np
 import plenoirf as irf
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import plenopy as pl
 import gamma_ray_reconstruction as gamrec
 import sebastians_matplotlib_addons as sebplt
@@ -19,15 +20,13 @@ sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    opj(paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0056_passing_basic_quality")
+    opj(paths["analysis_dir"], "0056_passing_basic_quality")
 )
 
-lfg = pl.LightFieldGeometry(
-    os.path.join(paths["plenoirf_dir"], "light_field_geometry")
-)
+lfg = pl.LightFieldGeometry(opj(paths["plenoirf_dir"], "light_field_geometry"))
 
 SAMPLE = {
     "bin_edges_pe": np.geomspace(7.5e1, 7.5e5, 5),
@@ -106,14 +105,14 @@ SITES = ["namibia"]
 PARTICLES = ["gamma", "proton", "helium"]
 
 for sk in SITES:
-    sk_dir = os.path.join(paths["out_dir"], sk)
+    sk_dir = opj(paths["out_dir"], sk)
     os.makedirs(sk_dir, exist_ok=True)
     for pk in PARTICLES:
-        pk_dir = os.path.join(sk_dir, pk)
+        pk_dir = opj(sk_dir, pk)
         os.makedirs(pk_dir, exist_ok=True)
 
         event_table = snt.read(
-            path=os.path.join(
+            path=opj(
                 paths["plenoirf_dir"], "event_table", sk, pk, "event_table.tar"
             ),
             structure=irf.table.STRUCTURE,
@@ -139,7 +138,7 @@ for sk in SITES:
         )
 
         run = pl.photon_stream.loph.LopfTarReader(
-            os.path.join(
+            opj(
                 paths["plenoirf_dir"],
                 "event_table",
                 sk,
@@ -148,7 +147,7 @@ for sk in SITES:
             )
         )
 
-        site_particle_dir = os.path.join(paths["out_dir"], sk, pk)
+        site_particle_dir = opj(paths["out_dir"], sk, pk)
         os.makedirs(site_particle_dir, exist_ok=True)
 
         counter = counter_init(SAMPLE)
@@ -199,10 +198,10 @@ for sk in SITES:
 
             counter = counter_add(counter, num_pe, SAMPLE)
 
-            evt_dir = os.path.join(pk_dir, "{:012d}".format(airshower_id))
+            evt_dir = opj(pk_dir, "{:012d}".format(airshower_id))
             os.makedirs(evt_dir, exist_ok=True)
 
-            tabpath = os.path.join(
+            tabpath = opj(
                 evt_dir, "{:s}_{:012d}_truth.json".format(pk, airshower_id)
             )
             json_utils.write(
@@ -232,7 +231,7 @@ for sk in SITES:
             # -----------
             for dek in range(number_depths):
                 print(sk, pk, airshower_id, dek, counter)
-                figpath = os.path.join(
+                figpath = opj(
                     evt_dir,
                     "{:s}_{:012d}_{:03d}.jpg".format(pk, airshower_id, dek),
                 )

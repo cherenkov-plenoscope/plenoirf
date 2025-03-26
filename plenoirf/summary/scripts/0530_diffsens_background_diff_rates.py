@@ -6,6 +6,7 @@ import propagate_uncertainties as pru
 import flux_sensitivity
 import plenoirf as irf
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
@@ -29,20 +30,20 @@ ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 # load
 # ----
 energy_binning = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance_onregion"]
 
 energy_migration = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0066_energy_estimate_quality")
+    opj(paths["analysis_dir"], "0066_energy_estimate_quality")
 )
 
 acceptance = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
+    opj(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 
 airshower_fluxes = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0017_flux_of_airshowers_rebin")
+    opj(paths["analysis_dir"], "0017_flux_of_airshowers_rebin")
 )
 
 # prepare
@@ -140,15 +141,13 @@ for sk in SITES:
 for sk in SITES:
     for ok in ONREGION_TYPES:
         for pk in COSMIC_RAYS:
-            os.makedirs(
-                os.path.join(paths["out_dir"], sk, ok, pk), exist_ok=True
-            )
+            os.makedirs(opj(paths["out_dir"], sk, ok, pk), exist_ok=True)
 
 for sk in SITES:
     for ok in ONREGION_TYPES:
         for pk in COSMIC_RAYS:
             json_utils.write(
-                os.path.join(paths["out_dir"], sk, ok, pk, "reco" + ".json"),
+                opj(paths["out_dir"], sk, ok, pk, "reco" + ".json"),
                 {
                     "comment": "Rate after all cuts VS reco energy",
                     "unit": "s$^{-1}$",
@@ -160,7 +159,7 @@ for sk in SITES:
             )
 
             json_utils.write(
-                os.path.join(paths["out_dir"], sk, ok, pk, "true" + ".json"),
+                opj(paths["out_dir"], sk, ok, pk, "true" + ".json"),
                 {
                     "comment": "Rate after all cuts VS true energy",
                     "unit": "s$^{-1}$",
@@ -209,7 +208,7 @@ for sk in SITES:
         ax.set_ylim([1e-6, 1e4])
         ax.loglog()
         fig.savefig(
-            os.path.join(
+            opj(
                 paths["out_dir"],
                 sk + "_" + ok + "_differential_rates_vs_reco_energy.jpg",
             )

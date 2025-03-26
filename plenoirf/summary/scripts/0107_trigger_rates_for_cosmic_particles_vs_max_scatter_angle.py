@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 import propagate_uncertainties as pru
@@ -12,22 +13,20 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
 acceptance = json_utils.tree.read(
-    os.path.join(
+    opj(
         res.paths["analysis_dir"],
         "0102_trigger_acceptance_for_cosmic_particles_vs_max_scatter_angle",
     )
 )
 
 energy_bin = json_utils.read(
-    os.path.join(
-        res.paths["analysis_dir"], "0005_common_binning", "energy.json"
-    )
+    opj(res.paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["trigger_acceptance_onregion"]
 
 # cosmic-ray-flux
 # ----------------
 airshower_fluxes = json_utils.tree.read(
-    os.path.join(res.paths["analysis_dir"], "0017_flux_of_airshowers_rebin")
+    opj(res.paths["analysis_dir"], "0017_flux_of_airshowers_rebin")
 )
 
 """
@@ -49,7 +48,7 @@ source_key = "diffuse"
 # cosmic-rays
 # -----------
 for ck in res.COSMIC_RAYS:
-    ck_dir = os.path.join(res.paths["out_dir"], ck)
+    ck_dir = opj(res.paths["out_dir"], ck)
     os.makedirs(ck_dir, exist_ok=True)
 
     Q = acceptance[ck][source_key]["mean"]
@@ -81,7 +80,7 @@ for ck in res.COSMIC_RAYS:
         )
 
     json_utils.write(
-        os.path.join(ck_dir, "differential.json"),
+        opj(ck_dir, "differential.json"),
         {
             "comment": "Differential rate VS max. scatter angle VS energy",
             "unit": "s$^{-1} (GeV)$^{-1}$",
@@ -90,7 +89,7 @@ for ck in res.COSMIC_RAYS:
         },
     )
     json_utils.write(
-        os.path.join(ck_dir, "integral.json"),
+        opj(ck_dir, "integral.json"),
         {
             "comment": "Intrgral rate VS max. scatter angle.",
             "unit": "s$^{-1}$",

@@ -4,6 +4,7 @@ import numpy as np
 import plenoirf as irf
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import pandas
 import plenopy as pl
 import iminuit
@@ -48,19 +49,19 @@ sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    opj(paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0056_passing_basic_quality")
+    opj(paths["analysis_dir"], "0056_passing_basic_quality")
 )
 passing_trajectory_quality = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0059_passing_trajectory_quality")
+    opj(paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
 
 # energy
 # ------
 energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["point_spread_function"]
 
 # core-radius bins
@@ -196,11 +197,11 @@ psf_ax_style = {"spines": [], "axes": ["x", "y"], "grid": True}
 
 for sk in irf_config["config"]["sites"]:
     for pk in irf_config["config"]["particles"]:
-        site_particle_dir = os.path.join(paths["out_dir"], sk, pk)
+        site_particle_dir = opj(paths["out_dir"], sk, pk)
         os.makedirs(site_particle_dir, exist_ok=True)
 
         _event_table = snt.read(
-            path=os.path.join(
+            path=opj(
                 paths["plenoirf_dir"], "event_table", sk, pk, "event_table.tar"
             ),
             structure=irf.table.STRUCTURE,
@@ -345,7 +346,7 @@ for sk in irf_config["config"]["sites"]:
                     }
 
             json_utils.write(
-                os.path.join(
+                opj(
                     site_particle_dir,
                     "{theta_key:s}_square_histogram_vs_energy_vs_core_radius.json".format(
                         theta_key=the
@@ -355,7 +356,7 @@ for sk in irf_config["config"]["sites"]:
             )
 
             json_utils.write(
-                os.path.join(
+                opj(
                     site_particle_dir,
                     "{theta_key:s}_square_histogram_vs_energy.json".format(
                         theta_key=the
@@ -365,7 +366,7 @@ for sk in irf_config["config"]["sites"]:
             )
 
             json_utils.write(
-                os.path.join(
+                opj(
                     site_particle_dir,
                     "{theta_key:s}_containment_vs_energy_vs_core_radius.json".format(
                         theta_key=the
@@ -375,7 +376,7 @@ for sk in irf_config["config"]["sites"]:
             )
 
             json_utils.write(
-                os.path.join(
+                opj(
                     site_particle_dir,
                     "{theta_key:s}_containment_vs_energy.json".format(
                         theta_key=the
@@ -494,7 +495,7 @@ for sk in irf_config["config"]["sites"]:
             ax1.set_ylim([-1.01 * _frs, 1.01 * _frs])
 
         fig.savefig(
-            os.path.join(
+            opj(
                 paths["out_dir"],
                 "{:s}_{:s}_psf_image_all.jpg".format(sk, pk),
             )

@@ -184,7 +184,7 @@ for sk in SITES:
             extended_runtime_table = read_csv_records(extended_runtime_path)
         else:
             event_table = snt.read(
-                path=os.path.join(
+                path=opj(
                     paths["plenoirf_dir"],
                     "event_table",
                     sk,

@@ -79,7 +79,7 @@ for pk in res.PARTICLES:
         )
 
         json_utils.write(
-            os.path.join(pk_dir, tm + ".json"),
+            opj(pk_dir, tm + ".json"),
             {
                 "Cherenkov_density_bin_edges_per_m2": density_bin_edges_per_m2,
                 "unit": "1",

@@ -5,6 +5,7 @@ import plenoirf as irf
 import atmospheric_cherenkov_response
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import json_utils
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
@@ -30,13 +31,13 @@ for zd in range(zenith_bin["num"]):
     zenith_start_rad = zenith_bin["edges"][zd]
     zenith_stop_rad = zenith_bin["edges"][zd + 1]
 
-    zd_dir = os.path.join(res.paths["out_dir"], f"zd{zd:d}")
+    zd_dir = opj(res.paths["out_dir"], f"zd{zd:d}")
     os.makedirs(zd_dir, exist_ok=True)
 
     for pk in res.PARTICLES:
         print(f"{pk:s} [", end="")
 
-        pk_dir = os.path.join(zd_dir, pk)
+        pk_dir = opj(zd_dir, pk)
         os.makedirs(pk_dir, exist_ok=True)
 
         with res.open_event_table(particle_key=pk) as arc:
@@ -141,7 +142,7 @@ for zd in range(zenith_bin["num"]):
             absolute_uncertainty.append(_q_eff_au)
 
         json_utils.write(
-            os.path.join(pk_dir, "point.json"),
+            opj(pk_dir, "point.json"),
             {
                 "comment": (
                     "Effective area for a point source. "
@@ -199,7 +200,7 @@ for zd in range(zenith_bin["num"]):
             absolute_uncertainty.append(_q_eff_au)
 
         json_utils.write(
-            os.path.join(pk_dir, "diffuse.json"),
+            opj(pk_dir, "diffuse.json"),
             {
                 "comment": (
                     "Effective acceptance (area x solid angle) "

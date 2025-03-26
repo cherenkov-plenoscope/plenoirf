@@ -2,6 +2,7 @@
 import sys
 import plenoirf as irf
 import os
+from os.path import join as opj
 import json_utils
 import cosmic_fluxes
 
@@ -13,7 +14,7 @@ energy_bin = res.energy_binning(key="interpolation")
 fermi_3fgl = cosmic_fluxes.fermi_3fgl_catalog()
 
 json_utils.write(
-    os.path.join(res.paths["out_dir"], "fermi_3fgl_catalog.json"), fermi_3fgl
+    opj(res.paths["out_dir"], "fermi_3fgl_catalog.json"), fermi_3fgl
 )
 
 (
@@ -26,7 +27,7 @@ json_utils.write(
 )
 
 json_utils.write(
-    os.path.join(res.paths["out_dir"], "reference_source.json"),
+    opj(res.paths["out_dir"], "reference_source.json"),
     {
         "name": name,
         "differential_flux": {

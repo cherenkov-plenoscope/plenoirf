@@ -4,6 +4,7 @@ import numpy as np
 import plenoirf as irf
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import json_utils
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
@@ -65,7 +66,7 @@ relative_uncertainty = irf.utils._divide_silent(
 )
 
 json_utils.write(
-    os.path.join(res.paths["out_dir"], "night_sky_background_rates.json"),
+    opj(res.paths["out_dir"], "night_sky_background_rates.json"),
     {
         "comment": (
             "Trigger rate for night-sky-background"

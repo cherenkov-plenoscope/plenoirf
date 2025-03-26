@@ -4,6 +4,7 @@ import numpy as np
 import plenoirf as irf
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import glob
 import json_utils
 import corsika_primary
@@ -23,10 +24,10 @@ PARTICLES = irf_config["config"]["particles"]
 SITES = irf_config["config"]["sites"]
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    opj(paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0056_passing_basic_quality")
+    opj(paths["analysis_dir"], "0056_passing_basic_quality")
 )
 
 zoo = corsika_primary.particles.identification.Zoo(
@@ -41,7 +42,7 @@ for sk in ["chile"]:  # SITES:
     RRR[sk] = {}
     for pk in ["proton"]:  # PARTICLES:
         event_table = snt.read(
-            path=os.path.join(
+            path=opj(
                 paths["plenoirf_dir"],
                 "event_table",
                 sk,
@@ -67,7 +68,7 @@ for sk in ["chile"]:  # SITES:
         passing_trigger_set = set(passing_trigger[sk][pk]["uid"])
 
         RRR[sk][pk] = {}
-        path_template = os.path.join(
+        path_template = opj(
             paths["plenoirf_dir"],
             "event_table",
             sk,

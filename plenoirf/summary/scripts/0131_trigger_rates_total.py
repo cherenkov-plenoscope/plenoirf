@@ -3,18 +3,17 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import json_utils
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
 cosmic_rates = json_utils.tree.read(
-    os.path.join(
-        res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles"
-    )
+    opj(res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles")
 )
 nsb_rates = json_utils.tree.read(
-    os.path.join(
+    opj(
         res.paths["analysis_dir"],
         "0120_trigger_rates_for_night_sky_background",
     )
@@ -42,7 +41,7 @@ for pk in res.PARTICLES:
     trigger_rates[pk] = cosmic_rates[pk]["integral_rate"]["mean"]
 
 json_utils.write(
-    os.path.join(res.paths["out_dir"], "trigger_rates_by_origin.json"),
+    opj(res.paths["out_dir"], "trigger_rates_by_origin.json"),
     {
         "comment": (
             "Trigger-rates by origin VS. trigger-threshold. "

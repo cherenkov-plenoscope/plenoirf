@@ -4,6 +4,7 @@ import numpy as np
 import plenoirf as irf
 from plenoirf.analysis import spectral_energy_distribution as sed_styles
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
@@ -25,5 +26,5 @@ ax.set_ylim([1e0, 1e7])
 ax.loglog()
 ax.set_xlabel("energy / GeV")
 ax.set_ylabel("observation-time / s")
-fig.savefig(os.path.join(paths["out_dir"], "energy_vs_observation-time.jpg"))
+fig.savefig(opj(paths["out_dir"], "energy_vs_observation-time.jpg"))
 sebplt.close(fig)

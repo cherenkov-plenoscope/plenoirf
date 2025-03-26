@@ -4,6 +4,7 @@ import plenoirf as irf
 import plenopy as pl
 import scipy
 import os
+from os.path import join as opj
 import json_utils
 import numpy as np
 import sebastians_matplotlib_addons as sebplt
@@ -33,7 +34,7 @@ AXES_STYLE = {"spines": ["left", "bottom"], "axes": ["x", "y"], "grid": False}
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 light_field_geometry = pl.LightFieldGeometry(
-    os.path.join(
+    opj(
         paths["plenoirf_dir"],
         "plenoptics",
         "instruments",
@@ -166,7 +167,7 @@ for pixel in pixels:
 
     off_axis_angle_mdeg = int(1000 * np.rad2deg(pixel["off_axis_angle"]))
     fig.savefig(
-        os.path.join(
+        opj(
             paths["out_dir"],
             "aberration_pixel_{pixel:0d}_{angle:0d}mdeg{ext:s}".format(
                 pixel=pixel["id"], angle=off_axis_angle_mdeg, ext=EXT
@@ -248,15 +249,13 @@ ax.spines["top"].set_visible(False)
 ax.set_xlabel("$x\\,/\\,$m")
 ax.set_ylabel("$y\\,/\\,$m")
 
-fig.savefig(os.path.join(paths["out_dir"], "aberration_overview" + EXT))
+fig.savefig(opj(paths["out_dir"], "aberration_overview" + EXT))
 sebplt.close("all")
 
 # export table
 # ------------
 
-with open(
-    os.path.join(paths["out_dir"], "aberration_overview.txt"), "wt"
-) as fout:
+with open(opj(paths["out_dir"], "aberration_overview.txt"), "wt") as fout:
     for pixel in pixels:
         _x, _y = pixel["mean_position_of_photosensors_on_sensor_plane"]
         fout.write(

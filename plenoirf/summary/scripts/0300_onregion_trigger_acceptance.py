@@ -6,6 +6,7 @@ import plenoirf as irf
 import atmospheric_cherenkov_response
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)

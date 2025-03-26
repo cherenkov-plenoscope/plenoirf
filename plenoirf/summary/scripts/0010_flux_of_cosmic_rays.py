@@ -2,6 +2,7 @@
 import sys
 import plenoirf as irf
 import os
+from os.path import join as opj
 import json_utils
 import cosmic_fluxes
 
@@ -46,8 +47,6 @@ for ck in cosmic_rays:
 
     assert out["energy"]["values"][-1] >= STOP_ENERGY
 
-    json_utils.write(
-        os.path.join(res.paths["out_dir"], ck + ".json"), out, indent=4
-    )
+    json_utils.write(opj(res.paths["out_dir"], ck + ".json"), out, indent=4)
 
 res.stop()

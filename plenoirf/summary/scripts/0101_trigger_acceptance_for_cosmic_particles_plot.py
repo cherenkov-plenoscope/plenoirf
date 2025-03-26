@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
@@ -10,7 +11,7 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
 cr = json_utils.tree.read(
-    os.path.join(
+    opj(
         res.paths["analysis_dir"],
         "0100_trigger_acceptance_for_cosmic_particles",
     )
@@ -29,7 +30,7 @@ analysis_trigger_threshold = res.analysis["trigger"][res.site_key][
 for zd in range(zenith_bin["num"]):
 
     zk = f"zd{zd:d}"
-    zd_dir = os.path.join(res.paths["out_dir"], zk)
+    zd_dir = opj(res.paths["out_dir"], zk)
     os.makedirs(zd_dir, exist_ok=True)
 
     for source_key in irf.summary.figure.SOURCES:
@@ -82,15 +83,13 @@ for zd in range(zenith_bin["num"]):
 
             if trigger_thresholds[tt] == analysis_trigger_threshold:
                 fig.savefig(
-                    os.path.join(
-                        res.paths["out_dir"], f"{source_key:s}_zd{zd:d}.jpg"
-                    )
+                    opj(res.paths["out_dir"], f"{source_key:s}_zd{zd:d}.jpg")
                 )
             ax.set_title(
                 "trigger-threshold: {:d} p.e.".format(trigger_thresholds[tt]),
                 fontsize=5,
             )
-            fig.savefig(os.path.join(zd_dir, f"{source_key:s}_{tt:06d}.jpg"))
+            fig.savefig(opj(zd_dir, f"{source_key:s}_{tt:06d}.jpg"))
             sebplt.close(fig)
 
 res.stop()

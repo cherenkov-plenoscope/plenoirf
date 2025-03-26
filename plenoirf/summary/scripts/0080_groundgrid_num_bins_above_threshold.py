@@ -5,6 +5,7 @@ import plenoirf as irf
 import atmospheric_cherenkov_response
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import json_utils
 import magnetic_deflection as mdfl
 import spherical_coordinates
@@ -23,7 +24,7 @@ nat_bin = binning_utils.Binning(
 )
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(res.paths["analysis_dir"], "0055_passing_trigger")
+    opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 
 bbb = {}
@@ -161,9 +162,7 @@ for pk in res.PARTICLES:
             linecolor="k",
         )
         fig.savefig(
-            os.path.join(
-                res.paths["out_dir"], f"{pk:s}_zenith{zd:03d}_grid.jpg"
-            )
+            opj(res.paths["out_dir"], f"{pk:s}_zenith{zd:03d}_grid.jpg")
         )
         sebplt.close(fig)
 
@@ -233,7 +232,7 @@ ax.set_ylim([1e0, 1e5])
 ax.loglog()
 ax.set_xlabel("energy / GeV")
 ax.set_ylabel("num. bins above threshold / 1")
-fig.savefig(os.path.join(res.paths["out_dir"], "num_bins_above_threshold.jpg"))
+fig.savefig(opj(res.paths["out_dir"], "num_bins_above_threshold.jpg"))
 sebplt.close(fig)
 
 
@@ -277,9 +276,7 @@ for zd in range(zenith_bin["num"]):
     ax.set_ylim(ylim)
     ax.set_xlabel("num. bins above threshold / 1")
     ax.set_ylabel("relative intensity / 1")
-    fig.savefig(
-        os.path.join(res.paths["out_dir"], f"what_was_throwm_zd{zd:d}.jpg")
-    )
+    fig.savefig(opj(res.paths["out_dir"], f"what_was_throwm_zd{zd:d}.jpg"))
     sebplt.close(fig)
 
 res.stop()

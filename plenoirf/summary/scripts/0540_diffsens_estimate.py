@@ -6,6 +6,7 @@ import plenoirf as irf
 import flux_sensitivity
 import propagate_uncertainties as pru
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import lima1983analysis
 import json_utils
@@ -29,13 +30,13 @@ ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 # load
 # ----
 energy_binning = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance_onregion"]
 energy_bin_width_au = np.zeros(energy_bin["num"])
 
 S = json_utils.tree.read(
-    os.path.join(
+    opj(
         paths["analysis_dir"],
         "0534_diffsens_signal_area_and_background_rates_for_multiple_scenarios",
     )
@@ -51,7 +52,7 @@ systematic_uncertainties = sum_config["on_off_measuremnent"][
 num_systematic_uncertainties = len(systematic_uncertainties)
 
 observation_times = json_utils.read(
-    os.path.join(
+    opj(
         paths["analysis_dir"],
         "0539_diffsens_observation_times",
         "observation_times.json",
@@ -68,7 +69,7 @@ estimator_statistics = sum_config["on_off_measuremnent"][
 # -------
 for sk in SITES:
     for ok in ONREGION_TYPES:
-        os.makedirs(os.path.join(paths["out_dir"], sk, ok), exist_ok=True)
+        os.makedirs(opj(paths["out_dir"], sk, ok), exist_ok=True)
 
 # work
 # ----
@@ -141,7 +142,7 @@ for sk in SITES:
                     critical_dVdE_au[:, obstix, sysuncix] = dVdE_au
 
             json_utils.write(
-                os.path.join(paths["out_dir"], sk, ok, dk + ".json"),
+                opj(paths["out_dir"], sk, ok, dk + ".json"),
                 {
                     "energy_binning_key": energy_bin["key"],
                     "observation_times": observation_times,

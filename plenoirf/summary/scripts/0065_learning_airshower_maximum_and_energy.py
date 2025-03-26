@@ -3,6 +3,7 @@ import sys
 import plenoirf as irf
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import pandas
 import numpy as np
 import sklearn
@@ -17,22 +18,22 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
 train_test = json_utils.tree.read(
-    os.path.join(
+    opj(
         res.paths["analysis_dir"],
         "0030_splitting_train_and_test_sample",
     )
 )
-transformed_features_dir = os.path.join(
+transformed_features_dir = opj(
     res.paths["analysis_dir"], "0062_transform_features"
 )
 passing_trigger = json_utils.tree.read(
-    os.path.join(res.paths["analysis_dir"], "0055_passing_trigger")
+    opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    os.path.join(res.paths["analysis_dir"], "0056_passing_basic_quality")
+    opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
 passing_trajectory = json_utils.tree.read(
-    os.path.join(res.paths["analysis_dir"], "0059_passing_trajectory_quality")
+    opj(res.paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
 
 random_seed = res.analysis["random_seed"]
@@ -83,7 +84,7 @@ def read_event_frame(
             }
         )
 
-    transformed_features_path = os.path.join(
+    transformed_features_path = opj(
         transformed_features_dir,
         pk,
         "transformed_features.zip",
@@ -230,7 +231,7 @@ _X_shuffle, _y_shuffle = sklearn.utils.shuffle(
 for mk in models:
     models[mk].fit(_X_shuffle, _y_shuffle)
 
-    model_path = os.path.join(res.paths["out_dir"], mk + ".pkl")
+    model_path = opj(res.paths["out_dir"], mk + ".pkl")
     with open(model_path, "wb") as fout:
         fout.write(pickle.dumps(models[mk]))
 
@@ -248,8 +249,8 @@ for mk in models:
             out["unit"] = targets[tk]["unit"]
             out["uid"] = np.array(particle_frames[pk]["test"]["uid"])
 
-            pk_dir = os.path.join(res.paths["out_dir"], pk)
+            pk_dir = opj(res.paths["out_dir"], pk)
             os.makedirs(pk_dir, exist_ok=True)
-            json_utils.write(os.path.join(pk_dir, tk + ".json"), out)
+            json_utils.write(opj(pk_dir, tk + ".json"), out)
 
 res.stop()

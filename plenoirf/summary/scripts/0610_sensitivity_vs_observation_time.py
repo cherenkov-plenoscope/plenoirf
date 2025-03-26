@@ -7,6 +7,7 @@ import spectral_energy_distribution_units as sed
 from plenoirf.analysis import spectral_energy_distribution as sed_styles
 import cosmic_fluxes
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
@@ -27,9 +28,7 @@ ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 
 # load
 # ----
-dS = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0540_diffsens_estimate")
-)
+dS = json_utils.tree.read(opj(paths["analysis_dir"], "0540_diffsens_estimate"))
 
 diff_sens_scenario = sum_config["differential_sensitivity"][
     "gamma_ray_effective_area_scenario"
@@ -45,7 +44,7 @@ num_systematic_uncertainties = len(systematic_uncertainties)
 
 for pe in pivot_energies:
     fls = json_utils.read(
-        os.path.join("fermi_lat", "dnde_vs_observation_time_vs_energy.json")
+        opj("fermi_lat", "dnde_vs_observation_time_vs_energy.json")
     )
     assert fls["dnde"]["unit"] == "cm-2 MeV-1 ph s-1"
     odnde = {"dnde": {}}
@@ -65,9 +64,7 @@ for pe in pivot_energies:
     )
 
     energy_bin = json_utils.read(
-        os.path.join(
-            paths["analysis_dir"], "0005_common_binning", "energy.json"
-        )
+        opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
     )["trigger_acceptance_onregion"]
 
     fermi = irf.other_instruments.fermi_lat
@@ -96,9 +93,7 @@ for pe in pivot_energies:
     for sk in SITES:
         for ok in ONREGION_TYPES:
             for dk in flux_sensitivity.differential.SCENARIOS:
-                os.makedirs(
-                    os.path.join(paths["out_dir"], sk, ok, dk), exist_ok=True
-                )
+                os.makedirs(opj(paths["out_dir"], sk, ok, dk), exist_ok=True)
 
                 observation_times = dS[sk][ok][dk]["observation_times"]
 
@@ -267,7 +262,7 @@ for pe in pivot_energies:
                 )
 
                 fig.savefig(
-                    os.path.join(
+                    opj(
                         paths["out_dir"],
                         sk,
                         ok,

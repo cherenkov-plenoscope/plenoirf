@@ -4,13 +4,14 @@ import numpy as np
 import plenoirf as irf
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import json_utils
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
 for pk in res.PARTICLES:
-    pk_dir = os.path.join(res.paths["out_dir"], pk)
+    pk_dir = opj(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
     with res.open_event_table(particle_key=pk) as arc:
@@ -35,7 +36,7 @@ for pk in res.PARTICLES:
     )
 
     json_utils.write(
-        os.path.join(pk_dir, "trajectory_quality.json"),
+        opj(pk_dir, "trajectory_quality.json"),
         {
             "comment": (
                 "Quality of reconstructed trajectory. "
@@ -52,6 +53,6 @@ for pk in res.PARTICLES:
     mask = quality >= res.analysis["quality"]["min_trajectory_quality"]
     uids_passed = event_frame["uid"][mask]
 
-    json_utils.write(os.path.join(pk_dir, "uid.json"), uids_passed)
+    json_utils.write(opj(pk_dir, "uid.json"), uids_passed)
 
 res.stop()

@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import lima1983analysis
 import cosmic_fluxes
@@ -30,16 +31,14 @@ COSMIC_RAYS = copy.deepcopy(PARTICLES)
 COSMIC_RAYS.pop("gamma")
 
 onregion_rates = json_utils.tree.read(
-    os.path.join(
-        paths["analysis_dir"], "0320_onregion_trigger_rates_for_cosmic_rays"
-    )
+    opj(paths["analysis_dir"], "0320_onregion_trigger_rates_for_cosmic_rays")
 )
 onregion_acceptance = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
+    opj(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 
 energy_binning = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance_onregion"]
 energy_fine_bin = energy_binning["interpolation"]
@@ -53,7 +52,7 @@ def array_to_txt(arr, path):
             f.write("{:e}\n".format(val))
 
 
-with open(os.path.join(paths["out_dir"], "README.md"), "wt") as f:
+with open(opj(paths["out_dir"], "README.md"), "wt") as f:
     ccc = """
     E: energy.
     A: Effective area for gamma-rays after all cuts in on-region.
@@ -67,15 +66,15 @@ with open(os.path.join(paths["out_dir"], "README.md"), "wt") as f:
 
 array_to_txt(
     arr=energy_fine_bin["edges"],
-    path=os.path.join(paths["out_dir"], "E_bin_edges_GeV.txt"),
+    path=opj(paths["out_dir"], "E_bin_edges_GeV.txt"),
 )
 
 for sk in SITES:
-    sk_dir = os.path.join(paths["out_dir"], sk)
+    sk_dir = opj(paths["out_dir"], sk)
     os.makedirs(sk_dir, exist_ok=True)
 
     for ok in ONREGION_TYPES:
-        sk_ok_dir = os.path.join(sk_dir, ok)
+        sk_ok_dir = opj(sk_dir, ok)
         os.makedirs(sk_ok_dir, exist_ok=True)
 
         A_gamma = onregion_acceptance[sk][ok]["gamma"]["point"]["mean"]
@@ -84,9 +83,7 @@ for sk in SITES:
             xp=energy_bin["centers"],
             fp=A_gamma,
         )
-        array_to_txt(
-            arr=A_gamma_fine_m2, path=os.path.join(sk_ok_dir, "A_m2.txt")
-        )
+        array_to_txt(arr=A_gamma_fine_m2, path=opj(sk_ok_dir, "A_m2.txt"))
 
         # background
         # ----------
@@ -109,16 +106,16 @@ for sk in SITES:
         )
         array_to_txt(
             arr=[rate_cosmic_rays_per_s],
-            path=os.path.join(sk_ok_dir, "B_per_s.txt"),
+            path=opj(sk_ok_dir, "B_per_s.txt"),
         )
         for pk in COSMIC_RAYS:
             array_to_txt(
                 arr=[rates_of_cosmic_rays[pk]],
-                path=os.path.join(sk_ok_dir, "B_{:s}_per_s.txt".format(pk)),
+                path=opj(sk_ok_dir, "B_{:s}_per_s.txt".format(pk)),
             )
 
         for pk in PULSARS:
-            sk_ok_pk_dir = os.path.join(sk_ok_dir, pk)
+            sk_ok_pk_dir = opj(sk_ok_dir, pk)
 
             print(sk, ok, pk)
 
@@ -135,9 +132,7 @@ for sk in SITES:
 
             array_to_txt(
                 arr=dKdE_per_m2_per_s_per_GeV,
-                path=os.path.join(
-                    sk_ok_pk_dir, "dKdE_per_m2_per_s_per_GeV.txt"
-                ),
+                path=opj(sk_ok_pk_dir, "dKdE_per_m2_per_s_per_GeV.txt"),
             )
             fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
             ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
@@ -154,9 +149,7 @@ for sk in SITES:
             ax.set_ylabel(
                 r"$\frac{\mathrm{d\,K}}{\mathrm{d\,E}}$ / m$^{-2}$ s$^{-1}$ (GeV)$^{-1}$"
             )
-            fig.savefig(
-                os.path.join(sk_ok_pk_dir, "dKdE_per_m2_per_s_per_GeV.jpg")
-            )
+            fig.savefig(opj(sk_ok_pk_dir, "dKdE_per_m2_per_s_per_GeV.jpg"))
             sebplt.close(fig)
 
             dRdE_per_s_per_GeV = np.zeros(energy_fine_bin["num_bins"])
@@ -167,7 +160,7 @@ for sk in SITES:
 
             array_to_txt(
                 arr=dRdE_per_s_per_GeV,
-                path=os.path.join(sk_ok_pk_dir, "dRdE_per_s_per_GeV.txt"),
+                path=opj(sk_ok_pk_dir, "dRdE_per_s_per_GeV.txt"),
             )
             fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
             ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
@@ -184,7 +177,7 @@ for sk in SITES:
             ax.set_ylabel(
                 r"$\frac{\mathrm{d\,R}}{\mathrm{d\,E}}$ / s$^{-1}$ (GeV)$^{-1}$"
             )
-            fig.savefig(os.path.join(sk_ok_pk_dir, "dRdE_per_s_per_GeV.jpg"))
+            fig.savefig(opj(sk_ok_pk_dir, "dRdE_per_s_per_GeV.jpg"))
             sebplt.close(fig)
 
             R_per_s = 0.0
@@ -192,6 +185,4 @@ for sk in SITES:
                 R_per_s += (
                     dRdE_per_s_per_GeV[ebin] * energy_fine_bin["widths"][ebin]
                 )
-            array_to_txt(
-                arr=[R_per_s], path=os.path.join(sk_ok_pk_dir, "R_per_s.txt")
-            )
+            array_to_txt(arr=[R_per_s], path=opj(sk_ok_pk_dir, "R_per_s.txt"))

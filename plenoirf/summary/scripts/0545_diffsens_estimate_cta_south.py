@@ -7,6 +7,7 @@ import plenoirf as irf
 from importlib import resources as importlib_resources
 import binning_utils
 import os
+from os.path import join as opj
 
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -20,7 +21,7 @@ sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 observation_times = json_utils.read(
-    os.path.join(
+    opj(
         paths["analysis_dir"],
         "0539_diffsens_observation_times",
         "observation_times.json",
@@ -47,14 +48,14 @@ CTA_IRF_CONFIG["systematic_uncertainty_relative"] = 1e-2  # CTA-specific
 CTA_IRF_CONFIG["observation_times"] = observation_times
 
 json_utils.write(
-    os.path.join(paths["out_dir"], "config.json"),
+    opj(paths["out_dir"], "config.json"),
     CTA_IRF_CONFIG,
 )
 
 
 # instrument-response-function
 # ----------------------------
-cta_irf_path = os.path.join(
+cta_irf_path = opj(
     importlib_resources.files("flux_sensitivity"),
     "tests",
     "resources",
@@ -134,14 +135,14 @@ blk["signal_area_m2_au"] = signal_area_m2_au
 blk["background_rate_onregion_per_s"] = background_rate_onregion_per_s
 blk["background_rate_onregion_per_s_au"] = background_rate_onregion_per_s_au
 json_utils.write(
-    os.path.join(paths["out_dir"], "instrument_response_function.json"), blk
+    opj(paths["out_dir"], "instrument_response_function.json"), blk
 )
 
 
 # scenarios
 # ---------
 for dk in flux_sensitivity.differential.SCENARIOS:
-    scenario_dir = os.path.join(paths["out_dir"], dk)
+    scenario_dir = opj(paths["out_dir"], dk)
     os.makedirs(scenario_dir, exist_ok=True)
 
     scenario = flux_sensitivity.differential.init_scenario_matrices_for_signal_and_background(
@@ -177,7 +178,7 @@ for dk in flux_sensitivity.differential.SCENARIOS:
     scenario["background_rate_onregion_in_scenario_per_s_au"] = (
         background_rate_onregion_in_scenario_per_s_au
     )
-    json_utils.write(os.path.join(scenario_dir, "scenario.json"), scenario)
+    json_utils.write(opj(scenario_dir, "scenario.json"), scenario)
 
     critrate = np.zeros(shape=(num_energy_bins, num_observation_times))
     critrate_au = np.zeros(shape=(num_energy_bins, num_observation_times))
@@ -223,11 +224,9 @@ for dk in flux_sensitivity.differential.SCENARIOS:
     piy = {}
     piy["critical_signal_rate_in_scenario_per_s"] = dVdE
     piy["critical_signal_rate_in_scenario_per_s_au"] = dVdE_au
-    json_utils.write(
-        os.path.join(scenario_dir, "critical_signal_rate.json"), piy
-    )
+    json_utils.write(opj(scenario_dir, "critical_signal_rate.json"), piy)
 
     out = {}
     out["dVdE_per_m2_per_GeV_per_s"] = dVdE
     out["dVdE_per_m2_per_GeV_per_s_au"] = dVdE_au
-    json_utils.write(os.path.join(scenario_dir, "flux_sensitivity.json"), out)
+    json_utils.write(opj(scenario_dir, "flux_sensitivity.json"), out)

@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import lima1983analysis
 import json_utils
@@ -23,13 +24,11 @@ PARTICLES = irf_config["config"]["particles"]
 ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 
 onregion_rates = json_utils.tree.read(
-    os.path.join(
-        paths["analysis_dir"], "0320_onregion_trigger_rates_for_cosmic_rays"
-    )
+    opj(paths["analysis_dir"], "0320_onregion_trigger_rates_for_cosmic_rays")
 )
 
 fine_energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["interpolation"]
 
 particle_colors = sum_config["plot"]["particle_colors"]
@@ -85,7 +84,7 @@ for sk in SITES:
         ax.set_xlabel("Energy / GeV")
         ax.set_ylabel("differential rate /\ns$^{-1}$ (GeV)$^{-1}$")
         fig.savefig(
-            os.path.join(
+            opj(
                 paths["out_dir"],
                 "{:s}_{:s}_differential_event_rates.jpg".format(sk, ok),
             )

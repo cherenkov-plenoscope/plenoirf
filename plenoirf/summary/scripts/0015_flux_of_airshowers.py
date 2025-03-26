@@ -4,13 +4,14 @@ import copy
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import json_utils
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
 raw_cosmic_ray_fluxes = json_utils.tree.read(
-    os.path.join(res.paths["analysis_dir"], "0010_flux_of_cosmic_rays")
+    opj(res.paths["analysis_dir"], "0010_flux_of_cosmic_rays")
 )
 
 energy_bin = res.energy_binning(key="interpolation")
@@ -69,10 +70,10 @@ for pk in res.COSMIC_RAYS:
 # export
 # ------
 for pk in res.COSMIC_RAYS:
-    pk_dir = os.path.join(res.paths["out_dir"], pk)
+    pk_dir = opj(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
     json_utils.write(
-        os.path.join(pk_dir, "differential_flux.json"),
+        opj(pk_dir, "differential_flux.json"),
         {
             "comment": (
                 "The flux of air-showers seen by / relevant for the "

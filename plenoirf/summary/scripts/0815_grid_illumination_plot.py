@@ -23,11 +23,11 @@ SITES = irf_config["config"]["sites"]
 PARTICLES = irf_config["config"]["particles"]
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    opj(paths["analysis_dir"], "0055_passing_trigger")
 )
 
 energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["point_spread_function"]
 
 num_grid_bins_on_edge = irf_config["grid_geometry"]["num_bins_diameter"]
@@ -61,7 +61,7 @@ for sk in SITES:
         )
 
         event_table = snt.read(
-            path=os.path.join(
+            path=opj(
                 paths["plenoirf_dir"],
                 "event_table",
                 sk,

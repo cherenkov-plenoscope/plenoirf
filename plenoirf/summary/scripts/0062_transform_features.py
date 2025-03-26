@@ -4,6 +4,7 @@ import plenoirf as irf
 import sparse_numeric_table as snt
 import rename_after_writing as rnw
 import os
+from os.path import join as opj
 import pandas
 import numpy as np
 import sebastians_matplotlib_addons as sebplt
@@ -13,7 +14,7 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 train_test = json_utils.tree.read(
-    os.path.join(
+    opj(
         res.paths["analysis_dir"],
         "0030_splitting_train_and_test_sample",
     )
@@ -73,13 +74,13 @@ for pk in PARTICLES:
             feature_raw=f_raw, transformation=ft_trafo[fk]
         )
 
-    pk_dir = os.path.join(res.paths["out_dir"], pk)
+    pk_dir = opj(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
     out_level = snt.testing.dict_to_recarray(transformed_features[pk])
     out_table = snt.SparseNumericTable(index_key="uid")
     out_table["transformed_features"] = out_level
-    with rnw.Path(os.path.join(pk_dir, "transformed_features.zip")) as path:
+    with rnw.Path(opj(pk_dir, "transformed_features.zip")) as path:
         with snt.open(
             file=path, mode="w", dtypes_and_index_key_from=out_table
         ) as arc:
@@ -87,7 +88,7 @@ for pk in PARTICLES:
 
 
 for fk in ALL_FEATURES:
-    fig_path = os.path.join(res.paths["out_dir"], f"{fk}.jpg")
+    fig_path = opj(res.paths["out_dir"], f"{fk}.jpg")
 
     if not os.path.exists(fig_path):
         fig = sebplt.figure(sebplt.FIGURE_16_9)

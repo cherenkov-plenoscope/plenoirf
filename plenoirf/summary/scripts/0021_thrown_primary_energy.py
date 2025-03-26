@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import cosmic_fluxes
 import json_utils
 import spherical_coordinates
@@ -70,7 +71,7 @@ ax.set_ylabel(
     + r"(GeV)$^{1.5}$ (GeV)$^{-1}$"
 )
 fig.savefig(
-    os.path.join(
+    opj(
         res.paths["out_dir"],
         "thrown_primary_energy_differential_spectral_energy_distribution.jpg",
     )
@@ -101,7 +102,7 @@ ax.loglog()
 ax.set_xlim(energy_bin["limits"])
 ax.set_xlabel("energy / GeV")
 ax.set_ylabel(r"intensity / 1")
-fig.savefig(os.path.join(res.paths["out_dir"], "thrown_primary_energy.jpg"))
+fig.savefig(opj(res.paths["out_dir"], "thrown_primary_energy.jpg"))
 sebplt.close(fig)
 
 
@@ -127,7 +128,7 @@ for pk in res.PARTICLES:
         verticalalignment="center",
     )
     xpos += 0.25
-fig.savefig(os.path.join(res.paths["out_dir"], "particle_labels.jpg"))
+fig.savefig(opj(res.paths["out_dir"], "particle_labels.jpg"))
 sebplt.close(fig)
 
 fig = sebplt.figure({"rows": 64, "cols": 1280, "fontsize": 1.0})
@@ -156,7 +157,7 @@ for zdbin in range(zenith_bin["num"]):
         verticalalignment="center",
     )
     xpos += 0.33
-fig.savefig(os.path.join(res.paths["out_dir"], "zenith_range_labels.jpg"))
+fig.savefig(opj(res.paths["out_dir"], "zenith_range_labels.jpg"))
 sebplt.close(fig)
 
 res.stop()

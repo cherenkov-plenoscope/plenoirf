@@ -4,6 +4,7 @@ import numpy as np
 import plenoirf as irf
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import json_utils
 import spherical_coordinates
 import solid_angle_utils
@@ -116,7 +117,7 @@ for key in PLOTS:
     ax.set_ylim(y_lim)
     ax.semilogx()
     ax.set_xlim(energy_bin["limits"])
-    fig.savefig(os.path.join(res.paths["out_dir"], f"{key:s}.jpg"))
+    fig.savefig(opj(res.paths["out_dir"], f"{key:s}.jpg"))
     sebplt.close(fig)
 
 res.stop()

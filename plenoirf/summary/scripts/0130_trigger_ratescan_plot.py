@@ -3,6 +3,7 @@ import sys
 import plenoirf as irf
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import numpy as np
 import sebastians_matplotlib_addons as sebplt
 import json_utils
@@ -14,12 +15,10 @@ res.start(sebplt=sebplt)
 TRIGGER = res.analysis["trigger"][res.site_key]
 
 cosmic_rates = json_utils.tree.read(
-    os.path.join(
-        res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles"
-    )
+    opj(res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles")
 )
 nsb_rates = json_utils.tree.read(
-    os.path.join(
+    opj(
         res.paths["analysis_dir"],
         "0120_trigger_rates_for_night_sky_background",
     )
@@ -64,7 +63,7 @@ ax.set_ylabel("trigger-rate / s$^{-1}$")
 ax.legend(loc="best", fontsize=8)
 ax.axvline(x=analysis_trigger_threshold, color="k", linestyle="-", alpha=0.25)
 ax.set_ylim([1e0, 1e7])
-fig.savefig(os.path.join(res.paths["out_dir"], "ratescan.jpg"))
+fig.savefig(opj(res.paths["out_dir"], "ratescan.jpg"))
 sebplt.close(fig)
 
 res.stop()

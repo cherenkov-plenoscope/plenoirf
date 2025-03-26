@@ -7,6 +7,7 @@ import spectral_energy_distribution_units as sed
 from plenoirf.analysis import spectral_energy_distribution as sed_styles
 import cosmic_fluxes
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
@@ -26,12 +27,10 @@ PARTICLES = irf_config["config"]["particles"]
 COSMIC_RAYS = irf.utils.filter_particles_with_electric_charge(PARTICLES)
 ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
 
-dS = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0540_diffsens_estimate")
-)
+dS = json_utils.tree.read(opj(paths["analysis_dir"], "0540_diffsens_estimate"))
 
 energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["trigger_acceptance_onregion"]
 
 fermi = irf.other_instruments.fermi_lat
@@ -107,11 +106,11 @@ def com_add_diff_flux(
 
 
 cta_diffsens = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0545_diffsens_estimate_cta_south")
+    opj(paths["analysis_dir"], "0545_diffsens_estimate_cta_south")
 )
 
 fermi_diffsens = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0544_diffsens_estimate_fermi_lat")
+    opj(paths["analysis_dir"], "0544_diffsens_estimate_fermi_lat")
 )["flux_sensitivity"]
 
 
@@ -134,9 +133,7 @@ for obsk in observation_times:
     for sk in SITES:
         for ok in ONREGION_TYPES:
             for sedk in SED_STYLES:
-                os.makedirs(
-                    os.path.join(paths["out_dir"], sk, ok, sedk), exist_ok=True
-                )
+                os.makedirs(opj(paths["out_dir"], sk, ok, sedk), exist_ok=True)
 
     for sk in SITES:
         for ok in ONREGION_TYPES:
@@ -322,7 +319,7 @@ for obsk in observation_times:
                         sed_style["y_label"] + " /\n " + sed_style["y_unit"]
                     )
                     fig.savefig(
-                        os.path.join(
+                        opj(
                             paths["out_dir"],
                             sk,
                             ok,

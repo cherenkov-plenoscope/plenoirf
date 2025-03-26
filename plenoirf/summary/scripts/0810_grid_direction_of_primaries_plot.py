@@ -20,13 +20,13 @@ sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
 passing_trigger = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0055_passing_trigger")
+    opj(paths["analysis_dir"], "0055_passing_trigger")
 )
 
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 energy_bin = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )["point_spread_function"]
 
 c_bin_edges_deg = np.linspace(
@@ -44,7 +44,7 @@ for site_key in irf_config["config"]["sites"]:
         # read
         # ----
         event_table = snt.read(
-            path=os.path.join(
+            path=opj(
                 paths["plenoirf_dir"],
                 "event_table",
                 site_key,

@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import lima1983analysis
 import cosmic_fluxes
@@ -30,16 +31,14 @@ COSMIC_RAYS = copy.deepcopy(PARTICLES)
 COSMIC_RAYS.pop("gamma")
 
 onregion_rates = json_utils.tree.read(
-    os.path.join(
-        paths["analysis_dir"], "0320_onregion_trigger_rates_for_cosmic_rays"
-    )
+    opj(paths["analysis_dir"], "0320_onregion_trigger_rates_for_cosmic_rays")
 )
 onregion_acceptance = json_utils.tree.read(
-    os.path.join(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
+    opj(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 
 energy_binning = json_utils.read(
-    os.path.join(paths["analysis_dir"], "0005_common_binning", "energy.json")
+    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
 )
 energy_bin = energy_binning["trigger_acceptance_onregion"]
 energy_fine_bin = energy_binning["interpolation"]
@@ -70,9 +69,7 @@ ax.set_xlabel("energy / GeV")
 ax.set_ylabel(
     r"$\frac{\mathrm{d\,flux}}{\mathrm{d\,energy}}$ / m$^{-2}$ s$^{-1}$ (GeV)$^{-1}$"
 )
-fig.savefig(
-    os.path.join(paths["out_dir"], "pulsar_{:s}_flux.jpg".format(pulsar_name))
-)
+fig.savefig(opj(paths["out_dir"], "pulsar_{:s}_flux.jpg".format(pulsar_name)))
 sebplt.close(fig)
 
 
@@ -88,9 +85,7 @@ ax.set_xlim([0, 1])
 ax.set_xlabel(r"phase / 2$\pi$")
 ax.set_ylabel(r"relative / 1")
 fig.savefig(
-    os.path.join(
-        paths["out_dir"], "pulsar_{:s}_phaseogram.jpg".format(pulsar_name)
-    )
+    opj(paths["out_dir"], "pulsar_{:s}_phaseogram.jpg".format(pulsar_name))
 )
 sebplt.close(fig)
 
@@ -108,7 +103,7 @@ ax.set_ylim([0, 1])
 ax.set_xlabel(r"cummulative distribution function / 1")
 ax.set_ylabel(r"phase / 2$\pi$")
 fig.savefig(
-    os.path.join(
+    opj(
         paths["out_dir"],
         "pulsar_{:s}_phaseogram_cummulative_distribution_function.jpg".format(
             pulsar_name
@@ -154,7 +149,7 @@ if TEST_DRAW_RANDOM_PHASE:
     ax.set_xlabel(r"phase / 2$\pi$")
     ax.set_ylabel(r"relative / 1")
     fig.savefig(
-        os.path.join(
+        opj(
             paths["out_dir"],
             "pulsar_{:s}_phaseogram_test_draw.jpg".format(pulsar_name),
         )
@@ -280,9 +275,9 @@ PULSARS = cosmic_fluxes.pulsars.list_pulsar_names()
 
 
 for sk in SITES:
-    sk_dir = os.path.join(paths["out_dir"], sk)
+    sk_dir = opj(paths["out_dir"], sk)
     for ok in ONREGION_TYPES:
-        sk_ok_dir = os.path.join(sk_dir, ok)
+        sk_ok_dir = opj(sk_dir, ok)
         os.makedirs(sk_ok_dir, exist_ok=True)
 
         # background
@@ -306,7 +301,7 @@ for sk in SITES:
         )
 
         json_utils.write(
-            os.path.join(sk_ok_dir, "rates_of_cosmic_rays.json"),
+            opj(sk_ok_dir, "rates_of_cosmic_rays.json"),
             rates_of_cosmic_rays,
             indent=4,
         )
@@ -344,7 +339,7 @@ for sk in SITES:
             r"$\frac{\mathrm{d\,rate}}{\mathrm{d\,energy}}$ / s$^{-1}$ (GeV)$^{-1}$"
         )
         fig.savefig(
-            os.path.join(
+            opj(
                 sk_ok_dir,
                 "{:s}_onregion-{:s}_differential_rate_in_onregion.jpg".format(
                     sk, ok
@@ -360,7 +355,7 @@ for sk in SITES:
             )
 
         json_utils.write(
-            os.path.join(sk_ok_dir, "rate_of_gamma_rays.json"),
+            opj(sk_ok_dir, "rate_of_gamma_rays.json"),
             {"gamma": rate_gamma_rays_per_s},
             indent=4,
         )
@@ -411,7 +406,7 @@ for sk in SITES:
                 ax.set_xlabel(r"phase / 2$\pi$")
                 ax.set_ylabel(r"rate / s$^{-1}$")
                 fig.savefig(
-                    os.path.join(
+                    opj(
                         sk_ok_dir,
                         "{:s}_onregion-{:s}_phaseogram_exposure-time-{:03d}h.jpg".format(
                             sk, ok, len(runs)
@@ -469,7 +464,7 @@ for sk in SITES:
                 ax.set_xlabel(r"phase / 2$\pi$")
                 ax.set_ylabel("significance / 1\n(Li and Ma, 1983, Eq.17)")
                 fig.savefig(
-                    os.path.join(
+                    opj(
                         sk_ok_dir,
                         "{:s}_onregion-{:s}_phaseogram_exposure-time-{:03d}h_significance_lima1983.jpg".format(
                             sk, ok, len(runs)

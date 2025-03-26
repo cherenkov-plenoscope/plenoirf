@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import os
+from os.path import join as opj
 import json_utils
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -18,7 +19,7 @@ os.makedirs(paths["out_dir"], exist_ok=True)
 observation_times = irf.utils.make_civil_times_points_in_quasi_logspace()
 
 json_utils.write(
-    os.path.join(paths["out_dir"], "observation_times.json"),
+    opj(paths["out_dir"], "observation_times.json"),
     {
         "observation_times": observation_times,
         "unit": "s",

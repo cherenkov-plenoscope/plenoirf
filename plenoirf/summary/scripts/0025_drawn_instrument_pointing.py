@@ -4,6 +4,7 @@ import numpy as np
 import plenoirf as irf
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import json_utils
 import spherical_coordinates
 import solid_angle_utils
@@ -118,9 +119,7 @@ for pk in res.PARTICLES:
     _mappable = sebplt.plt.cm.ScalarMappable(norm=_norm, cmap=cmap)
     sebplt.plt.colorbar(mappable=_mappable, cax=ax_colorbar)
     ax_colorbar.set_ylabel(r"intensity / sr$^{-1}$")
-    fig.savefig(
-        os.path.join(res.paths["out_dir"], f"{pk:s}_pointings_drawn.jpg")
-    )
+    fig.savefig(opj(res.paths["out_dir"], f"{pk:s}_pointings_drawn.jpg"))
     sebplt.close(fig)
 
 res.stop()

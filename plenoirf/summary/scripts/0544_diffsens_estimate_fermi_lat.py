@@ -6,6 +6,7 @@ import json_utils
 import plenoirf as irf
 import binning_utils
 import os
+from os.path import join as opj
 
 
 argv = irf.summary.argv_since_py(sys.argv)
@@ -19,7 +20,7 @@ sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
 os.makedirs(paths["out_dir"], exist_ok=True)
 
 observation_times = json_utils.read(
-    os.path.join(
+    opj(
         paths["analysis_dir"],
         "0539_diffsens_observation_times",
         "observation_times.json",
@@ -28,7 +29,7 @@ observation_times = json_utils.read(
 num_observation_times = len(observation_times)
 
 fls = json_utils.read(
-    os.path.join("fermi_lat", "dnde_vs_observation_time_vs_energy.json")
+    opj("fermi_lat", "dnde_vs_observation_time_vs_energy.json")
 )
 
 # conver units
@@ -66,4 +67,4 @@ for ebin in range(num_energy_bins):
             right=float("nan"),
         )
 
-json_utils.write(os.path.join(paths["out_dir"], "flux_sensitivity.json"), out)
+json_utils.write(opj(paths["out_dir"], "flux_sensitivity.json"), out)

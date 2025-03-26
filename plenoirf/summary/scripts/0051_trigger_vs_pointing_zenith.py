@@ -3,6 +3,7 @@ import sys
 import plenoirf as irf
 import sparse_numeric_table as snt
 import os
+from os.path import join as opj
 import json_utils
 import numpy as np
 import sebastians_matplotlib_addons as sebplt
@@ -187,7 +188,7 @@ for pk in ttt:
         )
 
         fig.savefig(
-            os.path.join(
+            opj(
                 res.paths["out_dir"],
                 f"{pk:s}_trigger_probability_vs_object_distance_in_zenith_bin_{zzz:02d}.jpg",
             )
@@ -238,7 +239,7 @@ for zzz in range(zenith_bin["num"]):
         )
 
     fig.savefig(
-        os.path.join(
+        opj(
             res.paths["out_dir"],
             f"trigger_probability_in_zenith_bin_{zzz:02d}.jpg",
         )
