@@ -19,6 +19,12 @@ res.start(sebplt=sebplt)
 energy_bin = res.energy_binning(key="trigger_acceptance")
 zenith_bin = res.zenith_binning(key="once")
 
+max_energy_in_magnetic_delfection_tables_GeV = (
+    binning_utils.power10.lower_bin_edge(
+        **res.config["magnetic_deflection"]["energy_stop_GeV_power10"]
+    )
+)
+
 
 def percentile(x, p):
     if len(x) == 0:
@@ -85,11 +91,13 @@ PLOTS = {
         "hist": containment,
         "y_label": "solid angle containment / 1",
         "y_lim": [0, 1],
+        "loglog": False,
     },
     "solid_angle_thrown_sr": {
         "hist": thrown,
         "y_label": "solid angle thrown / sr",
-        "y_lim": [0, 0.5],
+        "y_lim": [5e-3, 5e-1],
+        "loglog": True,
     },
 }
 
@@ -112,10 +120,19 @@ for key in PLOTS:
             face_color=res.PARTICLE_COLORS[pk],
             face_alpha=0.25,
         )
+    ax.axvline(
+        max_energy_in_magnetic_delfection_tables_GeV,
+        linestyle=":",
+        color="black",
+        alpha=0.3,
+    )
     ax.set_xlabel("energy / GeV")
     ax.set_ylabel(y_label)
     ax.set_ylim(y_lim)
-    ax.semilogx()
+    if PLOTS[key]["loglog"]:
+        ax.loglog()
+    else:
+        ax.semilogx()
     ax.set_xlim(energy_bin["limits"])
     fig.savefig(opj(res.paths["out_dir"], f"{key:s}.jpg"))
     sebplt.close(fig)
