@@ -1,9 +1,6 @@
 import os
-
-# import copy
-# from os.path import join as opj
-# import pandas
 import numpy as np
+import warnings
 
 from importlib import resources as importlib_resources
 
@@ -20,14 +17,7 @@ import binning_utils
 import shutil
 
 from .. import utils
-
-# from .. import features
-# from .. import reconstruction
-# from .. import analysis
-# from .. import table
 from .. import provenance
-
-# from .. import production
 from .. import outer_telescope_array
 from .. import configuration
 from . import figure
@@ -231,6 +221,27 @@ class ScriptResources:
             num=num_scatter_bins + 1,
         )
         return binning_utils.Binning(bin_edges=edges)
+
+    def trigger_image_object_distance_binning(self):
+        if "object_distances" in self.config["sum_trigger"]:
+            return configuration.make_sum_trigger_object_distance_geomspace_binning(
+                start_m=self.config["sum_trigger"]["object_distances"][
+                    "start_m"
+                ],
+                stop_m=self.config["sum_trigger"]["object_distances"][
+                    "stop_m"
+                ],
+                num=self.config["sum_trigger"]["object_distances"]["num"],
+            )
+        else:
+            warnings.warn(
+                "'object_distances' is not yet in the sum_trigger config."
+            )
+            return configuration.make_sum_trigger_object_distance_geomspace_binning(
+                start_m=min(self.config["sum_trigger"]["object_distances_m"]),
+                stop_m=max(self.config["sum_trigger"]["object_distances_m"]),
+                num=len(self.config["sum_trigger"]["object_distances_m"]),
+            )
 
     def __repr__(self):
         return f"{self.__class__.__name__}()"

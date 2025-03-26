@@ -6,6 +6,7 @@ import os
 from os.path import join as opj
 import json_utils
 import numpy as np
+import binning_utils
 import sebastians_matplotlib_addons as sebplt
 import copy
 
@@ -15,20 +16,7 @@ res.start(sebplt=sebplt)
 
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 zenith_bin = res.zenith_binning(key="once")
-
-trigger_object_distances_m = res.config["sum_trigger"]["object_distances_m"]
-trigger_decade_step = 10 ** (1 / 22)
-trigger_object_distances_bin_edges_m = np.geomspace(
-    min(trigger_object_distances_m) / trigger_decade_step,
-    max(trigger_object_distances_m) * trigger_decade_step,
-    len(trigger_object_distances_m) * 2 + 1,
-)
-_trigger_bin_edges_mask = np.arange(
-    0, len(trigger_object_distances_bin_edges_m), 2
-)
-trigger_object_distances_bin_edges_m = trigger_object_distances_bin_edges_m[
-    _trigger_bin_edges_mask
-]
+triggerfoci_bin = res.trigger_image_object_distance_binning()
 
 TRIGGER_THRESHOLD_PE = res.analysis["trigger"][res.site_key]["threshold_pe"]
 SOFT_TRIGGER_THRESHOLD_PE = TRIGGER_THRESHOLD_PE
@@ -63,7 +51,7 @@ for pk in res.PARTICLES:
         shape=(
             zenith_bin["num"],
             energy_bin["num"],
-            len(trigger_object_distances_m),
+            triggerfoci_bin["num"],
         )
     )
     ttt[pk]["num_thrown"] = np.zeros(
@@ -101,10 +89,10 @@ for pk in res.PARTICLES:
             ttt[pk]["num_thrown"][zzz][eee] = num_energy_zenith
 
             trigger_in_energy_zenith = np.zeros(
-                shape=(num_energy_zenith, len(trigger_object_distances_m)),
+                shape=(num_energy_zenith, triggerfoci_bin["num"]),
                 dtype=bool,
             )
-            for fff in range(len(trigger_object_distances_m)):
+            for fff in range(triggerfoci_bin["num"]):
                 fff_key = f"focus_{fff:02d}_response_pe"
                 trigger_in_energy_zenith[:, fff] = (
                     et["trigger"][fff_key][mask_energy_zenith]
@@ -114,10 +102,14 @@ for pk in res.PARTICLES:
             num_passed_trigger_in_energy_zenith = np.sum(
                 trigger_in_energy_zenith, axis=0
             )
-            ttt[pk]["ratio"][zzz][eee] = (
-                num_passed_trigger_in_energy_zenith / num_energy_zenith
-            )
-            ttt[pk]["ratio"][zzz][eee] /= np.sum(ttt[pk]["ratio"][zzz][eee])
+            if num_energy_zenith > 0:
+                ttt[pk]["ratio"][zzz][eee] = (
+                    num_passed_trigger_in_energy_zenith / num_energy_zenith
+                )
+
+            __sum = np.sum(ttt[pk]["ratio"][zzz][eee])
+            if __sum > 0:
+                ttt[pk]["ratio"][zzz][eee] /= __sum
 
             num_have_at_least_one_focus_trigger = np.sum(
                 np.sum(trigger_in_energy_zenith, axis=1) > 0
@@ -154,7 +146,7 @@ for pk in ttt:
 
         _pcm_confusion = ax_c.pcolormesh(
             energy_bin["edges"],
-            trigger_object_distances_bin_edges_m,
+            triggerfoci_bin["edges"],
             np.transpose(ratio),
             cmap=cmap[pk],
             norm=sebplt.plt_colors.PowerNorm(gamma=1.0),
@@ -245,5 +237,55 @@ for zzz in range(zenith_bin["num"]):
         )
     )
     sebplt.close(fig)
+
+
+"""
+quantile 50
+"""
+qqq = {}
+for pk in res.PARTICLES:
+    qqq[pk] = np.nan * np.ones(shape=(zenith_bin["num"], energy_bin["num"]))
+    for zd in range(zenith_bin["num"]):
+        for ee in range(energy_bin["num"]):
+            bin_counts = ttt[pk]["ratio"][zd][ee, :]
+            if not np.any(np.isnan(bin_counts)) and np.sum(bin_counts) > 0:
+                qqq[pk][zd][ee] = binning_utils.quantile(
+                    bin_counts=bin_counts,
+                    bin_edges=triggerfoci_bin["edges"],
+                    q=0.5,
+                )
+
+
+yticks = triggerfoci_bin["edges"]
+ytick_labels = [f"{depth:.0f}" for depth in yticks]
+
+fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+ax.set_xlim(energy_bin["limits"])
+ax.set_ylim(triggerfoci_bin["limits"])
+ax.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1)
+ax.set_xlabel("energy / GeV")
+ax.set_ylabel("object distance / m")
+ax.loglog()
+ax.set_yticks(ticks=yticks, labels=ytick_labels, minor=False)
+ax.set_yticks(ticks=[], labels=[], minor=True)
+
+zenith_bin_linestyles = ["-", "--", ":"]
+for pk in res.PARTICLES:
+    for zd in range(zenith_bin["num"]):
+        ax.plot(
+            energy_bin["centers"],
+            qqq[pk][zd],
+            color=res.PARTICLE_COLORS[pk],
+            linestyle=zenith_bin_linestyles[zd],
+        )
+fig.savefig(
+    opj(
+        res.paths["final_out_dir"],
+        f"highest_trigger_probability_vs_zenith.jpg",
+    )
+)
+sebplt.close(fig)
+
 
 res.stop()
