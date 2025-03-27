@@ -27,18 +27,23 @@ def list_items():
     ]
 
 
-def reduce_item(map_dir, out_path, item_key):
+def reduce_item(map_dir, out_path, item_key, use_tmp_dir=True):
     run_paths = glob.glob(os.path.join(map_dir, "*.zip"))
     if item_key == "event_table.snt.zip":
-        recude_event_table(run_paths=run_paths, out_path=out_path)
+        recude_event_table(
+            run_paths=run_paths, out_path=out_path, use_tmp_dir=use_tmp_dir
+        )
     elif item_key == "reconstructed_cherenkov.tar":
-        reduce_reconstructed_cherenkov(run_paths=run_paths, out_path=out_path)
+        reduce_reconstructed_cherenkov(
+            run_paths=run_paths, out_path=out_path, use_tmp_dir=use_tmp_dir
+        )
     elif item_key == "ground_grid_intensity.zip":
         reduce_ground_grid_intensity(
             run_paths=run_paths,
             out_path=out_path,
             roi=False,
             only_past_trigger=True,
+            use_tmp_dir=use_tmp_dir,
         )
     elif item_key == "ground_grid_intensity_roi.zip":
         reduce_ground_grid_intensity(
@@ -46,16 +51,21 @@ def reduce_item(map_dir, out_path, item_key):
             out_path=out_path,
             roi=True,
             only_past_trigger=True,
+            use_tmp_dir=use_tmp_dir,
         )
     elif item_key == "benchmark.snt.zip":
-        reduce_benchmarks(run_paths=run_paths, out_path=out_path)
+        reduce_benchmarks(
+            run_paths=run_paths, out_path=out_path, use_tmp_dir=use_tmp_dir
+        )
     elif item_key == "event_uids_for_debugging.txt":
-        reduce_event_uids_for_debugging(run_paths=run_paths, out_path=out_path)
+        reduce_event_uids_for_debugging(
+            run_paths=run_paths, out_path=out_path, use_tmp_dir=use_tmp_dir
+        )
     else:
         raise KeyError(f"No such item_key '{item_key}'.")
 
 
-def make_jobs(plenoirf_dir, config=None, lazy=False):
+def make_jobs(plenoirf_dir, config=None, lazy=False, use_tmp_dir=True):
     if config is None:
         config = configuration.read(plenoirf_dir)
 
@@ -92,6 +102,7 @@ def make_jobs(plenoirf_dir, config=None, lazy=False):
                             "site_key": site_key,
                             "particle_key": particle_key,
                             "item_key": item_key,
+                            "use_tmp_dir": use_tmp_dir,
                         }
                         jobs.append(job)
     return jobs
@@ -115,6 +126,7 @@ def run_job(job):
             map_dir=os.path.join(par_dir, "stage"),
             out_path=out_path,
             item_key=job["item_key"],
+            use_tmp_dir=job["use_tmp_dir"],
         )
 
 
@@ -137,54 +149,18 @@ def zip_read_IO(file, internal_path, mode="rb"):
     return buff
 
 
-def recude_event_table(run_paths, out_path):
-    with snt.open(
-        out_path,
-        mode="w",
-        dtypes=event_table.structure.dtypes(),
-        index_key=event_table.structure.UID_DTYPE[0],
-        compress=True,
-    ) as arc:
-        for run_path in run_paths:
-            run_basename = os.path.basename(run_path)
-            run_id_str = os.path.splitext(run_basename)[0]
-            buff = zip_read_IO(
-                file=run_path,
-                internal_path=os.path.join(run_id_str, "event_table.snt.zip"),
-                mode="rb",
-            )
-            with snt.open(file=buff, mode="r") as part:
-                run_evttab = part.query()
-            arc.append_table(run_evttab)
-
-
-def reduce_reconstructed_cherenkov(run_paths, out_path):
-    with plenopy.photon_stream.loph.LopfTarWriter(path=out_path) as lout:
-        for run_path in run_paths:
-            run_basename = os.path.basename(run_path)
-            run_id_str = os.path.splitext(run_basename)[0]
-            buff = zip_read_IO(
-                file=run_path,
-                internal_path=os.path.join(
-                    run_id_str, "reconstructed_cherenkov.tar"
-                ),
-                mode="rb",
-            )
-            with plenopy.photon_stream.loph.LopfTarReader(fileobj=buff) as lin:
-                for event in lin:
-                    uid, phs = event
-                    lout.add(uid=uid, phs=phs)
-
-
-def reduce_ground_grid_intensity(
-    run_paths, out_path, roi=False, only_past_trigger=False
-):
-    with zipfile.ZipFile(out_path, "w") as zout:
-        for run_path in run_paths:
-            run_basename = os.path.basename(run_path)
-            run_id_str = os.path.splitext(run_basename)[0]
-
-            if only_past_trigger:
+def recude_event_table(run_paths, out_path, use_tmp_dir=True):
+    with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
+        with snt.open(
+            tmp_path,
+            mode="w",
+            dtypes=event_table.structure.dtypes(),
+            index_key=event_table.structure.UID_DTYPE[0],
+            compress=True,
+        ) as arc:
+            for run_path in run_paths:
+                run_basename = os.path.basename(run_path)
+                run_id_str = os.path.splitext(run_basename)[0]
                 buff = zip_read_IO(
                     file=run_path,
                     internal_path=os.path.join(
@@ -194,37 +170,80 @@ def reduce_ground_grid_intensity(
                 )
                 with snt.open(file=buff, mode="r") as part:
                     run_evttab = part.query()
-                past_trigger_uids = run_evttab["pasttrigger"]["uid"]
+                arc.append_table(run_evttab)
 
-            suff = "_roi" if roi else ""
-            internal_path = os.path.join(
-                run_id_str,
-                "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
-                f"ground_grid_intensity{suff:s}.tar",
-            )
-            buff = zip_read_IO(
-                file=run_path,
-                internal_path=internal_path,
-                mode="rb",
-            )
-            with sequential_tar.open(fileobj=buff, mode="r") as tarin:
-                for item in tarin:
-                    run_id = int(item.name[0:6])
-                    event_id = int(item.name[7 : 7 + 6])
-                    event_uid = bookkeeping.uid.make_uid(
-                        run_id=run_id,
-                        event_id=event_id,
+
+def reduce_reconstructed_cherenkov(run_paths, out_path, use_tmp_dir=True):
+    with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
+        with plenopy.photon_stream.loph.LopfTarWriter(path=tmp_path) as lout:
+            for run_path in run_paths:
+                run_basename = os.path.basename(run_path)
+                run_id_str = os.path.splitext(run_basename)[0]
+                buff = zip_read_IO(
+                    file=run_path,
+                    internal_path=os.path.join(
+                        run_id_str, "reconstructed_cherenkov.tar"
+                    ),
+                    mode="rb",
+                )
+                with plenopy.photon_stream.loph.LopfTarReader(
+                    fileobj=buff
+                ) as lin:
+                    for event in lin:
+                        uid, phs = event
+                        lout.add(uid=uid, phs=phs)
+
+
+def reduce_ground_grid_intensity(
+    run_paths, out_path, roi=False, only_past_trigger=False, use_tmp_dir=True
+):
+    with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
+        with zipfile.ZipFile(tmp_path, "w") as zout:
+            for run_path in run_paths:
+                run_basename = os.path.basename(run_path)
+                run_id_str = os.path.splitext(run_basename)[0]
+
+                if only_past_trigger:
+                    buff = zip_read_IO(
+                        file=run_path,
+                        internal_path=os.path.join(
+                            run_id_str, "event_table.snt.zip"
+                        ),
+                        mode="rb",
                     )
-                    payload = item.read(mode="rb")
-                    do_add = True
-                    if only_past_trigger:
-                        do_add = False
-                        if event_uid in past_trigger_uids:
-                            do_add = True
+                    with snt.open(file=buff, mode="r") as part:
+                        run_evttab = part.query()
+                    past_trigger_uids = run_evttab["pasttrigger"]["uid"]
 
-                    if do_add:
-                        with zout.open(item.name, "w") as fout:
-                            fout.write(payload)
+                suff = "_roi" if roi else ""
+                internal_path = os.path.join(
+                    run_id_str,
+                    "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
+                    f"ground_grid_intensity{suff:s}.tar",
+                )
+                buff = zip_read_IO(
+                    file=run_path,
+                    internal_path=internal_path,
+                    mode="rb",
+                )
+                with sequential_tar.open(fileobj=buff, mode="r") as tarin:
+                    for item in tarin:
+                        run_id = int(item.name[0:6])
+                        event_id = int(item.name[7 : 7 + 6])
+                        event_uid = bookkeeping.uid.make_uid(
+                            run_id=run_id,
+                            event_id=event_id,
+                        )
+                        payload = item.read(mode="rb")
+                        do_add = True
+                        if only_past_trigger:
+                            do_add = False
+                            if event_uid in past_trigger_uids:
+                                do_add = True
+
+                        if do_add:
+                            with zout.open(item.name, "w") as fout:
+                                fout.write(payload)
 
 
 def _make_benchmarks_dtype():
@@ -250,7 +269,7 @@ def _make_benchmarks_dtype():
     return dtype
 
 
-def reduce_benchmarks(run_paths, out_path):
+def reduce_benchmarks(run_paths, out_path, use_tmp_dir=True):
     hostname_hashes = {}
 
     stats = dynamicsizerecarray.DynamicSizeRecarray(
@@ -325,33 +344,41 @@ def reduce_benchmarks(run_paths, out_path):
         ]
         stats.append_record(rec)
 
-    with snt.open(
-        file=out_path,
-        mode="w",
-        dtypes={"benchmark": _make_benchmarks_dtype()},
-        index_key="run_id",
-        compress=True,
-    ) as fout:
-        fout.append_table({"benchmark": stats})
+    with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
+        with snt.open(
+            file=tmp_path,
+            mode="w",
+            dtypes={"benchmark": _make_benchmarks_dtype()},
+            index_key="run_id",
+            compress=True,
+        ) as fout:
+            fout.append_table({"benchmark": stats})
 
-    with rnw.open(out_path + ".hostname_hashes.json", mode="w") as fout:
-        fout.write(json_utils.dumps(hostname_hashes))
+    with rnw.Path(
+        out_path + ".hostname_hashes.json", use_tmp_dir=use_tmp_dir
+    ) as tmp_path:
+        with open(tmp_path, mode="w") as fout:
+            fout.write(json_utils.dumps(hostname_hashes))
 
 
-def reduce_event_uids_for_debugging(run_paths, out_path):
-    with open(out_path, "wt") as fout:
-        for run_path in run_paths:
-            run_basename = os.path.basename(run_path)
-            run_id_str = os.path.splitext(run_basename)[0]
+def reduce_event_uids_for_debugging(run_paths, out_path, use_tmp_dir=True):
+    with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
+        with open(
+            tmp_path,
+            "wt",
+        ) as fout:
+            for run_path in run_paths:
+                run_basename = os.path.basename(run_path)
+                run_id_str = os.path.splitext(run_basename)[0]
 
-            buff = zip_read_IO(
-                file=run_path,
-                internal_path=os.path.join(
-                    run_id_str,
-                    "plenoirf.production.draw_event_uids_for_debugging.json.gz",
-                ),
-                mode="rt|gz",
-            )
-            event_uids = json_utils.loads(buff.read())
-            for event_uid in event_uids:
-                fout.write(f"{event_uid:012d}\n")
+                buff = zip_read_IO(
+                    file=run_path,
+                    internal_path=os.path.join(
+                        run_id_str,
+                        "plenoirf.production.draw_event_uids_for_debugging.json.gz",
+                    ),
+                    mode="rt|gz",
+                )
+                event_uids = json_utils.loads(buff.read())
+                for event_uid in event_uids:
+                    fout.write(f"{event_uid:012d}\n")

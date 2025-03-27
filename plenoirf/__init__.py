@@ -325,9 +325,11 @@ def benchmark(pool, out_path, num_runs):
             jlout.write(result)
 
 
-def reduce(plenoirf_dir, config=None, pool=None):
+def reduce(plenoirf_dir, config=None, pool=None, use_tmp_dir=True):
     if pool is None:
         pool = utils.SerialPool()
 
-    jobs = reduction.make_jobs(plenoirf_dir=plenoirf_dir, config=config)
+    jobs = reduction.make_jobs(
+        plenoirf_dir=plenoirf_dir, config=config, use_tmp_dir=use_tmp_dir
+    )
     _ = pool.map(reduction.run_job, jobs)
