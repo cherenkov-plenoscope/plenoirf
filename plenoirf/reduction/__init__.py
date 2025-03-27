@@ -232,20 +232,20 @@ def _make_benchmarks_dtype():
         ("run_id", "<u8"),
         ("hostname_hash", "<i8"),
         ("time_unix_s", "<f8"),
-        ("corsika/total_s", "<f4"),
-        ("corsika/initializing_s", "<f4"),
-        ("corsika/energy_rate_GeV_per_s/avg", "<f4"),
-        ("corsika/energy_rate_GeV_per_s/std", "<f4"),
-        ("corsika/cherenkov_bunch_rate_per_s/avg", "<f4"),
-        ("corsika/cherenkov_bunch_rate_per_s/std", "<f4"),
-        ("disk_write_rate/1k/rate_MB_per_s/avg", "<f4"),
-        ("disk_write_rate/1k/rate_MB_per_s/std", "<f4"),
-        ("disk_write_rate/1M/rate_MB_per_s/avg", "<f4"),
-        ("disk_write_rate/1M/rate_MB_per_s/std", "<f4"),
-        ("disk_write_rate/100M/rate_MB_per_s/avg", "<f4"),
-        ("disk_write_rate/100M/rate_MB_per_s/std", "<f4"),
-        ("disk_create_write_close_open_read_remove_latency/avg", "<f4"),
-        ("disk_create_write_close_open_read_remove_latency/std", "<f4"),
+        ("corsika_total_s", "<f4"),
+        ("corsika_initializing_s", "<f4"),
+        ("corsika_energy_rate_GeV_per_s_avg", "<f4"),
+        ("corsika_energy_rate_GeV_per_s_std", "<f4"),
+        ("corsika_cherenkov_bunch_rate_per_s_avg", "<f4"),
+        ("corsika_cherenkov_bunch_rate_per_s_std", "<f4"),
+        ("disk_write_rate_1k_rate_MB_per_s_avg", "<f4"),
+        ("disk_write_rate_1k_rate_MB_per_s_std", "<f4"),
+        ("disk_write_rate_1M_rate_MB_per_s_avg", "<f4"),
+        ("disk_write_rate_1M_rate_MB_per_s_std", "<f4"),
+        ("disk_write_rate_100M_rate_MB_per_s_avg", "<f4"),
+        ("disk_write_rate_100M_rate_MB_per_s_std", "<f4"),
+        ("disk_create_write_close_open_read_remove_latency_avg", "<f4"),
+        ("disk_create_write_close_open_read_remove_latency_std", "<f4"),
     ]
     return dtype
 
@@ -283,44 +283,44 @@ def reduce_benchmarks(run_paths, out_path):
         rec["time_unix_s"] = item["time"]["unix"]
         rec["run_id"] = int(run_id_str)
         ccc = bench["corsika"]
-        rec["corsika/total_s"] = ccc["total"]
-        rec["corsika/initializing_s"] = ccc["initializing"]
-        rec["corsika/energy_rate_GeV_per_s/avg"] = ccc[
+        rec["corsika_total_s"] = ccc["total"]
+        rec["corsika_initializing_s"] = ccc["initializing"]
+        rec["corsika_energy_rate_GeV_per_s_avg"] = ccc[
             "energy_rate_GeV_per_s"
         ]["avg"]
-        rec["corsika/energy_rate_GeV_per_s/std"] = ccc[
+        rec["corsika_energy_rate_GeV_per_s_std"] = ccc[
             "energy_rate_GeV_per_s"
         ]["std"]
-        rec["corsika/cherenkov_bunch_rate_per_s/avg"] = ccc[
+        rec["corsika_cherenkov_bunch_rate_per_s_avg"] = ccc[
             "cherenkov_bunch_rate_per_s"
         ]["avg"]
-        rec["corsika/cherenkov_bunch_rate_per_s/std"] = ccc[
+        rec["corsika_cherenkov_bunch_rate_per_s_std"] = ccc[
             "cherenkov_bunch_rate_per_s"
         ]["avg"]
         ddd = bench["disk_write_rate"]
-        rec["disk_write_rate/1k/rate_MB_per_s/avg"] = ddd["1k"][
+        rec["disk_write_rate_1k_rate_MB_per_s_avg"] = ddd["1k"][
             "rate_MB_per_s"
         ]["avg"]
-        rec["disk_write_rate/1k/rate_MB_per_s/std"] = ddd["1k"][
+        rec["disk_write_rate_1k_rate_MB_per_s_std"] = ddd["1k"][
             "rate_MB_per_s"
         ]["std"]
-        rec["disk_write_rate/1M/rate_MB_per_s/avg"] = ddd["1M"][
+        rec["disk_write_rate_1M_rate_MB_per_s_avg"] = ddd["1M"][
             "rate_MB_per_s"
         ]["avg"]
-        rec["disk_write_rate/1M/rate_MB_per_s/std"] = ddd["1M"][
+        rec["disk_write_rate_1M_rate_MB_per_s_std"] = ddd["1M"][
             "rate_MB_per_s"
         ]["std"]
-        rec["disk_write_rate/100M/rate_MB_per_s/avg"] = ddd["100M"][
+        rec["disk_write_rate_100M_rate_MB_per_s_avg"] = ddd["100M"][
             "rate_MB_per_s"
         ]["avg"]
-        rec["disk_write_rate/100M/rate_MB_per_s/std"] = ddd["100M"][
+        rec["disk_write_rate_100M_rate_MB_per_s_std"] = ddd["100M"][
             "rate_MB_per_s"
         ]["std"]
         ddd = bench["disk_create_write_close_open_read_remove_latency"]
-        rec["disk_create_write_close_open_read_remove_latency/avg"] = ddd[
+        rec["disk_create_write_close_open_read_remove_latency_avg"] = ddd[
             "avg"
         ]
-        rec["disk_create_write_close_open_read_remove_latency/std"] = ddd[
+        rec["disk_create_write_close_open_read_remove_latency_std"] = ddd[
             "std"
         ]
         stats.append_record(rec)
@@ -334,9 +334,8 @@ def reduce_benchmarks(run_paths, out_path):
     ) as fout:
         fout.append_table({"benchmark": stats})
 
-    with zipfile.ZipFile(file=out_path, mode="a") as zout:
-        with zout.open("hostname_hashes.json", mode="w") as fout:
-            fout.write(str.encode(json_utils.dumps(hostname_hashes)))
+    with rnw.open(out_path + ".hostname_hashes.json", mode="w") as fout:
+        fout.write(json_utils.dumps(hostname_hashes))
 
 
 def reduce_event_uids_for_debugging(run_paths, out_path):

@@ -1,28 +1,19 @@
 #!/usr/bin/python
 import sys
-from os.path import join as opj
-import os
-import io
-import pandas as pd
 import numpy as np
-import json_utils
 import plenoirf as irf
+import os
+from os.path import join as opj
+import sebastians_matplotlib_addons as sebplt
 import sparse_numeric_table as snt
-import sebastians_matplotlib_addons as seb
-
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
-
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-seb.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
-
-SITES = irf_config["config"]["sites"]
-PARTICLES = irf_config["config"]["particles"]
+import json_utils
+import zipfile
 
 
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start(sebplt=sebplt)
+
+"""
 def read_csv_records(path):
     return pd.read_csv(path).to_records(index=False)
 
@@ -169,126 +160,138 @@ def write_speed(table, out_path, figure_style):
     with open(out_path + ".json" + ".tmp", "wt") as fout:
         fout.write(json_utils.dumps(speeds))
     os.rename(out_path + ".json" + ".tmp", out_path + ".json")
+"""
 
 
-os.makedirs(paths["out_dir"], exist_ok=True)
+for pk in res.PARTICLES:
+    table_path = opj(res.response_path(particle_key=pk), "benchmark.snt.zip")
+    hostnames_path = table_path + ".hostname_hashes.json"
 
-for sk in SITES:
-    for pk in PARTICLES:
-        prefix_str = "{:s}_{:s}".format(sk, pk)
+    with snt.open(table_path, "r") as arc:
+        table = arc.query()
 
-        extended_runtime_path = opj(
-            paths["out_dir"], prefix_str + "_runtime.csv"
+    with open(hostnames_path, "r") as f:
+        hostnames = json_utils.loads(f.read())
+
+"""
+    prefix_str = "{:s}_{:s}".format(sk, pk)
+
+    extended_runtime_path = opj(
+        paths["out_dir"], prefix_str + "_runtime.csv"
+    )
+    if os.path.exists(extended_runtime_path):
+        extended_runtime_table = read_csv_records(extended_runtime_path)
+    else:
+        event_table = snt.read(
+            path=opj(
+                paths["plenoirf_dir"],
+                "event_table",
+                sk,
+                pk,
+                "event_table.tar",
+            ),
+            structure=irf.table.STRUCTURE,
         )
-        if os.path.exists(extended_runtime_path):
-            extended_runtime_table = read_csv_records(extended_runtime_path)
-        else:
-            event_table = snt.read(
-                path=opj(
-                    paths["plenoirf_dir"],
-                    "event_table",
-                    sk,
-                    pk,
-                    "event_table.tar",
-                ),
-                structure=irf.table.STRUCTURE,
-            )
-            runtime_table = read_csv_records(
-                opj(
-                    paths["plenoirf_dir"],
-                    "event_table",
-                    sk,
-                    pk,
-                    "runtime.csv",
-                )
-            )
-            extended_runtime_table = merge_event_table(
-                runtime_table=runtime_table, event_table=event_table
-            )
-            write_csv_records(
-                path=extended_runtime_path, table=extended_runtime_table
-            )
-
-        write_relative_runtime(
-            table=extended_runtime_table,
-            out_path=opj(paths["out_dir"], prefix_str + "_relative_runtime"),
-            figure_style=seb.FIGURE_1_1,
-        )
-
-        write_speed(
-            table=extended_runtime_table,
-            out_path=opj(paths["out_dir"], prefix_str + "_speed_runtime"),
-            figure_style=seb.FIGURE_1_1,
-        )
-
-        ertt = extended_runtime_table
-
-        with np.errstate(divide="ignore"):
-            t_corsika = np.median(
-                ertt["corsika_and_grid"] / ertt["num_events_corsika"]
-            )
-            f_corsika = 1.0
-
-            t_merlict = np.median(ertt["merlict"] / ertt["num_events_merlict"])
-            f_merlict = np.median(
-                ertt["num_events_merlict"] / ertt["num_events_corsika"]
-            )
-
-            t_pltrg = np.median(
-                ertt["pass_loose_trigger"] / ertt["num_events_merlict"]
-            )
-            f_pltrg = f_merlict
-
-            t_clscer = np.median(
-                ertt["classify_cherenkov"] / ertt["num_events_pasttrigger"]
-            )
-            f_clscer = np.median(
-                ertt["num_events_pasttrigger"] / ertt["num_events_corsika"]
-            )
-
-            t_extft = np.median(
-                ertt["extract_features"] / ertt["num_events_pasttrigger"]
-            )
-            f_extft = f_clscer
-
-            t_traje = np.median(
-                ertt["estimate_primary_trajectory"]
-                / ertt["num_events_pasttrigger"]
-            )
-            f_traje = f_clscer
-
-        ostr = io.StringIO()
-        ostr.write(
-            "corsika and grid            {: 6.1f}s{: 4.0f}%\n".format(
-                t_corsika, 100 * f_corsika
+        runtime_table = read_csv_records(
+            opj(
+                paths["plenoirf_dir"],
+                "event_table",
+                sk,
+                pk,
+                "runtime.csv",
             )
         )
-        ostr.write(
-            "ray tracing and electronics {: 6.1f}s{: 4.0f}%\n".format(
-                t_merlict, 100 * f_merlict
-            )
+        extended_runtime_table = merge_event_table(
+            runtime_table=runtime_table, event_table=event_table
         )
-        ostr.write(
-            "simulating trigger          {: 6.1f}s{: 4.0f}%\n".format(
-                t_pltrg, 100 * f_pltrg
-            )
-        )
-        ostr.write(
-            "Cherenkov cleaning          {: 6.1f}s{: 4.0f}%\n".format(
-                t_clscer, 100 * f_clscer
-            )
-        )
-        ostr.write(
-            "extracting features         {: 6.1f}s{: 4.0f}%\n".format(
-                t_extft, 100 * f_extft
-            )
-        )
-        ostr.write(
-            "reconstruct trajectory      {: 6.1f}s{: 4.0f}%\n".format(
-                t_traje, 100 * f_traje
-            )
+        write_csv_records(
+            path=extended_runtime_path, table=extended_runtime_table
         )
 
-        ostr.seek(0)
-        o = ostr.read()
-        print(o)
+    write_relative_runtime(
+        table=extended_runtime_table,
+        out_path=opj(paths["out_dir"], prefix_str + "_relative_runtime"),
+        figure_style=seb.FIGURE_1_1,
+    )
+
+    write_speed(
+        table=extended_runtime_table,
+        out_path=opj(paths["out_dir"], prefix_str + "_speed_runtime"),
+        figure_style=seb.FIGURE_1_1,
+    )
+
+    ertt = extended_runtime_table
+
+    with np.errstate(divide="ignore"):
+        t_corsika = np.median(
+            ertt["corsika_and_grid"] / ertt["num_events_corsika"]
+        )
+        f_corsika = 1.0
+
+        t_merlict = np.median(ertt["merlict"] / ertt["num_events_merlict"])
+        f_merlict = np.median(
+            ertt["num_events_merlict"] / ertt["num_events_corsika"]
+        )
+
+        t_pltrg = np.median(
+            ertt["pass_loose_trigger"] / ertt["num_events_merlict"]
+        )
+        f_pltrg = f_merlict
+
+        t_clscer = np.median(
+            ertt["classify_cherenkov"] / ertt["num_events_pasttrigger"]
+        )
+        f_clscer = np.median(
+            ertt["num_events_pasttrigger"] / ertt["num_events_corsika"]
+        )
+
+        t_extft = np.median(
+            ertt["extract_features"] / ertt["num_events_pasttrigger"]
+        )
+        f_extft = f_clscer
+
+        t_traje = np.median(
+            ertt["estimate_primary_trajectory"]
+            / ertt["num_events_pasttrigger"]
+        )
+        f_traje = f_clscer
+
+    ostr = io.StringIO()
+    ostr.write(
+        "corsika and grid            {: 6.1f}s{: 4.0f}%\n".format(
+            t_corsika, 100 * f_corsika
+        )
+    )
+    ostr.write(
+        "ray tracing and electronics {: 6.1f}s{: 4.0f}%\n".format(
+            t_merlict, 100 * f_merlict
+        )
+    )
+    ostr.write(
+        "simulating trigger          {: 6.1f}s{: 4.0f}%\n".format(
+            t_pltrg, 100 * f_pltrg
+        )
+    )
+    ostr.write(
+        "Cherenkov cleaning          {: 6.1f}s{: 4.0f}%\n".format(
+            t_clscer, 100 * f_clscer
+        )
+    )
+    ostr.write(
+        "extracting features         {: 6.1f}s{: 4.0f}%\n".format(
+            t_extft, 100 * f_extft
+        )
+    )
+    ostr.write(
+        "reconstruct trajectory      {: 6.1f}s{: 4.0f}%\n".format(
+            t_traje, 100 * f_traje
+        )
+    )
+
+    ostr.seek(0)
+    o = ostr.read()
+    print(o)
+"""
+
+
+res.stop()
