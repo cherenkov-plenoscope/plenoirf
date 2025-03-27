@@ -53,11 +53,8 @@ class ScriptResources:
         self.paths["analysis_dir"] = os.path.join(
             plenoirf_dir, "analysis", instrument_key, site_key
         )
-        self.paths["final_out_dir"] = os.path.join(
-            self.paths["analysis_dir"], script_name
-        )
         self.paths["out_dir"] = os.path.join(
-            self.paths["analysis_dir"], f".{script_name:s}.incomplete"
+            self.paths["analysis_dir"], script_name
         )
 
     def start(self, sebplt=None):
@@ -68,15 +65,7 @@ class ScriptResources:
             )
 
     def stop(self):
-        obsolete_dir = None
-        if os.path.exists(self.paths["final_out_dir"]):
-            obsolete_dir = self.paths["final_out_dir"] + ".trash"
-            os.rename(src=self.paths["final_out_dir"], dst=obsolete_dir)
-
-        os.rename(src=self.paths["out_dir"], dst=self.paths["final_out_dir"])
-
-        if obsolete_dir is not None:
-            shutil.rmtree(path=obsolete_dir)
+        pass
 
     @classmethod
     def from_argv(cls, argv):

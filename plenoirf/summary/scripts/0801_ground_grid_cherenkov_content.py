@@ -12,10 +12,8 @@ import pickle
 import sebastians_matplotlib_addons as sebplt
 
 
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
-sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start(sebplt=sebplt)
 
 record_dtype = [("x_bin", "i4"), ("y_bin", "i4"), ("size", "f8")]
 
@@ -69,10 +67,11 @@ class Reader:
 size_bin = binning_utils.Binning(bin_edges=np.geomspace(1, 1e6, 13))
 
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
-zenith_bin = res.ZenithBinning(key="once")
+zenith_bin = res.zenith_binning(key="once")
 
-hist_cache_path = opj(paths["cache_dir"], "hist.pkl")
-expo_cache_path = opj(paths["cache_dir"], "expo.pkl")
+cache_dir = opj(res.paths["out_dir"], "__cache__")
+hist_cache_path = opj(cache_dir, "hist.pkl")
+expo_cache_path = opj(cache_dir, "expo.pkl")
 
 if os.path.exists(hist_cache_path) and os.path.exists(expo_cache_path):
     with open(hist_cache_path, "rb") as f:
@@ -80,7 +79,7 @@ if os.path.exists(hist_cache_path) and os.path.exists(expo_cache_path):
     with open(expo_cache_path, "rb") as f:
         expo = pickle.loads(f.read())
 else:
-    os.makedirs(paths["cache_dir"], exist_ok=True)
+    os.makedirs(cache_dir, exist_ok=True)
     hist = {}
     expo = {}
     for pk in res.PARTICLES:
@@ -89,9 +88,9 @@ else:
         )
 
         hist[pk] = np.zeros(
-            shape=(zenith_bin.num, energy_bin["num"], size_bin["num"])
+            shape=(zenith_bin["num"], energy_bin["num"], size_bin["num"])
         )
-        expo[pk] = np.zeros(shape=(zenith_bin.num, energy_bin["num"]))
+        expo[pk] = np.zeros(shape=(zenith_bin["num"], energy_bin["num"]))
 
         with res.open_event_table(particle_key=pk) as arc:
             event_table = arc.query(
@@ -122,7 +121,7 @@ else:
                     continue
 
                 zunder, zbin, zover = binning_utils.find_bin_in_edges(
-                    bin_edges=zenith_bin.edges, value=primary_by_uid[uid][1]
+                    bin_edges=zenith_bin["edges"], value=primary_by_uid[uid][1]
                 )
                 if zunder or zover:
                     continue
@@ -141,13 +140,13 @@ else:
 
 max_expo = 0
 for pk in res.PARTICLES:
-    for zd in range(zenith_bin.num):
+    for zd in range(zenith_bin["num"]):
         _max_expo = max(expo[pk][zd])
         if _max_expo > max_expo:
             max_expo = _max_expo
 
 for pk in res.PARTICLES:
-    for zd in range(zenith_bin.num):
+    for zd in range(zenith_bin["num"]):
 
         vals = hist[pk][zd]
         vals_norm_in_energy = np.sum(vals, axis=1)
@@ -162,7 +161,7 @@ for pk in res.PARTICLES:
         ax_zd = sebplt.add_axes_zenith_range_indicator(
             fig=fig,
             span=[0.85, 0.11, 0.1, 0.1],
-            zenith_bin_edges_rad=zenith_bin.edges,
+            zenith_bin_edges_rad=zenith_bin["edges"],
             zenith_bin=zd,
             fontsize=5,
         )
@@ -195,7 +194,7 @@ for pk in res.PARTICLES:
             color="k",
         )
         ax_c.text(
-            s=f"threshold",
+            s=f"grid bin threshold",
             x=1.3 * energy_bin["limits"][0],
             y=1.3 * res.config["ground_grid"]["threshold_num_photons"],
         )
@@ -218,7 +217,7 @@ for pk in res.PARTICLES:
         )
         fig.savefig(
             opj(
-                paths["out_dir"],
+                res.paths["out_dir"],
                 f"{pk:s}_zd{zd:d}_ground_grid_cherenkov_content.jpg",
             )
         )

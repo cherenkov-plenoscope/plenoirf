@@ -8,7 +8,7 @@ import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
-res.start()
+res.start(sebplt=sebplt)
 
 cr = json_utils.tree.read(
     opj(
