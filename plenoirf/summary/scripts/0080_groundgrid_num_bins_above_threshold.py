@@ -196,9 +196,7 @@ for pk in res.PARTICLES:
             linestyle="-",
             linecolor="k",
         )
-        fig.savefig(
-            opj(res.paths["out_dir"], f"{pk:s}_zenith{zd:03d}_grid.jpg")
-        )
+        fig.savefig(opj(res.paths["out_dir"], f"{pk:s}_zd{zd:d}_grid.jpg"))
         sebplt.close(fig)
 
 
