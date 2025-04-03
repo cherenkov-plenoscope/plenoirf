@@ -5,6 +5,7 @@ import sparse_numeric_table as snt
 import os
 from os.path import join as opj
 import json_utils
+import numpy as np
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
