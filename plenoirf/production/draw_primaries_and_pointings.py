@@ -6,6 +6,7 @@ import corsika_primary
 import magnetic_deflection
 import atmospheric_cherenkov_response as acr
 import os
+from os.path import join as opj
 import json_utils
 import rename_after_writing as rnw
 import zipfile
@@ -220,18 +221,20 @@ def draw_primaries_and_pointings(
     return out, debug
 
 
-def run(env, seed, logger):
-    opj = os.path.join
-    logger.info(__name__ + ": start ...")
+def run(env, seed):
+    module_work_dir = opj(env["work_dir"], __name__)
 
-    sub_work_dir = opj(env["work_dir"], __name__)
-    if os.path.exists(sub_work_dir):
+    if os.path.exists(module_work_dir):
         return
 
-    os.makedirs(sub_work_dir)
+    os.makedirs(module_work_dir)
+    logger = json_line_logger.LoggerFile(opj(module_work_dir, "log.jsonl"))
+    logger.info(__name__)
+    logger.info(f"seed: {seed:d}")
+
     prng = np.random.Generator(np.random.PCG64(seed))
 
-    logger.info(__name__ + ": open SkyMap")
+    logger.info("open SkyMap")
     skymap = magnetic_deflection.skymap.SkyMap(
         work_dir=opj(
             env["plenoirf_dir"],
@@ -257,7 +260,7 @@ def run(env, seed, logger):
         ],
     )
 
-    logger.info(__name__ + ": drawing")
+    logger.info("drawing rimaries_and_pointings")
     out, debug = draw_primaries_and_pointings(
         prng=prng,
         run_id=env["run_id"],
@@ -275,14 +278,14 @@ def run(env, seed, logger):
         logger=logger,
     )
 
-    logger.info(__name__ + ": exporting results.")
-    with rnw.open(opj(sub_work_dir, "result.pkl"), "wb") as fout:
+    logger.info("exporting results.")
+    with rnw.open(opj(module_work_dir, "result.pkl"), "wb") as fout:
         fout.write(pickle.dumps(out))
 
-    logger.info(__name__ + ": exporting debug.")
-    write_debug(path=opj(sub_work_dir, "debug.zip"), debug=debug)
+    logger.info("exporting debug.")
+    write_debug(path=opj(module_work_dir, "debug.zip"), debug=debug)
 
-    logger.info(__name__ + ": ... done.")
+    logger.info("done.")
 
 
 def write_debug(path, debug):

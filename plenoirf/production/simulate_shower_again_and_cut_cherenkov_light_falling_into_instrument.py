@@ -1,4 +1,5 @@
 import os
+from os.path import join as opj
 import tarfile
 import numpy as np
 import gzip
@@ -6,7 +7,7 @@ import hashlib
 
 import corsika_primary as cpw
 import json_utils
-from json_line_logger import xml
+import json_line_logger
 import pickle
 import atmospheric_cherenkov_response as acr
 import spherical_coordinates
@@ -30,19 +31,20 @@ from .simulate_shower_and_collect_cherenkov_light_in_grid import (
 )
 
 
-def run(env, seed, logger):
-    opj = os.path.join
-    logger.info(__name__ + ": start ...")
+def run(env, seed):
+    module_work_dir = opj(env["work_dir"], __name__)
 
-    corsika_and_grid_work_dir = opj(env["work_dir"], __name__)
-
-    if os.path.exists(corsika_and_grid_work_dir):
-        logger.info(__name__ + ": already done. skip computation.")
+    if os.path.exists(module_work_dir):
         return
 
-    logger.info(__name__ + ": simulating showers ...")
+    os.makedirs(module_work_dir)
+    logger = json_line_logger.LoggerFile(opj(module_work_dir, "log.jsonl"))
+    logger.info(__name__)
+    logger.info(f"seed: {seed:d}")
+
     prng = np.random.Generator(np.random.PCG64(seed))
 
+    logger.info("read primaries_and_pointings.")
     with open(
         opj(
             env["work_dir"],
@@ -53,6 +55,7 @@ def run(env, seed, logger):
     ) as fin:
         dpp = pickle.loads(fin.read())
 
+    logger.info("read cherenkovpools_md5.json.")
     with open(
         opj(
             env["work_dir"],
@@ -63,6 +66,7 @@ def run(env, seed, logger):
     ) as fin:
         cherenkovpools_md5 = json_utils.loads(fin.read())
 
+    logger.info("init event_table.")
     evttab = snt.SparseNumericTable(index_key="uid")
     evttab = event_table.add_levels_from_path(
         evttab=evttab,
@@ -76,11 +80,12 @@ def run(env, seed, logger):
     evttab = event_table.add_empty_level(evttab, "cherenkovsizepart")
     evttab = event_table.add_empty_level(evttab, "cherenkovpoolpart")
 
+    logger.info("simulate showers.")
     evttab = stage_two(
         env=env,
         prng=prng,
         evttab=evttab,
-        corsika_and_grid_work_dir=corsika_and_grid_work_dir,
+        corsika_and_grid_work_dir=module_work_dir,
         corsika_primary_steering=dpp["corsika_primary_steering"],
         primary_directions=dpp["primary_directions"],
         instrument_pointings=dpp["instrument_pointings"],
@@ -88,12 +93,13 @@ def run(env, seed, logger):
         logger=logger,
     )
 
+    logger.info("write event_table.snt.zip.")
     event_table.write_all_levels_to_path(
         evttab=evttab,
-        path=os.path.join(corsika_and_grid_work_dir, "event_table.snt.zip"),
+        path=os.path.join(module_work_dir, "event_table.snt.zip"),
     )
 
-    logger.info(__name__ + ": ... done.")
+    logger.info("done.")
 
 
 def stage_two(
@@ -108,7 +114,7 @@ def stage_two(
     logger,
 ):
     opj = os.path.join
-    logger.info(__name__ + ": start corsika stage one")
+    logger.info("Start corsika stage two.")
     work_dir = corsika_and_grid_work_dir
     os.makedirs(work_dir, exist_ok=True)
 
@@ -128,7 +134,7 @@ def stage_two(
         stderr_path=opj(work_dir, "corsika.stderr.txt"),
         particle_output_path=opj(work_dir, "particle_pools.dat"),
     ) as corsika_run:
-        logger.info(__name__ + ": corsika is ready")
+        logger.info("corsika is ready.")
         evttar.write_runh(runh=corsika_run.runh)
 
         for event_idx, corsika_event in enumerate(corsika_run):
@@ -139,7 +145,11 @@ def stage_two(
                 corsika_primary_steering=corsika_primary_steering,
             )
 
-            logger.debug(xml("EventTime", uid=uid["uid_str"], status="start."))
+            logger.debug(
+                json_line_logger.xml(
+                    "EventTime", uid=uid["uid_str"], status="start."
+                )
+            )
 
             evttab["instrument_pointing"].append_record(
                 make_instrument_pointing_record(
@@ -159,7 +169,7 @@ def stage_two(
             cherenkovmd5 = hashlib.md5()
             if uid["uid"] in evttab_groundgrid_choice_by_uid:
                 logger.debug(
-                    xml(
+                    json_line_logger.xml(
                         "EventTime",
                         uid=uid["uid_str"],
                         status="extract cherenkov light.",
@@ -236,7 +246,7 @@ def stage_two(
 
             else:
                 logger.debug(
-                    xml(
+                    json_line_logger.xml(
                         "EventTime",
                         uid=uid["uid_str"],
                         status="discard cherenkov light.",
@@ -249,7 +259,11 @@ def stage_two(
                 cherenkovpools_md5[uid["uid_str"]] == cherenkovmd5.hexdigest()
             ), "Expected md5 sum of cherenkov light to be equal."
 
-            logger.debug(xml("EventTime", uid=uid["uid_str"], status="stop."))
+            logger.debug(
+                json_line_logger.xml(
+                    "EventTime", uid=uid["uid_str"], status="stop."
+                )
+            )
 
     return evttab
 

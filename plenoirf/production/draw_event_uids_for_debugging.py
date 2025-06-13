@@ -6,19 +6,18 @@ import rename_after_writing as rnw
 import json_utils
 import json_line_logger
 import os
+from os.path import join as opj
 
 
 def run(env, seed):
-    module_work_dir = os.path.join(env["work_dir"], __name__)
+    module_work_dir = opj(env["work_dir"], __name__)
 
     if os.path.exists(module_work_dir):
         return
 
     os.makedirs(module_work_dir)
-    logger = json_line_logger.LoggerFile(
-        path=os.path.join(module_work_dir, "log.jsonl")
-    )
-    logger.info(__name__ + ": start ...")
+    logger = json_line_logger.LoggerFile(opj(module_work_dir, "log.jsonl"))
+    logger.info(__name__)
     logger.info(f"seed: {seed:d}")
 
     prng = np.random.Generator(np.random.PCG64(seed))
@@ -39,4 +38,4 @@ def run(env, seed):
     with rnw.open(path, "wt") as fout:
         fout.write(json_utils.dumps(event_uids_for_debugging))
 
-    logger.info(__name__ + ": ... done.")
+    logger.info("done.")

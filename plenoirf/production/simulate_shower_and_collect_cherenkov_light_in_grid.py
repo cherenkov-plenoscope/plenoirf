@@ -1,4 +1,5 @@
 import os
+from os.path import join as opj
 import tarfile
 import numpy as np
 import gzip
@@ -6,7 +7,7 @@ import hashlib
 
 import corsika_primary as cpw
 import json_utils
-from json_line_logger import xml
+import json_line_logger
 import pickle
 import atmospheric_cherenkov_response as acr
 import spherical_coordinates
@@ -27,19 +28,20 @@ from . import transform_cherenkov_bunches
 from . import cherenkov_bunch_storage
 
 
-def run(env, seed, logger):
-    opj = os.path.join
-    logger.info(__name__ + ": start ...")
+def run(env, seed):
+    module_work_dir = opj(env["work_dir"], __name__)
 
-    corsika_and_grid_work_dir = opj(env["work_dir"], __name__)
-
-    if os.path.exists(corsika_and_grid_work_dir):
-        logger.info(__name__ + ": already done. skip computation.")
+    if os.path.exists(module_work_dir):
         return
 
-    logger.info(__name__ + ": simulating showers ...")
+    os.makedirs(module_work_dir)
+    logger = json_line_logger.LoggerFile(opj(module_work_dir, "log.jsonl"))
+    logger.info(__name__)
+    logger.info(f"seed: {seed:d}")
+
     prng = np.random.Generator(np.random.PCG64(seed))
 
+    logger.info("reading primaries_and_pointings.")
     with open(
         opj(
             env["work_dir"],
@@ -50,6 +52,7 @@ def run(env, seed, logger):
     ) as fin:
         dpp = pickle.loads(fin.read())
 
+    logger.info("reading event_uids_for_debugging.")
     event_uids_for_debugging = json_utils.read(
         path=opj(
             env["work_dir"],
@@ -65,11 +68,12 @@ def run(env, seed, logger):
     evttab = event_table.add_empty_level(evttab, "groundgrid")
     evttab = event_table.add_empty_level(evttab, "groundgrid_choice")
 
+    logger.info("simulating showers.")
     evttab = stage_one(
         env=env,
         prng=prng,
         evttab=evttab,
-        corsika_and_grid_work_dir=corsika_and_grid_work_dir,
+        corsika_and_grid_work_dir=module_work_dir,
         corsika_primary_steering=dpp["corsika_primary_steering"],
         primary_directions=dpp["primary_directions"],
         event_uids_for_debugging=event_uids_for_debugging,
@@ -78,10 +82,10 @@ def run(env, seed, logger):
 
     event_table.write_all_levels_to_path(
         evttab=evttab,
-        path=os.path.join(corsika_and_grid_work_dir, "event_table.snt.zip"),
+        path=opj(module_work_dir, "event_table.snt.zip"),
     )
 
-    logger.info(__name__ + ": ... done.")
+    logger.info("done.")
 
 
 def stage_one(
@@ -94,8 +98,7 @@ def stage_one(
     event_uids_for_debugging,
     logger,
 ):
-    opj = os.path.join
-    logger.info(__name__ + ": start corsika stage one")
+    logger.info("Start corsika stage one.")
     work_dir = corsika_and_grid_work_dir
     os.makedirs(work_dir, exist_ok=True)
 
@@ -112,7 +115,7 @@ def stage_one(
             stderr_path=opj(work_dir, "corsika.stderr.txt"),
             particle_output_path=opj(work_dir, "particle_pools.dat"),
         ) as corsika_run:
-            logger.info(__name__ + ": corsika is ready")
+            logger.info("corsika is ready.")
 
             GGH = ground_grid.GGH()
 
@@ -125,7 +128,9 @@ def stage_one(
                 )
 
                 logger.debug(
-                    xml("EventTime", uid=uid["uid_str"], status="start.")
+                    json_line_logger.xml(
+                        "EventTime", uid=uid["uid_str"], status="start."
+                    )
                 )
 
                 evttab["primary"].append_record(
@@ -153,7 +158,7 @@ def stage_one(
                 )
 
                 logger.debug(
-                    xml(
+                    json_line_logger.xml(
                         "EventTime",
                         uid=uid["uid_str"],
                         status="cherenkov production start ...",
@@ -183,7 +188,7 @@ def stage_one(
                     )
 
                 logger.debug(
-                    xml(
+                    json_line_logger.xml(
                         "EventTime",
                         uid=uid["uid_str"],
                         status="cherenkov production done.",
@@ -198,7 +203,7 @@ def stage_one(
 
                 if cherenkovsize_rec["num_bunches"] > 0:
                     logger.debug(
-                        xml(
+                        json_line_logger.xml(
                             "EventTime",
                             uid=uid["uid_str"],
                             status="has cherenkov light.",
@@ -225,7 +230,7 @@ def stage_one(
 
                     if groundgrid_result["choice"]:
                         logger.debug(
-                            xml(
+                            json_line_logger.xml(
                                 "EventTime",
                                 uid=uid["uid_str"],
                                 status="has grid bins above threshold.",
@@ -255,16 +260,18 @@ def stage_one(
                 evttab["groundgrid"].append_record(groundgrid_record)
 
                 logger.debug(
-                    xml("EventTime", uid=uid["uid_str"], status="stop.")
+                    json_line_logger.xml(
+                        "EventTime", uid=uid["uid_str"], status="stop."
+                    )
                 )
 
             GGH.close()
 
-    logger.info(__name__ + ": dump cherenkovpools_md5 checksums.")
+    logger.info("Dump cherenkovpools_md5 checksums.")
     with rnw.open(opj(work_dir, "cherenkovpools_md5.json"), "wt") as fl:
         fl.write(json_utils.dumps(cherenkovpools_md5))
 
-    logger.info(__name__ + ": convert particle output from .dat to .tar")
+    logger.info("Convert particle output from .dat to .tar.")
     cpw.particles.dat_to_tape(
         dat_path=opj(work_dir, "particle_pools.dat"),
         tape_path=opj(work_dir, "particle_pools.tar.gz"),

@@ -103,43 +103,28 @@ def run_job_in_dir(job, work_dir):
         module=draw_event_uids_for_debugging,
         logger=logger,
     ) as sec:
-        sec.module.run(
-            env=env,
-            seed=sec.seed,
-        )
+        sec.module.run(env=env, seed=sec.seed)
 
     with seeding.SeedSection(
         run_id=run_id,
         module=draw_primaries_and_pointings,
         logger=logger,
     ) as sec:
-        sec.module.run(
-            env=env,
-            seed=sec.seed,
-            logger=logger,
-        )
+        sec.module.run(env=env, seed=sec.seed)
 
     with seeding.SeedSection(
         run_id=run_id,
         module=simulate_shower_and_collect_cherenkov_light_in_grid,
         logger=logger,
     ) as sec:
-        sec.module.run(
-            env=env,
-            seed=sec.seed,
-            logger=logger,
-        )
+        sec.module.run(env=env, seed=sec.seed)
 
     with seeding.SeedSection(
         run_id=run_id,
         module=simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument,
         logger=logger,
     ) as sec:
-        sec.module.run(
-            env=env,
-            seed=sec.seed,
-            logger=logger,
-        )
+        sec.module.run(env=env, seed=sec.seed)
 
     with seeding.SeedSection(
         run_id=run_id,
