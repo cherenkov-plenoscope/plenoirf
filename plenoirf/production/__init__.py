@@ -26,6 +26,8 @@ from .. import ground_grid
 from .. import event_table
 from .. import constants
 
+from . import zipfileutils as zfu
+
 from . import sum_trigger
 from . import draw_event_uids_for_debugging
 from . import draw_primaries_and_pointings
@@ -358,12 +360,12 @@ def run_job_in_dir(job, work_dir):
     result_path = opj(env["stage_dir"], env["run_id_str"] + ".zip")
     with zipfile.ZipFile(file=result_path, mode="w") as zout:
         logger.info("Writing results to {:s}.".format(result_path))
-        zip_write(
+        zfu.write(
             zout,
             opj(env["work_dir"], "event_table.snt.zip"),
             opj(env["run_id_str"], "event_table.snt.zip"),
         )
-        zip_write(
+        zfu.write(
             zout,
             opj(env["work_dir"], "reconstructed_cherenkov.tar"),
             opj(env["run_id_str"], "reconstructed_cherenkov.tar"),
@@ -372,54 +374,54 @@ def run_job_in_dir(job, work_dir):
             "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
             "particle_pools.tar.gz",
         )
-        zip_write(
+        zfu.write(
             zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
         )
         base = opj(
             "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
             "ground_grid_intensity.tar",
         )
-        zip_write(
+        zfu.write(
             zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
         )
         base = opj(
             "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
             "ground_grid_intensity_roi.tar",
         )
-        zip_write(
+        zfu.write(
             zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
         )
 
         # debugging
         # ---------
         logger.info("Writing debugging to {:s}.".format(result_path))
-        zip_write_gz(
+        zfu.write_gz(
             zout,
             opj(env["work_dir"], "provenance.json"),
             opj(env["run_id_str"], "provenance.json.gz"),
         )
-        zip_write_gz(
+        zfu.write_gz(
             zout,
             opj(env["work_dir"], "benchmark.json"),
             opj(env["run_id_str"], "benchmark.json.gz"),
         )
         base = "plenoirf.production.draw_event_uids_for_debugging.json"
-        zip_write_gz(
+        zfu.write_gz(
             zout,
             opj(env["work_dir"], base),
             opj(env["run_id_str"], base + ".gz"),
         )
-        zip_write(
+        zfu.write(
             zout,
             opj(env["work_dir"], "blocks", "event_uid_strs_in_block.json"),
             opj(env["run_id_str"], "blocks", "event_uid_strs_in_block.json"),
         )
-        zip_write_gz(
+        zfu.write_gz(
             zout,
             opj(env["work_dir"], "memory_usage.json"),
             opj(env["run_id_str"], "memory_usage.json" + ".gz"),
         )
-        zip_write_gz(
+        zfu.write_gz(
             zout,
             opj(env["work_dir"], "disk_usage.json"),
             opj(env["run_id_str"], "disk_usage.json" + ".gz"),
@@ -428,7 +430,7 @@ def run_job_in_dir(job, work_dir):
             "plenoirf.production.inspect_cherenkov_pool",
             "visible_cherenkov_photon_size.json",
         )
-        zip_write_gz(
+        zfu.write_gz(
             zout,
             opj(env["work_dir"], base),
             opj(env["run_id_str"], base + ".gz"),
@@ -437,13 +439,13 @@ def run_job_in_dir(job, work_dir):
             "plenoirf.production.simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument",
             "cherenkov_pools.tar",
         )
-        zip_write_gz(
+        zfu.write_gz(
             zout,
             opj(env["work_dir"], base),
             opj(env["run_id_str"], base + ".gz"),
         )
         base = "merlict_events.debug.zip"
-        zip_write(
+        zfu.write(
             zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
         )
 
@@ -452,7 +454,7 @@ def run_job_in_dir(job, work_dir):
                 "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
                 "corsika.{:s}.txt".format(ext),
             )
-            zip_write_gz(
+            zfu.write_gz(
                 zout,
                 opj(env["work_dir"], base),
                 opj(env["run_id_str"], base + ".gz"),
@@ -465,7 +467,7 @@ def run_job_in_dir(job, work_dir):
                     block_id_str,
                     "merlict.{:s}.txt".format(ext),
                 )
-                zip_write_gz(
+                zfu.write_gz(
                     zout,
                     opj(env["work_dir"], base),
                     opj(env["run_id_str"], base + ".gz"),
@@ -474,7 +476,7 @@ def run_job_in_dir(job, work_dir):
         base = opj(
             "plenoirf.production.draw_primaries_and_pointings", "debug.zip"
         )
-        zip_write(
+        zfu.write(
             zout, opj(env["work_dir"], base), opj(env["run_id_str"], base)
         )
 
@@ -483,7 +485,7 @@ def run_job_in_dir(job, work_dir):
         logger.info("shuting down logger.")
         json_line_logger.shutdown(logger=logger)
         rnw.move(logger_path + ".part", logger_path)
-        zip_write_gz(zout, logger_path, opj(env["run_id_str"], "log.jsonl.gz"))
+        zfu.write_gz(zout, logger_path, opj(env["run_id_str"], "log.jsonl.gz"))
 
     rnw.move(
         result_path,
@@ -492,18 +494,6 @@ def run_job_in_dir(job, work_dir):
     os.remove(logger_path)
 
     return 1
-
-
-def zip_write_gz(zout, inpath, outpath):
-    with zout.open(outpath, mode="w") as fout:
-        with open(inpath, "rb") as fin:
-            fout.write(gzip.compress(fin.read()))
-
-
-def zip_write(zout, inpath, outpath):
-    with zout.open(outpath, mode="w") as fout:
-        with open(inpath, "rb") as fin:
-            fout.write(fin.read())
 
 
 def run_job_block(env, blk, block_id, logger):
