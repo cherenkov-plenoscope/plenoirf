@@ -56,15 +56,6 @@ def run(env, seed, logger):
     with open(
         opj(
             env["work_dir"],
-            "plenoirf.production.draw_event_uids_for_debugging.json",
-        ),
-        "rt",
-    ) as fin:
-        event_uids_for_debugging = json_utils.loads(fin.read())
-
-    with open(
-        opj(
-            env["work_dir"],
             "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
             "cherenkovpools_md5.json",
         ),
@@ -94,19 +85,12 @@ def run(env, seed, logger):
         primary_directions=dpp["primary_directions"],
         instrument_pointings=dpp["instrument_pointings"],
         cherenkovpools_md5=cherenkovpools_md5,
-        event_uids_for_debugging=event_uids_for_debugging,
         logger=logger,
     )
 
     event_table.write_all_levels_to_path(
         evttab=evttab,
         path=os.path.join(corsika_and_grid_work_dir, "event_table.snt.zip"),
-    )
-
-    cherenkov_bunch_storage.filter_by_event_uids(
-        inpath=opj(corsika_and_grid_work_dir, "cherenkov_pools.tar"),
-        outpath=opj(corsika_and_grid_work_dir, "cherenkov_pools.debug.tar"),
-        event_uids=event_uids_for_debugging,
     )
 
     logger.info(__name__ + ": ... done.")
@@ -121,7 +105,6 @@ def stage_two(
     primary_directions,
     instrument_pointings,
     cherenkovpools_md5,
-    event_uids_for_debugging,
     logger,
 ):
     opj = os.path.join
