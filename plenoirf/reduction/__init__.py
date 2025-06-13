@@ -292,7 +292,11 @@ def reduce_benchmarks(run_paths, out_path, use_tmp_dir=True):
 
         buff = zip_read_IO(
             file=run_path,
-            internal_path=os.path.join(run_id_str, "benchmark.json.gz"),
+            internal_path=os.path.join(
+                run_id_str,
+                "plenoirf.production.benchmark_compute_environment",
+                "benchmark.json.gz",
+            ),
             mode="rt|gz",
         )
         bench = json_utils.loads(buff.read())

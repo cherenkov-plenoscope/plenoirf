@@ -2,19 +2,22 @@ from .. import benchmarking
 from .. import provenance
 
 import os
+from os.path import join as opj
 import json_utils
 import tempfile
 import rename_after_writing as rnw
 import json_line_logger
 
 
-def run(env, logger):
-    logger.info(__name__ + ": start ...")
+def run(env):
+    module_work_dir = opj(env["work_dir"], __name__)
 
-    outpath = os.path.join(env["work_dir"], "benchmark.json")
-    if os.path.exists(outpath):
-        logger.info(__name__ + ": already done. skip computation.")
+    if os.path.exists(module_work_dir):
         return
+
+    os.makedirs(module_work_dir)
+    logger = json_line_logger.LoggerFile(opj(module_work_dir, "log.jsonl"))
+    logger.info(__name__)
 
     out = {}
     out["disk_write_rate"] = benchmarking.disk_write_rate()
@@ -59,10 +62,11 @@ def run(env, logger):
         )
     )
 
-    with rnw.open(outpath, "wt") as f:
+    logger.info("write output.")
+    with rnw.open(opj(module_work_dir, "benchmark.json"), "wt") as f:
         f.write(json_utils.dumps(out))
 
-    logger.info(__name__ + ": ... done.")
+    logger.info("done.")
 
 
 def run_job(job):

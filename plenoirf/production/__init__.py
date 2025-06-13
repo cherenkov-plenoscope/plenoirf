@@ -96,7 +96,7 @@ def run_job_in_dir(job, work_dir):
         )
 
     with TimeDelta(logger, "benchmark compute environment"):
-        benchmark_compute_environment.run(env=env, logger=logger)
+        benchmark_compute_environment.run(env=env)
 
     with seeding.SeedSection(
         run_id=run_id,
@@ -372,7 +372,13 @@ def run_job_in_dir(job, work_dir):
         # ---------
         logger.info("Writing debugging to {:s}.".format(result_path))
         zoutw.write("provenance.json", gz=True)
-        zoutw.write("benchmark.json", gz=True)
+        zoutw.write(
+            opj(
+                "plenoirf.production.benchmark_compute_environment",
+                "benchmark.json",
+            ),
+            gz=True,
+        )
         zoutw.write(
             opj(
                 "plenoirf.production.draw_event_uids_for_debugging",
