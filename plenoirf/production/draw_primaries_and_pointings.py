@@ -241,14 +241,13 @@ def run(env, seed, logger):
         )
     )
 
-    with open(
-        opj(
+    event_uids_for_debugging = json_utils.read(
+        path=opj(
             env["work_dir"],
-            "plenoirf.production.draw_event_uids_for_debugging.json",
-        ),
-        "rt",
-    ) as fin:
-        event_uids_for_debugging = json_utils.loads(fin.read())
+            "plenoirf.production.draw_event_uids_for_debugging",
+            "event_uids_for_debugging.json",
+        )
+    )
 
     pointing_range = acr.pointing_range.PointingRange_from_cone(
         azimuth_rad=0.0,

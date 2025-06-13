@@ -50,14 +50,13 @@ def run(env, seed, logger):
     ) as fin:
         dpp = pickle.loads(fin.read())
 
-    with open(
-        opj(
+    event_uids_for_debugging = json_utils.read(
+        path=opj(
             env["work_dir"],
-            "plenoirf.production.draw_event_uids_for_debugging.json",
-        ),
-        "rt",
-    ) as fin:
-        event_uids_for_debugging = json_utils.loads(fin.read())
+            "plenoirf.production.draw_event_uids_for_debugging",
+            "event_uids_for_debugging.json",
+        )
+    )
 
     evttab = snt.SparseNumericTable(index_key="uid")
     evttab = event_table.add_empty_level(evttab, "primary")

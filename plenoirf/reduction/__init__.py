@@ -375,7 +375,8 @@ def reduce_event_uids_for_debugging(run_paths, out_path, use_tmp_dir=True):
                     file=run_path,
                     internal_path=os.path.join(
                         run_id_str,
-                        "plenoirf.production.draw_event_uids_for_debugging.json.gz",
+                        "plenoirf.production.draw_event_uids_for_debugging",
+                        "event_uids_for_debugging.json.gz",
                     ),
                     mode="rt|gz",
                 )

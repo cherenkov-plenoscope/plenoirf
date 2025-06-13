@@ -2,19 +2,24 @@ from .. import debugging
 from .. import bookkeeping
 
 import numpy as np
-import rename_after_writing
+import rename_after_writing as rnw
 import json_utils
+import json_line_logger
 import os
 
 
-def run(env, seed, logger):
-    opj = os.path.join
-    logger.info(__name__ + ": start ...")
+def run(env, seed):
+    module_work_dir = os.path.join(env["work_dir"], __name__)
 
-    result_path = opj(env["work_dir"], __name__ + ".json")
-    if os.path.exists(result_path):
-        logger.info(__name__ + ": already done. skip computation.")
+    if os.path.exists(module_work_dir):
         return
+
+    os.makedirs(module_work_dir)
+    logger = json_line_logger.LoggerFile(
+        path=os.path.join(module_work_dir, "log.jsonl")
+    )
+    logger.info(__name__ + ": start ...")
+    logger.info(f"seed: {seed:d}")
 
     prng = np.random.Generator(np.random.PCG64(seed))
     event_ids_for_debugging = debugging.draw_event_ids_for_debugging(
@@ -30,7 +35,8 @@ def run(env, seed, logger):
         for event_id in event_ids_for_debugging
     ]
 
-    with rename_after_writing.open(result_path, "wt") as fout:
+    path = os.path.join(module_work_dir, "event_uids_for_debugging.json")
+    with rnw.open(path, "wt") as fout:
         fout.write(json_utils.dumps(event_uids_for_debugging))
 
     logger.info(__name__ + ": ... done.")

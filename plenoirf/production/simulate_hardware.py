@@ -1,4 +1,5 @@
 import os
+from os.path import join as opj
 import merlict_development_kit_python as mlidev
 import rename_after_writing as rnw
 import json_utils
@@ -12,7 +13,6 @@ from .. import utils
 
 
 def run_block(env, blk, block_id, logger):
-    opj = os.path.join
     logger.info(__name__ + ": start ...")
 
     block_dir = opj(env["work_dir"], "blocks", "{:06d}".format(block_id))
@@ -81,16 +81,17 @@ def write_mlidev_config(env, path):
 
 def make_debug_output(env, blk, block_id, logger):
     with open(
-        os.path.join(
+        opj(
             env["work_dir"],
-            "plenoirf.production.draw_event_uids_for_debugging.json",
+            "plenoirf.production.draw_event_uids_for_debugging",
+            "event_uids_for_debugging.json",
         ),
         "rt",
     ) as fin:
         event_uids_for_debugging = json_utils.loads(fin.read())
 
     block_id_str = "{:06d}".format(block_id)
-    debug_out_path = os.path.join(env["work_dir"], "merlict_events.debug.zip")
+    debug_out_path = opj(env["work_dir"], "merlict_events.debug.zip")
     event_uid_strs_in_block = blk["event_uid_strs_in_block"][block_id_str]
 
     if not os.path.exists(debug_out_path):
@@ -107,7 +108,7 @@ def make_debug_output(env, blk, block_id, logger):
                     event_uid_str
                 )
             )
-            merlict_event_path = os.path.join(
+            merlict_event_path = opj(
                 env["work_dir"],
                 "blocks",
                 block_id_str,
@@ -133,7 +134,7 @@ def make_debug_output(env, blk, block_id, logger):
 
 
 def assert_merlict_event_has_uid(merlict_event_path, event_uid):
-    evth_path = os.path.join(
+    evth_path = opj(
         merlict_event_path, "simulation_truth", "corsika_event_header.bin"
     )
     with open(evth_path, "rb") as fin:

@@ -28,7 +28,8 @@ def run_block(env, blk, block_id, logger):
     event_uids_for_debugging = json_utils.read(
         path=os.path.join(
             env["work_dir"],
-            "plenoirf.production.draw_event_uids_for_debugging.json",
+            "plenoirf.production.draw_event_uids_for_debugging",
+            "event_uids_for_debugging.json",
         )
     )
     visible_cherenkov_photon_size = json_utils.read(

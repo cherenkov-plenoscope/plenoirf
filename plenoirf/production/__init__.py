@@ -106,7 +106,6 @@ def run_job_in_dir(job, work_dir):
         sec.module.run(
             env=env,
             seed=sec.seed,
-            logger=logger,
         )
 
     with seeding.SeedSection(
@@ -390,7 +389,11 @@ def run_job_in_dir(job, work_dir):
         zoutw.write("provenance.json", gz=True)
         zoutw.write("benchmark.json", gz=True)
         zoutw.write(
-            "plenoirf.production.draw_event_uids_for_debugging.json", gz=True
+            opj(
+                "plenoirf.production.draw_event_uids_for_debugging",
+                "event_uids_for_debugging.json",
+            ),
+            gz=True,
         )
         zoutw.write(opj("blocks", "event_uid_strs_in_block.json"), gz=True)
         zoutw.write("memory_usage.json", gz=True)
