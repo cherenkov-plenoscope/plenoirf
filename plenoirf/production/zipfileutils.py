@@ -1,5 +1,6 @@
 import zipfile
 import os
+import gzip
 
 
 def write_gz(zout, inpath, outpath):

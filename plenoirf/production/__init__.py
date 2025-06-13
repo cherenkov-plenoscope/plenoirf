@@ -392,7 +392,7 @@ def run_job_in_dir(job, work_dir):
         zoutw.write(
             "plenoirf.production.draw_event_uids_for_debugging.json", gz=True
         )
-        zoutw.write("event_uid_strs_in_block.json", gz=True)
+        zoutw.write(opj("blocks", "event_uid_strs_in_block.json"), gz=True)
         zoutw.write("memory_usage.json", gz=True)
         zoutw.write("disk_usage.json", gz=True)
         zoutw.write(
