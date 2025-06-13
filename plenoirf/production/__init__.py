@@ -435,7 +435,7 @@ def run_job_in_dir(job, work_dir):
         )
         base = opj(
             "plenoirf.production.simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument",
-            "cherenkov_pools.debug.tar",
+            "cherenkov_pools.tar",
         )
         zip_write_gz(
             zout,
