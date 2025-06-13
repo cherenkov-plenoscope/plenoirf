@@ -38,7 +38,7 @@ def run_block(env, blk, block_id, logger):
         fuzzy_config=blk["trajectory_reconstruction"]["fuzzy_config"],
         model_fit_config=blk["trajectory_reconstruction"]["model_fit_config"],
         reconstructed_cherenkov_path=opj(
-            block_dir, "reconstructed_cherenkov.tar"
+            block_dir, "reconstructed_cherenkov.loph.tar"
         ),
         light_field_geometry=blk["light_field_geometry"],
         logger=logger,

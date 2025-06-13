@@ -19,7 +19,7 @@ from .. import bookkeeping
 def list_items():
     return [
         "event_table.snt.zip",
-        "reconstructed_cherenkov.tar",
+        "reconstructed_cherenkov.loph.tar",
         "ground_grid_intensity.zip",
         "ground_grid_intensity_roi.zip",
         "benchmark.snt.zip",
@@ -33,7 +33,7 @@ def reduce_item(map_dir, out_path, item_key, use_tmp_dir=True):
         recude_event_table(
             run_paths=run_paths, out_path=out_path, use_tmp_dir=use_tmp_dir
         )
-    elif item_key == "reconstructed_cherenkov.tar":
+    elif item_key == "reconstructed_cherenkov.loph.tar":
         reduce_reconstructed_cherenkov(
             run_paths=run_paths, out_path=out_path, use_tmp_dir=use_tmp_dir
         )
@@ -182,7 +182,7 @@ def reduce_reconstructed_cherenkov(run_paths, out_path, use_tmp_dir=True):
                 buff = zip_read_IO(
                     file=run_path,
                     internal_path=os.path.join(
-                        run_id_str, "reconstructed_cherenkov.tar"
+                        run_id_str, "reconstructed_cherenkov.loph.tar"
                     ),
                     mode="rb",
                 )

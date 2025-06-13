@@ -76,7 +76,7 @@ def classify_cherenkov_photons(
     dbscan_cfg = config_cherenkov_classification
 
     with pl.photon_stream.loph.LopfTarWriter(
-        path=os.path.join(block_dir, "reconstructed_cherenkov.tar"),
+        path=os.path.join(block_dir, "reconstructed_cherenkov.loph.tar"),
         uid_num_digits=bookkeeping.uid.UID_NUM_DIGITS,
     ) as cer_phs_run:
         for ptp in evttab["pasttrigger"]:

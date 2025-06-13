@@ -339,20 +339,20 @@ def run_job_in_dir(job, work_dir):
 
     # bundle reconstructed cherenkov light (loph)
     # -------------------------------------------
-    with TimeDelta(logger, "bundling reconstructed_cherenkov.tar"):
+    with TimeDelta(logger, "bundling reconstructed_cherenkov.loph.tar"):
         loph_in_paths = []
         for block_id_str in blk["event_uid_strs_in_block"]:
             loph_in_path = opj(
                 env["work_dir"],
                 "blocks",
                 block_id_str,
-                "reconstructed_cherenkov.tar",
+                "reconstructed_cherenkov.loph.tar",
             )
             loph_in_paths.append(loph_in_path)
 
         plenopy.photon_stream.loph.concatenate_tars(
             in_paths=loph_in_paths,
-            out_path=opj(env["work_dir"], "reconstructed_cherenkov.tar"),
+            out_path=opj(env["work_dir"], "reconstructed_cherenkov.loph.tar"),
         )
 
     # write output file
@@ -364,7 +364,7 @@ def run_job_in_dir(job, work_dir):
             zout=zout, indir=env["work_dir"], outdir=env["run_id_str"]
         )
         zoutw.write("event_table.snt.zip")
-        zoutw.write("reconstructed_cherenkov.tar")
+        zoutw.write("reconstructed_cherenkov.loph.tar")
         zoutw.write(
             opj(
                 "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
