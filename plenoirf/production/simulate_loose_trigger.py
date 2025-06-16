@@ -1,6 +1,8 @@
 import os
+from os.path import join as opj
 import numpy as np
 import tarfile
+import gzip
 
 import plenopy
 import corsika_primary as cpw
@@ -25,20 +27,23 @@ def run_block(env, blk, block_id, logger):
         logger.info(__name__ + ": already done. skip computation.")
         return
 
-    event_uids_for_debugging = json_utils.read(
-        path=os.path.join(
+    with open(
+        opj(
             env["work_dir"],
             "plenoirf.production.draw_event_uids_for_debugging",
             "event_uids_for_debugging.json",
         )
-    )
-    visible_cherenkov_photon_size = json_utils.read(
-        path=os.path.join(
+    ) as f:
+        event_uids_for_debugging = json_utils.loads(f.read())
+
+    with gzip.open(
+        opj(
             env["work_dir"],
             "plenoirf.production.inspect_cherenkov_pool",
-            "visible_cherenkov_photon_size.json",
+            "visible_cherenkov_photon_size.json.gz",
         )
-    )
+    ) as f:
+        visible_cherenkov_photon_size = json_utils.loads(f.read())
 
     evttab = snt.SparseNumericTable(index_key="uid")
     evttab = event_table.add_levels_from_path(

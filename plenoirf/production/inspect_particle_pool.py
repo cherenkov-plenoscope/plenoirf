@@ -2,25 +2,28 @@ import corsika_primary as cpw
 import sparse_numeric_table as snt
 import numpy as np
 import os
+from os.path import join as opj
+import json_line_logger
 
 from .. import bookkeeping
 from .. import event_table
+from .. import utils
 
 
-def run(env, logger):
-    opj = os.path.join
-    logger.info(__name__ + ": start ...")
+def run(env):
+    module_work_dir = opj(env["work_dir"], __name__)
 
-    sub_work_dir = opj(env["work_dir"], __name__)
-
-    if os.path.exists(sub_work_dir):
-        logger.info(__name__ + ": already done. skip computation.")
+    if os.path.exists(module_work_dir):
         return
+
+    os.makedirs(module_work_dir)
+    logger = json_line_logger.LoggerFile(opj(module_work_dir, "log.jsonl"))
+    logger.info(__name__)
 
     evttab = snt.SparseNumericTable(index_key="uid")
     evttab = event_table.add_levels_from_path(
         evttab=evttab,
-        path=os.path.join(
+        path=opj(
             env["work_dir"],
             "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
             "event_table.snt.zip",
@@ -35,12 +38,15 @@ def run(env, logger):
 
     evttab = inspect_particle_pool(evttab=evttab, env=env, logger=logger)
 
-    os.makedirs(sub_work_dir)
     event_table.write_certain_levels_to_path(
         evttab=evttab,
-        path=os.path.join(sub_work_dir, "event_table.snt.zip"),
+        path=opj(module_work_dir, "event_table.snt.zip"),
         level_keys=["particlepool", "particlepoolonaperture"],
     )
+
+    logger.info("done.")
+    json_line_logger.shutdown(logger=logger)
+    utils.gzip_file(opj(module_work_dir, "log.jsonl"))
 
 
 def inspect_particle_pool(evttab, env, logger):

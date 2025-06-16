@@ -139,20 +139,14 @@ def run_job_in_dir(job, work_dir):
         module=inspect_cherenkov_pool,
         logger=logger,
     ) as sec:
-        sec.module.run(
-            env=env,
-            logger=logger,
-        )
+        sec.module.run(env=env)
 
     with seeding.SeedSection(
         run_id=run_id,
         module=inspect_particle_pool,
         logger=logger,
     ) as sec:
-        sec.module.run(
-            env=env,
-            logger=logger,
-        )
+        sec.module.run(env=env)
 
     blk = {}
     blk["blocks_dir"] = os.path.join(env["work_dir"], "blocks")
@@ -162,15 +156,11 @@ def run_job_in_dir(job, work_dir):
         module=split_event_tape_into_blocks,
         logger=logger,
     ) as sec:
-        sec.module.run(
-            env=env,
-            logger=logger,
-        )
+        sec.module.run(env=env)
 
-    _blkp = os.path.join(
-        env["work_dir"], "blocks", "event_uid_strs_in_block.json"
-    )
-    with open(_blkp, "rt") as fin:
+    with gzip.open(
+        opj(env["work_dir"], "blocks", "event_uid_strs_in_block.json.gz"), "rt"
+    ) as fin:
         blk["event_uid_strs_in_block"] = json_utils.loads(fin.read())
 
     with TimeDelta(logger, "read light_field_calibration"):

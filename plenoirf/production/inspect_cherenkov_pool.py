@@ -1,40 +1,45 @@
 import corsika_primary as cpw
 import numpy as np
 import os
+from os.path import join as opj
+import gzip
 import binning_utils
 import sebastians_matplotlib_addons as sebplt
 import spherical_coordinates
 import json_utils
 import rename_after_writing as rnw
 import un_bound_histogram
+import json_line_logger
 
 from . import transform_cherenkov_bunches
 from .. import bookkeeping
+from .. import utils
 
 
-def run(env, logger):
+def run(env):
     """
     This is for debugging. The plots and summaries created here are meant for
     manual inspection.
     """
-    opj = os.path.join
-    logger.info(__name__ + ": start ...")
+    module_work_dir = opj(env["work_dir"], __name__)
 
-    out_dir = opj(env["work_dir"], __name__)
-    if os.path.exists(out_dir):
-        logger.info(__name__ + ": already done. skip computation.")
+    if os.path.exists(module_work_dir):
         return
 
+    os.makedirs(module_work_dir)
+    logger = json_line_logger.LoggerFile(opj(module_work_dir, "log.jsonl"))
+    logger.info(__name__)
+
     visible_cherenkov_photon_size = inspect_cherenkov_pools(
-        cherenkov_pools_path=os.path.join(
+        cherenkov_pools_path=opj(
             env["work_dir"],
             "plenoirf.production.simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument",
-            "cherenkov_pools.tar",
+            "cherenkov_pools.tar.gz",
         ),
         aperture_bin_edges=np.linspace(-50, 50, 51),
         image_bin_edges_rad=np.linspace(np.deg2rad(-6.5), np.deg2rad(6.5), 51),
         time_bin_edges=np.linspace(375e-6, 425e-6, 200),
-        out_dir=out_dir,
+        out_dir=module_work_dir,
         field_of_view_center_rad=[0, 0],
         field_of_view_half_angle_rad=np.deg2rad(6.5 / 2),
         mirror_center=[0, 0],
@@ -42,12 +47,15 @@ def run(env, logger):
         threshold_num_photons=25,
         write_figures=env["debugging_figures"],
     )
-    with rnw.open(
-        os.path.join(out_dir, "visible_cherenkov_photon_size.json"), "wt"
-    ) as f:
-        f.write(json_utils.dumps(visible_cherenkov_photon_size))
+    with rnw.Path(
+        opj(module_work_dir, "visible_cherenkov_photon_size.json.gz")
+    ) as opath:
+        with gzip.open(opath, "wt") as f:
+            f.write(json_utils.dumps(visible_cherenkov_photon_size))
 
-    logger.info(__name__ + ": ... done.")
+    logger.info("done.")
+    json_line_logger.shutdown(logger=logger)
+    utils.gzip_file(opj(module_work_dir, "log.jsonl"))
 
 
 def inspect_cherenkov_pools(

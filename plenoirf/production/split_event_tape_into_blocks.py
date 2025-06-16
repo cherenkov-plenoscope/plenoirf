@@ -1,40 +1,46 @@
 import copy
 import os
+from os.path import join as opj
 import numpy as np
 import json_utils
 import corsika_primary as cpw
 import rename_after_writing as rnw
+import json_line_logger
+import gzip
 
 from .. import bookkeeping
+from .. import utils
 
 
-def run(env, logger):
-    logger.info(__name__ + ": start ...")
+def run(env):
+    blocks_dir = opj(env["work_dir"], "blocks")
 
-    blocks_dir = os.path.join(env["work_dir"], "blocks")
-    os.makedirs(blocks_dir, exist_ok=True)
-
-    result_path = os.path.join(blocks_dir, "event_uid_strs_in_block.json")
-
-    if os.path.exists(result_path):
-        logger.info(__name__ + ": already done. skip computation.")
+    if os.path.exists(blocks_dir):
         return
 
+    os.makedirs(blocks_dir)
+    logger = json_line_logger.LoggerFile(opj(blocks_dir, "log.jsonl"))
+    logger.info(__name__)
+
     uid_map = split_event_tape_into_blocks(
-        inpath=os.path.join(
+        inpath=opj(
             env["work_dir"],
             "plenoirf.production.simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument",
-            "cherenkov_pools.tar",
+            "cherenkov_pools.tar.gz",
         ),
-        outpath_block_fmt=os.path.join(
+        outpath_block_fmt=opj(
             blocks_dir, "{block_id:06d}", "cherenkov_pools.tar"
         ),
         num_events=env["max_num_events_in_merlict_run"],
     )
-    with rnw.open(result_path, "wt") as fout:
-        fout.write(json_utils.dumps(uid_map))
+
+    with rnw.Path(opj(blocks_dir, "event_uid_strs_in_block.json.gz")) as opath:
+        with gzip.open(opath, "wt") as fout:
+            fout.write(json_utils.dumps(uid_map))
 
     logger.info(__name__ + ": ... done.")
+    json_line_logger.shutdown(logger=logger)
+    utils.gzip_file(opj(blocks_dir, "log.jsonl"))
 
 
 def split_event_tape_into_blocks(inpath, outpath_block_fmt, num_events):
