@@ -12,19 +12,20 @@ from json_line_logger import xml
 import sebastians_matplotlib_addons as sebplt
 import sparse_numeric_table as snt
 
-from .. import bookkeeping
-from .. import event_table
+from ... import bookkeeping
+from ... import event_table
 
 
 def run_block(env, blk, block_id, logger):
-    opj = os.path.join
-    logger.info(__name__ + ": start ...")
+    name = __name__.split(".")[-1]
+    logger.info(name + ": start ...")
 
-    block_dir = opj(env["work_dir"], "blocks", "{:06d}".format(block_id))
-    sub_work_dir = opj(block_dir, __name__)
+    block_id_str = "{:06d}".format(block_id)
+    block_dir = opj(blk["blocks_dir"], block_id_str)
+    sub_work_dir = opj(block_dir, name)
 
     if os.path.exists(sub_work_dir):
-        logger.info(__name__ + ": already done. skip computation.")
+        logger.info(name + ": already done. skip computation.")
         return
 
     with open(
@@ -84,7 +85,7 @@ def run_block(env, blk, block_id, logger):
         level_keys=["instrument", "trigger", "pasttrigger"],
     )
 
-    logger.info(__name__ + ": ... done.")
+    logger.info(name + ": ... done.")
 
 
 def simulate_loose_trigger(
@@ -98,13 +99,13 @@ def simulate_loose_trigger(
     logger,
     write_figures,
 ):
-    opj = os.path.join
-    block_dir = opj(env["work_dir"], "blocks", "{:06d}".format(block_id))
+    block_id_str = "{:06d}".format(block_id)
+    block_dir = opj(blk["blocks_dir"], block_id_str)
 
     # loop over sensor responses
     # --------------------------
     merlict_run = plenopy.Run(
-        path=opj(block_dir, "merlict"),
+        path=opj(block_dir, "simulate_hardware", "merlict"),
         light_field_geometry=blk["light_field_geometry"],
     )
     table_past_trigger = []
@@ -150,7 +151,7 @@ def simulate_loose_trigger(
                 )
 
                 plot_foci_trigger_image_sequences(
-                    out_dir=os.path.join(work_dir, uid_str),
+                    out_dir=opj(work_dir, uid_str),
                     foci_trigger_image_sequences=foci_trigger_image_sequences,
                 )
 
@@ -242,5 +243,5 @@ def plot_foci_trigger_image_sequences(out_dir, foci_trigger_image_sequences):
 
         sebplt.plt.colorbar(pcm_img, cax=ax_cm, extend="max")
 
-        fig.savefig(os.path.join(out_dir, "{:06d}.jpg".format(focus)))
+        fig.savefig(opj(out_dir, "{:06d}.jpg".format(focus)))
         sebplt.close(fig)

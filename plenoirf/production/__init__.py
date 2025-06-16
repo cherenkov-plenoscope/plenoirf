@@ -37,11 +37,9 @@ from . import simulate_shower_and_collect_cherenkov_light_in_grid
 from . import (
     simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument,
 )
-from . import split_event_tape_into_blocks
+
 from . import inspect_particle_pool
-from . import simulate_hardware
-from . import simulate_loose_trigger
-from . import classify_cherenkov_photons
+
 from . import inspect_cherenkov_pool
 from . import extract_features_from_light_field
 from . import estimate_primary_trajectory
@@ -148,6 +146,15 @@ def run_job_in_dir(job, work_dir):
         logger=logger,
     ) as sec:
         sec.module.run(env=env)
+
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=simulate_instrument_and_reconstruct_cherenkov,
+        logger=logger,
+    ) as sec:
+        sec.module.run(env=env, seed=sec.seed)
+
+    return 2
 
     blk = {}
     blk["blocks_dir"] = os.path.join(env["work_dir"], "blocks")

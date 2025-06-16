@@ -5,26 +5,164 @@ import numpy as np
 import gzip
 import hashlib
 
+import json_utils
 import json_line_logger
+import plenopy
 
+from ... import seeding
 from ... import utils
+
+from . import split_event_tape_into_blocks
+from . import simulate_hardware
+from . import simulate_loose_trigger
+from . import classify_cherenkov_photons
 
 
 def run(env, seed):
     module_work_dir = opj(env["work_dir"], __name__)
 
+    """
     if os.path.exists(module_work_dir):
         return
+    """
 
-    os.makedirs(module_work_dir)
+    os.makedirs(module_work_dir, exist_ok=True)
     logger = json_line_logger.LoggerFile(opj(module_work_dir, "log.jsonl"))
     logger.info(__name__)
     logger.info(f"seed: {seed:d}")
 
     prng = np.random.Generator(np.random.PCG64(seed))
 
+    blk = {}
+    blk["blocks_dir"] = os.path.join(module_work_dir, "blocks")
+
+    with json_line_logger.TimeDelta(logger, "split_event_tape_into_blocks"):
+        split_event_tape_into_blocks.run(env=env, blk=blk)
+
+    with gzip.open(
+        opj(blk["blocks_dir"], "event_uid_strs_in_block.json.gz"), "rt"
+    ) as fin:
+        blk["event_uid_strs_in_block"] = json_utils.loads(fin.read())
+
+    with json_line_logger.TimeDelta(logger, "read light_field_calibration"):
+        light_field_calibration_path = opj(
+            env["plenoirf_dir"],
+            "plenoptics",
+            "instruments",
+            env["instrument_key"],
+            "light_field_geometry",
+        )
+        blk["light_field_geometry"] = plenopy.LightFieldGeometry(
+            path=light_field_calibration_path
+        )
+
+    with json_line_logger.TimeDelta(
+        logger, "make light_field_calibration addon"
+    ):
+        blk["light_field_geometry_addon"] = (
+            plenopy.features.make_light_field_geometry_addon(
+                light_field_geometry=blk["light_field_geometry"]
+            )
+        )
+
+    with json_line_logger.TimeDelta(logger, "read trigger_geometry"):
+        trigger_geometry_path = opj(
+            env["plenoirf_dir"],
+            "trigger_geometry",
+            env["instrument_key"]
+            + plenopy.trigger.geometry.suggested_filename_extension(),
+        )
+        blk["trigger_geometry"] = plenopy.trigger.geometry.read(
+            path=trigger_geometry_path
+        )
+
+    # loop over blocks
+    # ----------------
+    for block_id_str in blk["event_uid_strs_in_block"]:
+        run_job_block(
+            env=env, blk=blk, block_id=int(block_id_str), logger=logger
+        )
+
+    """
+    # bundle reconstructed cherenkov light (loph)
+    # -------------------------------------------
+    with json_line_logger.TimeDelta(logger, "bundling reconstructed_cherenkov.loph.tar"):
+        loph_in_paths = []
+        for block_id_str in blk["event_uid_strs_in_block"]:
+            loph_in_path = opj(
+                blk["blocks_dir"],
+                block_id_str,
+                "reconstructed_cherenkov.loph.tar",
+            )
+            loph_in_paths.append(loph_in_path)
+
+        plenopy.photon_stream.loph.concatenate_tars(
+            in_paths=loph_in_paths,
+            out_path=opj(module_work_dir, "reconstructed_cherenkov.loph.tar"),
+        )
+    """
+
     logger.info("done.")
     json_line_logger.shutdown(logger=logger)
 
     # tidy up and compress
     utils.gzip_file(opj(module_work_dir, "log.jsonl"))
+
+
+def run_job_block(env, blk, block_id, logger):
+    run_id = env["run_id"]
+
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=simulate_hardware,
+        block_id=block_id,
+        logger=logger,
+    ) as sec:
+        sec.module.run_block(
+            env=env,
+            blk=blk,
+            block_id=block_id,
+            logger=logger,
+        )
+
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=simulate_loose_trigger,
+        block_id=block_id,
+        logger=logger,
+    ) as sec:
+        sec.module.run_block(
+            env=env,
+            blk=blk,
+            block_id=block_id,
+            logger=logger,
+        )
+
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=classify_cherenkov_photons,
+        block_id=block_id,
+        logger=logger,
+    ) as sec:
+        sec.module.run_block(
+            env=env, blk=blk, block_id=block_id, logger=logger
+        )
+
+    """
+    # remove the merlict events to free temporary diskspace.
+    block_dir = os.path.join(
+        env["work_dir"], "blocks", "{:06d}".format(block_id)
+    )
+    merlict_events_path = os.path.join(block_dir, "merlict")
+    if os.path.isdir(merlict_events_path):
+        logger.info(
+            "removing merlict events: '{:s}'".format(merlict_events_path)
+        )
+        shutil.rmtree(merlict_events_path)
+
+    # make a dummy file to trick merlict into thinking it is already done.
+    with open(merlict_events_path, "wt") as fout:
+        pass
+    """
+
+    return 1

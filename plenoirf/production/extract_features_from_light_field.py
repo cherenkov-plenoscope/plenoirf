@@ -5,7 +5,7 @@ import rename_after_writing as rnw
 import sparse_numeric_table as snt
 from .. import bookkeeping
 from .. import event_table
-from . import simulate_hardware
+#from . import simulate_hardware
 
 
 def run_block(env, blk, seed, block_id, logger):

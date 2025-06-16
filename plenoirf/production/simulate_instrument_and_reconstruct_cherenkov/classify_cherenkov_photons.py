@@ -1,5 +1,6 @@
 import numpy as np
 import os
+from os.path import join as opj
 import plenopy as pl
 import rename_after_writing as rnw
 import sparse_numeric_table as snt
@@ -10,15 +11,15 @@ from . import simulate_hardware
 
 
 def run_block(env, blk, block_id, logger):
-    opj = os.path.join
-    logger.info(__name__ + ": start ...")
+    name = __name__.split(".")[-1]
+    logger.info(name + ": start ...")
 
     block_id_str = "{:06d}".format(block_id)
-    block_dir = opj(env["work_dir"], "blocks", block_id_str)
-    sub_work_dir = opj(block_dir, __name__)
+    block_dir = opj(blk["blocks_dir"], block_id_str)
+    sub_work_dir = opj(block_dir, name)
 
     if os.path.exists(sub_work_dir):
-        logger.info(__name__ + ": already done. skip computation.")
+        logger.info(name + ": already done. skip computation.")
         return
 
     os.makedirs(sub_work_dir)
@@ -28,7 +29,7 @@ def run_block(env, blk, block_id, logger):
         evttab=evttab,
         path=opj(
             block_dir,
-            "plenoirf.production.simulate_loose_trigger",
+            "simulate_loose_trigger",
             "event_table.snt.zip",
         ),
     )
@@ -36,6 +37,9 @@ def run_block(env, blk, block_id, logger):
 
     evttab = classify_cherenkov_photons(
         evttab=evttab,
+        reconstructed_cherenkov_path=os.path.join(
+            sub_work_dir, "reconstructed_cherenkov.loph.tar"
+        ),
         config_cherenkov_classification_region_of_interest=env["config"][
             "cherenkov_classification"
         ]["region_of_interest"],
@@ -56,11 +60,12 @@ def run_block(env, blk, block_id, logger):
         level_keys=["cherenkovclassification"],
     )
 
-    logger.info(__name__ + ": ... done.")
+    logger.info(name + ": ... done.")
 
 
 def classify_cherenkov_photons(
     evttab,
+    reconstructed_cherenkov_path,
     config_cherenkov_classification_region_of_interest,
     config_cherenkov_classification,
     light_field_geometry,
@@ -76,10 +81,11 @@ def classify_cherenkov_photons(
     dbscan_cfg = config_cherenkov_classification
 
     with pl.photon_stream.loph.LopfTarWriter(
-        path=os.path.join(block_dir, "reconstructed_cherenkov.loph.tar"),
+        path=reconstructed_cherenkov_path,
         uid_num_digits=bookkeeping.uid.UID_NUM_DIGITS,
     ) as cer_phs_run:
         for ptp in evttab["pasttrigger"]:
+            print("pasttrigger", ptp["uid"])
             event_uid = ptp["uid"]
             merlict_event_id = simulate_hardware.make_merlict_event_id(
                 event_uid=event_uid,
@@ -87,14 +93,16 @@ def classify_cherenkov_photons(
             )
 
             event_path = opj(
-                block_dir, "merlict", "{:d}".format(merlict_event_id)
+                block_dir,
+                "simulate_hardware",
+                "merlict",
+                "{:d}".format(merlict_event_id),
             )
 
             event = pl.Event(
                 path=event_path,
                 light_field_geometry=light_field_geometry,
             )
-
             simulate_hardware.assert_plenopy_event_has_uid(
                 event=event, event_uid=event_uid
             )

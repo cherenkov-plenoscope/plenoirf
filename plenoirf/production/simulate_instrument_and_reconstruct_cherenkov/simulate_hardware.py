@@ -8,22 +8,25 @@ import plenopy
 import corsika_primary as cpw
 import zipfile
 
-from .. import bookkeeping
-from .. import utils
+from ... import bookkeeping
+from ... import utils
 
 
 def run_block(env, blk, block_id, logger):
-    logger.info(__name__ + ": start ...")
+    name = __name__.split(".")[-1]
+    logger.info(name + ": start ...")
 
-    block_dir = opj(env["work_dir"], "blocks", "{:06d}".format(block_id))
-    output_path = opj(block_dir, "merlict")
+    block_id_str = "{:06d}".format(block_id)
+    block_dir = opj(blk["blocks_dir"], block_id_str)
+    sub_work_dir = opj(block_dir, name)
 
-    if os.path.exists(output_path):
-        logger.info(__name__ + ": already done. skip computation.")
+    if os.path.exists(sub_work_dir):
+        logger.info(name + ": already done. skip computation.")
         return
+    os.makedirs(sub_work_dir)
 
     mlidev_cfg_path = opj(
-        env["work_dir"], "merlict_plenoscope_propagator_config.json"
+        blk["blocks_dir"], "merlict_plenoscope_propagator_config.json"
     )
     write_mlidev_config(env=env, path=mlidev_cfg_path)
 
@@ -37,13 +40,13 @@ def run_block(env, blk, block_id, logger):
 
     rc = mlidev.plenoscope_propagator.plenoscope_propagator(
         corsika_run_path=opj(block_dir, "cherenkov_pools.tar"),
-        output_path=output_path,
+        output_path=opj(sub_work_dir, "merlict"),
         light_field_geometry_path=light_field_geometry_path,
         merlict_plenoscope_propagator_config_path=mlidev_cfg_path,
         random_seed=env["run_id"],
         photon_origins=True,
-        stdout_path=opj(block_dir, "merlict.stdout.txt"),
-        stderr_path=opj(block_dir, "merlict.stderr.txt"),
+        stdout_path=opj(sub_work_dir, "merlict.stdout.txt"),
+        stderr_path=opj(sub_work_dir, "merlict.stderr.txt"),
     )
 
     """
@@ -52,8 +55,8 @@ def run_block(env, blk, block_id, logger):
     """
     errmsg = f"Expected merlict's return code to be zero, but it is '{rc:d}'."
     if rc != 0:
-        logger.critical(__name__ + errmsg)
-        logger.critical(__name__ + ": Rescue merlict stdout and stderr.")
+        logger.critical(name + errmsg)
+        logger.critical(name + ": Rescue merlict stdout and stderr.")
         filename = f"{env['run_id_str']:s}.block_{block_id:03d}.merlict"
         for extension in [".stdout.txt", ".stderr.txt"]:
             rnw.copy(
@@ -63,9 +66,9 @@ def run_block(env, blk, block_id, logger):
 
     assert rc == 0, errmsg
 
-    logger.info(__name__ + ": make debug output.")
+    logger.info(name + ": make debug output.")
     make_debug_output(env=env, blk=blk, block_id=block_id, logger=logger)
-    logger.info(__name__ + ": ... done.")
+    logger.info(name + ": ... done.")
 
 
 def write_mlidev_config(env, path):
@@ -109,9 +112,9 @@ def make_debug_output(env, blk, block_id, logger):
                 )
             )
             merlict_event_path = opj(
-                env["work_dir"],
-                "blocks",
+                blk["blocks_dir"],
                 block_id_str,
+                "simulate_hardware",
                 "merlict",
                 "{:d}".format(merlict_event_id),
             )
