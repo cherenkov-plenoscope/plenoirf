@@ -25,9 +25,11 @@ from .. import configuration
 from .. import ground_grid
 from .. import event_table
 from .. import constants
+from .. import utils
 
 from . import zipfileutils as zfu
 
+from . import gather_and_export_provenance
 from . import sum_trigger
 from . import draw_event_uids_for_debugging
 from . import draw_primaries_and_pointings
@@ -90,13 +92,19 @@ def run_job_in_dir(job, work_dir):
 
     run_id = env["run_id"]
 
-    with TimeDelta(logger, "gather provenance"):
-        gather_and_export_provenance(
-            path=opj(env["work_dir"], "provenance.json"),
-        )
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=gather_and_export_provenance,
+        logger=logger,
+    ) as sec:
+        sec.module.run(env=env)
 
-    with TimeDelta(logger, "benchmark compute environment"):
-        benchmark_compute_environment.run(env=env)
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=benchmark_compute_environment,
+        logger=logger,
+    ) as sec:
+        sec.module.run(env=env)
 
     with seeding.SeedSection(
         run_id=run_id,
@@ -583,9 +591,3 @@ def read_light_field_camera_config(plenoirf_dir, instrument_key):
             "scenery.json",
         )
     )
-
-
-def gather_and_export_provenance(path):
-    prov = provenance.make_provenance()
-    with open(path, "wt") as fout:
-        fout.write(json_utils.dumps(prov))

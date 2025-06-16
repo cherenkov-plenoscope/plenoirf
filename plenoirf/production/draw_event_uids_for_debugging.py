@@ -1,5 +1,6 @@
 from .. import debugging
 from .. import bookkeeping
+from .. import utils
 
 import numpy as np
 import rename_after_writing as rnw
@@ -39,3 +40,7 @@ def run(env, seed):
         fout.write(json_utils.dumps(event_uids_for_debugging))
 
     logger.info("done.")
+    json_line_logger.shutdown(logger=logger)
+
+    # tidy up and compress
+    utils.gzip_file(opj(module_work_dir, "log.jsonl"))

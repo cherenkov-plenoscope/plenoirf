@@ -286,6 +286,12 @@ def run(env, seed):
     write_debug(path=opj(module_work_dir, "debug.zip"), debug=debug)
 
     logger.info("done.")
+    json_line_logger.shutdown(logger=logger)
+
+    # tidy up and compress
+    utils.gzip_file(opj(module_work_dir, "log.jsonl"))
+    utils.gzip_file(opj(module_work_dir, "result.pkl"))
+    # opj(module_work_dir, "debug.zip") is already compressed internally
 
 
 def write_debug(path, debug):

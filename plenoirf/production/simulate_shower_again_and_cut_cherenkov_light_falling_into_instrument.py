@@ -45,22 +45,22 @@ def run(env, seed):
     prng = np.random.Generator(np.random.PCG64(seed))
 
     logger.info("read primaries_and_pointings.")
-    with open(
+    with gzip.open(
         opj(
             env["work_dir"],
             "plenoirf.production.draw_primaries_and_pointings",
-            "result.pkl",
+            "result.pkl.gz",
         ),
         "rb",
     ) as fin:
         dpp = pickle.loads(fin.read())
 
     logger.info("read cherenkovpools_md5.json.")
-    with open(
+    with gzip.open(
         opj(
             env["work_dir"],
             "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
-            "cherenkovpools_md5.json",
+            "cherenkovpools_md5.json.gz",
         ),
         "rt",
     ) as fin:
@@ -100,6 +100,14 @@ def run(env, seed):
     )
 
     logger.info("done.")
+    json_line_logger.shutdown(logger=logger)
+
+    # tidy up and compress
+    utils.gzip_file(opj(module_work_dir, "log.jsonl"))
+    utils.gzip_file(opj(module_work_dir, "cherenkov_pools.tar"))
+    os.remove(opj(module_work_dir, "corsika.stdout.txt"))
+    os.remove(opj(module_work_dir, "corsika.stderr.txt"))
+    os.remove(opj(module_work_dir, "particle_pools.dat"))
 
 
 def stage_two(

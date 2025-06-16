@@ -42,11 +42,11 @@ def run(env, seed):
     prng = np.random.Generator(np.random.PCG64(seed))
 
     logger.info("reading primaries_and_pointings.")
-    with open(
+    with gzip.open(
         opj(
             env["work_dir"],
             "plenoirf.production.draw_primaries_and_pointings",
-            "result.pkl",
+            "result.pkl.gz",
         ),
         "rb",
     ) as fin:
@@ -86,6 +86,14 @@ def run(env, seed):
     )
 
     logger.info("done.")
+    json_line_logger.shutdown(logger=logger)
+
+    # tidy up and compress
+    utils.gzip_file(opj(module_work_dir, "log.jsonl"))
+    utils.gzip_file(opj(module_work_dir, "cherenkovpools_md5.json"))
+    utils.gzip_file(opj(module_work_dir, "corsika.stdout.txt"))
+    utils.gzip_file(opj(module_work_dir, "corsika.stderr.txt"))
+    os.remove(opj(module_work_dir, "particle_pools.dat"))
 
 
 def stage_one(

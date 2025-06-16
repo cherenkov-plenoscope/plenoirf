@@ -1,6 +1,8 @@
 from .. import benchmarking
 from .. import provenance
+from .. import utils
 
+import gzip
 import os
 from os.path import join as opj
 import json_utils
@@ -63,10 +65,13 @@ def run(env):
     )
 
     logger.info("write output.")
-    with rnw.open(opj(module_work_dir, "benchmark.json"), "wt") as f:
-        f.write(json_utils.dumps(out))
+    with rnw.Path(opj(module_work_dir, "benchmark.json.gz")) as opath:
+        with gzip.open(opath, "wt") as f:
+            f.write(json_utils.dumps(out))
 
     logger.info("done.")
+    json_line_logger.shutdown(logger=logger)
+    utils.gzip_file(opj(module_work_dir, "log.jsonl"))
 
 
 def run_job(job):
