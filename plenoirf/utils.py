@@ -7,6 +7,60 @@ import os
 import scipy.interpolate
 import json_utils
 import warnings
+import gzip
+import rename_after_writing as rnw
+import warnings
+
+
+def gzip_file(path, ext=".gz", block_size=2**23):
+    has_gz_ext = os.path.splitext(path)[0] == ext
+
+    if has_gz_ext:
+        warnings.warn(f"gzip on '{path:s}' already has '{ext:s}'.")
+    if _has_gzip_signature_bytes(path):
+        warnings.warn(f"gzip on '{path:s}' already has signature x'1f,8b'.")
+
+    with rnw.Path(path + ext) as opath:
+        with open(path, "rb") as fin:
+            with gzip.open(opath, "wb") as fout:
+                while True:
+                    block = fin.read(block_size)
+                    if len(block) == 0:
+                        break
+                    fout.write(block)
+    os.remove(path)
+
+
+def gunzip_file(path, ext=".gz", block_size=2**23):
+    opath, actual_ext = os.path.splitext(path)
+
+    if not actual_ext == ext:
+        warnings.warn(f"gunzip on '{path:s}' without '{ext:s}'.")
+    if not _has_gzip_signature_bytes(path):
+        warnings.warn(f"gunzip on '{path:s}' without signature x'1f,8b'.")
+
+    with rnw.Path(opath) as tmp_opath:
+        with gzip.open(path, "rb") as fin:
+            with open(tmp_opath, "wb") as fout:
+                while True:
+                    block = fin.read(block_size)
+                    if len(block) == 0:
+                        break
+                    fout.write(block)
+    os.remove(path)
+
+
+def _has_gzip_signature_bytes(path):
+    size = os.stat(path).st_size
+    if size < 4:
+        return False
+    else:
+        with open(path, "rb") as f:
+            head = f.read(2)
+        if head == b"\x1f\x8b":
+            return True
+        else:
+            return False
 
 
 def contains_same_bytes(path_a, path_b):
