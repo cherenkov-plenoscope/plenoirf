@@ -31,6 +31,7 @@ setuptools.setup(
         "plenoirf.other_instruments",
         "plenoirf.reconstruction",
         "plenoirf.production",
+        "plenoirf.production.simulate_instrument_and_reconstruct_cherenkov",
         "plenoirf.summary",
         "plenoirf.features",
         "plenoirf.seeding",

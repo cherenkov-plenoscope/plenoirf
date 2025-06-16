@@ -46,6 +46,7 @@ from . import inspect_cherenkov_pool
 from . import extract_features_from_light_field
 from . import estimate_primary_trajectory
 from . import benchmark_compute_environment
+from . import simulate_instrument_and_reconstruct_cherenkov
 
 
 def make_example_jobs(
