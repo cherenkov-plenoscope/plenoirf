@@ -94,7 +94,12 @@ def make_debug_output(env, blk, block_id, logger):
         event_uids_for_debugging = json_utils.loads(fin.read())
 
     block_id_str = "{:06d}".format(block_id)
-    debug_out_path = opj(env["work_dir"], "merlict_events.debug.zip")
+    debug_out_path = opj(
+        blk["blocks_dir"],
+        block_id_str,
+        "simulate_hardware",
+        "merlict_events.debug.zip",
+    )
     event_uid_strs_in_block = blk["event_uid_strs_in_block"][block_id_str]
 
     if not os.path.exists(debug_out_path):

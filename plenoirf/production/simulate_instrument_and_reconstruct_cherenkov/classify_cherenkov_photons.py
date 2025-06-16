@@ -85,7 +85,6 @@ def classify_cherenkov_photons(
         uid_num_digits=bookkeeping.uid.UID_NUM_DIGITS,
     ) as cer_phs_run:
         for ptp in evttab["pasttrigger"]:
-            print("pasttrigger", ptp["uid"])
             event_uid = ptp["uid"]
             merlict_event_id = simulate_hardware.make_merlict_event_id(
                 event_uid=event_uid,
