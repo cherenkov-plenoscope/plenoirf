@@ -5,10 +5,12 @@ import numpy as np
 import gzip
 import hashlib
 import shutil
+import zipfile
 
 import json_utils
 import json_line_logger
 import plenopy
+import rename_after_writing as rnw
 
 from ... import seeding
 from ... import utils
@@ -83,6 +85,9 @@ def run(env, seed):
         run_job_block(
             env=env, blk=blk, block_id=int(block_id_str), logger=logger
         )
+
+    logger.info("bundle_merlict_events_from_blocks.")
+    bundle_merlict_events_from_blocks(module_work_dir=module_work_dir, blk=blk)
 
     """
     # bundle reconstructed cherenkov light (loph)
@@ -165,6 +170,38 @@ def run_job_block(env, blk, block_id, logger):
 
     # remove the cherenkov photon block
     # ---------------------------------
-    logger.info("removing block's cherenkov_pools.tar")
-    os.remove(opj(block_dir, "cherenkov_pools.tar"))
+    if os.path.isfile(opj(block_dir, "cherenkov_pools.tar")):
+        logger.info("removing block's cherenkov_pools.tar")
+        os.remove(opj(block_dir, "cherenkov_pools.tar"))
     return 1
+
+
+def bundle_merlict_events_from_blocks(module_work_dir, blk):
+    out_path = opj(module_work_dir, "merlict_events.debug.zip")
+    if not os.path.exists(out_path):
+        in_paths = []
+        for block_id_str in blk["event_uid_strs_in_block"]:
+            in_paths.append(
+                opj(
+                    blk["blocks_dir"],
+                    block_id_str,
+                    "simulate_hardware",
+                    "merlict_events.debug.zip",
+                )
+            )
+        concatenate_zip_files(
+            in_paths=in_paths,
+            out_path=out_path,
+        )
+        for in_path in in_paths:
+            os.remove(in_path)
+
+
+def concatenate_zip_files(in_paths, out_path):
+    with rnw.Path(out_path) as tmp_out_path:
+        with zipfile.ZipFile(tmp_out_path, "w") as zout:
+            for in_path in in_paths:
+                with zipfile.ZipFile(in_path, "r") as zin:
+                    for item in zin.filelist:
+                        with zout.open(item.filename, "w") as fout:
+                            fout.write(zin.read(item))
