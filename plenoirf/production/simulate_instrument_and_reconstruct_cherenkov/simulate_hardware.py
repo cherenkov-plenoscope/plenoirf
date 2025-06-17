@@ -26,7 +26,7 @@ def run_block(env, blk, block_id, logger):
     os.makedirs(sub_work_dir)
 
     mlidev_cfg_path = opj(
-        blk["blocks_dir"], "merlict_plenoscope_propagator_config.json"
+        sub_work_dir, "merlict_plenoscope_propagator_config.json"
     )
     write_mlidev_config(env=env, path=mlidev_cfg_path)
 
@@ -68,8 +68,11 @@ def run_block(env, blk, block_id, logger):
 
     logger.info(name + ": make debug output.")
     make_debug_output(env=env, blk=blk, block_id=block_id, logger=logger)
+    logger.info(name + ": compress merlict stdout/stderr.")
     utils.gzip_file(opj(sub_work_dir, "merlict.stdout.txt"))
     utils.gzip_file(opj(sub_work_dir, "merlict.stderr.txt"))
+    logger.info(name + ": remove temporary merlict config file.")
+    os.remove(mlidev_cfg_path)
     logger.info(name + ": ... done.")
 
 
