@@ -4,6 +4,7 @@ import tarfile
 import numpy as np
 import gzip
 import hashlib
+import shutil
 
 import json_utils
 import json_line_logger
@@ -148,21 +149,22 @@ def run_job_block(env, blk, block_id, logger):
             env=env, blk=blk, block_id=block_id, logger=logger
         )
 
-    """
-    # remove the merlict events to free temporary diskspace.
-    block_dir = os.path.join(
-        env["work_dir"], "blocks", "{:06d}".format(block_id)
+    # remove the merlict events to free temporary diskspace
+    # -----------------------------------------------------
+    # This removal is whole reason behind the block structure with merlict.
+    # We must not flood the temporary drives with too many merlict events at
+    # once.
+    block_id_str = "{:06d}".format(block_id)
+    block_dir = opj(blk["blocks_dir"], block_id_str)
+    merlict_events_path = os.path.join(
+        block_dir, "simulate_hardware", "merlict"
     )
-    merlict_events_path = os.path.join(block_dir, "merlict")
     if os.path.isdir(merlict_events_path):
-        logger.info(
-            "removing merlict events: '{:s}'".format(merlict_events_path)
-        )
+        logger.info(f"removing merlict events: '{merlict_events_path:s}'")
         shutil.rmtree(merlict_events_path)
 
-    # make a dummy file to trick merlict into thinking it is already done.
-    with open(merlict_events_path, "wt") as fout:
-        pass
-    """
-
+    # remove the cherenkov photon block
+    # ---------------------------------
+    logger.info("removing block's cherenkov_pools.tar")
+    os.remove(opj(block_dir, "cherenkov_pools.tar"))
     return 1

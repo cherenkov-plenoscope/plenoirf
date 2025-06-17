@@ -68,6 +68,8 @@ def run_block(env, blk, block_id, logger):
 
     logger.info(name + ": make debug output.")
     make_debug_output(env=env, blk=blk, block_id=block_id, logger=logger)
+    utils.gzip_file(opj(sub_work_dir, "merlict.stdout.txt"))
+    utils.gzip_file(opj(sub_work_dir, "merlict.stderr.txt"))
     logger.info(name + ": ... done.")
 
 
