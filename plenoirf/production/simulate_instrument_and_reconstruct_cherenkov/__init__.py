@@ -11,9 +11,11 @@ import json_utils
 import json_line_logger
 import plenopy
 import rename_after_writing as rnw
+import sparse_numeric_table as snt
 
 from ... import seeding
 from ... import utils
+from ... import event_table
 
 from . import split_event_tape_into_blocks
 from . import simulate_hardware
@@ -40,7 +42,7 @@ def run(env, seed):
     blk["blocks_dir"] = os.path.join(module_work_dir, "blocks")
 
     with json_line_logger.TimeDelta(logger, "split_event_tape_into_blocks"):
-        split_event_tape_into_blocks.run(env=env, blk=blk)
+        split_event_tape_into_blocks.run(env=env, blk=blk, logger=logger)
 
     with gzip.open(
         opj(blk["blocks_dir"], "event_uid_strs_in_block.json.gz"), "rt"
@@ -86,27 +88,21 @@ def run(env, seed):
             env=env, blk=blk, block_id=int(block_id_str), logger=logger
         )
 
-    logger.info("bundle_merlict_events_from_blocks.")
-    bundle_merlict_events_from_blocks(module_work_dir=module_work_dir, blk=blk)
-
-    """
-    # bundle reconstructed cherenkov light (loph)
-    # -------------------------------------------
-    with json_line_logger.TimeDelta(logger, "bundling reconstructed_cherenkov.loph.tar"):
-        loph_in_paths = []
-        for block_id_str in blk["event_uid_strs_in_block"]:
-            loph_in_path = opj(
-                blk["blocks_dir"],
-                block_id_str,
-                "reconstructed_cherenkov.loph.tar",
-            )
-            loph_in_paths.append(loph_in_path)
-
-        plenopy.photon_stream.loph.concatenate_tars(
-            in_paths=loph_in_paths,
-            out_path=opj(module_work_dir, "reconstructed_cherenkov.loph.tar"),
+    with json_line_logger.TimeDelta(
+        logger, "bundle_merlict_events_from_blocks"
+    ):
+        bundle_merlict_events_from_blocks(
+            module_work_dir=module_work_dir, blk=blk
         )
-    """
+
+    with json_line_logger.TimeDelta(
+        logger, "bundle_reconstructed_cherenkov_from_blocks"
+    ):
+        bundle_reconstructed_cherenkov_from_blocks(
+            module_work_dir=module_work_dir, blk=blk
+        )
+    with json_line_logger.TimeDelta(logger, "bundle_event_table_from_blocks"):
+        bundle_event_table_from_blocks(module_work_dir, blk)
 
     logger.info("done.")
     json_line_logger.shutdown(logger=logger)
@@ -205,3 +201,57 @@ def concatenate_zip_files(in_paths, out_path):
                     for item in zin.filelist:
                         with zout.open(item.filename, "w") as fout:
                             fout.write(zin.read(item))
+
+
+def bundle_reconstructed_cherenkov_from_blocks(module_work_dir, blk):
+    out_path = opj(module_work_dir, "reconstructed_cherenkov.loph.tar")
+    if not os.path.exists(out_path):
+        in_paths = []
+        for block_id_str in blk["event_uid_strs_in_block"]:
+            in_paths.append(
+                opj(
+                    blk["blocks_dir"],
+                    block_id_str,
+                    "classify_cherenkov_photons",
+                    "reconstructed_cherenkov.loph.tar",
+                )
+            )
+        plenopy.photon_stream.loph.concatenate_tars(
+            in_paths=in_paths,
+            out_path=out_path,
+        )
+        for in_path in in_paths:
+            os.remove(in_path)
+
+
+def bundle_event_table_from_blocks(module_work_dir, blk):
+    out_path = opj(module_work_dir, "event_table.snt.zip")
+    if not os.path.exists(out_path):
+        in_paths = []
+        for block_id_str in blk["event_uid_strs_in_block"]:
+            in_paths.append(
+                opj(
+                    blk["blocks_dir"],
+                    block_id_str,
+                    "simulate_loose_trigger",
+                    "event_table.snt.zip",
+                )
+            )
+            in_paths.append(
+                opj(
+                    blk["blocks_dir"],
+                    block_id_str,
+                    "classify_cherenkov_photons",
+                    "event_table.snt.zip",
+                )
+            )
+
+        evttab = snt.SparseNumericTable(index_key="uid")
+        for in_path in in_paths:
+            evttab = event_table.append_to_levels_from_path(
+                evttab=evttab, path=in_path
+            )
+        event_table.write_all_levels_to_path(evttab=evttab, path=out_path)
+
+        for in_path in in_paths:
+            os.remove(in_path)

@@ -12,13 +12,14 @@ from ... import bookkeeping
 from ... import utils
 
 
-def run(env, blk):
-    if os.path.exists(blk["blocks_dir"]):
-        return
+def run(env, blk, logger):
+    name = __name__.split(".")[-1]
+    logger.info(name + ": start ...")
 
+    if os.path.exists(blk["blocks_dir"]):
+        logger.info(name + ": already done. skip computation.")
+        return
     os.makedirs(blk["blocks_dir"])
-    logger = json_line_logger.LoggerFile(opj(blk["blocks_dir"], "log.jsonl"))
-    logger.info(__name__)
 
     uid_map = split_event_tape_into_blocks(
         inpath=opj(
@@ -32,15 +33,14 @@ def run(env, blk):
         num_events=env["max_num_events_in_merlict_run"],
     )
 
+    logger.info(name + "write uids in blocks.")
     with rnw.Path(
         opj(blk["blocks_dir"], "event_uid_strs_in_block.json.gz")
     ) as opath:
         with gzip.open(opath, "wt") as fout:
             fout.write(json_utils.dumps(uid_map))
 
-    logger.info(__name__ + ": ... done.")
-    json_line_logger.shutdown(logger=logger)
-    utils.gzip_file(opj(blk["blocks_dir"], "log.jsonl"))
+    logger.info(name + ": ... done.")
 
 
 def split_event_tape_into_blocks(inpath, outpath_block_fmt, num_events):
