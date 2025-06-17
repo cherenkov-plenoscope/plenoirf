@@ -91,7 +91,8 @@ def make_debug_output(env, blk, block_id, logger):
     with open(
         opj(
             env["work_dir"],
-            "plenoirf.production.draw_event_uids_for_debugging",
+            "prm2cer",
+            "draw_event_uids_for_debugging",
             "event_uids_for_debugging.json",
         ),
         "rt",

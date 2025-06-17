@@ -24,7 +24,8 @@ def run(env, blk, logger):
     uid_map = split_event_tape_into_blocks(
         inpath=opj(
             env["work_dir"],
-            "plenoirf.production.simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument",
+            "prm2cer",
+            "simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument",
             "cherenkov_pools.tar.gz",
         ),
         outpath_block_fmt=opj(

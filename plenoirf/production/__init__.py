@@ -77,6 +77,151 @@ def run_job(job):
         return run_job_in_dir(job=job, work_dir=work_dir)
 
 
+def run_job_prm2cer_in_dir(job, work_dir):
+    PART = "prm2cer"
+    env = compile_environment_for_job(job=job, work_dir=work_dir)
+
+    os.makedirs(env["stage_dir"], exist_ok=True)
+
+    logger_path = opj(
+        env["stage_dir"], env["run_id_str"] + f".{PART:s}.log.jsonl"
+    )
+    logger = json_line_logger.LoggerFile(path=logger_path)
+    logger.info(f"starting {PART:s}.")
+
+    logger.debug("making work_dir: {:s}".format(env["work_dir"]))
+    os.makedirs(env["work_dir"], exist_ok=True)
+
+    with seeding.SeedSection(
+        run_id=env["run_id"],
+        module=gather_and_export_provenance,
+        logger=logger,
+    ) as sec:
+        sec.module.run(env=env, part=PART)
+
+    with seeding.SeedSection(
+        run_id=env["run_id"],
+        module=benchmark_compute_environment,
+        logger=logger,
+    ) as sec:
+        sec.module.run(env=env, part=PART)
+
+    with seeding.SeedSection(
+        run_id=env["run_id"],
+        module=draw_event_uids_for_debugging,
+        logger=logger,
+    ) as sec:
+        sec.module.run(env=env, part=PART, seed=sec.seed)
+
+    with seeding.SeedSection(
+        run_id=env["run_id"],
+        module=draw_primaries_and_pointings,
+        logger=logger,
+    ) as sec:
+        sec.module.run(env=env, part=PART, seed=sec.seed)
+
+    with seeding.SeedSection(
+        run_id=env["run_id"],
+        module=simulate_shower_and_collect_cherenkov_light_in_grid,
+        logger=logger,
+    ) as sec:
+        sec.module.run(env=env, part=PART, seed=sec.seed)
+
+    with seeding.SeedSection(
+        run_id=env["run_id"],
+        module=simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument,
+        logger=logger,
+    ) as sec:
+        sec.module.run(env=env, part=PART, seed=sec.seed)
+
+    with seeding.SeedSection(
+        run_id=env["run_id"],
+        module=inspect_cherenkov_pool,
+        logger=logger,
+    ) as sec:
+        sec.module.run(env=env, part=PART)
+
+    with seeding.SeedSection(
+        run_id=env["run_id"],
+        module=inspect_particle_pool,
+        logger=logger,
+    ) as sec:
+        sec.module.run(env=env, part=PART)
+
+    logger.info("shuting down logger.")
+    json_line_logger.shutdown(logger=logger)
+    rnw.copy(src=logger_path, dst=opj(env["work_dir"], PART, "log.jsonl"))
+    utils.gzip_file(opj(env["work_dir"], PART, "log.jsonl"))
+
+    zipfileutils.archive_dir(
+        path=opj(env["stage_dir"], env["run_id_str"] + f".{PART:s}.zip"),
+        dir_path=opj(env["work_dir"], PART),
+        base_dir_path=opj(env["run_id_str"], PART),
+    )
+
+    os.remove(logger_path)
+
+
+def run_job_cer2cls_in_dir(job, work_dir):
+    PART = "cer2cls"
+    env = compile_environment_for_job(job=job, work_dir=work_dir)
+
+    os.makedirs(env["stage_dir"], exist_ok=True)
+
+    logger_path = opj(
+        env["stage_dir"], env["run_id_str"] + f".{PART:s}.log.jsonl"
+    )
+    logger = json_line_logger.LoggerFile(path=logger_path)
+    logger.info(f"starting {PART:s}.")
+
+    logger.debug("making work_dir: {:s}".format(env["work_dir"]))
+    os.makedirs(env["work_dir"], exist_ok=True)
+
+    env = load_instrument_geometry_into_environment(env=env, logger=logger)
+
+    with json_line_logger.TimeDelta(logger, "Load prm2cer."):
+        prm2cer_dir = opj(env["work_dir"], "prm2cer")
+        if not os.path.exists(prm2cer_dir):
+            shutil.unpack_archive(
+                filename=opj(
+                    env["stage_dir"], env["run_id_str"] + ".prm2cer.zip"
+                ),
+                extract_dir=opj(env["work_dir"]),
+            )
+            os.rename(
+                opj(env["work_dir"], env["run_id_str"], "prm2cer"),
+                opj(env["work_dir"], "prm2cer"),
+            )
+            os.remove(opj(env["work_dir"], env["run_id_str"]))
+
+    with seeding.SeedSection(
+        run_id=env["run_id"],
+        module=gather_and_export_provenance,
+        logger=logger,
+    ) as sec:
+        sec.module.run(env=env, part=PART)
+
+    with seeding.SeedSection(
+        run_id=env["run_id"],
+        module=simulate_instrument_and_reconstruct_cherenkov,
+        logger=logger,
+    ) as sec:
+        sec.module.run(env=env, part=PART, seed=sec.seed)
+
+    logger.info("shuting down logger.")
+    json_line_logger.shutdown(logger=logger)
+    rnw.copy(src=logger_path, dst=opj(env["work_dir"], PART, "log.jsonl"))
+    utils.gzip_file(opj(env["work_dir"], PART, "log.jsonl"))
+
+    zipfileutils.archive_dir(
+        path=opj(env["stage_dir"], env["run_id_str"] + f".{PART:s}.zip"),
+        dir_path=opj(env["work_dir"], PART),
+        base_dir_path=opj(env["run_id_str"], PART),
+    )
+
+    os.remove(logger_path)
+
+
 def run_job_in_dir(job, work_dir):
     env = compile_environment_for_job(job=job, work_dir=work_dir)
 
@@ -172,7 +317,6 @@ def run_job_in_dir(job, work_dir):
 
     return 2
 
-
     # estimate memory footprint of env and blk
     # ----------------------------------------
     with TimeDelta(logger, "estimate size of block-environment 'blk'."):
@@ -189,7 +333,6 @@ def run_job_in_dir(job, work_dir):
     with open(opj(env["work_dir"], "memory_usage.json"), "wt") as fout:
         _out = {"env": env_size_bytes, "blk": blk_size_bytes}
         fout.write(json_utils.dumps(_out))
-
 
     # collect output
     # ==============
@@ -268,113 +411,6 @@ def run_job_in_dir(job, work_dir):
             evttab=evttab,
             path=opj(env["work_dir"], "event_table.snt.zip"),
         )
-
-    # write output file
-    # -----------------
-    result_path = opj(env["stage_dir"], env["run_id_str"] + ".zip")
-    with zipfile.ZipFile(file=result_path, mode="w") as zout:
-        logger.info("Writing results to {:s}.".format(result_path))
-        zoutw = zfu.Writer(
-            zout=zout, indir=env["work_dir"], outdir=env["run_id_str"]
-        )
-        zoutw.write("event_table.snt.zip")
-        zoutw.write("reconstructed_cherenkov.loph.tar")
-        zoutw.write(
-            opj(
-                "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
-                "particle_pools.tar.gz",
-            )
-        )
-        zoutw.write(
-            opj(
-                "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
-                "ground_grid_intensity.tar",
-            )
-        )
-        zoutw.write(
-            opj(
-                "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
-                "ground_grid_intensity_roi.tar",
-            )
-        )
-
-        # debugging
-        # ---------
-        logger.info("Writing debugging to {:s}.".format(result_path))
-        zoutw.write("provenance.json", gz=True)
-        zoutw.write(
-            opj(
-                "plenoirf.production.benchmark_compute_environment",
-                "benchmark.json",
-            ),
-            gz=True,
-        )
-        zoutw.write(
-            opj(
-                "plenoirf.production.draw_event_uids_for_debugging",
-                "event_uids_for_debugging.json",
-            ),
-            gz=True,
-        )
-        zoutw.write(opj("blocks", "event_uid_strs_in_block.json"), gz=True)
-        zoutw.write("memory_usage.json", gz=True)
-        zoutw.write("disk_usage.json", gz=True)
-        zoutw.write(
-            opj(
-                "plenoirf.production.inspect_cherenkov_pool",
-                "visible_cherenkov_photon_size.json",
-            ),
-            gz=True,
-        )
-        zoutw.write(
-            opj(
-                "plenoirf.production.simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument",
-                "cherenkov_pools.tar",
-            ),
-            gz=True,
-        )
-        zoutw.write("merlict_events.debug.zip")
-
-        for ext in ["stdout", "stderr"]:
-            zoutw.write(
-                opj(
-                    "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
-                    "corsika.{:s}.txt".format(ext),
-                ),
-                gz=True,
-            )
-
-        for block_id_str in blk["event_uid_strs_in_block"]:
-            for ext in ["stdout", "stderr"]:
-                zoutw.write(
-                    opj(
-                        "blocks",
-                        block_id_str,
-                        "merlict.{:s}.txt".format(ext),
-                    ),
-                    gz=True,
-                )
-
-        zoutw.write(
-            opj(
-                "plenoirf.production.draw_primaries_and_pointings", "debug.zip"
-            )
-        )
-
-        # log file
-        # --------
-        logger.info("shuting down logger.")
-        json_line_logger.shutdown(logger=logger)
-        rnw.move(logger_path + ".part", logger_path)
-        zfu.write_gz(zout, logger_path, opj(env["run_id_str"], "log.jsonl.gz"))
-
-    rnw.move(
-        result_path,
-        opj(env["stage_dir"], "{:s}.zip".format(env["run_id_str"])),
-    )
-    os.remove(logger_path)
-
-    return 1
 
 
 def compile_environment_for_job(job, work_dir):

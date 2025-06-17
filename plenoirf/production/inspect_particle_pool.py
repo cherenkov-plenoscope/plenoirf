@@ -10,8 +10,9 @@ from .. import event_table
 from .. import utils
 
 
-def run(env):
-    module_work_dir = opj(env["work_dir"], __name__)
+def run(env, part):
+    name = __name__.split(".")[-1]
+    module_work_dir = opj(env["work_dir"], part, name)
 
     if os.path.exists(module_work_dir):
         return
@@ -25,7 +26,8 @@ def run(env):
         evttab=evttab,
         path=opj(
             env["work_dir"],
-            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "prm2cer",
+            "simulate_shower_and_collect_cherenkov_light_in_grid",
             "event_table.snt.zip",
         ),
     )
@@ -67,7 +69,8 @@ def inspect_particle_pool(evttab, env, logger):
     with cpw.particles.ParticleEventTapeReader(
         path=os.path.join(
             env["work_dir"],
-            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "prm2cer",
+            "simulate_shower_and_collect_cherenkov_light_in_grid",
             "particle_pools.tar.gz",
         )
     ) as particle_run:

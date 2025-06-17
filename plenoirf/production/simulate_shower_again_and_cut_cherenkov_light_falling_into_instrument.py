@@ -31,8 +31,9 @@ from .simulate_shower_and_collect_cherenkov_light_in_grid import (
 )
 
 
-def run(env, seed):
-    module_work_dir = opj(env["work_dir"], __name__)
+def run(env, part, seed):
+    name = __name__.split(".")[-1]
+    module_work_dir = opj(env["work_dir"], part, name)
 
     if os.path.exists(module_work_dir):
         return
@@ -48,7 +49,8 @@ def run(env, seed):
     with gzip.open(
         opj(
             env["work_dir"],
-            "plenoirf.production.draw_primaries_and_pointings",
+            "prm2cer",
+            "draw_primaries_and_pointings",
             "result.pkl.gz",
         ),
         "rb",
@@ -59,7 +61,8 @@ def run(env, seed):
     with gzip.open(
         opj(
             env["work_dir"],
-            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "prm2cer",
+            "simulate_shower_and_collect_cherenkov_light_in_grid",
             "cherenkovpools_md5.json.gz",
         ),
         "rt",
@@ -72,7 +75,8 @@ def run(env, seed):
         evttab=evttab,
         path=os.path.join(
             env["work_dir"],
-            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "prm2cer",
+            "simulate_shower_and_collect_cherenkov_light_in_grid",
             "event_table.snt.zip",
         ),
     )

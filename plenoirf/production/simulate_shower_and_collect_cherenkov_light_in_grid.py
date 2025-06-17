@@ -28,8 +28,9 @@ from . import transform_cherenkov_bunches
 from . import cherenkov_bunch_storage
 
 
-def run(env, seed):
-    module_work_dir = opj(env["work_dir"], __name__)
+def run(env, part, seed):
+    name = __name__.split(".")[-1]
+    module_work_dir = opj(env["work_dir"], part, name)
 
     if os.path.exists(module_work_dir):
         return
@@ -45,7 +46,8 @@ def run(env, seed):
     with gzip.open(
         opj(
             env["work_dir"],
-            "plenoirf.production.draw_primaries_and_pointings",
+            "prm2cer",
+            "draw_primaries_and_pointings",
             "result.pkl.gz",
         ),
         "rb",
@@ -56,7 +58,8 @@ def run(env, seed):
     event_uids_for_debugging = json_utils.read(
         path=opj(
             env["work_dir"],
-            "plenoirf.production.draw_event_uids_for_debugging",
+            "prm2cer",
+            "draw_event_uids_for_debugging",
             "event_uids_for_debugging.json",
         )
     )

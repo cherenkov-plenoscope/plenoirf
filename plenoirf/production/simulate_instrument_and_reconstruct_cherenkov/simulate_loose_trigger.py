@@ -31,7 +31,8 @@ def run_block(env, blk, block_id, logger):
     with open(
         opj(
             env["work_dir"],
-            "plenoirf.production.draw_event_uids_for_debugging",
+            "prm2cer",
+            "draw_event_uids_for_debugging",
             "event_uids_for_debugging.json",
         )
     ) as f:
@@ -40,7 +41,8 @@ def run_block(env, blk, block_id, logger):
     with gzip.open(
         opj(
             env["work_dir"],
-            "plenoirf.production.inspect_cherenkov_pool",
+            "prm2cer",
+            "inspect_cherenkov_pool",
             "visible_cherenkov_photon_size.json.gz",
         )
     ) as f:
@@ -51,7 +53,8 @@ def run_block(env, blk, block_id, logger):
         evttab=evttab,
         path=opj(
             env["work_dir"],
-            "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
+            "prm2cer",
+            "simulate_shower_and_collect_cherenkov_light_in_grid",
             "event_table.snt.zip",
         ),
     )
@@ -59,7 +62,8 @@ def run_block(env, blk, block_id, logger):
         evttab=evttab,
         path=opj(
             env["work_dir"],
-            "plenoirf.production.inspect_particle_pool",
+            "prm2cer",
+            "inspect_particle_pool",
             "event_table.snt.zip",
         ),
     )

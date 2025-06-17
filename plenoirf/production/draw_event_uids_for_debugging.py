@@ -10,8 +10,9 @@ import os
 from os.path import join as opj
 
 
-def run(env, seed):
-    module_work_dir = opj(env["work_dir"], __name__)
+def run(env, part, seed):
+    name = __name__.split(".")[-1]
+    module_work_dir = opj(env["work_dir"], part, name)
 
     if os.path.exists(module_work_dir):
         return

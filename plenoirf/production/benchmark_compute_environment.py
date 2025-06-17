@@ -11,8 +11,9 @@ import rename_after_writing as rnw
 import json_line_logger
 
 
-def run(env):
-    module_work_dir = opj(env["work_dir"], __name__)
+def run(env, part):
+    name = __name__.split(".")[-1]
+    module_work_dir = opj(env["work_dir"], part, name)
 
     if os.path.exists(module_work_dir):
         return

@@ -16,12 +16,9 @@ from .. import bookkeeping
 from .. import utils
 
 
-def run(env):
-    """
-    This is for debugging. The plots and summaries created here are meant for
-    manual inspection.
-    """
-    module_work_dir = opj(env["work_dir"], __name__)
+def run(env, part):
+    name = __name__.split(".")[-1]
+    module_work_dir = opj(env["work_dir"], part, name)
 
     if os.path.exists(module_work_dir):
         return
@@ -33,7 +30,8 @@ def run(env):
     visible_cherenkov_photon_size = inspect_cherenkov_pools(
         cherenkov_pools_path=opj(
             env["work_dir"],
-            "plenoirf.production.simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument",
+            "prm2cer",
+            "simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument",
             "cherenkov_pools.tar.gz",
         ),
         aperture_bin_edges=np.linspace(-50, 50, 51),
