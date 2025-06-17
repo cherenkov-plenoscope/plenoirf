@@ -11,15 +11,16 @@ from .. import event_table
 from .. import utils
 
 
-def run(env, seed):
-    module_work_dir = opj(env["work_dir"], __name__)
+def run(env, part, seed):
+    name = __name__.split(".")[-1]
+    module_work_dir = opj(env["work_dir"], part, name)
 
     if os.path.exists(module_work_dir):
         return
 
     os.makedirs(module_work_dir)
     logger = json_line_logger.LoggerFile(opj(module_work_dir, "log.jsonl"))
-    logger.info(__name__)
+    logger.info(name)
     logger.info(f"seed: {seed:d}")
 
     prng = np.random.Generator(np.random.PCG64(seed))
@@ -29,7 +30,8 @@ def run(env, seed):
         evttab=evttab,
         path=opj(
             env["work_dir"],
-            "plenoirf.production.simulate_instrument_and_reconstruct_cherenkov",
+            "cer2cls",
+            "simulate_instrument_and_reconstruct_cherenkov",
             "event_table.snt.zip",
         ),
     )
@@ -41,7 +43,8 @@ def run(env, seed):
         light_field_geometry_addon=env["light_field_geometry_addon"],
         reconstructed_cherenkov_path=opj(
             env["work_dir"],
-            "plenoirf.production.simulate_instrument_and_reconstruct_cherenkov",
+            "cer2cls",
+            "simulate_instrument_and_reconstruct_cherenkov",
             "reconstructed_cherenkov.loph.tar",
         ),
         prng=prng,

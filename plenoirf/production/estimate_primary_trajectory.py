@@ -11,8 +11,9 @@ from .. import event_table
 from .. import utils
 
 
-def run(env):
-    module_work_dir = opj(env["work_dir"], __name__)
+def run(env, part):
+    name = __name__.split(".")[-1]
+    module_work_dir = opj(env["work_dir"], part, name)
 
     if os.path.exists(module_work_dir):
         return
@@ -45,7 +46,8 @@ def run(env):
         evttab=evttab,
         path=opj(
             env["work_dir"],
-            "plenoirf.production.extract_features_from_light_field",
+            "cls2rec",
+            "extract_features_from_light_field",
             "event_table.snt.zip",
         ),
     )
@@ -57,7 +59,8 @@ def run(env):
         model_fit_config=trajectory_config["model_fit_config"],
         reconstructed_cherenkov_path=opj(
             env["work_dir"],
-            "plenoirf.production.simulate_instrument_and_reconstruct_cherenkov",
+            "cer2cls",
+            "simulate_instrument_and_reconstruct_cherenkov",
             "reconstructed_cherenkov.loph.tar",
         ),
         light_field_geometry=env["light_field_geometry"],

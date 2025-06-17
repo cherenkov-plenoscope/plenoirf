@@ -81,10 +81,11 @@ def run_job_prm2cer_in_dir(job, work_dir):
     PART = "prm2cer"
     env = compile_environment_for_job(job=job, work_dir=work_dir)
 
-    os.makedirs(env["stage_dir"], exist_ok=True)
+    stage_part_dir = opj(env["stage_dir"], PART)
+    os.makedirs(stage_part_dir, exist_ok=True)
 
     logger_path = opj(
-        env["stage_dir"], env["run_id_str"] + f".{PART:s}.log.jsonl"
+        stage_part_dir, env["run_id_str"] + f".{PART:s}.log.jsonl"
     )
     logger = json_line_logger.LoggerFile(path=logger_path)
     logger.info(f"starting {PART:s}.")
@@ -154,22 +155,24 @@ def run_job_prm2cer_in_dir(job, work_dir):
     utils.gzip_file(opj(env["work_dir"], PART, "log.jsonl"))
 
     zipfileutils.archive_dir(
-        path=opj(env["stage_dir"], env["run_id_str"] + f".{PART:s}.zip"),
+        path=opj(stage_part_dir, env["run_id_str"] + f".{PART:s}.zip"),
         dir_path=opj(env["work_dir"], PART),
         base_dir_path=opj(env["run_id_str"], PART),
     )
 
     os.remove(logger_path)
+    return 1
 
 
 def run_job_cer2cls_in_dir(job, work_dir):
     PART = "cer2cls"
     env = compile_environment_for_job(job=job, work_dir=work_dir)
 
-    os.makedirs(env["stage_dir"], exist_ok=True)
+    stage_part_dir = opj(env["stage_dir"], PART)
+    os.makedirs(stage_part_dir, exist_ok=True)
 
     logger_path = opj(
-        env["stage_dir"], env["run_id_str"] + f".{PART:s}.log.jsonl"
+        stage_part_dir, env["run_id_str"] + f".{PART:s}.log.jsonl"
     )
     logger = json_line_logger.LoggerFile(path=logger_path)
     logger.info(f"starting {PART:s}.")
@@ -180,19 +183,7 @@ def run_job_cer2cls_in_dir(job, work_dir):
     env = load_instrument_geometry_into_environment(env=env, logger=logger)
 
     with json_line_logger.TimeDelta(logger, "Load prm2cer."):
-        prm2cer_dir = opj(env["work_dir"], "prm2cer")
-        if not os.path.exists(prm2cer_dir):
-            shutil.unpack_archive(
-                filename=opj(
-                    env["stage_dir"], env["run_id_str"] + ".prm2cer.zip"
-                ),
-                extract_dir=opj(env["work_dir"]),
-            )
-            os.rename(
-                opj(env["work_dir"], env["run_id_str"], "prm2cer"),
-                opj(env["work_dir"], "prm2cer"),
-            )
-            os.remove(opj(env["work_dir"], env["run_id_str"]))
+        load_part(env=env, part="prm2cer")
 
     with seeding.SeedSection(
         run_id=env["run_id"],
@@ -214,125 +205,89 @@ def run_job_cer2cls_in_dir(job, work_dir):
     utils.gzip_file(opj(env["work_dir"], PART, "log.jsonl"))
 
     zipfileutils.archive_dir(
-        path=opj(env["stage_dir"], env["run_id_str"] + f".{PART:s}.zip"),
+        path=opj(stage_part_dir, env["run_id_str"] + f".{PART:s}.zip"),
         dir_path=opj(env["work_dir"], PART),
         base_dir_path=opj(env["run_id_str"], PART),
     )
 
     os.remove(logger_path)
+    return 1
 
 
-def run_job_in_dir(job, work_dir):
+def run_job_cls2rec_in_dir(job, work_dir):
+    PART = "cls2rec"
     env = compile_environment_for_job(job=job, work_dir=work_dir)
 
-    os.makedirs(env["stage_dir"], exist_ok=True)
+    stage_part_dir = opj(env["stage_dir"], PART)
+    os.makedirs(stage_part_dir, exist_ok=True)
 
-    logger_path = opj(env["stage_dir"], env["run_id_str"] + ".log.jsonl")
-    logger = json_line_logger.LoggerFile(path=logger_path + ".part")
-    logger.info("starting")
+    logger_path = opj(
+        stage_part_dir, env["run_id_str"] + f".{PART:s}.log.jsonl"
+    )
+    logger = json_line_logger.LoggerFile(path=logger_path)
+    logger.info(f"starting {PART:s}.")
 
     logger.debug("making work_dir: {:s}".format(env["work_dir"]))
     os.makedirs(env["work_dir"], exist_ok=True)
 
-    run_id = env["run_id"]
+    env = load_instrument_geometry_into_environment(env=env, logger=logger)
+
+    with json_line_logger.TimeDelta(logger, "Load cer2cls."):
+        load_part(env=env, part="cer2cls")
 
     with seeding.SeedSection(
-        run_id=run_id,
+        run_id=env["run_id"],
         module=gather_and_export_provenance,
         logger=logger,
     ) as sec:
-        sec.module.run(env=env)
+        sec.module.run(env=env, part=PART)
 
     with seeding.SeedSection(
-        run_id=run_id,
-        module=benchmark_compute_environment,
-        logger=logger,
-    ) as sec:
-        sec.module.run(env=env)
-
-    with seeding.SeedSection(
-        run_id=run_id,
-        module=draw_event_uids_for_debugging,
-        logger=logger,
-    ) as sec:
-        sec.module.run(env=env, seed=sec.seed)
-
-    with seeding.SeedSection(
-        run_id=run_id,
-        module=draw_primaries_and_pointings,
-        logger=logger,
-    ) as sec:
-        sec.module.run(env=env, seed=sec.seed)
-
-    with seeding.SeedSection(
-        run_id=run_id,
-        module=simulate_shower_and_collect_cherenkov_light_in_grid,
-        logger=logger,
-    ) as sec:
-        sec.module.run(env=env, seed=sec.seed)
-
-    with seeding.SeedSection(
-        run_id=run_id,
-        module=simulate_shower_again_and_cut_cherenkov_light_falling_into_instrument,
-        logger=logger,
-    ) as sec:
-        sec.module.run(env=env, seed=sec.seed)
-
-    with seeding.SeedSection(
-        run_id=run_id,
-        module=inspect_cherenkov_pool,
-        logger=logger,
-    ) as sec:
-        sec.module.run(env=env)
-
-    with seeding.SeedSection(
-        run_id=run_id,
-        module=inspect_particle_pool,
-        logger=logger,
-    ) as sec:
-        sec.module.run(env=env)
-
-    env = load_instrument_geometry_into_environment(env=env, logger=logger)
-
-    with seeding.SeedSection(
-        run_id=run_id,
-        module=simulate_instrument_and_reconstruct_cherenkov,
-        logger=logger,
-    ) as sec:
-        sec.module.run(env=env, seed=sec.seed)
-
-    with seeding.SeedSection(
-        run_id=run_id,
+        run_id=env["run_id"],
         module=extract_features_from_light_field,
         logger=logger,
     ) as sec:
-        sec.module.run(env=env, seed=sec.seed)
+        sec.module.run(env=env, part=PART, seed=sec.seed)
 
     with seeding.SeedSection(
-        run_id=run_id,
+        run_id=env["run_id"],
         module=estimate_primary_trajectory,
         logger=logger,
     ) as sec:
-        sec.module.run(env=env)
+        sec.module.run(env=env, part=PART)
 
-    return 2
+    logger.info("shuting down logger.")
+    json_line_logger.shutdown(logger=logger)
+    rnw.copy(src=logger_path, dst=opj(env["work_dir"], PART, "log.jsonl"))
+    utils.gzip_file(opj(env["work_dir"], PART, "log.jsonl"))
 
-    # estimate memory footprint of env and blk
-    # ----------------------------------------
-    with TimeDelta(logger, "estimate size of block-environment 'blk'."):
-        blk_size_bytes = debugging.estimate_memory_size_in_bytes_of_anything(
-            anything=blk
+    zipfileutils.archive_dir(
+        path=opj(stage_part_dir, env["run_id_str"] + f".{PART:s}.zip"),
+        dir_path=opj(env["work_dir"], PART),
+        base_dir_path=opj(env["run_id_str"], PART),
+    )
+
+    os.remove(logger_path)
+    return 1
+
+
+def load_part(env, part):
+    part_dir = opj(env["work_dir"], part)
+    if not os.path.exists(part_dir):
+        shutil.unpack_archive(
+            filename=opj(
+                env["stage_dir"], part, env["run_id_str"] + f".{part:s}.zip"
+            ),
+            extract_dir=opj(env["work_dir"]),
         )
-        logger.info(xml("Size", name="blk", size_bytes=blk_size_bytes))
-
-    with TimeDelta(logger, "estimate size of environment 'env'."):
-        env_size_bytes = debugging.estimate_memory_size_in_bytes_of_anything(
-            anything=env
+        os.rename(
+            opj(env["work_dir"], env["run_id_str"], part),
+            opj(env["work_dir"], part),
         )
-        logger.info(xml("Size", name="env", size_bytes=env_size_bytes))
-    with open(opj(env["work_dir"], "memory_usage.json"), "wt") as fout:
-        _out = {"env": env_size_bytes, "blk": blk_size_bytes}
-        fout.write(json_utils.dumps(_out))
+        shutil.rmtree(opj(env["work_dir"], env["run_id_str"]))
+
+
+def run_job_in_dir(job, work_dir):
 
     # collect output
     # ==============
@@ -419,8 +374,11 @@ def compile_environment_for_job(job, work_dir):
     """
     assert job["max_num_events_in_merlict_run"] > 0
     env = copy.deepcopy(job)
+    env["run_id_str"] = bookkeeping.uid.make_run_id_str(run_id=env["run_id"])
 
     env["work_dir"] = work_dir
+    env["run_dir"] = opj(work_dir, env["run_id_str"])
+
     env["stage_dir"] = opj(
         env["plenoirf_dir"],
         "response",
@@ -430,7 +388,6 @@ def compile_environment_for_job(job, work_dir):
         "stage",
     )
 
-    env["run_id_str"] = bookkeeping.uid.make_run_id_str(run_id=env["run_id"])
     env["config"] = configuration.read(plenoirf_dir=env["plenoirf_dir"])
     _skymap_cfg = json_utils.tree.read(
         opj(
