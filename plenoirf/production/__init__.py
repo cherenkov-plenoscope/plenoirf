@@ -163,19 +163,19 @@ def run_job_in_dir(job, work_dir):
     ) as sec:
         sec.module.run(env=env, seed=sec.seed)
 
-    """
     with seeding.SeedSection(
         run_id=run_id,
         module=estimate_primary_trajectory,
-        block_id=block_id,
         logger=logger,
     ) as sec:
-        sec.module.run_block(
-            env=env, blk=blk, block_id=block_id, logger=logger
-        )
-    """
+        sec.module.run(env=env)
 
     return 2
+
+
+
+
+
 
     blk = {}
     blk["blocks_dir"] = os.path.join(env["work_dir"], "blocks")

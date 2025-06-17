@@ -1,33 +1,50 @@
-import gamma_ray_reconstruction as gamrec
 import numpy as np
 import os
+from os.path import join as opj
+
+import gamma_ray_reconstruction as gamrec
 import plenopy
 import sparse_numeric_table as snt
-from .. import bookkeeping
+import json_line_logger
+
 from .. import event_table
+from .. import utils
 
-# from . import simulate_hardware
 
+def run(env):
+    module_work_dir = opj(env["work_dir"], __name__)
 
-def run_block(env, blk, block_id, logger):
-    opj = os.path.join
-    logger.info(__name__ + ": start ...")
-
-    block_id_str = "{:06d}".format(block_id)
-    block_dir = opj(env["work_dir"], "blocks", block_id_str)
-    sub_work_dir = opj(block_dir, __name__)
-
-    if os.path.exists(sub_work_dir):
-        logger.info(__name__ + ": already done. skip computation.")
+    if os.path.exists(module_work_dir):
         return
 
-    os.makedirs(sub_work_dir)
+    os.makedirs(module_work_dir)
+    logger = json_line_logger.LoggerFile(opj(module_work_dir, "log.jsonl"))
+    logger.info(__name__)
+
+    with json_line_logger.TimeDelta(
+        logger, "init trajectory reconstruction config"
+    ):
+        trajectory_config = {}
+        trajectory_config["fuzzy_config"] = (
+            gamrec.trajectory.v2020nov12fuzzy0.config.compile_user_config(
+                user_config=env["config"]["reconstruction"]["trajectory"][
+                    "fuzzy_method"
+                ]
+            )
+        )
+        trajectory_config["model_fit_config"] = (
+            gamrec.trajectory.v2020dec04iron0b.config.compile_user_config(
+                user_config=env["config"]["reconstruction"]["trajectory"][
+                    "core_axis_fit"
+                ]
+            )
+        )
 
     evttab = snt.SparseNumericTable(index_key="uid")
     evttab = event_table.add_levels_from_path(
         evttab=evttab,
         path=opj(
-            block_dir,
+            env["work_dir"],
             "plenoirf.production.extract_features_from_light_field",
             "event_table.snt.zip",
         ),
@@ -36,22 +53,26 @@ def run_block(env, blk, block_id, logger):
 
     evttab = estimate_primary_trajectory(
         evttab=evttab,
-        fuzzy_config=blk["trajectory_reconstruction"]["fuzzy_config"],
-        model_fit_config=blk["trajectory_reconstruction"]["model_fit_config"],
+        fuzzy_config=trajectory_config["fuzzy_config"],
+        model_fit_config=trajectory_config["model_fit_config"],
         reconstructed_cherenkov_path=opj(
-            block_dir, "reconstructed_cherenkov.loph.tar"
+            env["work_dir"],
+            "plenoirf.production.simulate_instrument_and_reconstruct_cherenkov",
+            "reconstructed_cherenkov.loph.tar",
         ),
-        light_field_geometry=blk["light_field_geometry"],
+        light_field_geometry=env["light_field_geometry"],
         logger=logger,
     )
 
     event_table.write_certain_levels_to_path(
         evttab=evttab,
-        path=opj(sub_work_dir, "event_table.snt.zip"),
+        path=opj(module_work_dir, "event_table.snt.zip"),
         level_keys=["reconstructed_trajectory"],
     )
 
-    logger.info(__name__ + ": ... done.")
+    logger.info("done.")
+    json_line_logger.shutdown(logger=logger)
+    utils.gzip_file(opj(module_work_dir, "log.jsonl"))
 
 
 def get_column_as_dict_by_index(table, level_key, column_key, index_key):
