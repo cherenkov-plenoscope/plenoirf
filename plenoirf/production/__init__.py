@@ -156,14 +156,12 @@ def run_job_in_dir(job, work_dir):
     ) as sec:
         sec.module.run(env=env, seed=sec.seed)
 
-    """
     with seeding.SeedSection(
         run_id=run_id,
         module=extract_features_from_light_field,
         logger=logger,
     ) as sec:
-        sec.module.run_block(env=env, seed=sec.seed)
-    """
+        sec.module.run(env=env, seed=sec.seed)
 
     """
     with seeding.SeedSection(

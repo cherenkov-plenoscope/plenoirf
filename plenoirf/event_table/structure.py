@@ -509,6 +509,17 @@ def init_features_level_structure():
         },
         "unit": "p.e.",
     }
+    t["image_infinity_ellipse_solid_angle"] = {
+        "dtype": "<f4",
+        "comment": "The solid angle of the Hillas-ellipse with focus set to infinity.",
+        "transformation": {
+            "function": "log(x)",
+            "shift": "mean(x)",
+            "scale": "std(x)",
+            "quantile_range": [0.01, 0.99],
+        },
+        "unit": "sr",
+    }
     t["image_smallest_ellipse_object_distance"] = {
         "dtype": "<f4",
         "comment": "The object-distance in front of the aperture where the refocused image of the airshower yields the Hillas-ellipse with the smallest solid angle. See also 'image_smallest_ellipse_solid_angle'.",

@@ -4,11 +4,11 @@ from os.path import join as opj
 import plenopy
 import rename_after_writing as rnw
 import sparse_numeric_table as snt
+import json_line_logger
 
 from .. import bookkeeping
 from .. import event_table
-
-# from . import simulate_hardware
+from .. import utils
 
 
 def run(env, seed):
@@ -28,8 +28,8 @@ def run(env, seed):
     evttab = event_table.add_levels_from_path(
         evttab=evttab,
         path=opj(
-            block_dir,
-            "plenoirf.production.simulate_loose_trigger",
+            env["work_dir"],
+            "plenoirf.production.simulate_instrument_and_reconstruct_cherenkov",
             "event_table.snt.zip",
         ),
     )
@@ -37,9 +37,13 @@ def run(env, seed):
 
     evttab = extract_features(
         evttab=evttab,
-        light_field_geometry=blk["light_field_geometry"],
-        light_field_geometry_addon=blk["light_field_geometry_addon"],
-        event_uid_strs_in_block=blk["event_uid_strs_in_block"][block_id_str],
+        light_field_geometry=env["light_field_geometry"],
+        light_field_geometry_addon=env["light_field_geometry_addon"],
+        reconstructed_cherenkov_path=opj(
+            env["work_dir"],
+            "plenoirf.production.simulate_instrument_and_reconstruct_cherenkov",
+            "reconstructed_cherenkov.loph.tar",
+        ),
         prng=prng,
         logger=logger,
     )
@@ -59,43 +63,36 @@ def extract_features(
     evttab,
     light_field_geometry,
     light_field_geometry_addon,
-    event_uid_strs_in_block,
-    block_dir,
+    reconstructed_cherenkov_path,
     prng,
     logger,
 ):
-    for ptp in evttab["pasttrigger"]:
-        event_uid = ptp["uid"]
+    with plenopy.photon_stream.loph.LopfTarReader(
+        reconstructed_cherenkov_path
+    ) as lin:
+        for event in lin:
+            event_uid, event_loph = event
 
-        merlict_event_id = simulate_hardware.make_merlict_event_id(
-            event_uid=event_uid,
-            event_uid_strs_in_block=event_uid_strs_in_block,
-        )
-        event_path = os.path.join(
-            block_dir, "merlict", "{:d}".format(merlict_event_id)
-        )
-        event = plenopy.Event(
-            path=event_path, light_field_geometry=light_field_geometry
-        )
-        simulate_hardware.assert_plenopy_event_has_uid(
-            event=event, event_uid=event_uid
-        )
-
-        try:
-            lfft = plenopy.features.extract_features(
-                cherenkov_photons=event.cherenkov_photons,
+            cherenkov_photons = plenopy.classify.RawPhotons.from_lopf(
+                loph=event_loph,
                 light_field_geometry=light_field_geometry,
-                light_field_geometry_addon=light_field_geometry_addon,
-                prng=prng,
             )
-            lfft["uid"] = event_uid
-            evttab["features"].append_record(lfft)
-        except Exception as excep:
-            logger.critical(
-                "uid:{:d}, exception:{:s}".format(
-                    event_uid,
-                    str(excep),
+
+            try:
+                lfft = plenopy.features.extract_features(
+                    cherenkov_photons=cherenkov_photons,
+                    light_field_geometry=light_field_geometry,
+                    light_field_geometry_addon=light_field_geometry_addon,
+                    prng=prng,
                 )
-            )
+                lfft["uid"] = event_uid
+                evttab["features"].append_record(lfft)
+            except Exception as excep:
+                logger.critical(
+                    "uid:{:d}, exception:{:s}".format(
+                        event_uid,
+                        str(excep),
+                    )
+                )
 
     return evttab
