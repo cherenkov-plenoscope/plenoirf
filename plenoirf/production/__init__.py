@@ -190,19 +190,6 @@ def run_job_in_dir(job, work_dir):
         _out = {"env": env_size_bytes, "blk": blk_size_bytes}
         fout.write(json_utils.dumps(_out))
 
-    # loop over blocks
-    # ----------------
-    for block_id_str in blk["event_uid_strs_in_block"]:
-        run_job_block(
-            env=env, blk=blk, block_id=int(block_id_str), logger=logger
-        )
-
-    with TimeDelta(logger, "estimate disk usage in work_dir."):
-        disk_usage = debugging.estimate_disk_usage_in_bytes(
-            path=env["work_dir"]
-        )
-        with open(opj(env["work_dir"], "disk_usage.json"), "wt") as fout:
-            fout.write(json_utils.dumps(disk_usage, indent=4))
 
     # collect output
     # ==============
@@ -280,24 +267,6 @@ def run_job_in_dir(job, work_dir):
         event_table.write_all_levels_to_path(
             evttab=evttab,
             path=opj(env["work_dir"], "event_table.snt.zip"),
-        )
-
-    # bundle reconstructed cherenkov light (loph)
-    # -------------------------------------------
-    with TimeDelta(logger, "bundling reconstructed_cherenkov.loph.tar"):
-        loph_in_paths = []
-        for block_id_str in blk["event_uid_strs_in_block"]:
-            loph_in_path = opj(
-                env["work_dir"],
-                "blocks",
-                block_id_str,
-                "reconstructed_cherenkov.loph.tar",
-            )
-            loph_in_paths.append(loph_in_path)
-
-        plenopy.photon_stream.loph.concatenate_tars(
-            in_paths=loph_in_paths,
-            out_path=opj(env["work_dir"], "reconstructed_cherenkov.loph.tar"),
         )
 
     # write output file
