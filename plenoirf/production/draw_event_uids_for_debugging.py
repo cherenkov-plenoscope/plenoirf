@@ -41,6 +41,4 @@ def run(env, seed):
 
     logger.info("done.")
     json_line_logger.shutdown(logger=logger)
-
-    # tidy up and compress
     utils.gzip_file(opj(module_work_dir, "log.jsonl"))

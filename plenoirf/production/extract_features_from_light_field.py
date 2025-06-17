@@ -1,27 +1,27 @@
 import numpy as np
 import os
+from os.path import join as opj
 import plenopy
 import rename_after_writing as rnw
 import sparse_numeric_table as snt
+
 from .. import bookkeeping
 from .. import event_table
 
 # from . import simulate_hardware
 
 
-def run_block(env, blk, seed, block_id, logger):
-    opj = os.path.join
-    logger.info(__name__ + ": start ...")
+def run(env, seed):
+    module_work_dir = opj(env["work_dir"], __name__)
 
-    block_id_str = "{:06d}".format(block_id)
-    block_dir = opj(env["work_dir"], "blocks", block_id_str)
-    sub_work_dir = opj(block_dir, __name__)
-
-    if os.path.exists(sub_work_dir):
-        logger.info(__name__ + ": already done. skip computation.")
+    if os.path.exists(module_work_dir):
         return
 
-    os.makedirs(sub_work_dir)
+    os.makedirs(module_work_dir)
+    logger = json_line_logger.LoggerFile(opj(module_work_dir, "log.jsonl"))
+    logger.info(__name__)
+    logger.info(f"seed: {seed:d}")
+
     prng = np.random.Generator(np.random.PCG64(seed))
 
     evttab = snt.SparseNumericTable(index_key="uid")
@@ -40,18 +40,19 @@ def run_block(env, blk, seed, block_id, logger):
         light_field_geometry=blk["light_field_geometry"],
         light_field_geometry_addon=blk["light_field_geometry_addon"],
         event_uid_strs_in_block=blk["event_uid_strs_in_block"][block_id_str],
-        block_dir=block_dir,
         prng=prng,
         logger=logger,
     )
 
     event_table.write_certain_levels_to_path(
         evttab=evttab,
-        path=opj(sub_work_dir, "event_table.snt.zip"),
+        path=opj(module_work_dir, "event_table.snt.zip"),
         level_keys=["features"],
     )
 
-    logger.info(__name__ + ": ... done.")
+    logger.info("done.")
+    json_line_logger.shutdown(logger=logger)
+    utils.gzip_file(opj(module_work_dir, "log.jsonl"))
 
 
 def extract_features(

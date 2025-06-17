@@ -106,7 +106,7 @@ def simulate_loose_trigger(
     # --------------------------
     merlict_run = plenopy.Run(
         path=opj(block_dir, "simulate_hardware", "merlict"),
-        light_field_geometry=blk["light_field_geometry"],
+        light_field_geometry=env["light_field_geometry"],
     )
     table_past_trigger = []
     os.makedirs(work_dir, exist_ok=True)
@@ -140,8 +140,8 @@ def simulate_loose_trigger(
                 foci_trigger_image_sequences = (
                     plenopy.trigger.estimate.estimate_trigger_image_sequences(
                         raw_sensor_response=event.raw_sensor_response,
-                        light_field_geometry=blk["light_field_geometry"],
-                        trigger_geometry=blk["trigger_geometry"],
+                        light_field_geometry=env["light_field_geometry"],
+                        trigger_geometry=env["trigger_geometry"],
                         integration_time_slices=(
                             env["config"]["sum_trigger"][
                                 "integration_time_slices"
@@ -162,8 +162,8 @@ def simulate_loose_trigger(
             max_response_in_focus_vs_timeslices,
         ) = plenopy.trigger.estimate.first_stage(
             raw_sensor_response=event.raw_sensor_response,
-            light_field_geometry=blk["light_field_geometry"],
-            trigger_geometry=blk["trigger_geometry"],
+            light_field_geometry=env["light_field_geometry"],
+            trigger_geometry=env["trigger_geometry"],
             integration_time_slices=(
                 env["config"]["sum_trigger"]["integration_time_slices"]
             ),

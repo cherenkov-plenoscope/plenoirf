@@ -26,10 +26,8 @@ from . import classify_cherenkov_photons
 def run(env, seed):
     module_work_dir = opj(env["work_dir"], __name__)
 
-    """
     if os.path.exists(module_work_dir):
         return
-    """
 
     os.makedirs(module_work_dir, exist_ok=True)
     logger = json_line_logger.LoggerFile(opj(module_work_dir, "log.jsonl"))
@@ -48,38 +46,6 @@ def run(env, seed):
         opj(blk["blocks_dir"], "event_uid_strs_in_block.json.gz"), "rt"
     ) as fin:
         blk["event_uid_strs_in_block"] = json_utils.loads(fin.read())
-
-    with json_line_logger.TimeDelta(logger, "read light_field_calibration"):
-        light_field_calibration_path = opj(
-            env["plenoirf_dir"],
-            "plenoptics",
-            "instruments",
-            env["instrument_key"],
-            "light_field_geometry",
-        )
-        blk["light_field_geometry"] = plenopy.LightFieldGeometry(
-            path=light_field_calibration_path
-        )
-
-    with json_line_logger.TimeDelta(
-        logger, "make light_field_calibration addon"
-    ):
-        blk["light_field_geometry_addon"] = (
-            plenopy.features.make_light_field_geometry_addon(
-                light_field_geometry=blk["light_field_geometry"]
-            )
-        )
-
-    with json_line_logger.TimeDelta(logger, "read trigger_geometry"):
-        trigger_geometry_path = opj(
-            env["plenoirf_dir"],
-            "trigger_geometry",
-            env["instrument_key"]
-            + plenopy.trigger.geometry.suggested_filename_extension(),
-        )
-        blk["trigger_geometry"] = plenopy.trigger.geometry.read(
-            path=trigger_geometry_path
-        )
 
     # loop over blocks
     # ----------------
@@ -101,13 +67,12 @@ def run(env, seed):
         bundle_reconstructed_cherenkov_from_blocks(
             module_work_dir=module_work_dir, blk=blk
         )
+
     with json_line_logger.TimeDelta(logger, "bundle_event_table_from_blocks"):
         bundle_event_table_from_blocks(module_work_dir, blk)
 
     logger.info("done.")
     json_line_logger.shutdown(logger=logger)
-
-    # tidy up and compress
     utils.gzip_file(opj(module_work_dir, "log.jsonl"))
 
 

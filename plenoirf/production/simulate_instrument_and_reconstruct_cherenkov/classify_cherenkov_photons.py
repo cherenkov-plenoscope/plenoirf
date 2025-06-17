@@ -46,8 +46,8 @@ def run_block(env, blk, block_id, logger):
         config_cherenkov_classification=env["config"][
             "cherenkov_classification"
         ],
-        light_field_geometry=blk["light_field_geometry"],
-        trigger_geometry=blk["trigger_geometry"],
+        light_field_geometry=env["light_field_geometry"],
+        trigger_geometry=env["trigger_geometry"],
         event_uid_strs_in_block=blk["event_uid_strs_in_block"][block_id_str],
         block_id=block_id,
         block_dir=block_dir,

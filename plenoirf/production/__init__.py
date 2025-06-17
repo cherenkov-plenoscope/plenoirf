@@ -147,12 +147,35 @@ def run_job_in_dir(job, work_dir):
     ) as sec:
         sec.module.run(env=env)
 
+    env = load_instrument_geometry_into_environment(env=env, logger=logger)
+
     with seeding.SeedSection(
         run_id=run_id,
         module=simulate_instrument_and_reconstruct_cherenkov,
         logger=logger,
     ) as sec:
         sec.module.run(env=env, seed=sec.seed)
+
+    """
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=extract_features_from_light_field,
+        logger=logger,
+    ) as sec:
+        sec.module.run_block(env=env, seed=sec.seed)
+    """
+
+    """
+    with seeding.SeedSection(
+        run_id=run_id,
+        module=estimate_primary_trajectory,
+        block_id=block_id,
+        logger=logger,
+    ) as sec:
+        sec.module.run_block(
+            env=env, blk=blk, block_id=block_id, logger=logger
+        )
+    """
 
     return 2
 
@@ -573,6 +596,41 @@ def compile_environment_for_job(job, work_dir):
         constants.speed_of_light_in_vacuum_m_per_s()
         / env["site"]["atmosphere_refractive_index_at_observation_level"]
     )
+    return env
+
+
+def load_instrument_geometry_into_environment(env, logger):
+    with json_line_logger.TimeDelta(logger, "read light_field_calibration"):
+        light_field_calibration_path = opj(
+            env["plenoirf_dir"],
+            "plenoptics",
+            "instruments",
+            env["instrument_key"],
+            "light_field_geometry",
+        )
+        env["light_field_geometry"] = plenopy.LightFieldGeometry(
+            path=light_field_calibration_path
+        )
+
+    with json_line_logger.TimeDelta(
+        logger, "make light_field_calibration addon"
+    ):
+        env["light_field_geometry_addon"] = (
+            plenopy.features.make_light_field_geometry_addon(
+                light_field_geometry=env["light_field_geometry"]
+            )
+        )
+
+    with json_line_logger.TimeDelta(logger, "read trigger_geometry"):
+        trigger_geometry_path = opj(
+            env["plenoirf_dir"],
+            "trigger_geometry",
+            env["instrument_key"]
+            + plenopy.trigger.geometry.suggested_filename_extension(),
+        )
+        env["trigger_geometry"] = plenopy.trigger.geometry.read(
+            path=trigger_geometry_path
+        )
     return env
 
 
