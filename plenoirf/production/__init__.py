@@ -384,16 +384,13 @@ def run_job_in_dir(job, work_dir):
         )
 
 
-def compile_environment_for_job(job, work_dir):
+def compile_environment_for_job(job, work_dir=None):
     """
     Adds static information to the job dict.
     """
     assert job["max_num_events_in_merlict_run"] > 0
     env = copy.deepcopy(job)
     env["run_id_str"] = bookkeeping.uid.make_run_id_str(run_id=env["run_id"])
-
-    env["work_dir"] = work_dir
-    env["run_dir"] = opj(work_dir, env["run_id_str"])
 
     env["stage_dir"] = opj(
         env["plenoirf_dir"],
@@ -429,6 +426,11 @@ def compile_environment_for_job(job, work_dir):
         constants.speed_of_light_in_vacuum_m_per_s()
         / env["site"]["atmosphere_refractive_index_at_observation_level"]
     )
+
+    if work_dir is not None:
+        env["work_dir"] = work_dir
+        env["run_dir"] = opj(work_dir, env["run_id_str"])
+
     return env
 
 
