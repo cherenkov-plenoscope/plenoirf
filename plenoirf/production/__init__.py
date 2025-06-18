@@ -73,8 +73,16 @@ def make_example_jobs(
 
 
 def run_job(job):
-    with tempfile.TemporaryDirectory(suffix="-plenoirf") as work_dir:
-        return run_job_in_dir(job=job, work_dir=work_dir)
+    tmpDir = tempfile.TemporaryDirectory
+
+    with tmpDir(prefix="plenoirf-prm2cer-") as w:
+        run_job_prm2cer_in_dir(job=job, work_dir=w)
+
+    with tmpDir(prefix="plenoirf-cer2cls-") as w:
+        run_job_cer2cls_in_dir(job=job, work_dir=w)
+
+    with tmpDir(prefix="plenoirf-cls2rec-") as w:
+        run_job_cls2rec_in_dir(job=job, work_dir=w)
 
 
 def run_job_prm2cer_in_dir(job, work_dir):

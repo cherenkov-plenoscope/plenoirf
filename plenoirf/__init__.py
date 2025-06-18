@@ -242,6 +242,7 @@ def population_make_jobs(plenoirf_dir, config=None):
                     instrument_key=instrument_key,
                     site_key=site_key,
                     particle_key=particle_key,
+                    production_part_key="cls2rec",
                     run_id_stop=num_runs,
                 )
     return jobs
@@ -253,6 +254,7 @@ def _make_missing_jobs_instrument_site_particle(
     instrument_key,
     site_key,
     particle_key,
+    production_part_key,
     run_id_stop,
 ):
     p = config["population_partitioning"]
@@ -262,6 +264,7 @@ def _make_missing_jobs_instrument_site_particle(
         instrument_key=instrument_key,
         site_key=site_key,
         particle_key=particle_key,
+        production_part_key=production_part_key,
         run_id_stop=run_id_stop,
     )
     run_ids = sorted(run_ids)
@@ -286,6 +289,7 @@ def _make_missing_run_ids_instrument_site_particle(
     instrument_key,
     site_key,
     particle_key,
+    production_part_key,
     run_id_stop,
 ):
     existing_run_ids = find_run_ids(
@@ -296,6 +300,7 @@ def _make_missing_run_ids_instrument_site_particle(
             site_key,
             particle_key,
             "stage",
+            production_part_key,
             "*.zip",
         )
     )
