@@ -75,14 +75,22 @@ def make_example_jobs(
 def run_job(job):
     tmpDir = tempfile.TemporaryDirectory
 
-    with tmpDir(prefix="plenoirf-prm2cer-") as w:
-        run_job_prm2cer_in_dir(job=job, work_dir=w)
+    env = compile_environment_for_job(job=job, work_dir=work_dir)
+    result_path = opj(
+        env["stage_dir"], "{part:s}", env["run_id_str"] + ".{part:s}.zip"
+    )
 
-    with tmpDir(prefix="plenoirf-cer2cls-") as w:
-        run_job_cer2cls_in_dir(job=job, work_dir=w)
+    if not os.path.exists(result_path.format(part="prm2cer")):
+        with tmpDir(prefix="plenoirf-prm2cer-") as w:
+            run_job_prm2cer_in_dir(job=job, work_dir=w)
 
-    with tmpDir(prefix="plenoirf-cls2rec-") as w:
-        run_job_cls2rec_in_dir(job=job, work_dir=w)
+    if not os.path.exists(result_path.format(part="cer2cls")):
+        with tmpDir(prefix="plenoirf-cer2cls-") as w:
+            run_job_cer2cls_in_dir(job=job, work_dir=w)
+
+    if not os.path.exists(result_path.format(part="cls2rec")):
+        with tmpDir(prefix="plenoirf-cls2rec-") as w:
+            run_job_cls2rec_in_dir(job=job, work_dir=w)
 
 
 def run_job_prm2cer_in_dir(job, work_dir):
