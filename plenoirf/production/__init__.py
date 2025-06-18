@@ -75,7 +75,7 @@ def make_example_jobs(
 def run_job(job):
     tmpDir = tempfile.TemporaryDirectory
 
-    env = compile_environment_for_job(job=job, work_dir=work_dir)
+    env = compile_environment_for_job(job=job)
     result_path = opj(
         env["stage_dir"], "{part:s}", env["run_id_str"] + ".{part:s}.zip"
     )
