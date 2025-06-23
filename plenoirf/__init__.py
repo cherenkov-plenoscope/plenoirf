@@ -194,14 +194,11 @@ def run(plenoirf_dir, pool, logger=None, num_runs=None):
     logger.info("trigger_geometry complete")
 
     logger.info("Populating the instrument response function")
-    jobs = population_make_jobs(plenoirf_dir=plenoirf_dir, config=config)
-    logger.info("A total of {:d} jobs is missing".format(len(jobs)))
+    jobs = population_make_jobs(
+        plenoirf_dir=plenoirf_dir, config=config, num_runs=num_runs
+    )
+    logger.info("Submitting {:d} jobs".format(len(jobs)))
     random.shuffle(jobs)
-
-    if num_runs is not None:
-        logger.info("Limiting number of jobs to {:d}".format(num_runs))
-        jobs = jobs[0:num_runs]
-
     results = pool.map(production.run_job, jobs)
 
 
@@ -219,9 +216,11 @@ def find_run_ids(template_path):
     return run_ids
 
 
-def population_make_jobs(plenoirf_dir, config=None):
+def population_make_jobs(plenoirf_dir, config=None, num_runs=None):
     if config is None:
         config = configuration.read(plenoirf_dir)
+
+    run_id_range = bookkeeping.run_id_range.read_from_configfile()
 
     target = config["population_target"]
     part = config["population_partitioning"]
@@ -233,8 +232,19 @@ def population_make_jobs(plenoirf_dir, config=None):
                 shower_target = target[instrument_key][site_key][particle_key][
                     "num_showers_thrown"
                 ]
-                num_runs = shower_target / part["num_showers_per_corsika_run"]
-                num_runs = int(np.ceil(num_runs))
+                num_all_runs = (
+                    shower_target / part["num_showers_per_corsika_run"]
+                )
+                num_all_runs = int(np.ceil(num_all_runs))
+                if num_runs is not None:
+                    assert num_runs >= 1
+                    num_runs_this_time = num_runs
+                else:
+                    num_runs_this_time = num_all_runs
+
+                run_id_start = run_id_range["start"]
+                run_id_stop = run_id_start + num_runs_this_time
+                run_id_stop = min([run_id_stop, run_id_range["stop"]])
 
                 jobs += _make_missing_jobs_instrument_site_particle(
                     plenoirf_dir=plenoirf_dir,
@@ -243,7 +253,8 @@ def population_make_jobs(plenoirf_dir, config=None):
                     site_key=site_key,
                     particle_key=particle_key,
                     production_part_key="cls2rec",
-                    run_id_stop=num_runs,
+                    run_id_start=run_id_start,
+                    run_id_stop=run_id_stop,
                 )
     return jobs
 
@@ -255,6 +266,7 @@ def _make_missing_jobs_instrument_site_particle(
     site_key,
     particle_key,
     production_part_key,
+    run_id_start,
     run_id_stop,
 ):
     p = config["population_partitioning"]
@@ -265,6 +277,7 @@ def _make_missing_jobs_instrument_site_particle(
         site_key=site_key,
         particle_key=particle_key,
         production_part_key=production_part_key,
+        run_id_start=run_id_start,
         run_id_stop=run_id_stop,
     )
     run_ids = sorted(run_ids)
@@ -290,8 +303,12 @@ def _make_missing_run_ids_instrument_site_particle(
     site_key,
     particle_key,
     production_part_key,
+    run_id_start,
     run_id_stop,
 ):
+    assert run_id_start >= bookkeeping.uid.RUN_ID_LOWER
+    assert run_id_stop <= bookkeeping.uid.RUN_ID_UPPER
+
     existing_run_ids = find_run_ids(
         template_path=os.path.join(
             plenoirf_dir,
@@ -307,7 +324,7 @@ def _make_missing_run_ids_instrument_site_particle(
     existing_run_ids = set(existing_run_ids)
 
     missing_run_ids = []
-    for run_id in np.arange(bookkeeping.uid.RUN_ID_LOWER, run_id_stop):
+    for run_id in np.arange(run_id_start, run_id_stop):
         if run_id not in existing_run_ids:
             missing_run_ids.append(run_id)
 

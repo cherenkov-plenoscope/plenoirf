@@ -32,7 +32,7 @@ def _assert_valid(config):
     assert config["stop"] >= config["start"]
 
 
-def read_run_id_range_from_configfile():
+def read_from_configfile():
     config = _read()
     assert config["name"] is not None, f"Please set 'name' in '{_path():s}'."
     _assert_valid(config)
