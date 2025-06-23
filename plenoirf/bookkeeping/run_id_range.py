@@ -22,13 +22,18 @@ def _read():
 
 
 def _write(config):
+    _assert_valid(config)
     with rnw.open(_path(), "wt") as f:
         f.write(json_utils.dumps(config, indent=4))
+
+
+def _assert_valid(config):
+    assert config["start"] > 0
+    assert config["stop"] >= config["start"]
 
 
 def read_run_id_range_from_configfile():
     config = _read()
     assert config["name"] is not None, f"Please set 'name' in '{_path():s}'."
-    assert config["start"] > 0
-    assert config["stop"] >= config["stop"]
+    _assert_valid(config)
     return config
