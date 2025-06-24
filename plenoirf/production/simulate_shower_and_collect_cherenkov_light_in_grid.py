@@ -65,11 +65,15 @@ def run(env, part, seed):
     )
 
     evttab = snt.SparseNumericTable(index_key="uid")
-    evttab = event_table.add_empty_level(evttab, "primary")
-    evttab = event_table.add_empty_level(evttab, "cherenkovsize")
-    evttab = event_table.add_empty_level(evttab, "cherenkovpool")
-    evttab = event_table.add_empty_level(evttab, "groundgrid")
-    evttab = event_table.add_empty_level(evttab, "groundgrid_choice")
+    additional_level_keys = [
+        "primary",
+        "cherenkovsize",
+        "cherenkovpool",
+        "groundgrid",
+        "groundgrid_choice",
+    ]
+    for key in additional_level_keys:
+        evttab = event_table.add_empty_level(evttab, key)
 
     logger.info("simulating showers.")
     evttab = corsika_first_run(
@@ -83,11 +87,11 @@ def run(env, part, seed):
         logger=logger,
     )
 
-    event_table.write_all_levels_to_path(
+    event_table.write_certain_levels_to_path(
         evttab=evttab,
         path=opj(module_work_dir, "event_table.snt.zip"),
+        level_keys=additional_level_keys,
     )
-
     logger.info("done.")
     json_line_logger.shutdown(logger=logger)
 
