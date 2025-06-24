@@ -101,11 +101,11 @@ def run_job_prm2cer_in_dir(job, work_dir):
     PART = "prm2cer"
     env = compile_environment_for_job(job=job, work_dir=work_dir)
 
-    stage_part_dir = opj(env["map_dir"], PART)
-    os.makedirs(stage_part_dir, exist_ok=True)
+    map_part_dir = opj(env["map_dir"], PART)
+    os.makedirs(map_part_dir, exist_ok=True)
 
     logger_path = opj(
-        stage_part_dir, env["run_id_str"] + f".{PART:s}.log.jsonl"
+        map_part_dir, env["run_id_str"] + f".{PART:s}.log.jsonl"
     )
     logger = json_line_logger.LoggerFile(path=logger_path)
     logger.info(f"starting {PART:s}.")
@@ -175,7 +175,7 @@ def run_job_prm2cer_in_dir(job, work_dir):
     utils.gzip_file(opj(env["work_dir"], PART, "log.jsonl"))
 
     zipfileutils.archive_dir(
-        path=opj(stage_part_dir, env["run_id_str"] + f".{PART:s}.zip"),
+        path=opj(map_part_dir, env["run_id_str"] + f".{PART:s}.zip"),
         dir_path=opj(env["work_dir"], PART),
         base_dir_path=opj(env["run_id_str"], PART),
     )
@@ -188,11 +188,11 @@ def run_job_cer2cls_in_dir(job, work_dir):
     PART = "cer2cls"
     env = compile_environment_for_job(job=job, work_dir=work_dir)
 
-    stage_part_dir = opj(env["map_dir"], PART)
-    os.makedirs(stage_part_dir, exist_ok=True)
+    map_part_dir = opj(env["map_dir"], PART)
+    os.makedirs(map_part_dir, exist_ok=True)
 
     logger_path = opj(
-        stage_part_dir, env["run_id_str"] + f".{PART:s}.log.jsonl"
+        map_part_dir, env["run_id_str"] + f".{PART:s}.log.jsonl"
     )
     logger = json_line_logger.LoggerFile(path=logger_path)
     logger.info(f"starting {PART:s}.")
@@ -225,7 +225,7 @@ def run_job_cer2cls_in_dir(job, work_dir):
     utils.gzip_file(opj(env["work_dir"], PART, "log.jsonl"))
 
     zipfileutils.archive_dir(
-        path=opj(stage_part_dir, env["run_id_str"] + f".{PART:s}.zip"),
+        path=opj(map_part_dir, env["run_id_str"] + f".{PART:s}.zip"),
         dir_path=opj(env["work_dir"], PART),
         base_dir_path=opj(env["run_id_str"], PART),
     )
@@ -238,11 +238,11 @@ def run_job_cls2rec_in_dir(job, work_dir):
     PART = "cls2rec"
     env = compile_environment_for_job(job=job, work_dir=work_dir)
 
-    stage_part_dir = opj(env["map_dir"], PART)
-    os.makedirs(stage_part_dir, exist_ok=True)
+    map_part_dir = opj(env["map_dir"], PART)
+    os.makedirs(map_part_dir, exist_ok=True)
 
     logger_path = opj(
-        stage_part_dir, env["run_id_str"] + f".{PART:s}.log.jsonl"
+        map_part_dir, env["run_id_str"] + f".{PART:s}.log.jsonl"
     )
     logger = json_line_logger.LoggerFile(path=logger_path)
     logger.info(f"starting {PART:s}.")
@@ -282,7 +282,7 @@ def run_job_cls2rec_in_dir(job, work_dir):
     utils.gzip_file(opj(env["work_dir"], PART, "log.jsonl"))
 
     zipfileutils.archive_dir(
-        path=opj(stage_part_dir, env["run_id_str"] + f".{PART:s}.zip"),
+        path=opj(map_part_dir, env["run_id_str"] + f".{PART:s}.zip"),
         dir_path=opj(env["work_dir"], PART),
         base_dir_path=opj(env["run_id_str"], PART),
     )
@@ -402,7 +402,7 @@ def compile_environment_for_job(job, work_dir=None):
         env["instrument_key"],
         env["site_key"],
         env["particle_key"],
-        "stage",
+        "map",
     )
 
     env["config"] = configuration.read(plenoirf_dir=env["plenoirf_dir"])

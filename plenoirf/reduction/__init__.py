@@ -119,16 +119,16 @@ def make_jobs(plenoirf_dir, config=None, lazy=False, use_tmp_dir=True):
     for instrument_key in config["instruments"]:
         for site_key in config["sites"]["instruemnt_response"]:
             for particle_key in config["particles"]:
-                stage_dir = os.path.join(
+                map_dir = os.path.join(
                     plenoirf_dir,
                     "response",
                     instrument_key,
                     site_key,
                     particle_key,
-                    "stage",
+                    "map",
                 )
                 if has_filenames_of_certain_pattern_in_path(
-                    path=stage_dir, filename_wildcard="*.zip"
+                    path=map_dir, filename_wildcard="*.zip"
                 ):
                     for item_key in list_items():
                         if lazy:

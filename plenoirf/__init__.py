@@ -316,7 +316,7 @@ def _make_missing_run_ids_instrument_site_particle(
             instrument_key,
             site_key,
             particle_key,
-            "stage",
+            "map",
             production_part_key,
             "*.zip",
         )
