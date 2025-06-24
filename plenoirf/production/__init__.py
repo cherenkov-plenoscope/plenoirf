@@ -104,9 +104,7 @@ def run_job_prm2cer_in_dir(job, work_dir):
     map_part_dir = opj(env["map_dir"], PART)
     os.makedirs(map_part_dir, exist_ok=True)
 
-    logger_path = opj(
-        map_part_dir, env["run_id_str"] + f".{PART:s}.log.jsonl"
-    )
+    logger_path = opj(map_part_dir, env["run_id_str"] + f".{PART:s}.log.jsonl")
     logger = json_line_logger.LoggerFile(path=logger_path)
     logger.info(f"starting {PART:s}.")
 
@@ -191,9 +189,7 @@ def run_job_cer2cls_in_dir(job, work_dir):
     map_part_dir = opj(env["map_dir"], PART)
     os.makedirs(map_part_dir, exist_ok=True)
 
-    logger_path = opj(
-        map_part_dir, env["run_id_str"] + f".{PART:s}.log.jsonl"
-    )
+    logger_path = opj(map_part_dir, env["run_id_str"] + f".{PART:s}.log.jsonl")
     logger = json_line_logger.LoggerFile(path=logger_path)
     logger.info(f"starting {PART:s}.")
 
@@ -241,9 +237,7 @@ def run_job_cls2rec_in_dir(job, work_dir):
     map_part_dir = opj(env["map_dir"], PART)
     os.makedirs(map_part_dir, exist_ok=True)
 
-    logger_path = opj(
-        map_part_dir, env["run_id_str"] + f".{PART:s}.log.jsonl"
-    )
+    logger_path = opj(map_part_dir, env["run_id_str"] + f".{PART:s}.log.jsonl")
     logger = json_line_logger.LoggerFile(path=logger_path)
     logger.info(f"starting {PART:s}.")
 

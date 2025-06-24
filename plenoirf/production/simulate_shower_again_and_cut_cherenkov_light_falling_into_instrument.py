@@ -89,7 +89,7 @@ def run(env, part, seed):
         evttab = event_table.add_empty_level(evttab, key)
 
     logger.info("simulate showers.")
-    evttab = stage_two(
+    evttab = corsika_second_run(
         env=env,
         prng=prng,
         evttab=evttab,
@@ -119,7 +119,7 @@ def run(env, part, seed):
     os.remove(opj(module_work_dir, "particle_pools.dat"))
 
 
-def stage_two(
+def corsika_second_run(
     env,
     prng,
     evttab,
