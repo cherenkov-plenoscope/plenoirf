@@ -114,7 +114,7 @@ def init(plenoirf_dir):
     configuration.version_control.init(plenoirf_dir=plenoirf_dir)
 
 
-def run(plenoirf_dir, pool, logger=None, num_runs=None):
+def run(plenoirf_dir, pool, logger=None, max_num_runs=None):
     """
     Run all simulations.
 
@@ -194,11 +194,14 @@ def run(plenoirf_dir, pool, logger=None, num_runs=None):
     logger.info("trigger_geometry complete")
 
     logger.info("Populating the instrument response function")
-    jobs = population_make_jobs(
-        plenoirf_dir=plenoirf_dir, config=config, num_runs=num_runs
-    )
+    jobs = population_make_jobs(plenoirf_dir=plenoirf_dir, config=config)
     logger.info("Submitting {:d} jobs".format(len(jobs)))
     random.shuffle(jobs)
+
+    if max_num_runs is not None:
+        assert max_num_runs > 0
+        jobs = jobs[0:max_num_runs]
+
     results = pool.map(production.run_job, jobs)
 
 
@@ -216,7 +219,7 @@ def find_run_ids(template_path):
     return run_ids
 
 
-def population_make_jobs(plenoirf_dir, config=None, num_runs=None):
+def population_make_jobs(plenoirf_dir, config=None):
     if config is None:
         config = configuration.read(plenoirf_dir)
 
@@ -229,21 +232,16 @@ def population_make_jobs(plenoirf_dir, config=None, num_runs=None):
     for instrument_key in target:
         for site_key in target[instrument_key]:
             for particle_key in target[instrument_key][site_key]:
-                shower_target = target[instrument_key][site_key][particle_key][
-                    "num_showers_thrown"
-                ]
-                num_all_runs = (
-                    shower_target / part["num_showers_per_corsika_run"]
+                num_showers_target = target[instrument_key][site_key][
+                    particle_key
+                ]["num_showers_thrown"]
+                num_runs = (
+                    num_showers_target / part["num_showers_per_corsika_run"]
                 )
-                num_all_runs = int(np.floor(num_all_runs))
-                if num_runs is None:
-                    num_runs_this_time = num_all_runs
-                else:
-                    assert num_runs >= 1
-                    num_runs_this_time = min([num_runs, num_all_runs])
+                num_runs = int(np.ceil(num_runs))
 
                 run_id_start = run_id_range["start"]
-                run_id_stop = run_id_start + num_runs_this_time
+                run_id_stop = run_id_start + num_runs
                 run_id_stop = min([run_id_stop, run_id_range["stop"]])
 
                 jobs += _make_missing_jobs_instrument_site_particle(
