@@ -69,7 +69,9 @@ def reduce_item(instrument_site_particle_dir, item_key, use_tmp_dir=True):
         )
     elif item_key == "event_uids_for_debugging.txt":
         reduce_event_uids_for_debugging(
-            run_ids=run_ids, out_path=out_path, use_tmp_dir=use_tmp_dir
+            instrument_site_particle_dir=instrument_site_particle_dir,
+            run_ids=run_ids,
+            use_tmp_dir=use_tmp_dir,
         )
     else:
         raise KeyError(f"No such item_key '{item_key}'.")
@@ -501,25 +503,31 @@ def reduce_benchmarks(run_paths, out_path, use_tmp_dir=True):
             fout.write(json_utils.dumps(hostname_hashes))
 
 
-def reduce_event_uids_for_debugging(run_paths, out_path, use_tmp_dir=True):
+def reduce_event_uids_for_debugging(
+    instrument_site_particle_dir, run_ids, use_tmp_dir=True
+):
+    map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
+    out_path = opj(reduce_dir, "event_uids_for_debugging.txt")
+
     with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
         with open(
             tmp_path,
             "wt",
         ) as fout:
-            for run_path in run_paths:
-                run_basename = os.path.basename(run_path)
-                run_id_str = os.path.splitext(run_basename)[0]
+            for run_id in run_ids:
+                run_path = opj(map_dir, "prm2cer", f"{run_id:06d}.prm2cer.zip")
+                with ZipFileBufferIO(run_path) as zipbuff:
+                    buff = zipbuff.read(
+                        path=opj(
+                            f"{run_id:06d}",
+                            "prm2cer",
+                            "draw_event_uids_for_debugging",
+                            "event_uids_for_debugging.json",
+                        ),
+                        mode="rt",
+                    )
 
-                buff = zip_read_IO(
-                    file=run_path,
-                    internal_path=os.path.join(
-                        run_id_str,
-                        "plenoirf.production.draw_event_uids_for_debugging",
-                        "event_uids_for_debugging.json.gz",
-                    ),
-                    mode="rt|gz",
-                )
                 event_uids = json_utils.loads(buff.read())
+                event_uids = sorted(event_uids)
                 for event_uid in event_uids:
                     fout.write(f"{event_uid:012d}\n")
