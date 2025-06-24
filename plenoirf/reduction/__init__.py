@@ -49,16 +49,16 @@ def reduce_item(instrument_site_particle_dir, item_key, use_tmp_dir=True):
         )
     elif item_key == "ground_grid_intensity.zip":
         reduce_ground_grid_intensity(
+            instrument_site_particle_dir=instrument_site_particle_dir,
             run_ids=run_ids,
-            out_path=out_path,
             roi=False,
             only_past_trigger=True,
             use_tmp_dir=use_tmp_dir,
         )
     elif item_key == "ground_grid_intensity_roi.zip":
         reduce_ground_grid_intensity(
+            instrument_site_particle_dir=instrument_site_particle_dir,
             run_ids=run_ids,
-            out_path=out_path,
             roi=True,
             only_past_trigger=True,
             use_tmp_dir=use_tmp_dir,
@@ -227,6 +227,10 @@ class ZipFileBufferIO:
     def close(self):
         return self.zin.close()
 
+    def read_event_table(self, path):
+        with snt.open(file=self.read(path, "rb"), mode="r") as part:
+            return part.query()
+
     def __exit__(self, exc_type, exc_value, exc_tb):
         self.close()
 
@@ -306,44 +310,61 @@ def reduce_reconstructed_cherenkov(
 
 
 def reduce_ground_grid_intensity(
-    run_paths, out_path, roi=False, only_past_trigger=False, use_tmp_dir=True
+    instrument_site_particle_dir,
+    run_ids,
+    roi=False,
+    only_past_trigger=False,
+    use_tmp_dir=True,
 ):
+    _suff = "_roi" if roi else ""
+    map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
+    filename_without_ext = f"ground_grid_intensity{_suff:s}"
+    out_path = opj(reduce_dir, filename_without_ext + ".zip")
+
     with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
         with zipfile.ZipFile(tmp_path, "w") as zout:
-            for run_path in run_paths:
-                run_basename = os.path.basename(run_path)
-                run_id_str = os.path.splitext(run_basename)[0]
-
+            for run_id in run_ids:
                 if only_past_trigger:
-                    buff = zip_read_IO(
-                        file=run_path,
-                        internal_path=os.path.join(
-                            run_id_str, "event_table.snt.zip"
+                    run_cls2rec_path = opj(
+                        map_dir,
+                        "cer2cls",
+                        f"{run_id:06d}.cer2cls.zip",
+                    )
+
+                    with ZipFileBufferIO(run_cls2rec_path) as zipbuff:
+                        _evttab = zipbuff.read_event_table(
+                            path=opj(
+                                f"{run_id:06d}",
+                                "cer2cls",
+                                "simulate_instrument_and_reconstruct_cherenkov",
+                                "event_table.snt.zip",
+                            ),
+                        )
+                    past_trigger_uids = _evttab["pasttrigger"]["uid"]
+                else:
+                    past_trigger_uids = None
+
+                run_prm2cer_path = opj(
+                    map_dir,
+                    "prm2cer",
+                    f"{run_id:06d}.prm2cer.zip",
+                )
+
+                with ZipFileBufferIO(run_prm2cer_path) as zipbuff:
+                    buff = zipbuff.read(
+                        path=opj(
+                            f"{run_id:06d}",
+                            "prm2cer",
+                            "simulate_shower_and_collect_cherenkov_light_in_grid",
+                            filename_without_ext + ".tar",
                         ),
                         mode="rb",
                     )
-                    with snt.open(file=buff, mode="r") as part:
-                        run_evttab = part.query()
-                    past_trigger_uids = run_evttab["pasttrigger"]["uid"]
-
-                suff = "_roi" if roi else ""
-                internal_path = os.path.join(
-                    run_id_str,
-                    "plenoirf.production.simulate_shower_and_collect_cherenkov_light_in_grid",
-                    f"ground_grid_intensity{suff:s}.tar",
-                )
-                buff = zip_read_IO(
-                    file=run_path,
-                    internal_path=internal_path,
-                    mode="rb",
-                )
                 with sequential_tar.open(fileobj=buff, mode="r") as tarin:
                     for item in tarin:
-                        run_id = int(item.name[0:6])
-                        event_id = int(item.name[7 : 7 + 6])
                         event_uid = bookkeeping.uid.make_uid(
-                            run_id=run_id,
-                            event_id=event_id,
+                            run_id=int(item.name[0:6]),
+                            event_id=int(item.name[7 : 7 + 6]),
                         )
                         payload = item.read(mode="rb")
                         do_add = True
