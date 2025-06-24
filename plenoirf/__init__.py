@@ -235,12 +235,12 @@ def population_make_jobs(plenoirf_dir, config=None, num_runs=None):
                 num_all_runs = (
                     shower_target / part["num_showers_per_corsika_run"]
                 )
-                num_all_runs = int(np.ceil(num_all_runs))
-                if num_runs is not None:
+                num_all_runs = int(np.floor(num_all_runs))
+                if num_runs is None:
+                    num_runs_this_time = num_all_runs
+                else:
                     assert num_runs >= 1
                     num_runs_this_time = num_runs
-                else:
-                    num_runs_this_time = num_all_runs
 
                 run_id_start = run_id_range["start"]
                 run_id_stop = run_id_start + num_runs_this_time
