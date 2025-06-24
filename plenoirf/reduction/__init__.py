@@ -174,12 +174,11 @@ def run_job(job):
         job["site_key"],
         job["particle_key"],
     )
-    with rnw.Path(opj(par_dir, job["item_key"])) as out_path:
-        reduce_item(
-            instrument_site_particle_dir=instrument_site_particle_dir,
-            item_key=job["item_key"],
-            use_tmp_dir=job["use_tmp_dir"],
-        )
+    reduce_item(
+        instrument_site_particle_dir=instrument_site_particle_dir,
+        item_key=job["item_key"],
+        use_tmp_dir=job["use_tmp_dir"],
+    )
 
 
 class ZipFileBufferIO:
