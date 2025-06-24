@@ -29,17 +29,16 @@ def list_items():
     ]
 
 
-def reduce_item(map_dir, out_path, item_key, use_tmp_dir=True):
+def reduce_item(instrument_site_particle_dir, item_key, use_tmp_dir=True):
     run_ids = list_run_ids_ready_for_reduction(
-        map_dir=map_dir,
+        map_dir=opj(instrument_site_particle_dir, "map"),
         checkpoint_keys=production.list_checkpoint_keys(),
     )
 
     if item_key == "event_table.snt.zip":
         recude_event_table(
-            map_dir=map_dir,
+            instrument_site_particle_dir=instrument_site_particle_dir,
             run_ids=run_ids,
-            out_path=out_path,
             use_tmp_dir=use_tmp_dir,
         )
     elif item_key == "reconstructed_cherenkov.loph.tar":
@@ -160,7 +159,7 @@ def has_filenames_of_certain_pattern_in_path(path, filename_wildcard):
 
 
 def run_job(job):
-    par_dir = os.path.join(
+    instrument_site_particle_dir = os.path.join(
         job["plenoirf_dir"],
         "response",
         job["instrument_key"],
@@ -169,8 +168,7 @@ def run_job(job):
     )
     with rnw.Path(os.path.join(par_dir, job["item_key"])) as out_path:
         reduce_item(
-            map_dir=os.path.join(par_dir, "stage"),
-            out_path=out_path,
+            instrument_site_particle_dir=instrument_site_particle_dir,
             item_key=job["item_key"],
             use_tmp_dir=job["use_tmp_dir"],
         )
@@ -231,7 +229,12 @@ class ZipFileBufferIO:
         return self.close()
 
 
-def recude_event_table(map_dir, run_ids, out_path, use_tmp_dir=True):
+def recude_event_table(instrument_site_particle_dir, run_ids, use_tmp_dir=True):
+    map_dir = opj(instrument_site_particle_dir, "map")
+    reduce_dir = opj(instrument_site_particle_dir, "reduce")
+    os.makedirs(reduce_dir, exist_ok=True)
+    out_path = opj(reduce_dir, "event_table.snt.zip")
+
     with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
         with snt.open(
             tmp_path,
