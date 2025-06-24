@@ -43,7 +43,9 @@ def reduce_item(instrument_site_particle_dir, item_key, use_tmp_dir=True):
         )
     elif item_key == "reconstructed_cherenkov.loph.tar":
         reduce_reconstructed_cherenkov(
-            run_ids=run_ids, out_path=out_path, use_tmp_dir=use_tmp_dir
+            instrument_site_particle_dir=instrument_site_particle_dir,
+            run_ids=run_ids,
+            use_tmp_dir=use_tmp_dir,
         )
     elif item_key == "ground_grid_intensity.zip":
         reduce_ground_grid_intensity(
@@ -226,13 +228,20 @@ class ZipFileBufferIO:
         return self.zin.close()
 
     def __exit__(self, exc_type, exc_value, exc_tb):
-        return self.close()
+        self.close()
 
 
-def recude_event_table(instrument_site_particle_dir, run_ids, use_tmp_dir=True):
+def _map_reduce_dirs(instrument_site_particle_dir):
     map_dir = opj(instrument_site_particle_dir, "map")
     reduce_dir = opj(instrument_site_particle_dir, "reduce")
     os.makedirs(reduce_dir, exist_ok=True)
+    return map_dir, reduce_dir
+
+
+def recude_event_table(
+    instrument_site_particle_dir, run_ids, use_tmp_dir=True
+):
+    map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
     out_path = opj(reduce_dir, "event_table.snt.zip")
 
     with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
@@ -261,19 +270,33 @@ def recude_event_table(instrument_site_particle_dir, run_ids, use_tmp_dir=True):
                                 arc.append_table(part_evttab)
 
 
-def reduce_reconstructed_cherenkov(run_paths, out_path, use_tmp_dir=True):
+def reduce_reconstructed_cherenkov(
+    instrument_site_particle_dir, run_ids, use_tmp_dir=True
+):
+    map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
+    out_path = opj(reduce_dir, "reconstructed_cherenkov.loph.tar")
+
     with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
         with plenopy.photon_stream.loph.LopfTarWriter(path=tmp_path) as lout:
-            for run_path in run_paths:
-                run_basename = os.path.basename(run_path)
-                run_id_str = os.path.splitext(run_basename)[0]
-                buff = zip_read_IO(
-                    file=run_path,
-                    internal_path=os.path.join(
-                        run_id_str, "reconstructed_cherenkov.loph.tar"
-                    ),
-                    mode="rb",
+            for run_id in run_ids:
+
+                run_path = opj(
+                    map_dir,
+                    "cer2cls",
+                    f"{run_id:06d}.cer2cls.zip",
                 )
+
+                with ZipFileBufferIO(run_path) as zipbuff:
+                    buff = zipbuff.read(
+                        path=opj(
+                            f"{run_id:06d}",
+                            "cer2cls",
+                            "simulate_instrument_and_reconstruct_cherenkov",
+                            "reconstructed_cherenkov.loph.tar",
+                        ),
+                        mode="rb",
+                    )
+
                 with plenopy.photon_stream.loph.LopfTarReader(
                     fileobj=buff
                 ) as lin:
