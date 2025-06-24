@@ -131,7 +131,7 @@ def corsika_second_run(
     logger,
 ):
     opj = os.path.join
-    logger.info("Start corsika stage two.")
+    logger.info("Start corsika second run.")
     work_dir = corsika_and_grid_work_dir
     os.makedirs(work_dir, exist_ok=True)
 

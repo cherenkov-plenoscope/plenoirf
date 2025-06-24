@@ -113,7 +113,7 @@ def corsika_first_run(
     event_uids_for_debugging,
     logger,
 ):
-    logger.info("Start corsika stage one.")
+    logger.info("Start corsika first run.")
     work_dir = corsika_and_grid_work_dir
     os.makedirs(work_dir, exist_ok=True)
 
