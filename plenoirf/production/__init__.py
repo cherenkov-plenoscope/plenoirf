@@ -72,6 +72,10 @@ def make_example_jobs(
     return jobs
 
 
+def list_checkpoint_keys():
+    return ["prm2cer", "cer2cls", "cls2rec"]
+
+
 def run_job(job):
     tmpDir = tempfile.TemporaryDirectory
 

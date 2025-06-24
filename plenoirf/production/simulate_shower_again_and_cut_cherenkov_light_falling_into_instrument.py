@@ -80,9 +80,13 @@ def run(env, part, seed):
             "event_table.snt.zip",
         ),
     )
-    evttab = event_table.add_empty_level(evttab, "instrument_pointing")
-    evttab = event_table.add_empty_level(evttab, "cherenkovsizepart")
-    evttab = event_table.add_empty_level(evttab, "cherenkovpoolpart")
+    additional_level_keys = [
+        "instrument_pointing",
+        "cherenkovsizepart",
+        "cherenkovpoolpart",
+    ]
+    for key in additional_level_keys:
+        evttab = event_table.add_empty_level(evttab, key)
 
     logger.info("simulate showers.")
     evttab = stage_two(
@@ -98,9 +102,10 @@ def run(env, part, seed):
     )
 
     logger.info("write event_table.snt.zip.")
-    event_table.write_all_levels_to_path(
+    event_table.write_certain_levels_to_path(
         evttab=evttab,
         path=os.path.join(module_work_dir, "event_table.snt.zip"),
+        level_keys=additional_level_keys,
     )
 
     logger.info("done.")

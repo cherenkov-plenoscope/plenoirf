@@ -51,7 +51,9 @@ def run(env, part):
             "event_table.snt.zip",
         ),
     )
-    evttab = event_table.add_empty_level(evttab, "reconstructed_trajectory")
+    additional_level_keys = ["reconstructed_trajectory"]
+    for key in additional_level_keys:
+        evttab = event_table.add_empty_level(evttab, key)
 
     evttab = estimate_primary_trajectory(
         evttab=evttab,
@@ -70,7 +72,7 @@ def run(env, part):
     event_table.write_certain_levels_to_path(
         evttab=evttab,
         path=opj(module_work_dir, "event_table.snt.zip"),
-        level_keys=["reconstructed_trajectory"],
+        level_keys=additional_level_keys,
     )
 
     logger.info("done.")

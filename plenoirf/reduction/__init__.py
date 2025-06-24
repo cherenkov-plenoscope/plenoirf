@@ -1,6 +1,7 @@
 import zipfile
 import tarfile
 import os
+from os.path import join as opj
 import io
 import glob
 import rename_after_writing as rnw
@@ -14,6 +15,7 @@ import dynamicsizerecarray
 from .. import event_table
 from .. import configuration
 from .. import bookkeeping
+from .. import production
 
 
 def list_items():
@@ -28,18 +30,25 @@ def list_items():
 
 
 def reduce_item(map_dir, out_path, item_key, use_tmp_dir=True):
-    run_paths = glob.glob(os.path.join(map_dir, "*.zip"))
+    run_ids = list_run_ids_ready_for_reduction(
+        map_dir=map_dir,
+        checkpoint_keys=production.list_checkpoint_keys(),
+    )
+
     if item_key == "event_table.snt.zip":
         recude_event_table(
-            run_paths=run_paths, out_path=out_path, use_tmp_dir=use_tmp_dir
+            map_dir=map_dir,
+            run_ids=run_ids,
+            out_path=out_path,
+            use_tmp_dir=use_tmp_dir,
         )
     elif item_key == "reconstructed_cherenkov.loph.tar":
         reduce_reconstructed_cherenkov(
-            run_paths=run_paths, out_path=out_path, use_tmp_dir=use_tmp_dir
+            run_ids=run_ids, out_path=out_path, use_tmp_dir=use_tmp_dir
         )
     elif item_key == "ground_grid_intensity.zip":
         reduce_ground_grid_intensity(
-            run_paths=run_paths,
+            run_ids=run_ids,
             out_path=out_path,
             roi=False,
             only_past_trigger=True,
@@ -47,7 +56,7 @@ def reduce_item(map_dir, out_path, item_key, use_tmp_dir=True):
         )
     elif item_key == "ground_grid_intensity_roi.zip":
         reduce_ground_grid_intensity(
-            run_paths=run_paths,
+            run_ids=run_ids,
             out_path=out_path,
             roi=True,
             only_past_trigger=True,
@@ -55,14 +64,51 @@ def reduce_item(map_dir, out_path, item_key, use_tmp_dir=True):
         )
     elif item_key == "benchmark.snt.zip":
         reduce_benchmarks(
-            run_paths=run_paths, out_path=out_path, use_tmp_dir=use_tmp_dir
+            run_ids=run_ids, out_path=out_path, use_tmp_dir=use_tmp_dir
         )
     elif item_key == "event_uids_for_debugging.txt":
         reduce_event_uids_for_debugging(
-            run_paths=run_paths, out_path=out_path, use_tmp_dir=use_tmp_dir
+            run_ids=run_ids, out_path=out_path, use_tmp_dir=use_tmp_dir
         )
     else:
         raise KeyError(f"No such item_key '{item_key}'.")
+
+
+def _get_run_id_set_in_directory(path, filename_wildcardard="*.zip"):
+    all_paths = glob.glob(os.path.join(path, filename_wildcardard))
+
+    run_ids = set()
+    for a_path in all_paths:
+        basename = os.path.basename(a_path)
+        if len(basename) >= 6:
+            first_six_chars = basename[0:6]
+            if str_can_be_interpreted_as_int(first_six_chars):
+                run_id = int(first_six_chars)
+                assert run_id not in run_ids
+                run_ids.add(run_id)
+    return run_ids
+
+
+def list_run_ids_ready_for_reduction(map_dir, checkpoint_keys=None):
+    if checkpoint_keys is None:
+        checkpoint_keys = production.list_checkpoint_keys()
+
+    run_ids_in_checkpoints = []
+    for key in checkpoint_keys:
+        run_ids_in_checkpoints.append(
+            _get_run_id_set_in_directory(path=os.path.join(map_dir, key))
+        )
+
+    run_ids = list(set.intersection(*run_ids_in_checkpoints))
+    return sorted(run_ids)
+
+
+def str_can_be_interpreted_as_int(s):
+    try:
+        v = int(s)
+        return True
+    except ValueError:
+        return False
 
 
 def make_jobs(plenoirf_dir, config=None, lazy=False, use_tmp_dir=True):
@@ -149,7 +195,43 @@ def zip_read_IO(file, internal_path, mode="rb"):
     return buff
 
 
-def recude_event_table(run_paths, out_path, use_tmp_dir=True):
+class ZipFileBufferIO:
+    def __init__(self, file):
+        self.file = file
+
+    def __enter__(self):
+        self.zin = zipfile.ZipFile(file=self.file, mode="r")
+        return self
+
+    @property
+    def filenames(self):
+        return [i.filename for i in self.zin.filelist]
+
+    def read(self, path, mode):
+        with self.zin.open(path) as fin:
+            if "|gz" in mode:
+                block = gzip.decompress(fin.read())
+            else:
+                block = fin.read()
+        if "t" in mode:
+            buff = io.StringIO()
+            buff.write(bytes.decode(block))
+        elif "b" in mode:
+            buff = io.BytesIO()
+            buff.write(block)
+        else:
+            raise KeyError("mode must either be 'b' or 't'.")
+        buff.seek(0)
+        return buff
+
+    def close(self):
+        return self.zin.close()
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        return self.close()
+
+
+def recude_event_table(map_dir, run_ids, out_path, use_tmp_dir=True):
     with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
         with snt.open(
             tmp_path,
@@ -158,19 +240,22 @@ def recude_event_table(run_paths, out_path, use_tmp_dir=True):
             index_key=event_table.structure.UID_DTYPE[0],
             compress=True,
         ) as arc:
-            for run_path in run_paths:
-                run_basename = os.path.basename(run_path)
-                run_id_str = os.path.splitext(run_basename)[0]
-                buff = zip_read_IO(
-                    file=run_path,
-                    internal_path=os.path.join(
-                        run_id_str, "event_table.snt.zip"
-                    ),
-                    mode="rb",
-                )
-                with snt.open(file=buff, mode="r") as part:
-                    run_evttab = part.query()
-                arc.append_table(run_evttab)
+            for checkpoint_key in production.list_checkpoint_keys():
+                for run_id in run_ids:
+                    run_path = opj(
+                        map_dir,
+                        checkpoint_key,
+                        f"{run_id:06d}.{checkpoint_key:s}.zip",
+                    )
+                    with ZipFileBufferIO(run_path) as zipbuff:
+                        for ipath in zipbuff.filenames:
+                            if ipath.endswith("event_table.snt.zip"):
+                                buff = zipbuff.read(path=ipath, mode="rb")
+
+                                with snt.open(file=buff, mode="r") as part:
+                                    part_evttab = part.query()
+
+                                arc.append_table(part_evttab)
 
 
 def reduce_reconstructed_cherenkov(run_paths, out_path, use_tmp_dir=True):

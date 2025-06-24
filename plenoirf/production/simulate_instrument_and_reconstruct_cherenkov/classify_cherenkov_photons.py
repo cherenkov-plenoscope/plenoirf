@@ -33,7 +33,9 @@ def run_block(env, blk, block_id, logger):
             "event_table.snt.zip",
         ),
     )
-    evttab = event_table.add_empty_level(evttab, "cherenkovclassification")
+    additional_level_keys = ["cherenkovclassification"]
+    for key in additional_level_keys:
+        evttab = event_table.add_empty_level(evttab, key)
 
     evttab = classify_cherenkov_photons(
         evttab=evttab,
@@ -57,7 +59,7 @@ def run_block(env, blk, block_id, logger):
     event_table.write_certain_levels_to_path(
         evttab=evttab,
         path=opj(sub_work_dir, "event_table.snt.zip"),
-        level_keys=["cherenkovclassification"],
+        level_keys=additional_level_keys,
     )
 
     logger.info(name + ": ... done.")

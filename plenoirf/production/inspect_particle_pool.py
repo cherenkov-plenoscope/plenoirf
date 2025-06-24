@@ -31,19 +31,19 @@ def run(env, part):
             "event_table.snt.zip",
         ),
     )
-    evttab = event_table.add_empty_level(
-        evttab=evttab, level_key="particlepool"
-    )
-    evttab = event_table.add_empty_level(
-        evttab=evttab, level_key="particlepoolonaperture"
-    )
+    additional_level_keys = [
+        "particlepool",
+        "particlepoolonaperture",
+    ]
+    for key in additional_level_keys:
+        evttab = event_table.add_empty_level(evttab, key)
 
     evttab = inspect_particle_pool(evttab=evttab, env=env, logger=logger)
 
     event_table.write_certain_levels_to_path(
         evttab=evttab,
         path=opj(module_work_dir, "event_table.snt.zip"),
-        level_keys=["particlepool", "particlepoolonaperture"],
+        level_keys=additional_level_keys,
     )
 
     logger.info("done.")

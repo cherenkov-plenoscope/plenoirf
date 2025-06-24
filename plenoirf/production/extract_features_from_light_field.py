@@ -35,7 +35,9 @@ def run(env, part, seed):
             "event_table.snt.zip",
         ),
     )
-    evttab = event_table.add_empty_level(evttab, "features")
+    additional_level_keys = ["features"]
+    for key in additional_level_keys:
+        evttab = event_table.add_empty_level(evttab, key)
 
     evttab = extract_features(
         evttab=evttab,
@@ -54,7 +56,7 @@ def run(env, part, seed):
     event_table.write_certain_levels_to_path(
         evttab=evttab,
         path=opj(module_work_dir, "event_table.snt.zip"),
-        level_keys=["features"],
+        level_keys=additional_level_keys,
     )
 
     logger.info("done.")
