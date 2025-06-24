@@ -65,7 +65,9 @@ def reduce_item(instrument_site_particle_dir, item_key, use_tmp_dir=True):
         )
     elif item_key == "benchmark.snt.zip":
         reduce_benchmarks(
-            run_ids=run_ids, out_path=out_path, use_tmp_dir=use_tmp_dir
+            instrument_site_particle_dir=instrument_site_particle_dir,
+            run_ids=run_ids,
+            use_tmp_dir=use_tmp_dir,
         )
     elif item_key == "event_uids_for_debugging.txt":
         reduce_event_uids_for_debugging(
@@ -403,46 +405,49 @@ def _make_benchmarks_dtype():
     return dtype
 
 
-def reduce_benchmarks(run_paths, out_path, use_tmp_dir=True):
+def reduce_benchmarks(instrument_site_particle_dir, run_ids, use_tmp_dir=True):
+    map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
+    out_path = opj(reduce_dir, "benchmark.snt.zip")
+
     hostname_hashes = {}
 
     stats = dynamicsizerecarray.DynamicSizeRecarray(
         dtype=_make_benchmarks_dtype()
     )
 
-    for run_path in run_paths:
-        run_basename = os.path.basename(run_path)
-        run_id_str = os.path.splitext(run_basename)[0]
+    for run_id in run_ids:
+        run_path = opj(map_dir, "prm2cer", f"{run_id:06d}.prm2cer.zip")
 
-        buff = zip_read_IO(
-            file=run_path,
-            internal_path=os.path.join(
-                run_id_str,
-                "plenoirf.production.gather_and_export_provenance",
-                "provenance.json.gz",
-            ),
-            mode="rt|gz",
-        )
-        item = json_utils.loads(buff.read())
+        with ZipFileBufferIO(run_path) as zipbuff:
+            _buff = zipbuff.read(
+                path=opj(
+                    f"{run_id:06d}",
+                    "prm2cer",
+                    "gather_and_export_provenance",
+                    "provenance.json.gz",
+                ),
+                mode="rt|gz",
+            )
+            item = json_utils.loads(_buff.read())
 
-        if item["hostname"] not in hostname_hashes:
-            hostname_hashes[item["hostname"]] = hash(item["hostname"])
+            if item["hostname"] not in hostname_hashes:
+                hostname_hashes[item["hostname"]] = hash(item["hostname"])
 
-        buff = zip_read_IO(
-            file=run_path,
-            internal_path=os.path.join(
-                run_id_str,
-                "plenoirf.production.benchmark_compute_environment",
-                "benchmark.json.gz",
-            ),
-            mode="rt|gz",
-        )
-        bench = json_utils.loads(buff.read())
+            _buff = zipbuff.read(
+                path=opj(
+                    f"{run_id:06d}",
+                    "prm2cer",
+                    "benchmark_compute_environment",
+                    "benchmark.json.gz",
+                ),
+                mode="rt|gz",
+            )
+            bench = json_utils.loads(_buff.read())
 
         rec = {}
         rec["hostname_hash"] = hash(item["hostname"])
         rec["time_unix_s"] = item["time"]["unix"]
-        rec["run_id"] = int(run_id_str)
+        rec["run_id"] = run_id
         ccc = bench["corsika"]
         rec["corsika_total_s"] = ccc["total"]
         rec["corsika_initializing_s"] = ccc["initializing"]
