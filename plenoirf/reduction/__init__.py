@@ -180,25 +180,6 @@ def run_job(job):
         )
 
 
-def zip_read_IO(file, internal_path, mode="rb"):
-    with zipfile.ZipFile(file=file, mode="r") as zin:
-        with zin.open(internal_path) as fin:
-            if "|gz" in mode:
-                block = gzip.decompress(fin.read())
-            else:
-                block = fin.read()
-    if "t" in mode:
-        buff = io.StringIO()
-        buff.write(bytes.decode(block))
-    elif "b" in mode:
-        buff = io.BytesIO()
-        buff.write(block)
-    else:
-        raise KeyError("mode must either be 'b' or 't'.")
-    buff.seek(0)
-    return buff
-
-
 class ZipFileBufferIO:
     def __init__(self, file):
         self.file = file
