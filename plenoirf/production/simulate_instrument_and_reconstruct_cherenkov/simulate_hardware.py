@@ -61,7 +61,7 @@ def run_block(env, blk, block_id, logger):
         for extension in [".stdout.txt", ".stderr.txt"]:
             rnw.copy(
                 src=opj(block_dir, "merlict" + extension),
-                dst=opj(env["stage_dir"], filename + extension),
+                dst=opj(env["map_dir"], filename + extension),
             )
 
     assert rc == 0, errmsg

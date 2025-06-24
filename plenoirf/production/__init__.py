@@ -81,7 +81,7 @@ def run_job(job):
 
     env = compile_environment_for_job(job=job)
     result_path = opj(
-        env["stage_dir"], "{part:s}", env["run_id_str"] + ".{part:s}.zip"
+        env["map_dir"], "{part:s}", env["run_id_str"] + ".{part:s}.zip"
     )
 
     if not os.path.exists(result_path.format(part="prm2cer")):
@@ -101,7 +101,7 @@ def run_job_prm2cer_in_dir(job, work_dir):
     PART = "prm2cer"
     env = compile_environment_for_job(job=job, work_dir=work_dir)
 
-    stage_part_dir = opj(env["stage_dir"], PART)
+    stage_part_dir = opj(env["map_dir"], PART)
     os.makedirs(stage_part_dir, exist_ok=True)
 
     logger_path = opj(
@@ -188,7 +188,7 @@ def run_job_cer2cls_in_dir(job, work_dir):
     PART = "cer2cls"
     env = compile_environment_for_job(job=job, work_dir=work_dir)
 
-    stage_part_dir = opj(env["stage_dir"], PART)
+    stage_part_dir = opj(env["map_dir"], PART)
     os.makedirs(stage_part_dir, exist_ok=True)
 
     logger_path = opj(
@@ -238,7 +238,7 @@ def run_job_cls2rec_in_dir(job, work_dir):
     PART = "cls2rec"
     env = compile_environment_for_job(job=job, work_dir=work_dir)
 
-    stage_part_dir = opj(env["stage_dir"], PART)
+    stage_part_dir = opj(env["map_dir"], PART)
     os.makedirs(stage_part_dir, exist_ok=True)
 
     logger_path = opj(
@@ -296,7 +296,7 @@ def load_part(env, part):
     if not os.path.exists(part_dir):
         shutil.unpack_archive(
             filename=opj(
-                env["stage_dir"], part, env["run_id_str"] + f".{part:s}.zip"
+                env["map_dir"], part, env["run_id_str"] + f".{part:s}.zip"
             ),
             extract_dir=opj(env["work_dir"]),
         )
@@ -396,7 +396,7 @@ def compile_environment_for_job(job, work_dir=None):
     env = copy.deepcopy(job)
     env["run_id_str"] = bookkeeping.uid.make_run_id_str(run_id=env["run_id"])
 
-    env["stage_dir"] = opj(
+    env["map_dir"] = opj(
         env["plenoirf_dir"],
         "response",
         env["instrument_key"],
