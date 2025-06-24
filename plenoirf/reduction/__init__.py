@@ -80,7 +80,7 @@ def reduce_item(instrument_site_particle_dir, item_key, use_tmp_dir=True):
 
 
 def _get_run_id_set_in_directory(path, filename_wildcardard="*.zip"):
-    all_paths = glob.glob(os.path.join(path, filename_wildcardard))
+    all_paths = glob.glob(opj(path, filename_wildcardard))
 
     run_ids = set()
     for a_path in all_paths:
@@ -101,7 +101,7 @@ def list_run_ids_ready_for_reduction(map_dir, checkpoint_keys=None):
     run_ids_in_checkpoints = []
     for key in checkpoint_keys:
         run_ids_in_checkpoints.append(
-            _get_run_id_set_in_directory(path=os.path.join(map_dir, key))
+            _get_run_id_set_in_directory(path=opj(map_dir, key))
         )
 
     run_ids = list(set.intersection(*run_ids_in_checkpoints))
@@ -120,29 +120,31 @@ def make_jobs(plenoirf_dir, config=None, lazy=False, use_tmp_dir=True):
     if config is None:
         config = configuration.read(plenoirf_dir)
 
+    production_final_checkpoint_key = production.list_checkpoint_keys()[-1]
+
     jobs = []
     for instrument_key in config["instruments"]:
         for site_key in config["sites"]["instruemnt_response"]:
             for particle_key in config["particles"]:
-                map_dir = os.path.join(
+                instrument_site_particle_dir = opj(
                     plenoirf_dir,
                     "response",
                     instrument_key,
                     site_key,
                     particle_key,
-                    "map",
                 )
                 if has_filenames_of_certain_pattern_in_path(
-                    path=map_dir, filename_wildcard="*.zip"
+                    path=opj(
+                        instrument_site_particle_dir,
+                        "map",
+                        production_final_checkpoint_key,
+                    ),
+                    filename_wildcard="*.zip",
                 ):
                     for item_key in list_items():
                         if lazy:
-                            job_out_path = os.path.join(
-                                plenoirf_dir,
-                                "response",
-                                instrument_key,
-                                site_key,
-                                particle_key,
+                            job_out_path = opj(
+                                instrument_site_particle_dir,
                                 item_key,
                             )
                             if os.path.exists(job_out_path):
@@ -160,19 +162,19 @@ def make_jobs(plenoirf_dir, config=None, lazy=False, use_tmp_dir=True):
 
 
 def has_filenames_of_certain_pattern_in_path(path, filename_wildcard):
-    matching_paths = glob.glob(os.path.join(path, filename_wildcard))
+    matching_paths = glob.glob(opj(path, filename_wildcard))
     return len(matching_paths) > 0
 
 
 def run_job(job):
-    instrument_site_particle_dir = os.path.join(
+    instrument_site_particle_dir = opj(
         job["plenoirf_dir"],
         "response",
         job["instrument_key"],
         job["site_key"],
         job["particle_key"],
     )
-    with rnw.Path(os.path.join(par_dir, job["item_key"])) as out_path:
+    with rnw.Path(opj(par_dir, job["item_key"])) as out_path:
         reduce_item(
             instrument_site_particle_dir=instrument_site_particle_dir,
             item_key=job["item_key"],
