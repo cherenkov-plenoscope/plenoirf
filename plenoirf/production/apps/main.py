@@ -161,7 +161,9 @@ i = 0
 blocks = {}
 while True:
     i += 1
-    num_jr, num_jp, num_je = query_number_of_pending_jobs(queue=queue)
+    num_jr, num_jp, num_je = query_number_jobs_running_pending_error(
+        queue=queue
+    )
     log(
         f"jobs running {num_jr: 4d}, pending {num_jp: 4d}, error {num_je: 4d}, "
         f"blocks {len(blocks):d}/{MAX_NUM_BLOCKS:d}."
