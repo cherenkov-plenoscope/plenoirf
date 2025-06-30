@@ -23,34 +23,65 @@ parser.add_argument(
     type=str,
     help="Name of the queue system.",
 )
+parser.add_argument("--debug", action="store_true")
 
-NUM_PER_SUBMISSION = 100
-NUM_PENDING = 100
-polling_interval_s = 60
+NUM_PER_SUBMISSION = 192
+MAX_NUM_BLOCKS = 24
+NUM_PENDING = 96
+POLLING_INTERVAL_S = 60
+
+
+def time_stamp():
+    pypoolparty.utils.time_now_iso8601().replace(":", "-")
+
+
 args = parser.parse_args()
 queue = args.queue
 assert queue in ["sun_grid_engine", "slurm"]
 plenoirf_dir = args.plenoirf_dir
 assert os.path.exists(plenoirf_dir)
 
-time_stamp = pypoolparty.utils.time_now_iso8601().replace(":", "-")
-work_dir = f".keep_queue_busy.{time_stamp:s}"
+work_dir = f".keep_queue_busy.{time_stamp():s}"
 os.makedirs(work_dir)
 
 
 def log(msg):
     print(
         "[keep_queue_busy]",
-        pypoolparty.utils.time_now_iso8601().replace(":", "-"),
+        time_stamp(),
         msg,
     )
 
 
-def make_submission_script(queue, plenoirf_dir, num_jobs):
+def process_open(path, args, cwd=None):
+    pro = {}
+    pro["path"] = path
+    pro["o"] = open(path + ".o.part", "wt")
+    pro["e"] = open(path + ".e.part", "wt")
+    pro["p"] = subprocess.Popen(
+        args=args, cwd=cwd, stdout=pro["o"], stderr=pro["e"]
+    )
+    return pro
+
+
+def process_close(pro):
+    assert pro["p"] is not None
+    pro["o"].close()
+    os.rename(pro["path"] + ".o.part", pro["path"] + ".o")
+    pro["e"].close()
+    os.rename(pro["path"] + ".e.part", pro["path"] + ".e")
+
+
+def process_poll(pro):
+    v = pro["p"].poll()
+    if v is None:
+        return False
+    else:
+        return True
+
+
+def _make_pool_script(queue):
     script = ""
-    script += "import plenoirf\n"
-    script += "import pypoolparty\n"
-    script += "\n"
     if queue == "slurm":
         script += "pool = pypoolparty.slurm.Pool(\n"
         script += "    max_num_resubmissions=100,\n"
@@ -62,12 +93,33 @@ def make_submission_script(queue, plenoirf_dir, num_jobs):
         script += ")\n"
     else:
         raise ValueError(f"Unknown queue.")
+    return script
+
+
+def make_plenoirf_submission_script(queue, plenoirf_dir, num_jobs):
+    script = ""
+    script += "import plenoirf\n"
+    script += "import pypoolparty\n"
+    script += "\n"
+    script += _make_pool_script(queue=queue)
     script += "\n"
     script += "plenoirf.run(\n"
     script += "    plenoirf_dir='{:s}',\n".format(plenoirf_dir)
     script += "    pool=pool,\n"
     script += "    max_num_runs={:d},\n".format(num_jobs)
     script += ")\n"
+    return script
+
+
+def make_debug_submission_script(queue, num_jobs):
+    script = ""
+    script += "import numpy as np\n"
+    script += "import pypoolparty\n"
+    script += "\n"
+    script += _make_pool_script(queue=queue)
+    script += "\n"
+    script += "jobs = np.arange(0, {:d})\n".format(num_jobs)
+    script += "pool.map(np.sum, jobs)\n"
     return script
 
 
@@ -90,37 +142,62 @@ def query_number_of_pending_jobs(queue):
         return len(pending)
 
 
-script_filename = "submission_script.py"
-script_path = os.path.join(work_dir, script_filename)
-with open(script_path, "wt") as f:
-    f.write(
-        make_submission_script(
-            queue=queue, plenoirf_dir=plenoirf_dir, num_jobs=NUM_PER_SUBMISSION
-        )
+if args.debug:
+    script = make_debug_submission_script(
+        queue=queue, num_jobs=NUM_PER_SUBMISSION
+    )
+else:
+    script = make_submission_script(
+        queue=queue, plenoirf_dir=plenoirf_dir, num_jobs=NUM_PER_SUBMISSION
     )
 
+script_filename = "submission_script.py"
+script_path = os.path.join(work_dir, script_filename)
+with open(script_path + ".part", "wt") as f:
+    f.write(script)
+os.rename(script_path + ".part", script_path)
 
-count = 0
+i = 0
+blocks = {}
 while True:
-    count += 1
+    i += 1
     num_jobs_pending = query_number_of_pending_jobs(queue=queue)
-    log(f"jobs pending: {num_jobs_pending:d}.")
+    log(
+        f"jobs pending: {num_jobs_pending:d}, "
+        f"blocks running: {len(blocks):d}/{MAX_NUM_BLOCKS:d}."
+    )
+
+    have_returned = []
+    for j in blocks:
+        if processes_poll(blocks[key]):
+            log(f"Block {j:d} has returned.")
+            have_returned.append(j)
+
+    for j in have_returned:
+        log(f"Closing block {j:d}.")
+        processes_close(blocks[j])
+        _ = blocks.pop(j)
 
     if num_jobs_pending < NUM_PENDING:
-        log(f"submitting {NUM_PER_SUBMISSION:d} more jobs.")
-        # fire and forget
-        _ = subprocess.Popen(
-            args=[
-                "python",
-                script_filename,
-                ">>",
-                f"{count:06d}.txt",
-                "2>&1",
-            ],
-            cwd=work_dir,
-            shell=True,
-        )
-    else:
-        log(f"queue is busy.")
+        log(f"Queue has free slots.")
+        if len(blocks) < MAX_NUM_BLOCKS:
+            log(f"Opening block {i:d}.")
+            log(f"submitting {NUM_PER_SUBMISSION:d} more jobs.")
 
-    time.sleep(polling_interval_s)
+            blocks[i] = processes_open(
+                path=os.path.join(work_dir, f"{i:06d}"),
+                args=["python", script_filename],
+                cwd=work_dir,
+            )
+        else:
+            log(
+                f"Can not open new block. "
+                f"Already {len(blocks):d}/{MAX_NUM_BLOCKS:d} blocks running."
+            )
+    else:
+        log(f"Queue is full.")
+
+    if args.debug:
+        input("press enter to continue.")
+    else:
+        time.sleep(POLLING_INTERVAL_S)
