@@ -169,7 +169,7 @@ while True:
 
     have_returned = []
     for j in blocks:
-        if process_poll(blocks[key]):
+        if process_poll(blocks[j]):
             log(f"Block {j:d} has returned.")
             have_returned.append(j)
 
