@@ -24,9 +24,9 @@ parser.add_argument(
     help="Name of the queue system.",
 )
 
-NUM_PER_SUBMISSION = 10
-NUM_PENDING = 50
-polling_interval_s = 30
+NUM_PER_SUBMISSION = 100
+NUM_PENDING = 100
+polling_interval_s = 60
 args = parser.parse_args()
 queue = args.queue
 assert queue in ["sun_grid_engine", "slurm"]
@@ -111,7 +111,7 @@ while True:
         # fire and forget
         _ = subprocess.Popen(
             args=[
-                "pyton",
+                "python",
                 script_filename,
                 ">>",
                 f"{count:06d}.txt",
