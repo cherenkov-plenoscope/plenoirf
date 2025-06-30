@@ -32,7 +32,7 @@ POLLING_INTERVAL_S = 60
 
 
 def time_stamp():
-    pypoolparty.utils.time_now_iso8601().replace(":", "-")
+    return pypoolparty.utils.time_now_iso8601().replace(":", "-")
 
 
 args = parser.parse_args()
