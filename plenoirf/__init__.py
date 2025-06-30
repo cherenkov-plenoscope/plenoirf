@@ -203,7 +203,7 @@ def run(plenoirf_dir, pool, logger=None, max_num_runs=None):
         jobs = jobs[0:max_num_runs]
 
     logger.info("Submitting {:d} jobs".format(len(jobs)))
-    population_register_jobs(
+    _population_register_jobs(
         plenoirf_dir=plenoirf_dir, jobs=jobs, logger=logger
     )
     results = pool.map(production.run_job, jobs)
