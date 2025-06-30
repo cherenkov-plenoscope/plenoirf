@@ -1,9 +1,9 @@
+import os
 import pypoolparty
 import argparse
 import plenoirf
-import tempfile
 import time
-import multiprocessing
+import subprocess
 
 
 parser = argparse.ArgumentParser(
@@ -100,14 +100,26 @@ with open(script_path, "wt") as f:
     )
 
 
+count = 0
 while True:
+    count += 1
     num_jobs_pending = query_number_of_pending_jobs(queue=queue)
     log(f"jobs pending: {num_jobs_pending:d}.")
 
     if num_jobs_pending < NUM_PENDING:
         log(f"submitting {NUM_PER_SUBMISSION:d} more jobs.")
         # fire and forget
-        _ = subprocess.Popen(args=["pyton", script_filename], cwd=work_dir)
+        _ = subprocess.Popen(
+            args=[
+                "pyton",
+                script_filename,
+                ">>",
+                f"{count:06d}.txt",
+                "2>&1",
+            ],
+            cwd=work_dir,
+            shell=True,
+        )
     else:
         log(f"queue is busy.")
 
