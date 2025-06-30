@@ -32,6 +32,7 @@ setuptools.setup(
         "plenoirf.reconstruction",
         "plenoirf.production",
         "plenoirf.production.simulate_instrument_and_reconstruct_cherenkov",
+        "plenoirf.production.apps",
         "plenoirf.summary",
         "plenoirf.features",
         "plenoirf.seeding",
@@ -71,4 +72,9 @@ setuptools.setup(
         "Topic :: Scientific/Engineering :: Physics",
         "Topic :: Scientific/Engineering :: Astronomy",
     ],
+    entry_points={
+        "console_scripts": [
+            "plenoirf-run=plenoirf.production.apps.main:main",
+        ]
+    },
 )
