@@ -28,7 +28,7 @@ parser.add_argument("--debug", action="store_true")
 NUM_PER_SUBMISSION = 192
 MAX_NUM_BLOCKS = 24
 NUM_PENDING = 96
-POLLING_INTERVAL_S = 60
+POLLING_INTERVAL_S = 30
 
 
 def time_stamp():
@@ -123,23 +123,23 @@ def make_debug_submission_script(queue, num_jobs):
     return script
 
 
-def query_number_of_pending_jobs(queue):
+def query_number_jobs_running_pending_error(queue):
     if queue == "slurm":
         jobs = pypoolparty.slurm.calling.squeue()
-        _, pending, _ = (
+        r, p, e = (
             pypoolparty.slurm.organizing_jobs.split_jobs_in_running_pending_error(
                 jobs=jobs
             )
         )
-        return len(pending)
+        return len(r), len(p), len(e)
     elif queue == "sun_grid_engine":
         jobs = pypoolparty.sun_grid_engine.calling.qstat()
-        _, pending, _ = (
+        r, p, e = (
             pypoolparty.sun_grid_engine.organizing_jobs.split_jobs_in_running_pending_error(
                 jobs=jobs
             )
         )
-        return len(pending)
+        return len(r), len(p), len(e)
 
 
 if args.debug:
@@ -161,10 +161,10 @@ i = 0
 blocks = {}
 while True:
     i += 1
-    num_jobs_pending = query_number_of_pending_jobs(queue=queue)
+    num_jr, num_jp, num_je = query_number_of_pending_jobs(queue=queue)
     log(
-        f"jobs pending: {num_jobs_pending:d}, "
-        f"blocks running: {len(blocks):d}/{MAX_NUM_BLOCKS:d}."
+        f"jobs running {num_jr: 4d}, pending {num_jp: 4d}, error {num_je: 4d}, "
+        f"blocks {len(blocks):d}/{MAX_NUM_BLOCKS:d}."
     )
 
     have_returned = []
@@ -178,11 +178,16 @@ while True:
         process_close(blocks[j])
         _ = blocks.pop(j)
 
-    if num_jobs_pending < NUM_PENDING:
-        log(f"Queue has free slots.")
+    if num_jp < NUM_PENDING:
+        if args.debug:
+            log(f"Queue has free slots.")
+
         if len(blocks) < MAX_NUM_BLOCKS:
-            log(f"Opening block {i:d}.")
-            log(f"submitting {NUM_PER_SUBMISSION:d} more jobs.")
+            if args.debug:
+                log(
+                    f"Opening block {i:d}. "
+                    f"Submitting {NUM_PER_SUBMISSION:d} more jobs."
+                )
 
             blocks[i] = process_open(
                 path=os.path.join(work_dir, f"{i:06d}"),
@@ -190,12 +195,15 @@ while True:
                 cwd=work_dir,
             )
         else:
-            log(
-                f"Can not open new block. "
-                f"Already {len(blocks):d}/{MAX_NUM_BLOCKS:d} blocks running."
-            )
+            if args.debug:
+                log(
+                    f"Can not open new block. "
+                    f"Already {len(blocks):d}/{MAX_NUM_BLOCKS:d} "
+                    "blocks running."
+                )
     else:
-        log(f"Queue is full.")
+        if args.debug:
+            log(f"Queue is full.")
 
     if args.debug:
         input("press enter to continue.")
