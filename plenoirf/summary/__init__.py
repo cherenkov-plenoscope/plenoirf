@@ -140,6 +140,7 @@ class ScriptResources:
             self.instrument_key,
             self.site_key,
             particle_key,
+            "reduce",
         )
 
     def event_table_path(self, particle_key):
@@ -405,6 +406,7 @@ def _estimate_num_events_past_trigger_for_instrument(
                 instrument_key,
                 sk,
                 pk,
+                "reduce",
                 "event_table.snt.zip",
             )
 
