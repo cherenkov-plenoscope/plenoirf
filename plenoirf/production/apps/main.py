@@ -38,7 +38,7 @@ work_dir = f".keep_queue_busy.{time_stamp:s}"
 os.makedirs(work_dir)
 
 
-def log(self, msg):
+def log(msg):
     print(
         "[keep_queue_busy]",
         pypoolparty.utils.time_now_iso8601().replace(":", "-"),
