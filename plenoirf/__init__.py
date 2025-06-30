@@ -358,8 +358,11 @@ def _make_missing_run_ids_instrument_site_particle(
         "map",
     )
 
-    with bookkeeping.run_id_register.Register(map_dir=map_dir) as reg:
-        existing_run_ids = set(reg.get_run_ids())
+    if os.path.exists(map_dir):
+        with bookkeeping.run_id_register.Register(map_dir=map_dir) as reg:
+            existing_run_ids = set(reg.get_run_ids())
+    else:
+        existing_run_ids = set()
 
     missing_run_ids = []
     for run_id in np.arange(run_id_start, run_id_stop):
