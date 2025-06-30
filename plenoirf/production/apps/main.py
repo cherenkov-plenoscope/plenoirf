@@ -169,13 +169,13 @@ while True:
 
     have_returned = []
     for j in blocks:
-        if processes_poll(blocks[key]):
+        if process_poll(blocks[key]):
             log(f"Block {j:d} has returned.")
             have_returned.append(j)
 
     for j in have_returned:
         log(f"Closing block {j:d}.")
-        processes_close(blocks[j])
+        process_close(blocks[j])
         _ = blocks.pop(j)
 
     if num_jobs_pending < NUM_PENDING:
@@ -184,7 +184,7 @@ while True:
             log(f"Opening block {i:d}.")
             log(f"submitting {NUM_PER_SUBMISSION:d} more jobs.")
 
-            blocks[i] = processes_open(
+            blocks[i] = process_open(
                 path=os.path.join(work_dir, f"{i:06d}"),
                 args=["python", script_filename],
                 cwd=work_dir,
