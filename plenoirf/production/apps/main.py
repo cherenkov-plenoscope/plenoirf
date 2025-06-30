@@ -147,7 +147,7 @@ if args.debug:
         queue=queue, num_jobs=NUM_PER_SUBMISSION
     )
 else:
-    script = make_submission_script(
+    script = make_plenoirf_submission_script(
         queue=queue, plenoirf_dir=plenoirf_dir, num_jobs=NUM_PER_SUBMISSION
     )
 
