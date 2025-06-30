@@ -76,7 +76,7 @@ def init(plenoirf_dir):
 
     """
     plenoirf_dir = op.abspath(plenoirf_dir)
-    makesuredirs(plenoirf_dir)
+    os.makedirs(plenoirf_dir, exist_ok=True)
 
     provenance.gather_and_bumb(
         path=opj(plenoirf_dir, "provenance", "init.tar")
@@ -168,7 +168,7 @@ def run(plenoirf_dir, pool, logger=None, max_num_runs=None):
     logger.info("plenoptics is complete")
 
     logger.info("estimating trigger_geometry.")
-    makesuredirs(opj(plenoirf_dir, "trigger_geometry"))
+    os.makedirs(opj(plenoirf_dir, "trigger_geometry"), exist_ok=True)
     for instrumnet_key in config["instruments"]:
         logger.info(
             "estimating trigger_geometry for {:s}".format(instrumnet_key)
@@ -203,21 +203,10 @@ def run(plenoirf_dir, pool, logger=None, max_num_runs=None):
         jobs = jobs[0:max_num_runs]
 
     logger.info("Submitting {:d} jobs".format(len(jobs)))
+    population_register_jobs(
+        plenoirf_dir=plenoirf_dir, jobs=jobs, logger=logger
+    )
     results = pool.map(production.run_job, jobs)
-
-
-def makesuredirs(path):
-    os.makedirs(path, exist_ok=True)
-
-
-def find_run_ids(template_path):
-    run_ids = []
-    for path in glob.glob(template_path):
-        basename = os.path.basename(path)
-        run_id_str = basename[0 : bookkeeping.uid.RUN_ID_NUM_DIGITS]
-        run_id = int(run_id_str)
-        run_ids.append(run_id)
-    return run_ids
 
 
 def population_make_jobs(plenoirf_dir, config=None):
@@ -251,11 +240,43 @@ def population_make_jobs(plenoirf_dir, config=None):
                     instrument_key=instrument_key,
                     site_key=site_key,
                     particle_key=particle_key,
-                    production_part_key="cls2rec",
                     run_id_start=run_id_start,
                     run_id_stop=run_id_stop,
                 )
     return jobs
+
+
+def population_register_jobs(plenoirf_dir, jobs, logger=None):
+    if logger is None:
+        logger = json_line_logger.LoggerStdout()
+
+    runs = {}
+    for job in jobs:
+        key = (job["instrument_key"], job["site_key"], job["particle_key"])
+        if key not in runs:
+            runs[key] = []
+        else:
+            runs[key].append(job["run_id"])
+
+    for key in runs:
+        instrument_key, site_key, particle_key = key
+        map_dir = os.path.join(
+            plenoirf_dir,
+            "response",
+            instrument_key,
+            site_key,
+            particle_key,
+            "map",
+        )
+        logger.info(
+            f"Register {len(runs[key]):d} jobs in '"
+            f"{instrument_key:s},"
+            f"{site_key:s},"
+            f"{particle_key:s}"
+            f"'."
+        )
+        with bookkeeping.run_id_register.Register(map_dir=map_dir) as reg:
+            reg.add_run_ids(runs[key])
 
 
 def _make_missing_jobs_instrument_site_particle(
@@ -264,7 +285,6 @@ def _make_missing_jobs_instrument_site_particle(
     instrument_key,
     site_key,
     particle_key,
-    production_part_key,
     run_id_start,
     run_id_stop,
 ):
@@ -275,7 +295,6 @@ def _make_missing_jobs_instrument_site_particle(
         instrument_key=instrument_key,
         site_key=site_key,
         particle_key=particle_key,
-        production_part_key=production_part_key,
         run_id_start=run_id_start,
         run_id_stop=run_id_stop,
     )
@@ -301,26 +320,23 @@ def _make_missing_run_ids_instrument_site_particle(
     instrument_key,
     site_key,
     particle_key,
-    production_part_key,
     run_id_start,
     run_id_stop,
 ):
     assert run_id_start >= bookkeeping.uid.RUN_ID_LOWER
     assert run_id_stop <= bookkeeping.uid.RUN_ID_UPPER
 
-    existing_run_ids = find_run_ids(
-        template_path=os.path.join(
-            plenoirf_dir,
-            "response",
-            instrument_key,
-            site_key,
-            particle_key,
-            "map",
-            production_part_key,
-            "*.zip",
-        )
+    map_dir = os.path.join(
+        plenoirf_dir,
+        "response",
+        instrument_key,
+        site_key,
+        particle_key,
+        "map",
     )
-    existing_run_ids = set(existing_run_ids)
+
+    with bookkeeping.run_id_register.Register(map_dir=map_dir) as reg:
+        existing_run_ids = set(reg.get_run_ids())
 
     missing_run_ids = []
     for run_id in np.arange(run_id_start, run_id_stop):
