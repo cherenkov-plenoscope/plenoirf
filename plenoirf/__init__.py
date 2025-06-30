@@ -194,7 +194,7 @@ def run(plenoirf_dir, pool, logger=None, max_num_runs=None):
     logger.info("trigger_geometry complete")
 
     logger.info("Populating the instrument response function")
-    jobs = _population_register_jobs(plenoirf_dir=plenoirf_dir, config=config)
+    jobs = population_make_jobs(plenoirf_dir=plenoirf_dir, config=config)
     logger.info("Total of {:d} jobs is missing".format(len(jobs)))
     random.shuffle(jobs)
 
