@@ -25,8 +25,8 @@ parser.add_argument(
 )
 parser.add_argument("--debug", action="store_true")
 
-NUM_PER_SUBMISSION = 192
-MAX_NUM_BLOCKS = 24
+NUM_PER_SUBMISSION = 48
+MAX_NUM_BLOCKS = 48
 NUM_PENDING = 96
 POLLING_INTERVAL_S = 30
 
