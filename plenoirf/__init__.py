@@ -194,7 +194,7 @@ def run(plenoirf_dir, pool, logger=None, max_num_runs=None):
     logger.info("trigger_geometry complete")
 
     logger.info("Populating the instrument response function")
-    jobs = population_make_jobs(plenoirf_dir=plenoirf_dir, config=config)
+    jobs = _population_register_jobs(plenoirf_dir=plenoirf_dir, config=config)
     logger.info("Total of {:d} jobs is missing".format(len(jobs)))
     random.shuffle(jobs)
 
@@ -246,7 +246,7 @@ def population_make_jobs(plenoirf_dir, config=None):
     return jobs
 
 
-def population_register_jobs(plenoirf_dir, jobs, logger=None):
+def _population_register_jobs(plenoirf_dir, jobs, logger=None):
     if logger is None:
         logger = json_line_logger.LoggerStdout()
 
@@ -277,6 +277,29 @@ def population_register_jobs(plenoirf_dir, jobs, logger=None):
         )
         with bookkeeping.run_id_register.Register(map_dir=map_dir) as reg:
             reg.add_run_ids(runs[key])
+
+
+def reset_run_id_register(plenoirf_dir, config=None):
+    if config is None:
+        config = configuration.read(plenoirf_dir)
+    target = config["population_target"]
+
+    for instrument_key in target:
+        for site_key in target[instrument_key]:
+            for particle_key in target[instrument_key][site_key]:
+                map_dir = os.path.join(
+                    plenoirf_dir,
+                    "response",
+                    instrument_key,
+                    site_key,
+                    particle_key,
+                    "map",
+                )
+                if os.path.exists(map_dir):
+                    with bookkeeping.run_id_register.Register(
+                        map_dir=map_dir
+                    ) as reg:
+                        reg.reset()
 
 
 def _make_missing_jobs_instrument_site_particle(
