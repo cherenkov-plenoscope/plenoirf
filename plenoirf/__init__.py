@@ -114,7 +114,9 @@ def init(plenoirf_dir):
     configuration.version_control.init(plenoirf_dir=plenoirf_dir)
 
 
-def run(plenoirf_dir, pool, logger=None, max_num_runs=None):
+def run(
+    plenoirf_dir, pool, logger=None, max_num_runs=None, skip_to_plenoirf=False
+):
     """
     Run all simulations.
 
@@ -136,62 +138,67 @@ def run(plenoirf_dir, pool, logger=None, max_num_runs=None):
     logger.debug("read config")
     config = configuration.read(plenoirf_dir=plenoirf_dir)
 
-    while magnetic_deflection.site_particle_organizer.needs_to_run(
-        work_dir=opj(plenoirf_dir, "magnetic_deflection"),
-        num_showers_target=config["magnetic_deflection"]["num_showers_target"],
-    ):
-        logger.info("Produce more showers in magnetic_deflection.")
-        magnetic_deflection.site_particle_organizer.run(
+    if not skip_to_plenoirf:
+        while magnetic_deflection.site_particle_organizer.needs_to_run(
             work_dir=opj(plenoirf_dir, "magnetic_deflection"),
-            pool=pool,
-            num_runs=config["magnetic_deflection"]["run"]["num_runs"],
-            num_showers_per_run=config["magnetic_deflection"]["run"][
-                "num_showers_per_run"
-            ],
             num_showers_target=config["magnetic_deflection"][
                 "num_showers_target"
             ],
-        )
-    logger.info("magnetic_deflection production is complete")
-    if not os.path.exists(opj(plenoirf_dir, "magnetic_deflection", "plot")):
-        magnetic_deflection.site_particle_organizer.run_plot(
-            work_dir=opj(plenoirf_dir, "magnetic_deflection"),
+        ):
+            logger.info("Produce more showers in magnetic_deflection.")
+            magnetic_deflection.site_particle_organizer.run(
+                work_dir=opj(plenoirf_dir, "magnetic_deflection"),
+                pool=pool,
+                num_runs=config["magnetic_deflection"]["run"]["num_runs"],
+                num_showers_per_run=config["magnetic_deflection"]["run"][
+                    "num_showers_per_run"
+                ],
+                num_showers_target=config["magnetic_deflection"][
+                    "num_showers_target"
+                ],
+            )
+        logger.info("magnetic_deflection production is complete")
+        if not os.path.exists(
+            opj(plenoirf_dir, "magnetic_deflection", "plot")
+        ):
+            magnetic_deflection.site_particle_organizer.run_plot(
+                work_dir=opj(plenoirf_dir, "magnetic_deflection"),
+                pool=pool,
+            )
+        logger.info("magnetic_deflection is complete")
+
+        plenoptics.run(
+            work_dir=opj(plenoirf_dir, "plenoptics"),
             pool=pool,
-        )
-    logger.info("magnetic_deflection is complete")
-
-    plenoptics.run(
-        work_dir=opj(plenoirf_dir, "plenoptics"),
-        pool=pool,
-        logger=logger,
-    )
-    logger.info("plenoptics is complete")
-
-    logger.info("estimating trigger_geometry.")
-    os.makedirs(opj(plenoirf_dir, "trigger_geometry"), exist_ok=True)
-    for instrumnet_key in config["instruments"]:
-        logger.info(
-            "estimating trigger_geometry for {:s}".format(instrumnet_key)
-        )
-        production.sum_trigger.make_write_and_plot_sum_trigger_geometry(
-            trigger_geometry_path=opj(
-                plenoirf_dir,
-                "trigger_geometry",
-                instrumnet_key
-                + plenopy.trigger.geometry.suggested_filename_extension(),
-            ),
-            sum_trigger_config=config["sum_trigger"],
-            light_field_calibration_path=opj(
-                plenoirf_dir,
-                "plenoptics",
-                "instruments",
-                instrumnet_key,
-                "light_field_geometry",
-            ),
             logger=logger,
         )
+        logger.info("plenoptics is complete")
 
-    logger.info("trigger_geometry complete")
+        logger.info("estimating trigger_geometry.")
+        os.makedirs(opj(plenoirf_dir, "trigger_geometry"), exist_ok=True)
+        for instrumnet_key in config["instruments"]:
+            logger.info(
+                "estimating trigger_geometry for {:s}".format(instrumnet_key)
+            )
+            production.sum_trigger.make_write_and_plot_sum_trigger_geometry(
+                trigger_geometry_path=opj(
+                    plenoirf_dir,
+                    "trigger_geometry",
+                    instrumnet_key
+                    + plenopy.trigger.geometry.suggested_filename_extension(),
+                ),
+                sum_trigger_config=config["sum_trigger"],
+                light_field_calibration_path=opj(
+                    plenoirf_dir,
+                    "plenoptics",
+                    "instruments",
+                    instrumnet_key,
+                    "light_field_geometry",
+                ),
+                logger=logger,
+            )
+
+        logger.info("trigger_geometry complete")
 
     logger.info("Populating the instrument response function")
     jobs = population_make_jobs(plenoirf_dir=plenoirf_dir, config=config)
