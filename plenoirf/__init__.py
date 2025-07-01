@@ -282,6 +282,8 @@ def _population_register_jobs(plenoirf_dir, jobs, logger=None):
             f"{particle_key:s}"
             f"'."
         )
+        os.makedirs(map_dir, exist_ok=True)
+
         with bookkeeping.run_id_register.Register(map_dir=map_dir) as reg:
             reg.add_run_ids(runs[key])
 
@@ -302,11 +304,12 @@ def reset_run_id_register(plenoirf_dir, config=None):
                     particle_key,
                     "map",
                 )
-                if os.path.exists(map_dir):
-                    with bookkeeping.run_id_register.Register(
-                        map_dir=map_dir
-                    ) as reg:
-                        reg.reset()
+                os.makedirs(map_dir, exist_ok=True)
+
+                with bookkeeping.run_id_register.Register(
+                    map_dir=map_dir
+                ) as reg:
+                    reg.reset()
 
 
 def _make_missing_jobs_instrument_site_particle(
