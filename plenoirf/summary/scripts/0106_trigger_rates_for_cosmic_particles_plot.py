@@ -11,6 +11,7 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 fine_energy_bin = res.energy_binning(key="interpolation")
+zenith_bin = res.zenith_binning("once")
 
 cosmic_rates = json_utils.tree.read(
     opj(res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles")
@@ -31,53 +32,60 @@ for tt, trigger_threshold in enumerate(trigger_thresholds):
     if trigger_threshold == analysis_trigger_threshold:
         break
 
-fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
 
-text_y = 0.7
-for pk in res.PARTICLES:
-    dRdE = cosmic_rates[pk]["differential_rate"][mean_key]
-    dRdE_au = cosmic_rates[pk]["differential_rate"][unc_key]
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
-    ax.plot(
-        fine_energy_bin["centers"],
-        dRdE[tt, :],
-        color=res.PARTICLE_COLORS[pk],
-        label=pk,
-    )
-    ax.fill_between(
-        x=fine_energy_bin["centers"],
-        y1=dRdE[tt, :] - dRdE_au[tt, :],
-        y2=dRdE[tt, :] + dRdE_au[tt, :],
-        facecolor=res.PARTICLE_COLORS[pk],
-        alpha=0.2,
-        linewidth=0.0,
-    )
-    ax.text(
-        0.5,
-        0.1 + text_y,
-        pk,
-        color=res.PARTICLE_COLORS[pk],
-        transform=ax.transAxes,
-    )
-    ir = cosmic_rates[pk]["integral_rate"][mean_key][tt]
-    ir_abs_unc = cosmic_rates[pk]["integral_rate"][unc_key][tt]
-    ax.text(
-        0.6,
-        0.1 + text_y,
-        r"{: 8.1f} $\pm${: 6.1f} s$^{{-1}}$".format(ir, np.ceil(ir_abs_unc)),
-        color="k",
-        family="monospace",
-        transform=ax.transAxes,
-    )
-    text_y += 0.06
+    text_y = 0.7
+    for pk in res.PARTICLES:
+        dRdE = cosmic_rates[zk][pk]["differential_rate"][mean_key]
+        dRdE_au = cosmic_rates[zk][pk]["differential_rate"][unc_key]
 
-ax.set_xlabel("energy / GeV")
-ax.set_ylabel("differential trigger-rate /\ns$^{-1}$ (GeV)$^{-1}$")
-ax.loglog()
-ax.set_xlim(fine_energy_bin["limits"])
-ax.set_ylim([1e-3, 1e5])
-fig.savefig(opj(res.paths["out_dir"], "differential_trigger_rate.jpg"))
-sebplt.close(fig)
+        ax.plot(
+            fine_energy_bin["centers"],
+            dRdE[tt, :],
+            color=res.PARTICLE_COLORS[pk],
+            label=pk,
+        )
+        ax.fill_between(
+            x=fine_energy_bin["centers"],
+            y1=dRdE[tt, :] - dRdE_au[tt, :],
+            y2=dRdE[tt, :] + dRdE_au[tt, :],
+            facecolor=res.PARTICLE_COLORS[pk],
+            alpha=0.2,
+            linewidth=0.0,
+        )
+        ax.text(
+            0.5,
+            0.1 + text_y,
+            pk,
+            color=res.PARTICLE_COLORS[pk],
+            transform=ax.transAxes,
+        )
+        ir = cosmic_rates[zk][pk]["integral_rate"][mean_key][tt]
+        ir_abs_unc = cosmic_rates[zk][pk]["integral_rate"][unc_key][tt]
+        ax.text(
+            0.6,
+            0.1 + text_y,
+            r"{: 8.1f} $\pm${: 6.1f} s$^{{-1}}$".format(
+                ir, np.ceil(ir_abs_unc)
+            ),
+            color="k",
+            family="monospace",
+            transform=ax.transAxes,
+        )
+        text_y += 0.06
+
+    ax.set_xlabel("energy / GeV")
+    ax.set_ylabel("differential trigger-rate /\ns$^{-1}$ (GeV)$^{-1}$")
+    ax.loglog()
+    ax.set_xlim(fine_energy_bin["limits"])
+    ax.set_ylim([1e-3, 1e5])
+    fig.savefig(
+        opj(res.paths["out_dir"], f"differential_trigger_rate_{zk:s}.jpg")
+    )
+    sebplt.close(fig)
 
 res.stop()
