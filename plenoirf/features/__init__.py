@@ -50,7 +50,9 @@ def transform(feature_raw, transformation):
         warnings.filterwarnings(
             "ignore", message="divide by zero encountered in divide"
         )
-        f_scaled = (f_trans - transformation["shift"]) / transformation["scale"]
+        f_scaled = (f_trans - transformation["shift"]) / transformation[
+            "scale"
+        ]
 
     return f_scaled
 
