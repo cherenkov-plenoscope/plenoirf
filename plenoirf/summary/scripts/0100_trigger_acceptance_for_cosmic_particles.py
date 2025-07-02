@@ -26,12 +26,13 @@ trigger_thresholds = res.analysis["trigger"][res.site_key][
 trigger_modus = res.analysis["trigger"][res.site_key]["modus"]
 
 for zd in range(zenith_bin["num"]):
-    print(f"zenith bin {zd:d}")
+    zk = f"zd{zd:d}"
+    print(zk)
 
     zenith_start_rad = zenith_bin["edges"][zd]
     zenith_stop_rad = zenith_bin["edges"][zd + 1]
 
-    zd_dir = opj(res.paths["out_dir"], f"zd{zd:d}")
+    zd_dir = opj(res.paths["out_dir"], zk)
     os.makedirs(zd_dir, exist_ok=True)
 
     for pk in res.PARTICLES:
