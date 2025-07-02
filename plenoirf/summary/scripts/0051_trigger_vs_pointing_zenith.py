@@ -9,6 +9,7 @@ import numpy as np
 import binning_utils
 import sebastians_matplotlib_addons as sebplt
 import copy
+import warnings
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
@@ -210,14 +211,20 @@ for zzz in range(zenith_bin["num"]):
 
     for pk in ttt:
 
-        ratio = (
-            ttt[pk]["num_have_at_least_one_focus_trigger"][zzz]
-            / ttt[pk]["num_thrown"][zzz]
-        )
-        ratio_au = (
-            np.sqrt(ttt[pk]["num_have_at_least_one_focus_trigger"][zzz])
-            / ttt[pk]["num_thrown"][zzz]
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message="invalid value encountered in divide"
+            )
+
+            ratio = (
+                ttt[pk]["num_have_at_least_one_focus_trigger"][zzz]
+                / ttt[pk]["num_thrown"][zzz]
+            )
+            ratio_au = (
+                np.sqrt(ttt[pk]["num_have_at_least_one_focus_trigger"][zzz])
+                / ttt[pk]["num_thrown"][zzz]
+            )
+
         sebplt.ax_add_histogram(
             ax=ax,
             bin_edges=energy_bin["edges"],
@@ -281,7 +288,7 @@ for pk in res.PARTICLES:
         )
 fig.savefig(
     opj(
-        res.paths["final_out_dir"],
+        res.paths["out_dir"],
         f"highest_trigger_probability_vs_zenith.jpg",
     )
 )
