@@ -23,6 +23,7 @@ from .. import configuration
 from . import figure
 from . import report
 from . import scripts
+from .scripts import run
 
 from .cosmic_flux import make_gamma_ray_reference_flux
 
