@@ -1,6 +1,7 @@
 from . import combined_features
 from .. import event_table
 
+import warnings
 import numpy as np
 import sympy
 from sympy.parsing.sympy_parser import parse_expr
@@ -42,7 +43,15 @@ def transform(feature_raw, transformation):
     f_trans = func(feature_raw)
 
     # scale
-    f_scaled = (f_trans - transformation["shift"]) / transformation["scale"]
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message="invalid value encountered in divide"
+        )
+        warnings.filterwarnings(
+            "ignore", message="divide by zero encountered in divide"
+        )
+        f_scaled = (f_trans - transformation["shift"]) / transformation["scale"]
+
     return f_scaled
 
 
