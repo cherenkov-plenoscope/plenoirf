@@ -8,6 +8,7 @@ import sparse_numeric_table as snt
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 import propagate_uncertainties
+import warnings
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
@@ -129,6 +130,13 @@ if not os.path.exists(counts_cache_path):
 
 counts = json_utils.read(counts_cache_path)
 
+warning_messages_to_be_ignored = [
+    "invalid value encountered in multiply",
+    "invalid value encountered in divide",
+    "divide by zero encountered in reciprocal",
+    "divide by zero encountered in power",
+]
+
 for pk in res.PARTICLES:
     n_trg = counts[pk]["trigger"].astype(float)
     n_trg_au = np.sqrt(n_trg)
@@ -136,9 +144,13 @@ for pk in res.PARTICLES:
     n_cls = counts[pk]["cherenkovclassification"].astype(float)
     n_cls_au = np.sqrt(n_cls)
 
-    ratio, ratio_au = propagate_uncertainties.divide(
-        x=n_cls, x_au=n_cls_au, y=n_trg, y_au=n_trg_au
-    )
+    with warnings.catch_warnings():
+        for message in warning_messages_to_be_ignored:
+            warnings.filterwarnings("ignore", message=message)
+
+        ratio, ratio_au = propagate_uncertainties.divide(
+            x=n_cls, x_au=n_cls_au, y=n_trg, y_au=n_trg_au
+        )
 
     fig = sebplt.figure(style=irf.summary.figure.FIGURE_STYLE)
     ax = sebplt.add_axes(
