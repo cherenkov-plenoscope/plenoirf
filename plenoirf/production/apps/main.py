@@ -8,7 +8,7 @@ import subprocess
 
 parser = argparse.ArgumentParser(
     prog="keep_queue_busy.py",
-    description=("Production on compute clusters"),
+    description=("Keep the queues on compute clusters busy."),
 )
 parser.add_argument(
     "plenoirf_dir",
@@ -23,12 +23,36 @@ parser.add_argument(
     type=str,
     help="Name of the queue system.",
 )
-parser.add_argument("--debug", action="store_true")
+parser.add_argument(
+    "--polling-interval-s",
+    metavar="POLLING_INTERVAL_S",
+    default=30,
+    type=int,
+    help="Time in seconds before polling the queue system again.",
+)
+parser.add_argument(
+    "--num-pending",
+    metavar="NUM_PENDING",
+    default=96,
+    type=int,
+    help="Only submitt new jobs if less than NUM_PENDING are pending.",
+)
+parser.add_argument(
+    "--num-blocks",
+    metavar="NUM_BLOCKS",
+    default=48,
+    type=int,
+    help="Max. number of blocks submitting into the queue in parallel.",
+)
+parser.add_argument(
+    "--num-jobs-per-block",
+    metavar="NUM_JOBS_PER_BLOCK",
+    default=48,
+    type=int,
+    help="Submitt these many jobs in a block.",
+)
 
-NUM_PER_SUBMISSION = 48
-MAX_NUM_BLOCKS = 48
-NUM_PENDING = 96
-POLLING_INTERVAL_S = 30
+parser.add_argument("--debug", action="store_true")
 
 
 def time_stamp():
@@ -36,9 +60,23 @@ def time_stamp():
 
 
 args = parser.parse_args()
+
+NUM_PER_SUBMISSION = args.num_jobs_per_block
+assert NUM_PER_SUBMISSION > 0
+
+MAX_NUM_BLOCKS = args.num_blocks
+assert MAX_NUM_BLOCKS > 0
+
+NUM_PENDING = args.num_pending
+assert NUM_PENDING > 0
+
+POLLING_INTERVAL_S = args.polling_interval_s
+assert POLLING_INTERVAL_S > 0
+
 queue = args.queue
 assert queue in ["sun_grid_engine", "slurm"]
-plenoirf_dir = args.plenoirf_dir
+
+plenoirf_dir = os.path.abspath(args.plenoirf_dir)
 assert os.path.exists(plenoirf_dir)
 
 work_dir = f".keep_queue_busy.{time_stamp():s}"
