@@ -215,7 +215,7 @@ for pk in res.PARTICLES:
             "{:s}_{:s}_vs_quality.jpg".format(pk, the),
         ),
         x=quality,
-        y=np.rad2deg(event_frame["trajectory/" + the + "_rad"]),
+        y=np.rad2deg(event_frame["reconstructed_trajectory/" + the + "_rad"]),
         x_bin_edges=np.linspace(0, 1, 15),
         y_bin_edges=theta_bin_edges_deg,
         x_label="quality / 1",
@@ -256,7 +256,9 @@ for pk in res.PARTICLES:
                     ),
                 ),
                 x=event_frame[fk["key"]],
-                y=np.rad2deg(event_frame["trajectory/" + the + "_rad"]),
+                y=np.rad2deg(
+                    event_frame["reconstructed_trajectory/" + the + "_rad"]
+                ),
                 x_bin_edges=fk["bin_edges"],
                 y_bin_edges=theta_bin_edges_deg,
                 x_label=fk["label"],
