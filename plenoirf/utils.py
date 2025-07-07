@@ -395,3 +395,77 @@ def find_decade_power_limits(x):
 def find_decade_limits(x):
     start_power, stop_power = find_decade_power_limits(x=x)
     return 10**start_power, 10**stop_power
+
+
+class open_and_read_into_memory_when_small_enough:
+    """
+    Helps when sequential read is cheap but seeking is expensive.
+    This is often the case with bulk network storages on HPC clusters.
+    """
+
+    def __init__(self, path, size="64M"):
+        """
+        Open a file for reading.
+
+        Parameters
+        ----------
+        path : str
+            Path to be opened for reading.
+        size : None or int or str
+            If the file is larger than size, it is not read into memory.
+            None == 0 == "0" are the same.
+            Understands metric prefixes k, M, and G. size="64M" is equal to
+            64_000_000.
+        """
+        self.path = path
+        _filesize_bytes = os.stat(self.path).st_size
+        if size is None:
+            _size_in_bytes = 0
+        elif can_be_interpreted_as_int(size):
+            _size_in_bytes = int(size)
+        else:
+            _size_in_bytes = parse_metric_prefix(size)
+
+        self.in_memory = _filesize_bytes < _size_in_bytes
+
+    def __enter__(self):
+        if self.in_memory:
+            self.f = io.BytesIO()
+            with open(self.path, "rb") as fin:
+                self.f.write(fin.read())
+            self.f.seek(0)
+        else:
+            self.f = open(self.path, "rb")
+
+        return self.f
+
+    def close(self):
+        if not self.in_memory:
+            self.f.close()
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        self.close()
+
+    def __repr__(self):
+        return f"{self.__class__.__name__:s}()"
+
+
+def can_be_interpreted_as_int(s):
+    try:
+        v = int(s)
+        return True
+    except ValueError:
+        return False
+
+
+def parse_metric_prefix(s):
+    prefix = {"G": 1_000_000_000, "M": 1_000_000, "k": 1_000}
+
+    out = None
+    for key in prefix:
+        if s.endswith(key):
+            out = int(s[:-1]) * prefix[key]
+    if out is None:
+        out = int(s)
+
+    return out

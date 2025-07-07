@@ -16,6 +16,9 @@ from .. import event_table
 from .. import configuration
 from .. import bookkeeping
 from .. import production
+from .. import utils
+
+from .zipfilebufferio import ZipFileBufferIO
 
 
 def list_items():
@@ -29,7 +32,24 @@ def list_items():
     ]
 
 
-def reduce_item(instrument_site_particle_dir, item_key, use_tmp_dir=True):
+def fallback_memory_config_if_None(memory_config=None):
+    if memory_config is None:
+        return {"use_tmp_dir": False, "read_buffer_size": 0}
+    else:
+        return memory_config
+
+
+def make_memory_config_for_hpc_nfs():
+    return {"use_tmp_dir": True, "read_buffer_size": "1G"}
+
+
+def reduce_item(
+    instrument_site_particle_dir,
+    item_key,
+    memory_config=None,
+):
+    memory_config = fallback_memory_config_if_None(memory_config=memory_config)
+
     run_ids = list_run_ids_ready_for_reduction(
         map_dir=opj(instrument_site_particle_dir, "map"),
         checkpoint_keys=production.list_checkpoint_keys(),
@@ -39,13 +59,13 @@ def reduce_item(instrument_site_particle_dir, item_key, use_tmp_dir=True):
         recude_event_table(
             instrument_site_particle_dir=instrument_site_particle_dir,
             run_ids=run_ids,
-            use_tmp_dir=use_tmp_dir,
+            memory_config=memory_config,
         )
     elif item_key == "reconstructed_cherenkov.loph.tar":
         reduce_reconstructed_cherenkov(
             instrument_site_particle_dir=instrument_site_particle_dir,
             run_ids=run_ids,
-            use_tmp_dir=use_tmp_dir,
+            memory_config=memory_config,
         )
     elif item_key == "ground_grid_intensity.zip":
         reduce_ground_grid_intensity(
@@ -53,7 +73,7 @@ def reduce_item(instrument_site_particle_dir, item_key, use_tmp_dir=True):
             run_ids=run_ids,
             roi=False,
             only_past_trigger=True,
-            use_tmp_dir=use_tmp_dir,
+            memory_config=memory_config,
         )
     elif item_key == "ground_grid_intensity_roi.zip":
         reduce_ground_grid_intensity(
@@ -61,19 +81,19 @@ def reduce_item(instrument_site_particle_dir, item_key, use_tmp_dir=True):
             run_ids=run_ids,
             roi=True,
             only_past_trigger=True,
-            use_tmp_dir=use_tmp_dir,
+            memory_config=memory_config,
         )
     elif item_key == "benchmark.snt.zip":
         reduce_benchmarks(
             instrument_site_particle_dir=instrument_site_particle_dir,
             run_ids=run_ids,
-            use_tmp_dir=use_tmp_dir,
+            memory_config=memory_config,
         )
     elif item_key == "event_uids_for_debugging.txt":
         reduce_event_uids_for_debugging(
             instrument_site_particle_dir=instrument_site_particle_dir,
             run_ids=run_ids,
-            use_tmp_dir=use_tmp_dir,
+            memory_config=memory_config,
         )
     else:
         raise KeyError(f"No such item_key '{item_key}'.")
@@ -87,7 +107,7 @@ def _get_run_id_set_in_directory(path, filename_wildcardard="*.zip"):
         basename = os.path.basename(a_path)
         if len(basename) >= 6:
             first_six_chars = basename[0:6]
-            if str_can_be_interpreted_as_int(first_six_chars):
+            if utils.can_be_interpreted_as_int(first_six_chars):
                 run_id = int(first_six_chars)
                 assert run_id not in run_ids
                 run_ids.add(run_id)
@@ -108,15 +128,17 @@ def list_run_ids_ready_for_reduction(map_dir, checkpoint_keys=None):
     return sorted(run_ids)
 
 
-def str_can_be_interpreted_as_int(s):
-    try:
-        v = int(s)
-        return True
-    except ValueError:
-        return False
+def make_jobs(
+    plenoirf_dir,
+    config=None,
+    lazy=False,
+    memory_scheme="hpc-nfs",
+):
+    if memory_scheme == "hpc-nfs":
+        memory_config = make_memory_config_for_hpc_nfs()
+    else:
+        memory_config = fallback_memory_config_if_None(None)
 
-
-def make_jobs(plenoirf_dir, config=None, lazy=False, use_tmp_dir=True):
     if config is None:
         config = configuration.read(plenoirf_dir)
 
@@ -155,7 +177,7 @@ def make_jobs(plenoirf_dir, config=None, lazy=False, use_tmp_dir=True):
                             "site_key": site_key,
                             "particle_key": particle_key,
                             "item_key": item_key,
-                            "use_tmp_dir": use_tmp_dir,
+                            "memory_config": memory_config,
                         }
                         jobs.append(job)
     return jobs
@@ -177,48 +199,8 @@ def run_job(job):
     reduce_item(
         instrument_site_particle_dir=instrument_site_particle_dir,
         item_key=job["item_key"],
-        use_tmp_dir=job["use_tmp_dir"],
+        memory_config=job["memory_config"],
     )
-
-
-class ZipFileBufferIO:
-    def __init__(self, file):
-        self.file = file
-
-    def __enter__(self):
-        self.zin = zipfile.ZipFile(file=self.file, mode="r")
-        return self
-
-    @property
-    def filenames(self):
-        return [i.filename for i in self.zin.filelist]
-
-    def read(self, path, mode):
-        with self.zin.open(path) as fin:
-            if "|gz" in mode:
-                block = gzip.decompress(fin.read())
-            else:
-                block = fin.read()
-        if "t" in mode:
-            buff = io.StringIO()
-            buff.write(bytes.decode(block))
-        elif "b" in mode:
-            buff = io.BytesIO()
-            buff.write(block)
-        else:
-            raise KeyError("mode must either be 'b' or 't'.")
-        buff.seek(0)
-        return buff
-
-    def close(self):
-        return self.zin.close()
-
-    def read_event_table(self, path):
-        with snt.open(file=self.read(path, "rb"), mode="r") as part:
-            return part.query()
-
-    def __exit__(self, exc_type, exc_value, exc_tb):
-        self.close()
 
 
 def _map_reduce_dirs(instrument_site_particle_dir):
@@ -229,12 +211,15 @@ def _map_reduce_dirs(instrument_site_particle_dir):
 
 
 def recude_event_table(
-    instrument_site_particle_dir, run_ids, use_tmp_dir=True
+    instrument_site_particle_dir,
+    run_ids,
+    memory_config=None,
 ):
+    mem = fallback_memory_config_if_None(memory_config=memory_config)
     map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
     out_path = opj(reduce_dir, "event_table.snt.zip")
 
-    with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
+    with rnw.Path(out_path, use_tmp_dir=mem["use_tmp_dir"]) as tmp_path:
         with snt.open(
             tmp_path,
             mode="w",
@@ -249,7 +234,10 @@ def recude_event_table(
                         checkpoint_key,
                         f"{run_id:06d}.{checkpoint_key:s}.zip",
                     )
-                    with ZipFileBufferIO(run_path) as zipbuff:
+                    with utils.open_and_read_into_memory_when_small_enough(
+                        run_path,
+                        size=mem["read_buffer_size"],
+                    ) as fin, ZipFileBufferIO(file=fin) as zipbuff:
                         for ipath in zipbuff.filenames:
                             if ipath.endswith("event_table.snt.zip"):
                                 buff = zipbuff.read(path=ipath, mode="rb")
@@ -261,12 +249,15 @@ def recude_event_table(
 
 
 def reduce_reconstructed_cherenkov(
-    instrument_site_particle_dir, run_ids, use_tmp_dir=True
+    instrument_site_particle_dir,
+    run_ids,
+    memory_config=None,
 ):
+    mem = fallback_memory_config_if_None(memory_config=memory_config)
     map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
     out_path = opj(reduce_dir, "reconstructed_cherenkov.loph.tar")
 
-    with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
+    with rnw.Path(out_path, use_tmp_dir=mem["use_tmp_dir"]) as tmp_path:
         with plenopy.photon_stream.loph.LopfTarWriter(path=tmp_path) as lout:
             for run_id in run_ids:
 
@@ -276,7 +267,10 @@ def reduce_reconstructed_cherenkov(
                     f"{run_id:06d}.cer2cls.zip",
                 )
 
-                with ZipFileBufferIO(run_path) as zipbuff:
+                with utils.open_and_read_into_memory_when_small_enough(
+                    run_path,
+                    size=mem["read_buffer_size"],
+                ) as fin, ZipFileBufferIO(file=fin) as zipbuff:
                     buff = zipbuff.read(
                         path=opj(
                             f"{run_id:06d}",
@@ -300,14 +294,15 @@ def reduce_ground_grid_intensity(
     run_ids,
     roi=False,
     only_past_trigger=False,
-    use_tmp_dir=True,
+    memory_config=None,
 ):
-    _suff = "_roi" if roi else ""
+    mem = fallback_memory_config_if_None(memory_config=memory_config)
     map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
+    _suff = "_roi" if roi else ""
     filename_without_ext = f"ground_grid_intensity{_suff:s}"
     out_path = opj(reduce_dir, filename_without_ext + ".zip")
 
-    with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
+    with rnw.Path(out_path, use_tmp_dir=mem["use_tmp_dir"]) as tmp_path:
         with zipfile.ZipFile(tmp_path, "w") as zout:
             for run_id in run_ids:
                 if only_past_trigger:
@@ -317,7 +312,10 @@ def reduce_ground_grid_intensity(
                         f"{run_id:06d}.cer2cls.zip",
                     )
 
-                    with ZipFileBufferIO(run_cls2rec_path) as zipbuff:
+                    with utils.open_and_read_into_memory_when_small_enough(
+                        run_cls2rec_path,
+                        size=mem["read_buffer_size"],
+                    ) as fin, ZipFileBufferIO(file=fin) as zipbuff:
                         _evttab = zipbuff.read_event_table(
                             path=opj(
                                 f"{run_id:06d}",
@@ -336,7 +334,10 @@ def reduce_ground_grid_intensity(
                     f"{run_id:06d}.prm2cer.zip",
                 )
 
-                with ZipFileBufferIO(run_prm2cer_path) as zipbuff:
+                with utils.open_and_read_into_memory_when_small_enough(
+                    run_prm2cer_path,
+                    size=mem["read_buffer_size"],
+                ) as fin, ZipFileBufferIO(file=fin) as zipbuff:
                     buff = zipbuff.read(
                         path=opj(
                             f"{run_id:06d}",
@@ -387,7 +388,12 @@ def _make_benchmarks_dtype():
     return dtype
 
 
-def reduce_benchmarks(instrument_site_particle_dir, run_ids, use_tmp_dir=True):
+def reduce_benchmarks(
+    instrument_site_particle_dir,
+    run_ids,
+    memory_config=None,
+):
+    mem = fallback_memory_config_if_None(memory_config=memory_config)
     map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
     out_path = opj(reduce_dir, "benchmark.snt.zip")
 
@@ -400,7 +406,10 @@ def reduce_benchmarks(instrument_site_particle_dir, run_ids, use_tmp_dir=True):
     for run_id in run_ids:
         run_path = opj(map_dir, "prm2cer", f"{run_id:06d}.prm2cer.zip")
 
-        with ZipFileBufferIO(run_path) as zipbuff:
+        with utils.open_and_read_into_memory_when_small_enough(
+            run_path,
+            size=mem["read_buffer_size"],
+        ) as fin, ZipFileBufferIO(file=fin) as zipbuff:
             _buff = zipbuff.read(
                 path=opj(
                     f"{run_id:06d}",
@@ -473,7 +482,7 @@ def reduce_benchmarks(instrument_site_particle_dir, run_ids, use_tmp_dir=True):
         ]
         stats.append_record(rec)
 
-    with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
+    with rnw.Path(out_path, use_tmp_dir=mem["use_tmp_dir"]) as tmp_path:
         with snt.open(
             file=tmp_path,
             mode="w",
@@ -484,14 +493,14 @@ def reduce_benchmarks(instrument_site_particle_dir, run_ids, use_tmp_dir=True):
             fout.append_table({"benchmark": stats})
 
     with rnw.Path(
-        out_path + ".hostname_hashes.json", use_tmp_dir=use_tmp_dir
+        out_path + ".hostname_hashes.json", use_tmp_dir=mem["use_tmp_dir"]
     ) as tmp_path:
         with open(tmp_path, mode="w") as fout:
             fout.write(json_utils.dumps(hostname_hashes))
 
 
 def reduce_event_uids_for_debugging(
-    instrument_site_particle_dir, run_ids, use_tmp_dir=True
+    instrument_site_particle_dir, run_ids, use_tmp_dir=True, read_buffer_size=0
 ):
     map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
     out_path = opj(reduce_dir, "event_uids_for_debugging.txt")
@@ -503,7 +512,9 @@ def reduce_event_uids_for_debugging(
         ) as fout:
             for run_id in run_ids:
                 run_path = opj(map_dir, "prm2cer", f"{run_id:06d}.prm2cer.zip")
-                with ZipFileBufferIO(run_path) as zipbuff:
+                with ZipFileBufferIOInMemory(
+                    path=run_path, size=read_buffer_size
+                ) as zipbuff:
                     buff = zipbuff.read(
                         path=opj(
                             f"{run_id:06d}",
