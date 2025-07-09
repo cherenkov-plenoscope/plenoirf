@@ -24,8 +24,8 @@ relative_uncertainty_below_geomagnetic_cutoff = res.analysis["airshower_flux"][
 ]
 
 
-def _rigidity_to_total_energy(rigidity_GV):
-    return rigidity_GV * 1.0
+def _rigidity_to_total_energy(rigidity_GV, electric_charge_qe):
+    return rigidity_GV * np.abs(electric_charge_qe)
 
 
 # interpolate
@@ -45,7 +45,8 @@ shower_fluxes = {}
 for pk in res.COSMIC_RAYS:
     shower_fluxes[pk] = {}
     cutoff_energy = _rigidity_to_total_energy(
-        rigidity_GV=res.SITE["geomagnetic_cutoff_rigidity_GV"]
+        rigidity_GV=res.SITE["geomagnetic_cutoff_rigidity_GV"],
+        electric_charge_qe=res.COSMIC_RAYS[pk]["electric_charge_qe"],
     )
 
     shower_fluxes[pk]["differential_flux"] = np.zeros(energy_bin["num"])
