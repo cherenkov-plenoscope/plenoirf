@@ -468,17 +468,23 @@ def _guess_trigger(
     trigger_rejecting_altitude_asl_m=13851,
 ):
     """
+    Trigger rate vs zenith pointing 2025-07-09
+    site: chile. zd0: 130pe, zd1: 140pe, zd2: 150pe
+    """
+
+    """
 
     example Namibia:
     - accepting focus 17,556m, rejecting focus 11,551m, site's altitude 2,300m
     """
-    _obj = trigger_foci_object_distamces_m
-    _trg_acc_alt = trigger_accepting_altitude_asl_m
-    _trg_rej_alt = trigger_rejecting_altitude_asl_m
-    _site_alt = site_altitude_asl_m
-
-    accep = np.argmin(np.abs(_obj - _trg_acc_alt + _site_alt))
-    rejec = np.argmin(np.abs(_obj - _trg_rej_alt + _site_alt))
+    accep = utils.get_index_of_closest_match(
+        x=trigger_foci_object_distamces_m,
+        y=trigger_accepting_altitude_asl_m - site_altitude_asl_m,
+    )
+    rejec = utils.get_index_of_closest_match(
+        x=trigger_foci_object_distamces_m,
+        y=trigger_rejecting_altitude_asl_m - site_altitude_asl_m,
+    )
 
     modus = {
         "modus": {
@@ -496,10 +502,14 @@ def _guess_trigger(
                 "response_pe": [1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
             },
         },
-        "threshold_pe": analysis_trigger_threshold_pe,
+        "threshold_vs_pointing_zenith": {
+            "zenith_rad": np.deg2rad([0, 45]),
+            "threshold_pe": analysis_trigger_threshold_pe
+            * np.array([1.0, 1.25]),
+        },
         "ratescan_thresholds_pe": make_ratescan_trigger_thresholds(
             lower_threshold=int(collection_trigger_threshold_pe * 0.86),
-            upper_threshold=int(collection_trigger_threshold_pe * 1.6),
+            upper_threshold=int(collection_trigger_threshold_pe * 2.5),
             num_thresholds=32,
             collection_trigger_threshold=collection_trigger_threshold_pe,
             analysis_trigger_threshold=analysis_trigger_threshold_pe,
@@ -551,7 +561,7 @@ def _guess_analysis_config_for_instrument(
 
     collection_trigger_threshold_pe = config["sum_trigger"]["threshold_pe"]
     analysis_trigger_threshold_pe = int(
-        np.round(1.09 * collection_trigger_threshold_pe)
+        np.round(1.14 * collection_trigger_threshold_pe)
     )
 
     fov_radius_deg = (

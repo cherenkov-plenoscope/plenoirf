@@ -6,16 +6,19 @@ import os
 from os.path import join as opj
 import json_utils
 import numpy as np
+import sebastians_matplotlib_addons as sebplt
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
-res.start()
+res.start(sebplt=sebplt)
 
-zenith_bin = res.zenith_binning(key="twice")
+# zenith_bin = res.zenith_binning(key="twice")
 triggerfoci_bin = res.trigger_image_object_distance_binning()
 
 trigger_modus = res.analysis["trigger"][res.site_key]["modus"]
-trigger_threshold = res.analysis["trigger"][res.site_key]["threshold_pe"]
+trigger_threshold_vs_pointing_zenith = res.analysis["trigger"][res.site_key][
+    "threshold_vs_pointing_zenith"
+]
 
 TRIGGER_ACCEPTING_ALTITUDE_ASL_M = 19_856
 TRIGGER_REJECTING_ALTITUDE_ASL_M = 13_851
@@ -28,8 +31,32 @@ rejecting_height_above_observation_level_m = (
 )
 
 
-def get_index_of_closest_match(x, y):
-    return int(np.argmin(np.abs(x - y)))
+def trigger_threshold(zenith_rad):
+    return np.interp(
+        x=zenith_rad,
+        xp=trigger_threshold_vs_pointing_zenith["zenith_rad"],
+        fp=trigger_threshold_vs_pointing_zenith["threshold_pe"],
+    )
+
+
+fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+x_zd_rad = np.linspace(0, np.deg2rad(45), 1337)
+ax.plot(
+    np.rad2deg(x_zd_rad),
+    trigger_threshold(zenith_rad=x_zd_rad),
+    color="black",
+)
+ax.set_xlabel(r"zenith / (1$^{\circ}$)")
+ax.set_ylabel("threshold / p.e.")
+ax.set_xlim([0, 50])
+fig.savefig(
+    opj(
+        res.paths["out_dir"],
+        "threshold_vs_zenith.jpg",
+    )
+)
+sebplt.close(fig)
 
 
 for pk in res.PARTICLES:
@@ -54,45 +81,38 @@ for pk in res.PARTICLES:
         ),
     )
 
+    num_events = len(event_table["trigger"])
+
     uids_pasttrigger = []
-    for zd in range(zenith_bin["num"]):
-        zenith_start_rad = zenith_bin["edges"][zd]
-        zenith_stop_rad = zenith_bin["edges"][zd + 1]
-        zenith_mask = np.logical_and(
-            event_table["instrument_pointing"]["zenith_rad"]
-            >= zenith_start_rad,
-            event_table["instrument_pointing"]["zenith_rad"] < zenith_stop_rad,
-        )
-        zenith_rad = zenith_bin["centers"][zd]
+    for i in range(num_events):
+        if np.mod(i, 1000) == 0:
+            print(i, "of", num_events)
+
+        pointing_zd_rad = event_table["instrument_pointing"][i]["zenith_rad"]
+        cos_pointing_zd_rad = np.cos(pointing_zd_rad)
 
         accepting_depth_m = (
-            accepting_height_above_observation_level_m / np.cos(zenith_rad)
+            accepting_height_above_observation_level_m / cos_pointing_zd_rad
         )
         rejecting_depth_m = (
-            rejecting_height_above_observation_level_m / np.cos(zenith_rad)
+            rejecting_height_above_observation_level_m / cos_pointing_zd_rad
         )
-
-        trigger_modus["accepting_focus"] = get_index_of_closest_match(
-            x=triggerfoci_bin["centers"],
-            y=accepting_depth_m,
+        trigger_modus["accepting_focus"] = (
+            irf.utils.get_index_of_closest_match(
+                x=triggerfoci_bin["centers"],
+                y=accepting_depth_m,
+            )
         )
-        trigger_modus["rejecting_focus"] = get_index_of_closest_match(
-            x=triggerfoci_bin["centers"],
-            y=rejecting_depth_m,
+        trigger_modus["rejecting_focus"] = (
+            irf.utils.get_index_of_closest_match(
+                x=triggerfoci_bin["centers"],
+                y=rejecting_depth_m,
+            )
         )
-
-        msg = f"Zenith [{np.rad2deg(zenith_start_rad):4.1f}, "
-        msg += f"{np.rad2deg(zenith_rad):4.1f}, "
-        msg += f"{np.rad2deg(zenith_stop_rad):4.1f}]deg, "
-        msg += f"accept. {1e-3*accepting_depth_m:.1f}km "
-        msg += f"[{trigger_modus['accepting_focus']:d}], "
-        msg += f"reject. {1e-3*rejecting_depth_m:.1f}km, "
-        msg += f"[{trigger_modus['rejecting_focus']:d}]."
-        print(msg)
 
         _uids_pasttrigger = irf.analysis.light_field_trigger_modi.make_indices(
-            trigger_table=event_table["trigger"][zenith_mask],
-            threshold=trigger_threshold,
+            trigger_table=event_table["trigger"][i],
+            threshold=trigger_threshold(zenith_rad=pointing_zd_rad),
             modus=trigger_modus,
         )
         uids_pasttrigger += list(_uids_pasttrigger)
