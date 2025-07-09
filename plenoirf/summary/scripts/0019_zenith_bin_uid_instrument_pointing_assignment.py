@@ -14,7 +14,7 @@ zenith_bin = res.zenith_binning(key="once")
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
     zk_dir = os.path.join(res.paths["out_dir"], zk)
-    os.makedirs(zk_dir)
+    os.makedirs(zk_dir, exist_ok=True)
 
     zenith_start_rad = zenith_bin["edges"][zd]
     zenith_stop_rad = zenith_bin["edges"][zd + 1]
@@ -24,7 +24,7 @@ for zd in range(zenith_bin["num"]):
         with res.open_event_table(particle_key=pk) as arc:
             event_table = arc.query(
                 levels_and_columns={
-                    "instrument_pointing": "__all__",
+                    "instrument_pointing": ["uid", "zenith_rad"],
                 }
             )
         instrument_pointing = event_table["instrument_pointing"]
