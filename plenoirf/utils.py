@@ -469,3 +469,19 @@ def parse_metric_prefix(s):
         out = int(s)
 
     return out
+
+
+def get_index_of_closest_match(x, y):
+    """
+    Returns the index in 'x' which has its value closest to value 'y'.
+
+    Parameters
+    ----------
+    x : array like
+    y : scalar
+
+    Returns
+    -------
+    index : int
+    """
+    return int(np.argmin(np.abs(x - y)))
