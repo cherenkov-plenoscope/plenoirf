@@ -15,6 +15,7 @@ import merlict_development_kit_python
 import solid_angle_utils
 import binning_utils
 import shutil
+import copy
 
 from .. import utils
 from .. import provenance
@@ -232,6 +233,12 @@ class ScriptResources:
                 stop_m=max(self.config["sum_trigger"]["object_distances_m"]),
                 num=len(self.config["sum_trigger"]["object_distances_m"]),
             )
+
+    @property
+    def trigger(self):
+        trg = copy.copy(self.analysis["trigger"][self.site_key])
+        trg["foci_bin"] = self.trigger_image_object_distance_binning()
+        return trg
 
     def __repr__(self):
         return f"{self.__class__.__name__}()"
@@ -502,10 +509,10 @@ def _guess_trigger(
                 "response_pe": [1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
             },
         },
-        "threshold_vs_pointing_zenith": {
+        "threshold_pe": analysis_trigger_threshold_pe,
+        "threshold_factor_vs_pointing_zenith": {
             "zenith_rad": np.deg2rad([0, 45]),
-            "threshold_pe": analysis_trigger_threshold_pe
-            * np.array([1.0, 1.25]),
+            "factor": np.array([1.0, 1.25]),
         },
         "ratescan_thresholds_pe": make_ratescan_trigger_thresholds(
             lower_threshold=int(collection_trigger_threshold_pe * 0.86),
