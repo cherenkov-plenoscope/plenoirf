@@ -217,7 +217,15 @@ for pk in res.PARTICLES:
         if nominal_threshold_pe == trigger["threshold_pe"]:
             json_utils.write(
                 opj(pk_dir, "uid.json"),
-                {"uid": uids_pasttrigger},
+                uids_pasttrigger,
+            )
+
+            pk_only_accepting_dir = opj(pk_dir, "only_accepting_not_rejecting")
+            os.makedirs(pk_only_accepting_dir, exist_ok=True)
+
+            json_utils.write(
+                opj(pk_only_accepting_dir, "uid.json"),
+                event_table["trigger"]["uid"][is_size_over_threshold],
             )
 
 res.stop()
