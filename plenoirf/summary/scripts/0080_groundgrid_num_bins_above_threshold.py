@@ -24,10 +24,6 @@ nat_bin = binning_utils.Binning(
     bin_edges=np.geomspace(1, 100_000, energy_bin["num"])
 )
 
-passing_trigger = json_utils.tree.read(
-    opj(res.paths["analysis_dir"], "0055_passing_trigger")
-)
-
 
 def histogram(x, uid, bin_edges):
     assert len(x) == len(uid)
