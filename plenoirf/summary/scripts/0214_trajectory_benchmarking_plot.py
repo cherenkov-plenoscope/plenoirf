@@ -7,23 +7,15 @@ from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
-
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
-
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start(sebplt=sebplt)
 
 psf = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0213_trajectory_benchmarking")
+    opj(res.paths["analysis_dir"], "0213_trajectory_benchmarking")
 )
 
 fov_radius_deg = (
-    0.5 * irf_config["light_field_sensor_geometry"]["max_FoV_diameter_deg"]
+    0.5 * res.instrument["light_field_sensor_geometry"]["max_FoV_diameter_deg"]
 )
 
 theta_labels = {
@@ -96,87 +88,80 @@ def write_theta_square_figure(
     sebplt.close(fig)
 
 
-for site_key in psf:
-    for particle_key in ["gamma"]:
-        # theta-square vs energy vs core-radius
-        # -------------------------------------
+for pk in ["gamma"]:
+    # theta-square vs energy vs core-radius
+    # -------------------------------------
 
-        for theta_key in ["theta", "theta_para", "theta_perp"]:
-            scenario_dir = opj(
-                paths["out_dir"], site_key, particle_key, theta_key
+    for theta_key in ["theta", "theta_para", "theta_perp"]:
+        scenario_dir = opj(res.paths["out_dir"], pk, theta_key)
+        os.makedirs(scenario_dir, exist_ok=True)
+
+        t2 = psf[pk][
+            "{theta_key:s}_square_histogram_vs_energy_vs_core_radius".format(
+                theta_key=theta_key
             )
-            os.makedirs(scenario_dir, exist_ok=True)
+        ]
 
-            t2 = psf[site_key][particle_key][
-                "{theta_key:s}_square_histogram_vs_energy_vs_core_radius".format(
-                    theta_key=theta_key
+        cont = psf[pk][
+            "{theta_key:s}_containment_vs_energy_vs_core_radius".format(
+                theta_key=theta_key
+            )
+        ]
+
+        num_radius_bins = len(t2["core_radius_square_bin_edges_m2"]) - 1
+        num_energy_bins = len(t2["energy_bin_edges_GeV"]) - 1
+
+        for ene in range(num_energy_bins):
+            ene_start = t2["energy_bin_edges_GeV"][ene]
+            ene_stop = t2["energy_bin_edges_GeV"][ene + 1]
+
+            ene_info = "energy/GeV {: 7.1f} - {: 7.1f}".format(
+                ene_start, ene_stop
+            )
+
+            for rad in range(num_radius_bins):
+                t2_ene_rad = t2["histogram"][ene][rad]
+
+                rad_start = np.sqrt(t2["core_radius_square_bin_edges_m2"][rad])
+                rad_stop = np.sqrt(
+                    t2["core_radius_square_bin_edges_m2"][rad + 1]
                 )
-            ]
 
-            cont = psf[site_key][particle_key][
-                "{theta_key:s}_containment_vs_energy_vs_core_radius".format(
-                    theta_key=theta_key
-                )
-            ]
-
-            num_radius_bins = len(t2["core_radius_square_bin_edges_m2"]) - 1
-            num_energy_bins = len(t2["energy_bin_edges_GeV"]) - 1
-
-            for ene in range(num_energy_bins):
-                ene_start = t2["energy_bin_edges_GeV"][ene]
-                ene_stop = t2["energy_bin_edges_GeV"][ene + 1]
-
-                ene_info = "energy/GeV {: 7.1f} - {: 7.1f}".format(
-                    ene_start, ene_stop
+                rad_info = "core radius/m {: 7.1f} - {: 7.1f}".format(
+                    rad_start, rad_stop
                 )
 
-                for rad in range(num_radius_bins):
-                    t2_ene_rad = t2["histogram"][ene][rad]
+                bin_count = np.array(t2_ene_rad["intensity"])
+                if np.max(bin_count) > 0:
+                    bin_count = bin_count / np.max(bin_count)
 
-                    rad_start = np.sqrt(
-                        t2["core_radius_square_bin_edges_m2"][rad]
-                    )
-                    rad_stop = np.sqrt(
-                        t2["core_radius_square_bin_edges_m2"][rad + 1]
-                    )
+                bin_count_relunc = t2_ene_rad["intensity_relative_uncertainty"]
+                bin_count_relunc = np.array(bin_count_relunc)
 
-                    rad_info = "core-radius/m {: 7.1f} - {: 7.1f}".format(
-                        rad_start, rad_stop
-                    )
-
-                    bin_count = np.array(t2_ene_rad["intensity"])
-                    if np.max(bin_count) > 0:
-                        bin_count = bin_count / np.max(bin_count)
-
-                    bin_count_relunc = t2_ene_rad[
-                        "intensity_relative_uncertainty"
-                    ]
-                    bin_count_relunc = np.array(bin_count_relunc)
-
-                    write_theta_square_figure(
-                        path=opj(
-                            paths["out_dir"],
-                            site_key,
-                            particle_key,
+                write_theta_square_figure(
+                    path=opj(
+                        res.paths["out_dir"],
+                        pk,
+                        theta_key,
+                        "{:s}_{:s}_rad{:06d}_ene{:06d}.jpg".format(
+                            pk,
                             theta_key,
-                            "{:s}_{:s}_{:s}_rad{:06d}_ene{:06d}.jpg".format(
-                                site_key,
-                                particle_key,
-                                theta_key,
-                                rad,
-                                ene,
-                            ),
+                            rad,
+                            ene,
                         ),
-                        theta_square_bin_edges_deg2=np.array(
-                            t2_ene_rad["theta_square_bin_edges_deg2"]
-                        ),
-                        bin_count=bin_count,
-                        bin_count_relunc=bin_count_relunc,
-                        containment_fractions=cont["containment_fractions"],
-                        containment_angle=cont["containment"][ene][rad][
-                            "theta_deg"
-                        ],
-                        info_title=" {:s}, {:s}".format(ene_info, rad_info),
-                        theta_label=theta_labels[theta_key],
-                        square=False,
-                    )
+                    ),
+                    theta_square_bin_edges_deg2=np.array(
+                        t2_ene_rad["theta_square_bin_edges_deg2"]
+                    ),
+                    bin_count=bin_count,
+                    bin_count_relunc=bin_count_relunc,
+                    containment_fractions=cont["containment_fractions"],
+                    containment_angle=cont["containment"][ene][rad][
+                        "theta_deg"
+                    ],
+                    info_title=" {:s}, {:s}".format(ene_info, rad_info),
+                    theta_label=theta_labels[theta_key],
+                    square=False,
+                )
+
+res.stop()
