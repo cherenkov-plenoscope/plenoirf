@@ -7,7 +7,7 @@ from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 import sparse_numeric_table as snt
-
+import confusion_matrix
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
@@ -215,7 +215,7 @@ for pk in res.PARTICLES:
             "{:s}_{:s}_vs_quality.jpg".format(pk, the),
         ),
         x=quality,
-        y=np.rad2deg(event_frame["reconstructed_trajectory/" + the + "_rad"]),
+        y=np.rad2deg(event_frame["trajectory/" + the + "_rad"]),
         x_bin_edges=np.linspace(0, 1, 15),
         y_bin_edges=theta_bin_edges_deg,
         x_label="quality / 1",
@@ -256,9 +256,7 @@ for pk in res.PARTICLES:
                     ),
                 ),
                 x=event_frame[fk["key"]],
-                y=np.rad2deg(
-                    event_frame["reconstructed_trajectory/" + the + "_rad"]
-                ),
+                y=np.rad2deg(event_frame["trajectory/" + the + "_rad"]),
                 x_bin_edges=fk["bin_edges"],
                 y_bin_edges=theta_bin_edges_deg,
                 x_label=fk["label"],
@@ -296,16 +294,16 @@ for pk in res.PARTICLES:
 
 fig = sebplt.figure(sebplt.FIGURE_1_1)
 ax = sebplt.add_axes(fig=fig, span=[0.16, 0.11, 0.8, 0.8])
-for pk in PARTICLES:
+for pk in res.PARTICLES:
     ax.plot(
         QP["quality_cuts"],
         QP["fraction_passing_w"][pk],
-        color=sum_config["plot"]["particle_colors"][pk],
+        color=res.PARTICLE_COLORS[pk],
     )
 ax.plot([min_trajectory_quality, min_trajectory_quality], [0.0, 1.0], "k:")
 ax.set_xlim([0, 1])
 ax.set_ylim([0, 1])
-ax.set_xlabel("trajectory-quality-cut / 1")
+ax.set_xlabel("trajectory quality cut / 1")
 ax.set_ylabel("passing cut / 1")
 fig.savefig(opj(res.paths["out_dir"], "passing.jpg"))
 sebplt.close(fig)
