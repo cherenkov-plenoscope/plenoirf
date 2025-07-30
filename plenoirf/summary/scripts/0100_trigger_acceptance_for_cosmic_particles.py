@@ -20,10 +20,10 @@ MAX_SOURCE_ANGLE_RAD = np.deg2rad(
 energy_bin = res.energy_binning(key="trigger_acceptance")
 zenith_bin = res.zenith_binning("once")
 
-trigger_thresholds = res.analysis["trigger"][res.site_key][
-    "ratescan_thresholds_pe"
-]
-trigger_modus = res.analysis["trigger"][res.site_key]["modus"]
+passing_trigger = json_utils.tree.read(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger")
+)
+trigger = res.trigger
 
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
@@ -114,14 +114,12 @@ for zd in range(zenith_bin["num"]):
 
         value = []
         absolute_uncertainty = []
-        for threshold in trigger_thresholds:
+        for threshold in trigger["ratescan_thresholds_pe"]:
             print(f"{threshold:d},", end="", flush=True)
 
-            uid_detected = irf.analysis.light_field_trigger_modi.make_indices(
-                trigger_table=point_particle_table["trigger"],
-                threshold=threshold,
-                modus=trigger_modus,
-            )
+            uid_detected = passing_trigger[pk]["ratescan"][f"{threshold:d}pe"][
+                "uid"
+            ]
             mask_detected = snt.logic.make_mask_of_right_in_left(
                 left_indices=point_particle_table["primary"]["uid"],
                 right_indices=uid_detected,
@@ -174,12 +172,10 @@ for zd in range(zenith_bin["num"]):
 
         value = []
         absolute_uncertainty = []
-        for threshold in trigger_thresholds:
-            uid_detected = irf.analysis.light_field_trigger_modi.make_indices(
-                trigger_table=diffuse_particle_table["trigger"],
-                threshold=threshold,
-                modus=trigger_modus,
-            )
+        for threshold in trigger["ratescan_thresholds_pe"]:
+            uid_detected = passing_trigger[pk]["ratescan"][f"{threshold:d}pe"][
+                "uid"
+            ]
             mask_detected = snt.logic.make_mask_of_right_in_left(
                 left_indices=diffuse_particle_table["primary"]["uid"],
                 right_indices=uid_detected,
