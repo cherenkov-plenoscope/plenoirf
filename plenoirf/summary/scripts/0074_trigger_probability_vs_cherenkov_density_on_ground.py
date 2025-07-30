@@ -10,18 +10,16 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
-trigger_modi = {}
-trigger_modi["passing_trigger"] = json_utils.tree.read(
+passing_trigger = json_utils.tree.read(
     opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
-trigger_modi["passing_trigger_if_only_accepting_not_rejecting"] = (
-    json_utils.tree.read(
-        opj(
-            res.paths["analysis_dir"],
-            "0054_passing_trigger_if_only_accepting_not_rejecting",
-        )
-    )
-)
+
+trigger_modi = {}
+trigger_modi["passing_trigger"] = {}
+trigger_modi["passing_trigger_if_only_accepting_not_rejecting"] = {}
+for pk in res.PARTICLES:
+    trigger_modi["passing_trigger"][pk] = {"uid": passing_trigger[pk]["uid"]}
+    trigger_modi["passing_trigger_if_only_accepting_not_rejecting"][pk] = {"uid": passing_trigger[pk]["only_accepting_not_rejecting"]["uid"]}
 
 grid_bin_area_m2 = res.config["ground_grid"]["geometry"]["bin_width_m"] ** 2.0
 density_bin_edges_per_m2 = np.geomspace(1e-3, 1e4, 7 * 5 + 1)
