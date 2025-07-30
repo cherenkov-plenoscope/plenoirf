@@ -20,18 +20,24 @@ NUM_TIME_SLICES_PER_EVENT = (
     - res.config["sum_trigger"]["integration_time_slices"]
 )
 EXPOSURE_TIME_PER_EVENT = NUM_TIME_SLICES_PER_EVENT * TIME_SLICE_DURATION
-TRIGGER = res.analysis["trigger"][res.site_key]
 
-trigger_thresholds = TRIGGER["ratescan_thresholds_pe"]
-num_trigger_thresholds = len(trigger_thresholds)
-trigger_modus = TRIGGER["modus"]
+passing_trigger = json_utils.tree.read(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger")
+)
+trigger = res.trigger
+
 nsb = {
     "num_exposures": 0,
-    "num_triggers_vs_threshold": np.zeros(num_trigger_thresholds, dtype=int),
+    "num_triggers_vs_threshold": np.zeros(
+        len(trigger["ratescan_thresholds_pe"]),
+        dtype=int,
+    ),
 }
 for pk in res.PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
-        airshower_table = arc.query(levels_and_columns={"trigger": "__all__"})
+        airshower_table = arc.query(
+            levels_and_columns={"trigger": ["uid", "num_cherenkov_pe"]}
+        )
 
     # The true num of Cherenkov-photons in the light-field-sequence must be
     # below a critical threshold.
@@ -39,17 +45,12 @@ for pk in res.PARTICLES:
         airshower_table["trigger"]["num_cherenkov_pe"]
         <= MAX_CHERENKOV_IN_NSB_PE
     ]
-    nsb_table = snt.logic.cut_level_on_indices(
-        level=airshower_table["trigger"],
-        indices=uid_nsb,
-        index_key="uid",
-    )
+    uid_nsb = set(uid_nsb)
 
-    for tt, threshold in enumerate(trigger_thresholds):
-        uid_trigger = irf.analysis.light_field_trigger_modi.make_indices(
-            trigger_table=nsb_table,
-            threshold=threshold,
-            modus=trigger_modus,
+    for tt, threshold in enumerate(trigger["ratescan_thresholds_pe"]):
+        uid_trigger = set.intersection(
+            set(passing_trigger[pk]["ratescan"][f"{threshold:d}pe"]["uid"]),
+            set(uid_nsb),
         )
         nsb["num_exposures"] += len(uid_nsb)
         nsb["num_triggers_vs_threshold"][tt] += len(uid_trigger)
@@ -72,7 +73,6 @@ json_utils.write(
             "Trigger rate for night-sky-background"
             "VS trigger-ratescan-thresholds"
         ),
-        "trigger": TRIGGER,
         "unit": "s$^{-1}$",
         "mean": mean,
         "relative_uncertainty": relative_uncertainty,
