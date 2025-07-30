@@ -49,7 +49,7 @@ def estimate_containment_radius(theta_deg, psf_containment_factor):
         theta_containment_deg = np.quantile(
             theta_deg,
             q=psf_containment_factor,
-            interpolation="nearest",
+            method="nearest",
         )
         theta_containment_deg_relunc = 1.0 / np.sqrt(num_airshower)
     else:
