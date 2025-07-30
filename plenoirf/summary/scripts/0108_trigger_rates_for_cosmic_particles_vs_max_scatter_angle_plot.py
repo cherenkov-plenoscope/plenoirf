@@ -189,6 +189,18 @@ for zd in range(zenith_bin["num"]):
 
         fig = sebplt.figure(style=irf.summary.figure.FIGURE_STYLE)
         ax = sebplt.add_axes(fig=fig, span=[AXSPAN[0], AXSPAN[1], 0.55, 0.7])
+        fig.text(
+            x=0.42,
+            y=0.9,
+            s="\u25cf",
+            color=res.PARTICLE_COLORS[pk],
+        )
+        fig.text(
+            x=0.45,
+            y=0.9,
+            s=pk,
+            color="black",
+        )
         sebplt.add_axes_zenith_range_indicator(
             fig=fig,
             span=[0.0, 0.075, 0.175, 0.175],
