@@ -19,17 +19,14 @@ nsb_rates = json_utils.tree.read(
     )
 )
 zenith_bin = res.zenith_binning("once")
-
-TRIGGER = res.analysis["trigger"][res.site_key]
+trigger = res.trigger
 
 trigger_rates = {}
-trigger_thresholds = np.array(TRIGGER["ratescan_thresholds_pe"])
-analysis_trigger_threshold = TRIGGER["threshold_pe"]
 
-assert analysis_trigger_threshold in trigger_thresholds
+assert trigger["threshold_pe"] in trigger["ratescan_thresholds_pe"]
 analysis_trigger_threshold_idx = (
     irf.utils.find_closest_index_in_array_for_value(
-        arr=trigger_thresholds, val=analysis_trigger_threshold
+        arr=trigger["ratescan_thresholds_pe"], val=trigger["threshold_pe"]
     )
 )
 
