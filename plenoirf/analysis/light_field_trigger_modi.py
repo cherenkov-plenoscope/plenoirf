@@ -2,6 +2,18 @@ import numpy as np
 import sparse_numeric_table as snt
 
 
+def get_trigger_threshold_corrected_for_pointing_zenith(
+    pointing_zenith_rad, trigger, nominal_threshold_pe
+):
+    zenith_factor = np.interp(
+        x=pointing_zenith_rad,
+        xp=trigger["threshold_factor_vs_pointing_zenith"]["zenith_rad"],
+        fp=trigger["threshold_factor_vs_pointing_zenith"]["factor"],
+    )
+    assert np.all(zenith_factor >= 1.0)
+    return np.round(zenith_factor * nominal_threshold_pe).astype(int)
+
+
 def make_mask(
     trigger_table,
     threshold,

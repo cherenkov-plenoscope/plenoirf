@@ -25,16 +25,6 @@ rejecting_height_above_observation_level_m = (
 )
 
 
-def get_trigger_threshold(zenith_rad, trigger, nominal_threshold_pe):
-    zenith_factor = np.interp(
-        x=zenith_rad,
-        xp=trigger["threshold_factor_vs_pointing_zenith"]["zenith_rad"],
-        fp=trigger["threshold_factor_vs_pointing_zenith"]["factor"],
-    )
-    assert np.all(zenith_factor >= 1.0)
-    return np.round(zenith_factor * nominal_threshold_pe).astype(int)
-
-
 def assign_accepting_and_rejecting_focus_based_on_pointing_zenith(
     pointing_zenith_rad,
     accepting_height_above_observation_level_m,
@@ -106,8 +96,8 @@ ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 x_zd_rad = np.linspace(0, np.deg2rad(45), 1337)
 ax.plot(
     np.rad2deg(x_zd_rad),
-    get_trigger_threshold(
-        zenith_rad=x_zd_rad,
+    irf.analysis.light_field_trigger_modi.get_trigger_threshold_corrected_for_pointing_zenith(
+        pointing_zenith_rad=x_zd_rad,
         trigger=trigger,
         nominal_threshold_pe=trigger["threshold_pe"],
     ),
@@ -201,8 +191,10 @@ for pk in res.PARTICLES:
     for irs in range(len(trigger["ratescan_thresholds_pe"])):
         nominal_threshold_pe = trigger["ratescan_thresholds_pe"][irs]
 
-        zenith_corrected_threshold_pe = get_trigger_threshold(
-            zenith_rad=event_table["instrument_pointing"]["zenith_rad"],
+        zenith_corrected_threshold_pe = irf.analysis.light_field_trigger_modi.get_trigger_threshold_corrected_for_pointing_zenith(
+            pointing_zenith_rad=event_table["instrument_pointing"][
+                "zenith_rad"
+            ],
             trigger=trigger,
             nominal_threshold_pe=nominal_threshold_pe,
         )
