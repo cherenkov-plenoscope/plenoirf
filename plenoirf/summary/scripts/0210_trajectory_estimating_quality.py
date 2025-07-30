@@ -19,7 +19,7 @@ passing_trigger = json_utils.tree.read(
 passing_quality = json_utils.tree.read(
     opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
-passing_trajectory = json_utils.tree.read(
+passing_trajectory_quality = json_utils.tree.read(
     opj(res.paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
 weights_thrown2expected = json_utils.tree.read(
@@ -183,7 +183,7 @@ for pk in res.PARTICLES:
         [
             passing_trigger[pk]["uid"],
             passing_quality[pk]["uid"],
-            passing_trajectory[pk]["trajectory_quality"]["uid"],
+            passing_trajectory_quality[pk]["trajectory_quality"]["uid"],
         ]
     )
     event_table = snt.logic.cut_and_sort_table_on_indices(
@@ -205,8 +205,8 @@ for pk in res.PARTICLES:
 
     quality = align_values_with_event_frame(
         event_frame=event_frame,
-        uids=passing_trajectory[pk]["trajectory_quality"]["uid"],
-        values=passing_trajectory[pk]["trajectory_quality"]["quality"],
+        uids=passing_trajectory_quality[pk]["trajectory_quality"]["uid"],
+        values=passing_trajectory_quality[pk]["trajectory_quality"]["quality"],
     )
 
     write_correlation_figure(
