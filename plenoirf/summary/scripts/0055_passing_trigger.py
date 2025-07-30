@@ -25,14 +25,14 @@ rejecting_height_above_observation_level_m = (
 )
 
 
-def get_trigger_threshold(zenith_rad, trigger):
+def get_trigger_threshold(zenith_rad, trigger, nominal_threshold_pe):
     zenith_factor = np.interp(
         x=zenith_rad,
         xp=trigger["threshold_factor_vs_pointing_zenith"]["zenith_rad"],
         fp=trigger["threshold_factor_vs_pointing_zenith"]["factor"],
     )
     assert np.all(zenith_factor >= 1.0)
-    return np.round(zenith_factor * trigger["threshold_pe"]).astype(int)
+    return np.round(zenith_factor * nominal_threshold_pe).astype(int)
 
 
 def assign_accepting_and_rejecting_focus_based_on_pointing_zenith(
@@ -106,7 +106,11 @@ ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 x_zd_rad = np.linspace(0, np.deg2rad(45), 1337)
 ax.plot(
     np.rad2deg(x_zd_rad),
-    get_trigger_threshold(zenith_rad=x_zd_rad, trigger=trigger),
+    get_trigger_threshold(
+        zenith_rad=x_zd_rad,
+        trigger=trigger,
+        nominal_threshold_pe=trigger["threshold_pe"],
+    ),
     color="black",
 )
 ax.set_xlabel(r"zenith / (1$^{\circ}$)")
@@ -189,9 +193,22 @@ for pk in res.PARTICLES:
         accepting_over_rejecting >= threshold_accepting_over_rejecting
     )
 
+    # export
+    # ------
+    pk_ratescan_dir = opj(pk_dir, "ratescan")
+    os.makedirs(pk_ratescan_dir, exist_ok=True)
+
     for irs in range(len(trigger["ratescan_thresholds_pe"])):
+        nominal_threshold_pe = trigger["ratescan_thresholds_pe"][irs]
+
+        zenith_corrected_threshold_pe = get_trigger_threshold(
+            zenith_rad=event_table["instrument_pointing"]["zenith_rad"],
+            trigger=trigger,
+            nominal_threshold_pe=nominal_threshold_pe,
+        )
+
         is_size_over_threshold = (
-            accepting_response_pe >= trigger["ratescan_thresholds_pe"][irs]
+            accepting_response_pe >= zenith_corrected_threshold_pe
         )
         is_pasttrigger = np.logical_and(
             is_size_over_threshold, is_ratio_over_threshold
@@ -200,44 +217,15 @@ for pk in res.PARTICLES:
         filename = f"{trigger['ratescan_thresholds_pe'][irs]:d}pe.json"
         uids_pasttrigger = event_table["trigger"]["uid"][is_pasttrigger]
 
-        json_utils.write(opj(pk_dir, filename), uids_pasttrigger)
-
-    """
-    for i in range(num_events):
-        if np.mod(i, 1000) == 0:
-            print(i, "of", num_events)
-
-        pointing_zd_rad = event_table["instrument_pointing"][i]["zenith_rad"]
-        cos_pointing_zd_rad = np.cos(pointing_zd_rad)
-
-        accepting_depth_m = (
-            accepting_height_above_observation_level_m / cos_pointing_zd_rad
+        json_utils.write(
+            opj(pk_ratescan_dir, filename),
+            {"uid": uids_pasttrigger},
         )
-        rejecting_depth_m = (
-            rejecting_height_above_observation_level_m / cos_pointing_zd_rad
-        )
-        trigger_modus["accepting_focus"] = (
-            irf.utils.get_index_of_closest_match(
-                x=trigger_foci_bin["centers"],
-                y=accepting_depth_m,
+
+        if nominal_threshold_pe == trigger["threshold_pe"]:
+            json_utils.write(
+                opj(pk_dir, "uid.json"),
+                {"uid": uids_pasttrigger},
             )
-        )
-        trigger_modus["rejecting_focus"] = (
-            irf.utils.get_index_of_closest_match(
-                x=trigger_foci_bin["centers"],
-                y=rejecting_depth_m,
-            )
-        )
-
-        _uids_pasttrigger = irf.analysis.light_field_trigger_modi.make_indices(
-            trigger_table=event_table["trigger"][i],
-            threshold=get_trigger_threshold(
-                zenith_rad=pointing_zd_rad,
-                trigger=trigger,
-            ),
-            modus=trigger_modus,
-        )
-        uids_pasttrigger += list(_uids_pasttrigger)
-    """
 
 res.stop()
