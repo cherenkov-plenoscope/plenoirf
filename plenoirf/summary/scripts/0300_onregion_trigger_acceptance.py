@@ -74,7 +74,6 @@ def make_wighted_mask_wrt_primary_table(
     return mask
 
 
-
 for ok in ONREGION_TYPES:
     for pk in res.PARTICLES:
         os.makedirs(opj(res.paths["out_dir"], ok, pk), exist_ok=True)
@@ -94,9 +93,11 @@ for pk in res.PARTICLES:
             }
         )
 
-    uid_possible_onregion = irf.analysis.cuts.cut_primary_direction_within_angle(
-        event_table=diffuse_thrown,
-        max_angle_between_primary_and_pointing_rad=MAX_SOURCE_ANGLE_RAD,
+    uid_possible_onregion = (
+        irf.analysis.cuts.cut_primary_direction_within_angle(
+            event_table=diffuse_thrown,
+            max_angle_between_primary_and_pointing_rad=MAX_SOURCE_ANGLE_RAD,
+        )
     )
 
     # point source
@@ -116,11 +117,9 @@ for pk in res.PARTICLES:
         uid_quality=passing_quality[pk]["uid"],
     )
 
-    poicanarr = (
-        irf.reconstruction.trajectory_quality.make_rectangular_table(
-            event_table=point_candidate,
-            instrument_pointing_model=res.config["pointing"]["model"],
-        )
+    poicanarr = irf.reconstruction.trajectory_quality.make_rectangular_table(
+        event_table=point_candidate,
+        instrument_pointing_model=res.config["pointing"]["model"],
     )
 
     for ok in ONREGION_TYPES:
@@ -196,11 +195,9 @@ for pk in res.PARTICLES:
         uid_quality=passing_quality[pk]["uid"],
     )
 
-    difcanarr = (
-        irf.reconstruction.trajectory_quality.make_rectangular_table(
-            event_table=diffuse_candidate,
-            instrument_pointing_model=res.config["pointing"]["model"],
-        )
+    difcanarr = irf.reconstruction.trajectory_quality.make_rectangular_table(
+        event_table=diffuse_candidate,
+        instrument_pointing_model=res.config["pointing"]["model"],
     )
 
     for ok in ONREGION_TYPES:
@@ -259,7 +256,9 @@ for pk in res.PARTICLES:
             num_grid_cells_above_lose_threshold=diffuse_thrown["groundgrid"][
                 "num_bins_above_threshold"
             ],
-            total_num_grid_cells=diffuse_thrown["groundgrid"]["num_bins_thrown"],
+            total_num_grid_cells=diffuse_thrown["groundgrid"][
+                "num_bins_thrown"
+            ],
         )
 
         json_utils.write(

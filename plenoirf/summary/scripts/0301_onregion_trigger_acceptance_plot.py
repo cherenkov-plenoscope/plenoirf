@@ -15,7 +15,10 @@ trigger = res.trigger
 # trigger
 # -------
 A = json_utils.tree.read(
-    opj(res.paths["analysis_dir"], "0100_trigger_acceptance_for_cosmic_particles")
+    opj(
+        res.paths["analysis_dir"],
+        "0100_trigger_acceptance_for_cosmic_particles",
+    )
 )
 
 # trigger fix onregion
@@ -79,7 +82,6 @@ for ok in ONREGION_TYPES:
         ax.set_xlim(G_energy_bin["limits"])
         fig.savefig(opj(res.paths["out_dir"], f"{ok:s}_{pk:s}.jpg"))
         sebplt.close(fig)
-
 
 
 for pk in res.PARTICLES:
