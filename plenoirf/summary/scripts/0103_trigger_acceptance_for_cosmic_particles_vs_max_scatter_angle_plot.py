@@ -63,7 +63,7 @@ for zd in range(zenith_bin["num"]):
 
         sebplt.add_axes_zenith_range_indicator(
             fig=fig,
-            span=[0.0, 0.075, 0.175, 0.175],
+            span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
             zenith_bin_edges_rad=zenith_bin["edges"],
             zenith_bin=zd,
             fontsize=6,

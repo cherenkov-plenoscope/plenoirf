@@ -17,12 +17,27 @@ res.start(sebplt=sebplt)
 
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 zenith_bin = res.zenith_binning(key="once")
-
+zenith_assignment = json_utils.tree.read(
+    opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
+)
 trigger = res.trigger
 
 ttt = {}
 for pk in res.PARTICLES:
     ttt[pk] = {}
+    ttt[pk]["ratio"] = np.zeros(
+        shape=(
+            zenith_bin["num"],
+            energy_bin["num"],
+            trigger["foci_bin"]["num"],
+        )
+    )
+    ttt[pk]["num_thrown"] = np.zeros(
+        shape=(zenith_bin["num"], energy_bin["num"])
+    )
+    ttt[pk]["num_have_at_least_one_focus_trigger"] = np.zeros(
+        shape=(zenith_bin["num"], energy_bin["num"])
+    )
 
     with res.open_event_table(particle_key=pk) as arc:
         event_table = arc.query(
@@ -41,39 +56,25 @@ for pk in res.PARTICLES:
         ]
     )
 
-    et = snt.logic.cut_and_sort_table_on_indices(
-        table=event_table,
-        common_indices=uid_common,
-    )
-
-    ttt[pk]["ratio"] = np.zeros(
-        shape=(
-            zenith_bin["num"],
-            energy_bin["num"],
-            trigger["foci_bin"]["num"],
-        )
-    )
-    ttt[pk]["num_thrown"] = np.zeros(
-        shape=(zenith_bin["num"], energy_bin["num"])
-    )
-
-    ttt[pk]["num_have_at_least_one_focus_trigger"] = np.zeros(
-        shape=(zenith_bin["num"], energy_bin["num"])
-    )
-
-    for zzz in range(zenith_bin["num"]):
-        zenith_start_rad = zenith_bin["edges"][zzz]
-        zenith_stop_rad = zenith_bin["edges"][zzz + 1]
-
-        zenith_mask = np.logical_and(
-            et["instrument_pointing"]["zenith_rad"] >= zenith_start_rad,
-            et["instrument_pointing"]["zenith_rad"] < zenith_stop_rad,
-        )
+    for zd in range(zenith_bin["num"]):
+        zk = f"zd{zd:d}"
 
         ZENITH_CORRECTED_TRIGGER_THRESHOLD_PE = irf.analysis.light_field_trigger_modi.get_trigger_threshold_corrected_for_pointing_zenith(
-            pointing_zenith_rad=zenith_bin["centers"][zzz],
+            pointing_zenith_rad=zenith_bin["centers"][zd],
             trigger=trigger,
             nominal_threshold_pe=trigger["threshold_pe"],
+        )
+
+        uid_zd_common = snt.logic.intersection(
+            [
+                uid_common,
+                zenith_assignment[zk][pk],
+            ]
+        )
+
+        et = snt.logic.cut_and_sort_table_on_indices(
+            table=event_table,
+            common_indices=uid_zd_common,
         )
 
         for eee in range(energy_bin["num"]):
@@ -85,13 +86,9 @@ for pk in res.PARTICLES:
                 et["primary"]["energy_GeV"] < energy_stop_GeV,
             )
 
-            mask_energy_zenith = np.logical_and(
-                energy_mask,
-                zenith_mask,
-            )
-            num_energy_zenith = np.sum(mask_energy_zenith)
+            num_energy_zenith = np.sum(energy_mask)
 
-            ttt[pk]["num_thrown"][zzz][eee] = num_energy_zenith
+            ttt[pk]["num_thrown"][zd][eee] = num_energy_zenith
 
             trigger_in_energy_zenith = np.zeros(
                 shape=(num_energy_zenith, trigger["foci_bin"]["num"]),
@@ -100,7 +97,7 @@ for pk in res.PARTICLES:
             for fff in range(trigger["foci_bin"]["num"]):
                 fff_key = f"focus_{fff:02d}_response_pe"
                 trigger_in_energy_zenith[:, fff] = (
-                    et["trigger"][fff_key][mask_energy_zenith]
+                    et["trigger"][fff_key][energy_mask]
                     >= ZENITH_CORRECTED_TRIGGER_THRESHOLD_PE
                 )
 
@@ -108,18 +105,18 @@ for pk in res.PARTICLES:
                 trigger_in_energy_zenith, axis=0
             )
             if num_energy_zenith > 0:
-                ttt[pk]["ratio"][zzz][eee] = (
+                ttt[pk]["ratio"][zd][eee] = (
                     num_passed_trigger_in_energy_zenith / num_energy_zenith
                 )
 
-            __sum = np.sum(ttt[pk]["ratio"][zzz][eee])
+            __sum = np.sum(ttt[pk]["ratio"][zd][eee])
             if __sum > 0:
-                ttt[pk]["ratio"][zzz][eee] /= __sum
+                ttt[pk]["ratio"][zd][eee] /= __sum
 
             num_have_at_least_one_focus_trigger = np.sum(
                 np.sum(trigger_in_energy_zenith, axis=1) > 0
             )
-            ttt[pk]["num_have_at_least_one_focus_trigger"][zzz][
+            ttt[pk]["num_have_at_least_one_focus_trigger"][zd][
                 eee
             ] = num_have_at_least_one_focus_trigger
 
@@ -128,11 +125,11 @@ cmap = irf.summary.figure.make_particle_colormaps(
 )
 
 for pk in ttt:
-    for zzz in range(zenith_bin["num"]):
+    for zd in range(zenith_bin["num"]):
         valid_statistics = (
-            ttt[pk]["num_have_at_least_one_focus_trigger"][zzz] >= 15
+            ttt[pk]["num_have_at_least_one_focus_trigger"][zd] >= 15
         )
-        ratio = copy.copy(ttt[pk]["ratio"][zzz])
+        ratio = copy.copy(ttt[pk]["ratio"][zd])
         for eee in range(energy_bin["num"]):
             if not valid_statistics[eee]:
                 ratio[eee, :] = float("nan")
@@ -144,7 +141,7 @@ for pk in ttt:
         ax_zd = sebplt.add_axes_zenith_range_indicator(
             fig=fig,
             zenith_bin_edges_rad=zenith_bin["edges"],
-            zenith_bin=zzz,
+            zenith_bin=zd,
             span=[0.85, 0.1, 0.12, 0.12],
             fontsize=6,
         )
@@ -171,7 +168,7 @@ for pk in ttt:
             [
                 1,
                 1.1
-                * np.max(ttt[pk]["num_have_at_least_one_focus_trigger"][zzz]),
+                * np.max(ttt[pk]["num_have_at_least_one_focus_trigger"][zd]),
             ]
         )
         ax_h.set_xlabel("energy / GeV")
@@ -179,7 +176,7 @@ for pk in ttt:
         sebplt.ax_add_histogram(
             ax=ax_h,
             bin_edges=energy_bin["edges"],
-            bincounts=ttt[pk]["num_have_at_least_one_focus_trigger"][zzz],
+            bincounts=ttt[pk]["num_have_at_least_one_focus_trigger"][zd],
             linestyle="-",
             linecolor="k",
         )
@@ -187,19 +184,19 @@ for pk in ttt:
         fig.savefig(
             opj(
                 res.paths["out_dir"],
-                f"{pk:s}_trigger_probability_vs_object_distance_in_zenith_bin_{zzz:02d}.jpg",
+                f"{pk:s}_trigger_probability_vs_object_distance_in_zenith_bin_{zd:02d}.jpg",
             )
         )
         sebplt.close(fig)
 
 
-for zzz in range(zenith_bin["num"]):
+for zd in range(zenith_bin["num"]):
     fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
     ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
     ax_zd = sebplt.add_axes_zenith_range_indicator(
         fig=fig,
         zenith_bin_edges_rad=zenith_bin["edges"],
-        zenith_bin=zzz,
+        zenith_bin=zd,
         span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
         fontsize=5,
     )
@@ -221,12 +218,12 @@ for zzz in range(zenith_bin["num"]):
             )
 
             ratio = (
-                ttt[pk]["num_have_at_least_one_focus_trigger"][zzz]
-                / ttt[pk]["num_thrown"][zzz]
+                ttt[pk]["num_have_at_least_one_focus_trigger"][zd]
+                / ttt[pk]["num_thrown"][zd]
             )
             ratio_au = (
-                np.sqrt(ttt[pk]["num_have_at_least_one_focus_trigger"][zzz])
-                / ttt[pk]["num_thrown"][zzz]
+                np.sqrt(ttt[pk]["num_have_at_least_one_focus_trigger"][zd])
+                / ttt[pk]["num_thrown"][zd]
             )
 
         sebplt.ax_add_histogram(
@@ -244,7 +241,7 @@ for zzz in range(zenith_bin["num"]):
     fig.savefig(
         opj(
             res.paths["out_dir"],
-            f"trigger_probability_in_zenith_bin_{zzz:02d}.jpg",
+            f"trigger_probability_in_zenith_bin_{zd:02d}.jpg",
         )
     )
     sebplt.close(fig)

@@ -4,7 +4,7 @@ from plenopy.light_field_geometry.LightFieldGeometry import init_lixel_polygons
 
 FIGURE_STYLE = {"rows": 720, "cols": 1280, "fontsize": 1.0}
 AX_SPAN = [0.2, 0.2, 0.68, 0.75]
-AX_SPAN_ZENITH_INDICATOR = [0.85, 0.8, 0.15, 0.15]
+AX_SPAN_ZENITH_INDICATOR = [0.0, 0.075, 0.175, 0.175]
 AX_SPAN_WITH_COLORBAR_PAYLOAD = [0.2, 0.2, 0.55, 0.75]
 AX_SPAN_WITH_COLORBAR_COLORBAR = [0.8, 0.2, 0.025, 0.75]
 
