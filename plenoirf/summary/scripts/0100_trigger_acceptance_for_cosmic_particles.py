@@ -23,20 +23,19 @@ zenith_bin = res.zenith_binning("once")
 passing_trigger = json_utils.tree.read(
     opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
+zenith_assignment = json_utils.tree.read(
+    opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
+)
 trigger = res.trigger
 
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
-    print(zk)
-
-    zenith_start_rad = zenith_bin["edges"][zd]
-    zenith_stop_rad = zenith_bin["edges"][zd + 1]
 
     zd_dir = opj(res.paths["out_dir"], zk)
     os.makedirs(zd_dir, exist_ok=True)
 
     for pk in res.PARTICLES:
-        print(f"{pk:s} [", end="")
+        print(f"{zk:s}, {pk:s} [", end="")
 
         pk_dir = opj(zd_dir, pk)
         os.makedirs(pk_dir, exist_ok=True)
@@ -66,19 +65,10 @@ for zd in range(zenith_bin["num"]):
                 }
             )
 
-        mask_zenith_bin = np.logical_and(
-            _diffuse_particle_table["instrument_pointing"]["zenith_rad"]
-            >= zenith_start_rad,
-            _diffuse_particle_table["instrument_pointing"]["zenith_rad"]
-            < zenith_stop_rad,
-        )
-
         uid_common = snt.logic.intersection(
             [
                 _diffuse_particle_table["primary"]["uid"],
-                _diffuse_particle_table["instrument_pointing"]["uid"][
-                    mask_zenith_bin
-                ],
+                zenith_assignment[zk][pk],
                 _diffuse_particle_table["groundgrid"]["uid"],
                 _diffuse_particle_table["trigger"]["uid"],
             ]
@@ -147,6 +137,7 @@ for zd in range(zenith_bin["num"]):
                     "Effective area for a point source. "
                     "VS trigger-ratescan-thresholds VS energy-bins"
                 ),
+                "zenith_key": zk,
                 "energy_bin_edges_GeV": energy_bin["edges"],
                 "unit": "m$^{2}$",
                 "mean": value,
@@ -204,6 +195,7 @@ for zd in range(zenith_bin["num"]):
                     "for a diffuse source. "
                     "VS trigger-ratescan-thresholds VS energy-bins"
                 ),
+                "zenith_key": zk,
                 "unit": "m$^{2}$ sr",
                 "mean": value,
                 "absolute_uncertainty": absolute_uncertainty,

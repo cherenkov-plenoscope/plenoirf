@@ -36,6 +36,15 @@ for zd in range(zenith_bin["num"]):
     for source_key in irf.summary.figure.SOURCES:
         for tt in range(len(trigger_thresholds)):
             fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+
+            sebplt.add_axes_zenith_range_indicator(
+                fig=fig,
+                span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
+                zenith_bin_edges_rad=zenith_bin["edges"],
+                zenith_bin=zd,
+                fontsize=6,
+            )
+
             ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
             text_y = 0
