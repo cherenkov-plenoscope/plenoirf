@@ -28,8 +28,8 @@ analysis_trigger_threshold = res.analysis["trigger"][res.site_key][
 ]
 
 for zd in range(zenith_bin["num"]):
-
     zk = f"zd{zd:d}"
+
     zd_dir = opj(res.paths["out_dir"], zk)
     os.makedirs(zd_dir, exist_ok=True)
 
