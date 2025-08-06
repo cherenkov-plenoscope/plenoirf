@@ -193,3 +193,5 @@ for zd in range(zenith_bin["num"]):
                     "absolute_uncertainty": R_au,
                 },
             )
+
+res.stop()
