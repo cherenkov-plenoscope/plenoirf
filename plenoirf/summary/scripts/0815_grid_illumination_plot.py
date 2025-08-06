@@ -30,11 +30,9 @@ GH = irf.ground_grid.GroundGrid(
 )
 
 MAX_AIRSHOWER_PER_ENERGY_BIN = 100
-
 MAX_CHERENKOV_INTENSITY = (
     10.0 * res.config["ground_grid"]["threshold_num_photons"]
 )
-
 FIGURE_STYLE = {"rows": 1080, "cols": 1350, "fontsize": 1}
 
 for pk in res.PARTICLES:
