@@ -13,40 +13,26 @@ import propagate_uncertainties
 import copy
 import lima1983analysis
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start(sebplt=sebplt)
 
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
-
-os.makedirs(paths["out_dir"], exist_ok=True)
-
-SITES = irf_config["config"]["sites"]
-PARTICLES = irf_config["config"]["particles"]
-ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
-COSMIC_RAYS = copy.deepcopy(PARTICLES)
-COSMIC_RAYS.pop("gamma")
+ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
 onregion_rates = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0320_onregion_trigger_rates_for_cosmic_rays")
+    opj(
+        res.paths["analysis_dir"],
+        "0320_onregion_trigger_rates_for_cosmic_rays",
+    )
 )
 onregion_acceptance = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
+    opj(res.paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 
-energy_binning = json_utils.read(
-    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)
-energy_bin = energy_binning["trigger_acceptance_onregion"]
-energy_fine_bin = energy_binning["interpolation"]
+energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+energy_fine_bin = res.energy_binning(key="interpolation")
+zenith_bin = res.zenith_binning("once")
 
-
-prng = np.random.Generator(
-    np.random.generator.PCG64(sum_config["random_seed"])
-)
+prng = np.random.Generator(np.random.PCG64(res.analysis["random_seed"]))
 
 pulsar_name = "J0614-3329"
 pulsar = irf.analysis.pulsar_timing.ppog_init_from_profiles(
@@ -69,7 +55,9 @@ ax.set_xlabel("energy / GeV")
 ax.set_ylabel(
     r"$\frac{\mathrm{d\,flux}}{\mathrm{d\,energy}}$ / m$^{-2}$ s$^{-1}$ (GeV)$^{-1}$"
 )
-fig.savefig(opj(paths["out_dir"], "pulsar_{:s}_flux.jpg".format(pulsar_name)))
+fig.savefig(
+    opj(res.paths["out_dir"], "pulsar_{:s}_flux.jpg".format(pulsar_name))
+)
 sebplt.close(fig)
 
 
@@ -85,7 +73,7 @@ ax.set_xlim([0, 1])
 ax.set_xlabel(r"phase / 2$\pi$")
 ax.set_ylabel(r"relative / 1")
 fig.savefig(
-    opj(paths["out_dir"], "pulsar_{:s}_phaseogram.jpg".format(pulsar_name))
+    opj(res.paths["out_dir"], "pulsar_{:s}_phaseogram.jpg".format(pulsar_name))
 )
 sebplt.close(fig)
 
@@ -104,7 +92,7 @@ ax.set_xlabel(r"cummulative distribution function / 1")
 ax.set_ylabel(r"phase / 2$\pi$")
 fig.savefig(
     opj(
-        paths["out_dir"],
+        res.paths["out_dir"],
         "pulsar_{:s}_phaseogram_cummulative_distribution_function.jpg".format(
             pulsar_name
         ),
@@ -150,7 +138,7 @@ if TEST_DRAW_RANDOM_PHASE:
     ax.set_ylabel(r"relative / 1")
     fig.savefig(
         opj(
-            paths["out_dir"],
+            res.paths["out_dir"],
             "pulsar_{:s}_phaseogram_test_draw.jpg".format(pulsar_name),
         )
     )
@@ -217,8 +205,8 @@ def histogram_runs(runs, num_phase_bins=None, a=1e-2):
     )
 
     exposure_time = 0.0
-    gam_hist = np.zeros(num_phase_bins, dtype=np.int)
-    bkg_hist = np.zeros(num_phase_bins, dtype=np.int)
+    gam_hist = np.zeros(num_phase_bins, dtype=int)
+    bkg_hist = np.zeros(num_phase_bins, dtype=int)
 
     for run in runs:
         exposure_time += run["exposure_time"]
@@ -274,20 +262,22 @@ onregion_alpha = {
 PULSARS = cosmic_fluxes.pulsars.list_pulsar_names()
 
 
-for sk in SITES:
-    sk_dir = opj(paths["out_dir"], sk)
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
+
+    zk_dir = opj(res.paths["out_dir"], zk)
     for ok in ONREGION_TYPES:
-        sk_ok_dir = opj(sk_dir, ok)
-        os.makedirs(sk_ok_dir, exist_ok=True)
+        zk_ok_dir = opj(zk_dir, ok)
+        os.makedirs(zk_ok_dir, exist_ok=True)
 
         # background
         # ----------
         rates_cosmic_rays_per_s = []
         rates_cosmic_rays_per_s_au = []
         rates_of_cosmic_rays = {}
-        for pk in COSMIC_RAYS:
-            rate = onregion_rates[sk][ok][pk]["integral_rate"]["mean"]
-            rate_au = onregion_rates[sk][ok][pk]["integral_rate"][
+        for pk in res.COSMIC_RAYS:
+            rate = onregion_rates[zk][ok][pk]["integral_rate"]["mean"]
+            rate_au = onregion_rates[zk][ok][pk]["integral_rate"][
                 "absolute_uncertainty"
             ]
             rates_of_cosmic_rays[pk] = rate
@@ -301,14 +291,14 @@ for sk in SITES:
         )
 
         json_utils.write(
-            opj(sk_ok_dir, "rates_of_cosmic_rays.json"),
+            opj(zk_ok_dir, "rates_of_cosmic_rays.json"),
             rates_of_cosmic_rays,
             indent=4,
         )
 
         # signal
         # ------
-        A_gamma = onregion_acceptance[sk][ok]["gamma"]["point"]["mean"]
+        A_gamma = onregion_acceptance[zk][ok]["gamma"]["point"]["mean"]
         A_gamma_fine_m2 = np.interp(
             x=energy_fine_bin["centers"],
             xp=energy_bin["centers"],
@@ -317,8 +307,8 @@ for sk in SITES:
 
         dKdE_per_m2_per_s_per_GeV = pulsar["differential_flux_vs_energy"]
 
-        dRdE_per_s_per_GeV = np.zeros(energy_fine_bin["num_bins"])
-        for ebin in range(energy_fine_bin["num_bins"]):
+        dRdE_per_s_per_GeV = np.zeros(energy_fine_bin["num"])
+        for ebin in range(energy_fine_bin["num"]):
             dRdE_per_s_per_GeV[ebin] = (
                 A_gamma_fine_m2[ebin] * dKdE_per_m2_per_s_per_GeV[ebin]
             )
@@ -340,22 +330,22 @@ for sk in SITES:
         )
         fig.savefig(
             opj(
-                sk_ok_dir,
+                zk_ok_dir,
                 "{:s}_onregion-{:s}_differential_rate_in_onregion.jpg".format(
-                    sk, ok
+                    zk, ok
                 ),
             )
         )
         sebplt.close(fig)
 
         rate_gamma_rays_per_s = 0.0
-        for ebin in range(energy_fine_bin["num_bins"]):
+        for ebin in range(energy_fine_bin["num"]):
             rate_gamma_rays_per_s += (
                 dRdE_per_s_per_GeV[ebin] * energy_fine_bin["widths"][ebin]
             )
 
         json_utils.write(
-            opj(sk_ok_dir, "rate_of_gamma_rays.json"),
+            opj(zk_ok_dir, "rate_of_gamma_rays.json"),
             {"gamma": rate_gamma_rays_per_s},
             indent=4,
         )
@@ -407,9 +397,9 @@ for sk in SITES:
                 ax.set_ylabel(r"rate / s$^{-1}$")
                 fig.savefig(
                     opj(
-                        sk_ok_dir,
+                        zk_ok_dir,
                         "{:s}_onregion-{:s}_phaseogram_exposure-time-{:03d}h.jpg".format(
-                            sk, ok, len(runs)
+                            zk, ok, len(runs)
                         ),
                     )
                 )
@@ -465,17 +455,17 @@ for sk in SITES:
                 ax.set_ylabel("significance / 1\n(Li and Ma, 1983, Eq.17)")
                 fig.savefig(
                     opj(
-                        sk_ok_dir,
+                        zk_ok_dir,
                         "{:s}_onregion-{:s}_phaseogram_exposure-time-{:03d}h_significance_lima1983.jpg".format(
-                            sk, ok, len(runs)
+                            zk, ok, len(runs)
                         ),
                     )
                 )
                 sebplt.close(fig)
 
         print(
-            "Site: ",
-            sk,
+            "Zenith: ",
+            zk,
             ", Size of on-region: ",
             ok,
             ", Rate cosmic-rays: ",
@@ -489,3 +479,5 @@ for sk in SITES:
             ", pulsar_name ",
             pulsar_name,
         )
+
+res.stop()

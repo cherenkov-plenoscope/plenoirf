@@ -11,40 +11,35 @@ from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start(sebplt=sebplt)
 
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
-
-os.makedirs(paths["out_dir"], exist_ok=True)
-
-SITES = irf_config["config"]["sites"]
-PARTICLES = irf_config["config"]["particles"]
-ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
+ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
 # load
 # ----
-dS = json_utils.tree.read(opj(paths["analysis_dir"], "0540_diffsens_estimate"))
+zenith_bin = res.zenith_binning("once")
+ZENITH_ZD_ZK = [(zd, f"zd{zd:d}") for zd in range(zenith_bin["num"])]
 
-diff_sens_scenario = sum_config["differential_sensitivity"][
+dS = json_utils.tree.read(
+    opj(res.paths["analysis_dir"], "0540_diffsens_estimate")
+)
+
+diff_sens_scenario = res.analysis["differential_sensitivity"][
     "gamma_ray_effective_area_scenario"
 ]
 pivot_energies = {"cta": 25.0, "portal": 2.5}
 
 PLOT_FERMI_LAT_ESTIMATE_BY_HINTON_AND_FUNK = False
 
-systematic_uncertainties = sum_config["on_off_measuremnent"][
+systematic_uncertainties = res.analysis["on_off_measuremnent"][
     "systematic_uncertainties"
 ]
 num_systematic_uncertainties = len(systematic_uncertainties)
 
 for pe in pivot_energies:
-    fls = json_utils.read(
-        opj("fermi_lat", "dnde_vs_observation_time_vs_energy.json")
+    fls = (
+        irf.other_instruments.fermi_lat.flux_sensitivity_vs_observation_time_vs_energy()
     )
     assert fls["dnde"]["unit"] == "cm-2 MeV-1 ph s-1"
     odnde = {"dnde": {}}
@@ -63,9 +58,7 @@ for pe in pivot_energies:
         - 1
     )
 
-    energy_bin = json_utils.read(
-        opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
-    )["trigger_acceptance_onregion"]
+    energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 
     fermi = irf.other_instruments.fermi_lat
     cta = irf.other_instruments.cherenkov_telescope_array_south
@@ -90,12 +83,14 @@ for pe in pivot_energies:
 
     # work
     # ----
-    for sk in SITES:
+    for zd, zk in ZENITH_ZD_ZK:
         for ok in ONREGION_TYPES:
             for dk in flux_sensitivity.differential.SCENARIOS:
-                os.makedirs(opj(paths["out_dir"], sk, ok, dk), exist_ok=True)
+                os.makedirs(
+                    opj(res.paths["out_dir"], zk, ok, dk), exist_ok=True
+                )
 
-                observation_times = dS[sk][ok][dk]["observation_times"]
+                observation_times = dS[zk][ok][dk]["observation_times"]
 
                 components = []
 
@@ -195,7 +190,7 @@ for pe in pivot_energies:
                 # ----------
 
                 for sysuncix in range(num_systematic_uncertainties):
-                    portal_dFdE = dS[sk][ok][dk]["differential_flux"][
+                    portal_dFdE = dS[zk][ok][dk]["differential_flux"][
                         :, :, sysuncix
                     ]
                     if sysuncix == 0:
@@ -224,6 +219,13 @@ for pe in pivot_energies:
 
                 fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
                 ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+                sebplt.add_axes_zenith_range_indicator(
+                    fig=fig,
+                    span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
+                    zenith_bin_edges_rad=zenith_bin["edges"],
+                    zenith_bin=zd,
+                    fontsize=6,
+                )
 
                 for com in components:
                     _energy, _dFdE = sed.convert_units_with_style(
@@ -263,8 +265,8 @@ for pe in pivot_energies:
 
                 fig.savefig(
                     opj(
-                        paths["out_dir"],
-                        sk,
+                        res.paths["out_dir"],
+                        zk,
                         ok,
                         dk,
                         "sensitivity_vs_obseravtion_time_{:d}MeV.jpg".format(
@@ -273,3 +275,5 @@ for pe in pivot_energies:
                     )
                 )
                 sebplt.close(fig)
+
+res.stop()
