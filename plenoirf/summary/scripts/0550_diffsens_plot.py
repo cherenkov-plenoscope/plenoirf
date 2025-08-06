@@ -11,27 +11,18 @@ from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start(sebplt=sebplt)
 
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
+ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
+
+dS = json_utils.tree.read(
+    opj(res.paths["analysis_dir"], "0540_diffsens_estimate")
 )
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
 
-os.makedirs(paths["out_dir"], exist_ok=True)
-
-SITES = irf_config["config"]["sites"]
-PARTICLES = irf_config["config"]["particles"]
-COSMIC_RAYS = irf.utils.filter_particles_with_electric_charge(PARTICLES)
-ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
-
-dS = json_utils.tree.read(opj(paths["analysis_dir"], "0540_diffsens_estimate"))
-
-energy_bin = json_utils.read(
-    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["trigger_acceptance_onregion"]
+energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+zenith_bin = res.zenith_binning("once")
+ZENITH_D_K = [(zd, f"zd{zd:d}") for zd in range(zenith_bin["num"])]
 
 fermi = irf.other_instruments.fermi_lat
 cta = irf.other_instruments.cherenkov_telescope_array_south
@@ -106,11 +97,11 @@ def com_add_diff_flux(
 
 
 cta_diffsens = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0545_diffsens_estimate_cta_south")
+    opj(res.paths["analysis_dir"], "0545_diffsens_estimate_cta_south")
 )
 
 fermi_diffsens = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0544_diffsens_estimate_fermi_lat")
+    opj(res.paths["analysis_dir"], "0544_diffsens_estimate_fermi_lat")
 )["flux_sensitivity"]
 
 
@@ -123,19 +114,21 @@ for obsk in observation_times:
         time_s=observation_time, format_seconds="{:.0f}"
     )
 
-    sys_unc = sum_config["on_off_measuremnent"]["systematic_uncertainties"][
+    sys_unc = res.analysis["on_off_measuremnent"]["systematic_uncertainties"][
         sysuncix
     ]
 
     x_lim_GeV = np.array([1e-1, 1e4])
     y_lim_per_m2_per_s_per_GeV = np.array([1e3, 1e-16])
 
-    for sk in SITES:
+    for zd, zk in ZENITH_D_K:
         for ok in ONREGION_TYPES:
             for sedk in SED_STYLES:
-                os.makedirs(opj(paths["out_dir"], sk, ok, sedk), exist_ok=True)
+                os.makedirs(
+                    opj(res.paths["out_dir"], zk, ok, sedk), exist_ok=True
+                )
 
-    for sk in SITES:
+    for zd, zk in ZENITH_D_K:
         for ok in ONREGION_TYPES:
             for dk in flux_sensitivity.differential.SCENARIOS:
                 components = []
@@ -230,15 +223,15 @@ for obsk in observation_times:
                 # Plenoscope diff
                 # ---------------
                 obstidx = find_observation_time_index(
-                    observation_times=dS[sk][ok][dk]["observation_times"],
+                    observation_times=dS[zk][ok][dk]["observation_times"],
                     observation_time=observation_time,
                 )
                 com = {}
                 com = com_add_diff_flux(
                     com=com,
                     energy_bin_edges=energy_bin["edges"],
-                    dVdE=dS[sk][ok][dk]["differential_flux"],
-                    dVdE_au=dS[sk][ok][dk]["differential_flux_au"],
+                    dVdE=dS[zk][ok][dk]["differential_flux"],
+                    dVdE_au=dS[zk][ok][dk]["differential_flux_au"],
                     obstidx=obstidx,
                     sysuncix=sysuncix,
                 )
@@ -254,6 +247,13 @@ for obsk in observation_times:
                     fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
                     ax = sebplt.add_axes(
                         fig=fig, span=irf.summary.figure.AX_SPAN
+                    )
+                    sebplt.add_axes_zenith_range_indicator(
+                        fig=fig,
+                        span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
+                        zenith_bin_edges_rad=zenith_bin["edges"],
+                        zenith_bin=zd,
+                        fontsize=6,
                     )
 
                     for com in components:
@@ -320,13 +320,13 @@ for obsk in observation_times:
                     )
                     fig.savefig(
                         opj(
-                            paths["out_dir"],
-                            sk,
+                            res.paths["out_dir"],
+                            zk,
                             ok,
                             sedk,
-                            "{:s}_{:s}_{:s}_differential_sensitivity_sed_style_{:s}_{:s}.jpg".format(
-                                sk, ok, dk, sedk, obsk
-                            ),
+                            f"{zk:s}_{ok:s}_{dk:s}_differential_sensitivity_sed_style_{sedk:s}_{obsk:s}.jpg",
                         )
                     )
                     sebplt.close(fig)
+
+res.stop()

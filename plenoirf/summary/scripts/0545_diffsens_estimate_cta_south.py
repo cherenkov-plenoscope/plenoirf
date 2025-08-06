@@ -10,19 +10,12 @@ import os
 from os.path import join as opj
 
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
-
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 observation_times = json_utils.read(
     opj(
-        paths["analysis_dir"],
+        res.paths["analysis_dir"],
         "0539_diffsens_observation_times",
         "observation_times.json",
     )
@@ -33,14 +26,14 @@ num_observation_times = len(observation_times)
 # --------------------
 CTA_IRF_CONFIG = {}
 CTA_IRF_CONFIG["name"] = "Prod5-South-20deg-AverageAz-14MSTs37SSTs.1800s-v0.1"
-CTA_IRF_CONFIG["num_bins_per_decade"] = sum_config["energy_binning"][
+CTA_IRF_CONFIG["num_bins_per_decade"] = res.analysis["energy_binning"][
     "num_bins_per_decade"
 ]
 CTA_IRF_CONFIG["roi_opening_deg"] = 3.25
-CTA_IRF_CONFIG["detection_threshold_std"] = sum_config["on_off_measuremnent"][
-    "detection_threshold_std"
-]
-CTA_IRF_CONFIG["estimator_statistics"] = sum_config["on_off_measuremnent"][
+CTA_IRF_CONFIG["detection_threshold_std"] = res.analysis[
+    "on_off_measuremnent"
+]["detection_threshold_std"]
+CTA_IRF_CONFIG["estimator_statistics"] = res.analysis["on_off_measuremnent"][
     "estimator_for_critical_signal_rate"
 ]
 CTA_IRF_CONFIG["on_over_off_ratio"] = 0.2  # CTA-specific
@@ -48,7 +41,7 @@ CTA_IRF_CONFIG["systematic_uncertainty_relative"] = 1e-2  # CTA-specific
 CTA_IRF_CONFIG["observation_times"] = observation_times
 
 json_utils.write(
-    opj(paths["out_dir"], "config.json"),
+    opj(res.paths["out_dir"], "config.json"),
     CTA_IRF_CONFIG,
 )
 
@@ -135,14 +128,14 @@ blk["signal_area_m2_au"] = signal_area_m2_au
 blk["background_rate_onregion_per_s"] = background_rate_onregion_per_s
 blk["background_rate_onregion_per_s_au"] = background_rate_onregion_per_s_au
 json_utils.write(
-    opj(paths["out_dir"], "instrument_response_function.json"), blk
+    opj(res.paths["out_dir"], "instrument_response_function.json"), blk
 )
 
 
 # scenarios
 # ---------
 for dk in flux_sensitivity.differential.SCENARIOS:
-    scenario_dir = opj(paths["out_dir"], dk)
+    scenario_dir = opj(res.paths["out_dir"], dk)
     os.makedirs(scenario_dir, exist_ok=True)
 
     scenario = flux_sensitivity.differential.init_scenario_matrices_for_signal_and_background(
@@ -230,3 +223,5 @@ for dk in flux_sensitivity.differential.SCENARIOS:
     out["dVdE_per_m2_per_GeV_per_s"] = dVdE
     out["dVdE_per_m2_per_GeV_per_s_au"] = dVdE_au
     json_utils.write(opj(scenario_dir, "flux_sensitivity.json"), out)
+
+res.stop()
