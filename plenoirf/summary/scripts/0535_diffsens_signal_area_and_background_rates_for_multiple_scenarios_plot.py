@@ -8,48 +8,37 @@ from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start(sebplt=sebplt)
 
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
-
-os.makedirs(paths["out_dir"], exist_ok=True)
-
-SITES = irf_config["config"]["sites"]
-PARTICLES = irf_config["config"]["particles"]
-COSMIC_RAYS = irf.utils.filter_particles_with_electric_charge(PARTICLES)
-ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
+ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
 # load
 # ----
-energy_binning = json_utils.read(
-    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)
-energy_bin = energy_binning["trigger_acceptance_onregion"]
+energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+zenith_bin = res.zenith_binning("once")
 
 acceptance = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
+    opj(res.paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 
 scenarios = json_utils.tree.read(
     opj(
-        paths["analysis_dir"],
+        res.paths["analysis_dir"],
         "0534_diffsens_signal_area_and_background_rates_for_multiple_scenarios",
     )
 )
 
 # plot
 # ----
-for sk in SITES:
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
     for ok in ONREGION_TYPES:
-        os.makedirs(opj(paths["out_dir"], sk, ok), exist_ok=True)
+        os.makedirs(opj(res.paths["out_dir"], zk, ok), exist_ok=True)
 
 
-for sk in SITES:
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
     for ok in ONREGION_TYPES:
         for dk in flux_sensitivity.differential.SCENARIOS:
             elabel = flux_sensitivity.differential.SCENARIOS[dk][
@@ -58,9 +47,17 @@ for sk in SITES:
 
             fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
             ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-            for ck in COSMIC_RAYS:
-                ck_Rt = scenarios[sk][ok][dk][ck]["rate"]["mean"]
-                ck_Rt_au = scenarios[sk][ok][dk][ck]["rate"][
+            sebplt.add_axes_zenith_range_indicator(
+                fig=fig,
+                span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
+                zenith_bin_edges_rad=zenith_bin["edges"],
+                zenith_bin=zd,
+                fontsize=6,
+            )
+
+            for ck in res.COSMIC_RAYS:
+                ck_Rt = scenarios[zk][ok][dk][ck]["rate"]["mean"]
+                ck_Rt_au = scenarios[zk][ok][dk][ck]["rate"][
                     "absolute_uncertainty"
                 ]
                 sebplt.ax_add_histogram(
@@ -68,11 +65,11 @@ for sk in SITES:
                     bin_edges=energy_bin["edges"],
                     bincounts=ck_Rt,
                     linestyle="-",
-                    linecolor=sum_config["plot"]["particle_colors"][ck],
+                    linecolor=res.PARTICLE_COLORS[ck],
                     linealpha=1.0,
                     bincounts_upper=ck_Rt + ck_Rt_au,
                     bincounts_lower=ck_Rt - ck_Rt_au,
-                    face_color=sum_config["plot"]["particle_colors"][ck],
+                    face_color=res.PARTICLE_COLORS[ck],
                     face_alpha=0.2,
                     label=None,
                     draw_bin_walls=False,
@@ -83,8 +80,8 @@ for sk in SITES:
             ax.loglog()
             fig.savefig(
                 opj(
-                    paths["out_dir"],
-                    sk,
+                    res.paths["out_dir"],
+                    zk,
                     ok,
                     dk + "_background_rate_vs_reco_energy.jpg",
                 )
@@ -93,13 +90,29 @@ for sk in SITES:
 
             fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
             ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-            A_gamma_scenario = scenarios[sk][ok][dk]["gamma"]["area"]["mean"]
-            A_gamma_scenario_au = scenarios[sk][ok][dk]["gamma"]["area"][
+            sebplt.add_axes_zenith_range_indicator(
+                fig=fig,
+                span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
+                zenith_bin_edges_rad=zenith_bin["edges"],
+                zenith_bin=zd,
+                fontsize=6,
+            )
+
+            sebplt.add_axes_zenith_range_indicator(
+                fig=fig,
+                span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
+                zenith_bin_edges_rad=zenith_bin["edges"],
+                zenith_bin=zd,
+                fontsize=6,
+            )
+
+            A_gamma_scenario = scenarios[zk][ok][dk]["gamma"]["area"]["mean"]
+            A_gamma_scenario_au = scenarios[zk][ok][dk]["gamma"]["area"][
                 "absolute_uncertainty"
             ]
 
-            A_gamma = acceptance[sk][ok]["gamma"]["point"]["mean"]
-            A_gamma_au = acceptance[sk][ok]["gamma"]["point"][
+            A_gamma = acceptance[zk][ok]["gamma"]["point"]["mean"]
+            A_gamma_au = acceptance[zk][ok]["gamma"]["point"][
                 "absolute_uncertainty"
             ]
 
@@ -108,11 +121,11 @@ for sk in SITES:
                 bin_edges=energy_bin["edges"],
                 bincounts=A_gamma_scenario,
                 linestyle="-",
-                linecolor=sum_config["plot"]["particle_colors"]["gamma"],
+                linecolor=res.PARTICLE_COLORS["gamma"],
                 linealpha=1.0,
                 bincounts_upper=A_gamma_scenario + A_gamma_scenario_au,
                 bincounts_lower=A_gamma_scenario - A_gamma_scenario_au,
-                face_color=sum_config["plot"]["particle_colors"]["gamma"],
+                face_color=res.PARTICLE_COLORS["gamma"],
                 face_alpha=0.2,
                 label=None,
                 draw_bin_walls=False,
@@ -124,8 +137,8 @@ for sk in SITES:
             ax.loglog()
             fig.savefig(
                 opj(
-                    paths["out_dir"],
-                    sk,
+                    res.paths["out_dir"],
+                    zk,
                     ok,
                     dk + "_area_gamma.jpg",
                 )
@@ -134,7 +147,7 @@ for sk in SITES:
 
             # G_matrix
             # ---------------------------
-            G_matrix = scenarios[sk][ok][dk]["gamma"]["scenario"]["G_matrix"]
+            G_matrix = scenarios[zk][ok][dk]["gamma"]["scenario"]["G_matrix"]
             fig = sebplt.figure(sebplt.FIGURE_1_1)
             ax_c = sebplt.add_axes(fig=fig, span=[0.16, 0.16, 0.7, 0.7])
             ax_cb = sebplt.add_axes(fig=fig, span=[0.88, 0.16, 0.02, 0.7])
@@ -143,9 +156,7 @@ for sk in SITES:
                 energy_bin["edges"],
                 np.transpose(G_matrix),
                 cmap="Greys",
-                norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
-                vmin=0,
-                vmax=1,
+                norm=sebplt.plt_colors.PowerNorm(gamma=0.5, vmin=0, vmax=1),
             )
             ax_c.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1)
             sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
@@ -155,8 +166,8 @@ for sk in SITES:
             ax_c.set_xlabel("energy / GeV")
             fig.savefig(
                 opj(
-                    paths["out_dir"],
-                    sk,
+                    res.paths["out_dir"],
+                    zk,
                     ok,
                     dk + "_G_matrix.jpg",
                 )
@@ -165,7 +176,7 @@ for sk in SITES:
 
             # B_matrix
             # --------
-            B_matrix = scenarios[sk][ok][dk]["gamma"]["scenario"]["B_matrix"]
+            B_matrix = scenarios[zk][ok][dk]["gamma"]["scenario"]["B_matrix"]
             fig = sebplt.figure(sebplt.FIGURE_1_1)
             ax_c = sebplt.add_axes(fig=fig, span=[0.16, 0.16, 0.7, 0.7])
             ax_cb = sebplt.add_axes(fig=fig, span=[0.88, 0.16, 0.02, 0.7])
@@ -174,9 +185,7 @@ for sk in SITES:
                 energy_bin["edges"],
                 np.transpose(B_matrix),
                 cmap="Greys",
-                norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
-                vmin=0,
-                vmax=1,
+                norm=sebplt.plt_colors.PowerNorm(gamma=0.5, vmin=0, vmax=1),
             )
             ax_c.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1)
             sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
@@ -186,8 +195,8 @@ for sk in SITES:
             ax_c.set_xlabel("energy / GeV")
             fig.savefig(
                 opj(
-                    paths["out_dir"],
-                    sk,
+                    res.paths["out_dir"],
+                    zk,
                     ok,
                     dk + "_B_matrix.jpg",
                 )

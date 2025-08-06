@@ -11,49 +11,37 @@ import sebastians_matplotlib_addons as sebplt
 import lima1983analysis
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start(sebplt=sebplt)
 
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
-
-os.makedirs(paths["out_dir"], exist_ok=True)
-
-SITES = irf_config["config"]["sites"]
-PARTICLES = irf_config["config"]["particles"]
-COSMIC_RAYS = irf.utils.filter_particles_with_electric_charge(PARTICLES)
-ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
+ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
 # load
 # ----
-energy_binning = json_utils.read(
-    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)
-energy_bin = energy_binning["trigger_acceptance_onregion"]
+energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+zenith_bin = res.zenith_binning("once")
+
 energy_bin_width_au = np.zeros(energy_bin["num"])
 
 S = json_utils.tree.read(
     opj(
-        paths["analysis_dir"],
+        res.paths["analysis_dir"],
         "0534_diffsens_signal_area_and_background_rates_for_multiple_scenarios",
     )
 )
 
-detection_threshold_std = sum_config["on_off_measuremnent"][
+detection_threshold_std = res.analysis["on_off_measuremnent"][
     "detection_threshold_std"
 ]
 
-systematic_uncertainties = sum_config["on_off_measuremnent"][
+systematic_uncertainties = res.analysis["on_off_measuremnent"][
     "systematic_uncertainties"
 ]
 num_systematic_uncertainties = len(systematic_uncertainties)
 
 observation_times = json_utils.read(
     opj(
-        paths["analysis_dir"],
+        res.paths["analysis_dir"],
         "0539_diffsens_observation_times",
         "observation_times.json",
     )
@@ -61,26 +49,28 @@ observation_times = json_utils.read(
 
 num_observation_times = len(observation_times)
 
-estimator_statistics = sum_config["on_off_measuremnent"][
+estimator_statistics = res.analysis["on_off_measuremnent"][
     "estimator_for_critical_signal_rate"
 ]
 
 # prepare
 # -------
-for sk in SITES:
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
     for ok in ONREGION_TYPES:
-        os.makedirs(opj(paths["out_dir"], sk, ok), exist_ok=True)
+        os.makedirs(opj(res.paths["out_dir"], zk, ok), exist_ok=True)
 
 # work
 # ----
-for sk in SITES:
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
     for ok in ONREGION_TYPES:
         on_over_off_ratio = ONREGION_TYPES[ok]["on_over_off_ratio"]
         for dk in flux_sensitivity.differential.SCENARIOS:
-            print(sk, ok, dk)
+            print(zk, ok, dk)
 
-            A_gamma_scenario = S[sk][ok][dk]["gamma"]["area"]["mean"]
-            A_gamma_scenario_au = S[sk][ok][dk]["gamma"]["area"][
+            A_gamma_scenario = S[zk][ok][dk]["gamma"]["area"]["mean"]
+            A_gamma_scenario_au = S[zk][ok][dk]["gamma"]["area"][
                 "absolute_uncertainty"
             ]
 
@@ -88,12 +78,12 @@ for sk in SITES:
             # ------------------------------------------------
             R_background_components = []
             R_background_components_au = []
-            for ck in COSMIC_RAYS:
+            for ck in res.COSMIC_RAYS:
                 R_background_components.append(
-                    S[sk][ok][dk][ck]["rate"]["mean"][:]
+                    S[zk][ok][dk][ck]["rate"]["mean"][:]
                 )
                 R_background_components_au.append(
-                    S[sk][ok][dk][ck]["rate"]["absolute_uncertainty"][:]
+                    S[zk][ok][dk][ck]["rate"]["absolute_uncertainty"][:]
                 )
 
             R_background_scenario, R_background_scenario_au = pru.sum_axis0(
@@ -142,9 +132,8 @@ for sk in SITES:
                     critical_dVdE_au[:, obstix, sysuncix] = dVdE_au
 
             json_utils.write(
-                opj(paths["out_dir"], sk, ok, dk + ".json"),
+                opj(res.paths["out_dir"], zk, ok, dk + ".json"),
                 {
-                    "energy_binning_key": energy_bin["key"],
                     "observation_times": observation_times,
                     "systematic_uncertainties": systematic_uncertainties,
                     "differential_flux": critical_dVdE,

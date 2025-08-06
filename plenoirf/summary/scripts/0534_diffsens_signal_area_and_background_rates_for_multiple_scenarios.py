@@ -8,57 +8,47 @@ import os
 from os.path import join as opj
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-
-os.makedirs(paths["out_dir"], exist_ok=True)
-
-SITES = irf_config["config"]["sites"]
-PARTICLES = irf_config["config"]["particles"]
-COSMIC_RAYS = irf.utils.filter_particles_with_electric_charge(PARTICLES)
-ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
+ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
 # load
 # ----
-energy_binning = json_utils.read(
-    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)
-energy_bin = energy_binning["trigger_acceptance_onregion"]
+energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+zenith_bin = res.zenith_binning("once")
 
 Q = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
+    opj(res.paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 
 M = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0066_energy_estimate_quality")
+    opj(res.paths["analysis_dir"], "0066_energy_estimate_quality")
 )
 
 R = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0530_diffsens_background_diff_rates")
+    opj(res.paths["analysis_dir"], "0530_diffsens_background_diff_rates")
 )
 
 # prepare
 # -------
-for sk in SITES:
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
     for ok in ONREGION_TYPES:
         for dk in flux_sensitivity.differential.SCENARIOS:
-            for pk in PARTICLES:
+            for pk in res.PARTICLES:
                 os.makedirs(
-                    opj(paths["out_dir"], sk, ok, dk, pk),
+                    opj(res.paths["out_dir"], zk, ok, dk, pk),
                     exist_ok=True,
                 )
 
-for sk in SITES:
-    M_gamma = M[sk]["gamma"]
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
+    M_gamma = M["gamma"]
 
     for ok in ONREGION_TYPES:
         for dk in flux_sensitivity.differential.SCENARIOS:
-            print(sk, ok, dk)
+            print(zk, ok, dk)
 
             scenario = flux_sensitivity.differential.init_scenario_matrices_for_signal_and_background(
                 probability_reco_given_true=M_gamma["reco_given_true"],
@@ -69,7 +59,9 @@ for sk in SITES:
             )
 
             json_utils.write(
-                opj(paths["out_dir"], sk, ok, dk, "gamma", "scenario.json"),
+                opj(
+                    res.paths["out_dir"], zk, ok, dk, "gamma", "scenario.json"
+                ),
                 scenario,
             )
 
@@ -77,8 +69,8 @@ for sk in SITES:
                 A_gamma_scenario,
                 A_gamma_scenario_au,
             ) = flux_sensitivity.differential.apply_scenario_to_signal_effective_area(
-                signal_area_m2=Q[sk][ok]["gamma"]["point"]["mean"],
-                signal_area_m2_au=Q[sk][ok]["gamma"]["point"][
+                signal_area_m2=Q[zk][ok]["gamma"]["point"]["mean"],
+                signal_area_m2_au=Q[zk][ok]["gamma"]["point"][
                     "absolute_uncertainty"
                 ],
                 scenario_G_matrix=scenario["G_matrix"],
@@ -86,9 +78,8 @@ for sk in SITES:
             )
 
             json_utils.write(
-                opj(paths["out_dir"], sk, ok, dk, "gamma", "area.json"),
+                opj(res.paths["out_dir"], zk, ok, dk, "gamma", "area.json"),
                 {
-                    "energy_binning_key": energy_bin["key"],
                     "mean": A_gamma_scenario,
                     "absolute_uncertainty": A_gamma_scenario_au,
                 },
@@ -96,13 +87,13 @@ for sk in SITES:
 
             # background rates
             # ----------------
-            for ck in COSMIC_RAYS:
+            for ck in res.COSMIC_RAYS:
                 (
                     R_cosmic_ray_scenario,
                     R_cosmic_ray_scenario_au,
                 ) = flux_sensitivity.differential.apply_scenario_to_background_rate(
-                    rate_in_reco_energy_per_s=R[sk][ok][ck]["reco"]["mean"],
-                    rate_in_reco_energy_per_s_au=R[sk][ok][ck]["reco"][
+                    rate_in_reco_energy_per_s=R[zk][ok][ck]["reco"]["mean"],
+                    rate_in_reco_energy_per_s_au=R[zk][ok][ck]["reco"][
                         "absolute_uncertainty"
                     ],
                     scenario_B_matrix=scenario["B_matrix"],
@@ -110,10 +101,11 @@ for sk in SITES:
                 )
 
                 json_utils.write(
-                    opj(paths["out_dir"], sk, ok, dk, ck, "rate.json"),
+                    opj(res.paths["out_dir"], zk, ok, dk, ck, "rate.json"),
                     {
-                        "energy_binning_key": energy_bin["key"],
                         "mean": R_cosmic_ray_scenario,
                         "absolute_uncertainty": R_cosmic_ray_scenario_au,
                     },
                 )
+
+res.stop()
