@@ -145,3 +145,5 @@ for zd in range(zenith_bin["num"]):
                     ),
                 },
             )
+
+res.stop()

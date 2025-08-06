@@ -29,6 +29,7 @@ setuptools.setup(
         "plenoirf.ground_grid",
         "plenoirf.analysis",
         "plenoirf.other_instruments",
+        "plenoirf.other_instruments.fermi_lat",
         "plenoirf.reconstruction",
         "plenoirf.production",
         "plenoirf.production.simulate_instrument_and_reconstruct_cherenkov",

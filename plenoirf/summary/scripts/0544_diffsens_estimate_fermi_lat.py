@@ -9,27 +9,20 @@ import os
 from os.path import join as opj
 
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
-
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-
-os.makedirs(paths["out_dir"], exist_ok=True)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 observation_times = json_utils.read(
     opj(
-        paths["analysis_dir"],
+        res.paths["analysis_dir"],
         "0539_diffsens_observation_times",
         "observation_times.json",
     )
 )["observation_times"]
 num_observation_times = len(observation_times)
 
-fls = json_utils.read(
-    opj("fermi_lat", "dnde_vs_observation_time_vs_energy.json")
+fls = (
+    irf.other_instruments.fermi_lat.flux_sensitivity_vs_observation_time_vs_energy()
 )
 
 # conver units
@@ -67,4 +60,6 @@ for ebin in range(num_energy_bins):
             right=float("nan"),
         )
 
-json_utils.write(opj(paths["out_dir"], "flux_sensitivity.json"), out)
+json_utils.write(opj(res.paths["out_dir"], "flux_sensitivity.json"), out)
+
+res.stop()

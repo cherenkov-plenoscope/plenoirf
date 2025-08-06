@@ -1,7 +1,10 @@
 import numpy as np
+import os
+import json_utils
+from importlib import resources as importlib_resources
 import spectral_energy_distribution_units as sed
-from ..analysis import spectral_energy_distribution as sed_styles
-from ._sensitivity_vs_observation_time import (
+from ...analysis import spectral_energy_distribution as sed_styles
+from .._sensitivity_vs_observation_time import (
     sensitivity_vs_observation_time as _sens_vs_obs,
 )
 
@@ -468,3 +471,20 @@ def angular_resolution(containment_percent=68):
         },
     }
     return res
+
+
+def get_resources_dir():
+    return os.path.join(
+        importlib_resources.files("plenoirf"),
+        "other_instruments",
+        "fermi_lat",
+        "resources",
+    )
+
+
+def flux_sensitivity_vs_observation_time_vs_energy():
+    return json_utils.read(
+        os.path.join(
+            get_resources_dir(), "dnde_vs_observation_time_vs_energy.json"
+        )
+    )
