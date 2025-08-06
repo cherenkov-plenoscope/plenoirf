@@ -3,6 +3,7 @@ import gzip
 import os
 import io
 import tarfile
+import zipfile
 import shutil
 from .. import bookkeeping
 

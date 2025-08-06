@@ -11,6 +11,7 @@ import subprocess
 import json_line_logger
 import io
 
+from . import intensity
 from .. import configfile
 
 

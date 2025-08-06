@@ -109,7 +109,7 @@ else:
                 entry["zenith_rad"],
             )
 
-        with Reader(gpath) as rrr:
+        with irf.ground_grid.io.IntensityReader(gpath) as rrr:
             for uid in rrr:
                 a = rrr[uid]
                 print(pk, uid, a.shape)
