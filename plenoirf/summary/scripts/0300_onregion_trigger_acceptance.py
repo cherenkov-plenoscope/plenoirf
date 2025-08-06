@@ -196,6 +196,8 @@ for zd in range(zenith_bin["num"]):
                         "VS energy"
                     ),
                     "zenith_key": zk,
+                    "particle_key": pk,
+                    "onregion_key": ok,
                     "unit": "m$^{2}$",
                     "mean": Qeff,
                     "absolute_uncertainty": Qeff_au,
@@ -296,6 +298,8 @@ for zd in range(zenith_bin["num"]):
                         "VS energy"
                     ),
                     "zenith_key": zk,
+                    "particle_key": pk,
+                    "onregion_key": ok,
                     "unit": "m$^{2}$ sr",
                     "mean": Qeff,
                     "absolute_uncertainty": Qeff_au,

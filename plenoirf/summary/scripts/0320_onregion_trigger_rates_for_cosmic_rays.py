@@ -8,41 +8,32 @@ import os
 from os.path import join as opj
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
-
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-
-os.makedirs(paths["out_dir"], exist_ok=True)
-
-SITES = irf_config["config"]["sites"]
-PARTICLES = irf_config["config"]["particles"]
-ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 onregion_acceptance = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
+    opj(res.paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 
-energy_binning = json_utils.read(
-    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)
-energy_bin = energy_binning["trigger_acceptance_onregion"]
-fenergy_bin = energy_binning["interpolation"]
+energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+fenergy_bin = res.energy_binning(key="interpolation")
+
+zenith_bin = res.zenith_binning("once")
+
+ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
+
 
 # cosmic-ray-flux
 # ----------------
 airshower_fluxes = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0015_flux_of_airshowers")
+    opj(res.paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 
 # gamma-ray-flux of reference source
 # ----------------------------------
 gamma_source = json_utils.read(
     opj(
-        paths["analysis_dir"],
+        res.paths["analysis_dir"],
         "0009_flux_of_gamma_rays",
         "reference_source.json",
     )
@@ -68,17 +59,21 @@ K / s^{-1} m^{-2}
 dKdE / s^{-1} m^{-2} (GeV)^{-1}
 """
 
-for sk in SITES:
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
     for ok in ONREGION_TYPES:
-        for pk in PARTICLES:
-            os.makedirs(opj(paths["out_dir"], sk, ok, pk), exist_ok=True)
+        for pk in res.PARTICLES:
+            os.makedirs(opj(res.paths["out_dir"], zk, ok, pk), exist_ok=True)
 
-for sk in SITES:
+
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
+
     # gamma-ray
     # ---------
     for ok in ONREGION_TYPES:
-        _A = onregion_acceptance[sk][ok]["gamma"]["point"]["mean"]
-        _A_au = onregion_acceptance[sk][ok]["gamma"]["point"][
+        _A = onregion_acceptance[zk][ok]["gamma"]["point"]["mean"]
+        _A_au = onregion_acceptance[zk][ok]["gamma"]["point"][
             "absolute_uncertainty"
         ]
 
@@ -103,24 +98,32 @@ for sk in SITES:
         )
 
         json_utils.write(
-            opj(paths["out_dir"], sk, ok, "gamma", "differential_rate.json"),
+            opj(
+                res.paths["out_dir"], zk, ok, "gamma", "differential_rate.json"
+            ),
             {
                 "comment": comment_differential
                 + ", "
                 + gamma_source["name"]
                 + " VS onregion-radius",
+                "zenith_key": zk,
+                "particle_key": "gamma",
+                "onregion_key": ok,
                 "unit": "s$^{-1} (GeV)$^{-1}$",
                 "mean": dRdE,
                 "absolute_uncertainty": dRdE_au,
             },
         )
         json_utils.write(
-            opj(paths["out_dir"], sk, ok, "gamma", "integral_rate.json"),
+            opj(res.paths["out_dir"], zk, ok, "gamma", "integral_rate.json"),
             {
                 "comment": comment_integral
                 + ", "
                 + gamma_source["name"]
                 + " VS onregion-radius",
+                "zenith_key": zk,
+                "particle_key": "gamma",
+                "onregion_key": ok,
                 "unit": "s$^{-1}$",
                 "mean": R,
                 "absolute_uncertainty": R_au,
@@ -129,16 +132,14 @@ for sk in SITES:
 
         # cosmic-rays
         # -----------
-        for ck in airshower_fluxes[sk]:
-            cosmic_dFdE = airshower_fluxes[sk][ck]["differential_flux"][
-                "values"
-            ]
-            cosmic_dFdE_au = airshower_fluxes[sk][ck]["differential_flux"][
+        for ck in res.COSMIC_RAYS:
+            cosmic_dFdE = airshower_fluxes[ck]["differential_flux"]["values"]
+            cosmic_dFdE_au = airshower_fluxes[ck]["differential_flux"][
                 "absolute_uncertainty"
             ]
 
-            _Q = onregion_acceptance[sk][ok][ck]["diffuse"]["mean"]
-            _Q_au = onregion_acceptance[sk][ok][ck]["diffuse"][
+            _Q = onregion_acceptance[zk][ok][ck]["diffuse"]["mean"]
+            _Q_au = onregion_acceptance[zk][ok][ck]["diffuse"][
                 "absolute_uncertainty"
             ]
 
@@ -167,18 +168,26 @@ for sk in SITES:
             )
 
             json_utils.write(
-                opj(paths["out_dir"], sk, ok, ck, "differential_rate.json"),
+                opj(
+                    res.paths["out_dir"], zk, ok, ck, "differential_rate.json"
+                ),
                 {
                     "comment": comment_differential + " VS onregion-radius",
+                    "zenith_key": zk,
+                    "particle_key": ck,
+                    "onregion_key": ok,
                     "unit": "s$^{-1} (GeV)$^{-1}$",
                     "mean": dRdE,
                     "absolute_uncertainty": dRdE_au,
                 },
             )
             json_utils.write(
-                opj(paths["out_dir"], sk, ok, ck, "integral_rate.json"),
+                opj(res.paths["out_dir"], zk, ok, ck, "integral_rate.json"),
                 {
                     "comment": comment_integral + " VS onregion-radius",
+                    "zenith_key": zk,
+                    "particle_key": ck,
+                    "onregion_key": ok,
                     "unit": "s$^{-1}$",
                     "mean": R,
                     "absolute_uncertainty": R_au,

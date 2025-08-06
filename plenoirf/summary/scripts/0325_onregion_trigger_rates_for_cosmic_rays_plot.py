@@ -8,54 +8,46 @@ import sebastians_matplotlib_addons as sebplt
 import lima1983analysis
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start(sebplt=sebplt)
 
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
-
-os.makedirs(paths["out_dir"], exist_ok=True)
-
-SITES = irf_config["config"]["sites"]
-PARTICLES = irf_config["config"]["particles"]
-ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
+ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
 onregion_rates = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0320_onregion_trigger_rates_for_cosmic_rays")
+    opj(
+        res.paths["analysis_dir"],
+        "0320_onregion_trigger_rates_for_cosmic_rays",
+    )
 )
 
-fine_energy_bin = json_utils.read(
-    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["interpolation"]
-
-particle_colors = sum_config["plot"]["particle_colors"]
+fine_energy_bin = res.energy_binning(key="interpolation")
+zenith_bin = res.zenith_binning("once")
 
 mean_key = "mean"
 unc_key = "absolute_uncertainty"
 
-for sk in SITES:
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
+
     for ok in ONREGION_TYPES:
         fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
         ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
         text_y = 0.7
 
-        for pk in PARTICLES:
-            dRdE = onregion_rates[sk][ok][pk]["differential_rate"][mean_key]
-            dRdE_au = onregion_rates[sk][ok][pk]["differential_rate"][unc_key]
+        for pk in res.PARTICLES:
+            dRdE = onregion_rates[zk][ok][pk]["differential_rate"][mean_key]
+            dRdE_au = onregion_rates[zk][ok][pk]["differential_rate"][unc_key]
             ax.plot(
                 fine_energy_bin["centers"],
                 dRdE,
-                color=sum_config["plot"]["particle_colors"][pk],
+                color=res.PARTICLE_COLORS[pk],
             )
             ax.fill_between(
                 x=fine_energy_bin["centers"],
                 y1=dRdE - dRdE_au,
                 y2=dRdE + dRdE_au,
-                facecolor=sum_config["plot"]["particle_colors"][pk],
+                facecolor=res.PARTICLE_COLORS[pk],
                 alpha=0.2,
                 linewidth=0.0,
             )
@@ -63,11 +55,11 @@ for sk in SITES:
                 0.5,
                 0.1 + text_y,
                 pk,
-                color=particle_colors[pk],
+                color=res.PARTICLE_COLORS[pk],
                 transform=ax.transAxes,
             )
-            ir = onregion_rates[sk][ok][pk]["integral_rate"][mean_key]
-            ir_abs_unc = onregion_rates[sk][ok][pk]["integral_rate"][unc_key]
+            ir = onregion_rates[zk][ok][pk]["integral_rate"][mean_key]
+            ir_abs_unc = onregion_rates[zk][ok][pk]["integral_rate"][unc_key]
             ax.text(
                 0.6,
                 0.1 + text_y,
@@ -85,8 +77,8 @@ for sk in SITES:
         ax.set_ylabel("differential rate /\ns$^{-1}$ (GeV)$^{-1}$")
         fig.savefig(
             opj(
-                paths["out_dir"],
-                "{:s}_{:s}_differential_event_rates.jpg".format(sk, ok),
+                res.paths["out_dir"],
+                f"{zk:s}_{ok:s}_differential_event_rates.jpg",
             )
         )
         sebplt.close(fig)
