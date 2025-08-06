@@ -5,164 +5,143 @@ from os.path import join as opj
 import numpy as np
 import magnetic_deflection as mdfl
 import spherical_coordinates
+import spherical_histogram
 import sparse_numeric_table as snt
 import plenoirf as irf
 import sebastians_matplotlib_addons as sebplt
 import json_utils
+import warnings
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
-
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 passing_trigger = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0055_passing_trigger")
+    opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 
-os.makedirs(paths["out_dir"], exist_ok=True)
+energy_bin = res.energy_binning(key="point_spread_function")
+zenith_bin = res.zenith_binning("once")
 
-energy_bin = json_utils.read(
-    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["point_spread_function"]
+cmap = sebplt.plt.colormaps["inferno"].resampled(256)
 
-c_bin_edges_deg = np.linspace(
-    sum_config["direction_binning"]["radial_angle_deg"] * (-1.0),
-    sum_config["direction_binning"]["radial_angle_deg"],
-    sum_config["direction_binning"]["num_bins"] + 1,
-)
+dome = spherical_histogram.HemisphereHistogram(num_vertices=256)
 
-FIGURE_STYLE = {"rows": 1080, "cols": 1350, "fontsize": 1}
+for pk in res.PARTICLES:
 
-for site_key in irf_config["config"]["sites"]:
-    for particle_key in irf_config["config"]["particles"]:
-        prefix_str = "{:s}_{:s}".format(site_key, particle_key)
+    with res.open_event_table(particle_key=pk) as arc:
+        event_table = arc.query(
+            levels_and_columns={
+                "primary": "__all__",
+            }
+        )
 
-        # read
-        # ----
-        event_table = snt.read(
-            path=opj(
-                paths["plenoirf_dir"],
-                "event_table",
-                site_key,
-                particle_key,
-                "event_table.tar",
+    # summarize
+    # ---------
+    mask_triggered = snt.logic.make_mask_of_right_in_left(
+        left_indices=event_table["primary"]["uid"],
+        right_indices=passing_trigger[pk]["uid"],
+    )
+
+    intensity_cube = []
+    exposure_cube = []
+    num_events_stack = []
+    for ebin in range(energy_bin["num"]):
+        print(pk, ebin)
+        mask_energy = np.logical_and(
+            event_table["primary"]["energy_GeV"] >= energy_bin["edges"][ebin],
+            event_table["primary"]["energy_GeV"]
+            < energy_bin["edges"][ebin + 1],
+        )
+
+        mask_energy_trigger = np.logical_and(mask_energy, mask_triggered)
+
+        num_events = np.sum(mask_triggered[mask_energy])
+        num_events_stack.append(num_events)
+
+        dome.reset()
+        dome.assign_azimuth_zenith(
+            azimuth_rad=event_table["primary"]["azimuth_rad"][
+                mask_energy_trigger
+            ],
+            zenith_rad=event_table["primary"]["zenith_rad"][
+                mask_energy_trigger
+            ],
+        )
+        _i_per_sr = dome.bin_counts / dome.bin_geometry.faces_solid_angles
+
+        dome.reset()
+        dome.assign_azimuth_zenith(
+            azimuth_rad=event_table["primary"]["azimuth_rad"][mask_energy],
+            zenith_rad=event_table["primary"]["zenith_rad"][mask_energy],
+        )
+        _e_per_sr = dome.bin_counts / dome.bin_geometry.faces_solid_angles
+
+        _i_per_sr[_e_per_sr > 0] = (
+            _i_per_sr[_e_per_sr > 0] / _e_per_sr[_e_per_sr > 0]
+        )
+        exposure_cube.append(_e_per_sr > 0)
+        intensity_cube.append(_i_per_sr)
+
+    intensity_cube = np.array(intensity_cube)
+    exposure_cube = np.array(exposure_cube)
+    num_events_stack = np.array(num_events_stack)
+
+    # write
+    # -----
+    vmax = np.max(intensity_cube)
+
+    for ebin in range(energy_bin["num"]):
+        fig = sebplt.figure(
+            style={"rows": 1380, "cols": 1280, "fontsize": 1.0}
+        )
+        ax = sebplt.add_axes(
+            fig=fig, span=[0.0, 0.0, 1, 0.9], style=sebplt.AXES_BLANK
+        )
+
+        vx, vy, vz = dome.bin_geometry.vertices.T
+        vaz, vzd = spherical_coordinates.cx_cy_cz_to_az_zd(vx, vy, vz)
+
+        faces_counts_per_solid_angle_p99 = np.percentile(
+            intensity_cube[ebin], q=99
+        )
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message="invalid value encountered in divide"
+            )
+            warnings.filterwarnings(
+                "ignore", message="divide by zero encountered in divide"
+            )
+            faces_colors = cmap(
+                intensity_cube[ebin] / faces_counts_per_solid_angle_p99
+            )
+
+        sebplt.hemisphere.ax_add_faces(
+            ax=ax,
+            azimuths_rad=vaz,
+            zeniths_rad=vzd,
+            faces=dome.bin_geometry.faces,
+            faces_colors=faces_colors,
+        )
+
+        ax.set_aspect("equal")
+        sebplt.hemisphere.ax_add_grid_stellarium_style(
+            ax=ax, color="grey", linewidth=0.33
+        )
+        sebplt.hemisphere.ax_add_ticklabel_text(ax=ax, color="grey")
+
+        ax.set_title(
+            "num. airshower {: 6d}, energy {: 7.1f} - {: 7.1f} GeV".format(
+                num_events_stack[ebin],
+                energy_bin["edges"][ebin],
+                energy_bin["edges"][ebin + 1],
             ),
-            structure=irf.table.STRUCTURE,
+            family="monospace",
         )
-
-        # summarize
-        # ---------
-        mask_triggered = snt.make_mask_of_right_in_left(
-            left_indices=event_table["primary"]["uid"],
-            right_indices=passing_trigger[site_key][particle_key]["uid"],
+        fig.savefig(
+            opj(
+                res.paths["out_dir"],
+                f"{pk:s}_grid_direction_pasttrigger_{ebin:06d}.jpg",
+            )
         )
-        (primary_cx, primary_cy) = spherical_coordinates.az_zd_to_cx_cy(
-            azimuth_deg=np.rad2deg(event_table["primary"]["azimuth_rad"]),
-            zenith_deg=np.rad2deg(event_table["primary"]["zenith_rad"]),
-        )
-
-        intensity_cube = []
-        exposure_cube = []
-        num_events_stack = []
-        for ex in range(energy_bin["num"]):
-            energy_mask = np.logical_and(
-                event_table["primary"]["energy_GeV"]
-                >= energy_bin["edges"][ex],
-                event_table["primary"]["energy_GeV"]
-                < energy_bin["edges"][ex + 1],
-            )
-
-            num_events = np.sum(mask_triggered[energy_mask])
-            num_events_stack.append(num_events)
-
-            his = np.histogram2d(
-                np.rad2deg(primary_cx[energy_mask]),
-                np.rad2deg(primary_cy[energy_mask]),
-                weights=mask_triggered[energy_mask],
-                bins=[c_bin_edges_deg, c_bin_edges_deg],
-            )[0]
-
-            exposure = np.histogram2d(
-                np.rad2deg(primary_cx[energy_mask]),
-                np.rad2deg(primary_cy[energy_mask]),
-                bins=[c_bin_edges_deg, c_bin_edges_deg],
-            )[0]
-
-            his[exposure > 0] = his[exposure > 0] / exposure[exposure > 0]
-            exposure_cube.append(exposure > 0)
-            intensity_cube.append(his)
-        intensity_cube = np.array(intensity_cube)
-        exposure_cube = np.array(exposure_cube)
-        num_events_stack = np.array(num_events_stack)
-
-        # write
-        # -----
-        vmax = np.max(intensity_cube)
-
-        for energy_idx in range(energy_bin["num"]):
-            fig = sebplt.figure(style=FIGURE_STYLE)
-            ax = sebplt.add_axes(fig=fig, span=[0.1, 0.1, 0.8, 0.8])
-            ax_cb = fig.add_axes([0.85, 0.1, 0.02, 0.8])
-            ax.set_aspect("equal")
-            _pcm_grid = ax.pcolormesh(
-                c_bin_edges_deg,
-                c_bin_edges_deg,
-                np.transpose(intensity_cube[energy_idx, :, :]),
-                norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
-                cmap="Blues",
-                vmin=0.0,
-                vmax=vmax,
-            )
-            ax.set_xlim([np.min(c_bin_edges_deg), np.max(c_bin_edges_deg)])
-            ax.set_ylim([np.min(c_bin_edges_deg), np.max(c_bin_edges_deg)])
-            sebplt.plt.colorbar(_pcm_grid, cax=ax_cb, extend="max")
-            ax.set_xlabel("$c_x$ / $1^\\circ$")
-            ax.set_ylabel("$c_y$ / $1^\\circ$")
-            sebplt.ax_add_grid(ax)
-            ax.set_title(
-                "num. airshower {: 6d}, energy {: 7.1f} - {: 7.1f} GeV".format(
-                    num_events_stack[energy_idx],
-                    energy_bin["edges"][energy_idx],
-                    energy_bin["edges"][energy_idx + 1],
-                ),
-                family="monospace",
-            )
-            for rr in [10, 20, 30, 40, 50]:
-                sebplt.ax_add_circle(
-                    ax=ax,
-                    x=0,
-                    y=0,
-                    r=rr,
-                    color="k",
-                    linewidth=0.66,
-                    linestyle="-",
-                    alpha=0.1,
-                )
-
-            num_c_bins = len(c_bin_edges_deg) - 1
-            for ix in range(num_c_bins):
-                for iy in range(num_c_bins):
-                    if not exposure_cube[energy_idx][ix][iy]:
-                        sebplt.ax_add_hatches(
-                            ax=ax,
-                            ix=ix,
-                            iy=iy,
-                            x_bin_edges=c_bin_edges_deg,
-                            y_bin_edges=c_bin_edges_deg,
-                        )
-            fig.savefig(
-                opj(
-                    paths["out_dir"],
-                    "{:s}_{:s}_{:06d}.{:s}".format(
-                        prefix_str,
-                        "grid_direction_pasttrigger",
-                        energy_idx,
-                        "jpg",
-                    ),
-                )
-            )
-            sebplt.close(fig)
+        sebplt.close(fig)
