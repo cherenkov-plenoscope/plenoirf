@@ -11,51 +11,38 @@ import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
-
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
-
-os.makedirs(paths["out_dir"], exist_ok=True)
-
-SITES = irf_config["config"]["sites"]
-PARTICLES = irf_config["config"]["particles"]
-COSMIC_RAYS = irf.utils.filter_particles_with_electric_charge(PARTICLES)
-ONREGION_TYPES = sum_config["on_off_measuremnent"]["onregion_types"]
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start(sebplt=sebplt)
 
 # load
 # ----
-energy_binning = json_utils.read(
-    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)
-energy_bin = energy_binning["trigger_acceptance_onregion"]
+energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+zenith_bin = res.zenith_binning("once")
 
 energy_migration = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0066_energy_estimate_quality")
+    opj(res.paths["analysis_dir"], "0066_energy_estimate_quality")
 )
-
 acceptance = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0300_onregion_trigger_acceptance")
+    opj(res.paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
-
 airshower_fluxes = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0017_flux_of_airshowers_rebin")
+    opj(res.paths["analysis_dir"], "0017_flux_of_airshowers_rebin")
 )
+ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
+
 
 # prepare
 # -------
 diff_flux = {}
 diff_flux_au = {}
-for sk in SITES:
-    diff_flux[sk] = {}
-    diff_flux_au[sk] = {}
-    for pk in COSMIC_RAYS:
-        diff_flux[sk][pk] = airshower_fluxes[sk][pk]["differential_flux"]
-        diff_flux_au[sk][pk] = airshower_fluxes[sk][pk]["absolute_uncertainty"]
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
+
+    diff_flux[zk] = {}
+    diff_flux_au[zk] = {}
+    for pk in res.COSMIC_RAYS:
+        diff_flux[zk][pk] = airshower_fluxes[pk]["differential_flux"]
+        diff_flux_au[zk][pk] = airshower_fluxes[pk]["absolute_uncertainty"]
 
 # work
 # ----
@@ -70,122 +57,140 @@ Rreco_au = {}  # absolute uncertainty
 Rtrue = {}
 Rtrue_au = {}
 
-for sk in SITES:
-    Rreco[sk] = {}
-    Rreco_au[sk] = {}
-    Rtrue[sk] = {}
-    Rtrue_au[sk] = {}
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
+
+    Rreco[zk] = {}
+    Rreco_au[zk] = {}
+    Rtrue[zk] = {}
+    Rtrue_au[zk] = {}
     for ok in ONREGION_TYPES:
-        Rreco[sk][ok] = {}
-        Rreco_au[sk][ok] = {}
-        Rtrue[sk][ok] = {}
-        Rtrue_au[sk][ok] = {}
-        for pk in COSMIC_RAYS:
-            print(sk, pk, ok)
+        Rreco[zk][ok] = {}
+        Rreco_au[zk][ok] = {}
+        Rtrue[zk][ok] = {}
+        Rtrue_au[zk][ok] = {}
+        for pk in res.COSMIC_RAYS:
+            print(zk, pk, ok)
 
             (
-                Rtrue[sk][ok][pk],
-                Rtrue_au[sk][ok][pk],
+                Rtrue[zk][ok][pk],
+                Rtrue_au[zk][ok][pk],
             ) = flux_sensitivity.differential.estimate_rate_in_true_energy(
                 energy_bin_edges_GeV=energy_bin["edges"],
-                acceptance_m2_sr=acceptance[sk][ok][pk][gk]["mean"],
-                acceptance_m2_sr_au=acceptance[sk][ok][pk][gk][
+                acceptance_m2_sr=acceptance[zk][ok][pk][gk]["mean"],
+                acceptance_m2_sr_au=acceptance[zk][ok][pk][gk][
                     "absolute_uncertainty"
                 ],
-                differential_flux_per_m2_per_sr_per_s_per_GeV=diff_flux[sk][
+                differential_flux_per_m2_per_sr_per_s_per_GeV=diff_flux[zk][
                     pk
                 ],
                 differential_flux_per_m2_per_sr_per_s_per_GeV_au=diff_flux_au[
-                    sk
+                    zk
                 ][pk],
             )
 
             flux_sensitivity.differential.assert_energy_reco_given_true_ax0true_ax1reco_is_normalized(
-                energy_reco_given_true_ax0true_ax1reco=energy_migration[sk][
-                    pk
-                ]["reco_given_true"],
+                energy_reco_given_true_ax0true_ax1reco=energy_migration[pk][
+                    "reco_given_true"
+                ],
                 margin=1e-2,
             )
 
             (
-                Rreco[sk][ok][pk],
-                Rreco_au[sk][ok][pk],
+                Rreco[zk][ok][pk],
+                Rreco_au[zk][ok][pk],
             ) = flux_sensitivity.differential.estimate_rate_in_reco_energy(
                 energy_bin_edges_GeV=energy_bin["edges"],
-                acceptance_m2_sr=acceptance[sk][ok][pk][gk]["mean"],
-                acceptance_m2_sr_au=acceptance[sk][ok][pk][gk][
+                acceptance_m2_sr=acceptance[zk][ok][pk][gk]["mean"],
+                acceptance_m2_sr_au=acceptance[zk][ok][pk][gk][
                     "absolute_uncertainty"
                 ],
-                differential_flux_per_m2_per_sr_per_s_per_GeV=diff_flux[sk][
+                differential_flux_per_m2_per_sr_per_s_per_GeV=diff_flux[zk][
                     pk
                 ],
                 differential_flux_per_m2_per_sr_per_s_per_GeV_au=diff_flux_au[
-                    sk
+                    zk
                 ][pk],
-                energy_reco_given_true_ax0true_ax1reco=energy_migration[sk][
-                    pk
-                ]["reco_given_true"],
-                energy_reco_given_true_ax0true_ax1reco_au=energy_migration[sk][
-                    pk
-                ]["reco_given_true_abs_unc"],
+                energy_reco_given_true_ax0true_ax1reco=energy_migration[pk][
+                    "reco_given_true"
+                ],
+                energy_reco_given_true_ax0true_ax1reco_au=energy_migration[pk][
+                    "reco_given_true_abs_unc"
+                ],
             )
 
             flux_sensitivity.differential.assert_integral_rates_are_similar_in_reco_and_true_energy(
-                rate_in_reco_energy_per_s=Rreco[sk][ok][pk],
-                rate_in_true_energy_per_s=Rtrue[sk][ok][pk],
+                rate_in_reco_energy_per_s=Rreco[zk][ok][pk],
+                rate_in_true_energy_per_s=Rtrue[zk][ok][pk],
                 margin=0.3,
             )
 
 # export
 # ------
-for sk in SITES:
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
     for ok in ONREGION_TYPES:
-        for pk in COSMIC_RAYS:
-            os.makedirs(opj(paths["out_dir"], sk, ok, pk), exist_ok=True)
+        for pk in res.COSMIC_RAYS:
+            os.makedirs(opj(res.paths["out_dir"], zk, ok, pk), exist_ok=True)
 
-for sk in SITES:
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
     for ok in ONREGION_TYPES:
-        for pk in COSMIC_RAYS:
+        for pk in res.COSMIC_RAYS:
             json_utils.write(
-                opj(paths["out_dir"], sk, ok, pk, "reco" + ".json"),
+                opj(res.paths["out_dir"], zk, ok, pk, "reco" + ".json"),
                 {
                     "comment": "Rate after all cuts VS reco energy",
+                    "zenith_key": zk,
+                    "particle_key": pk,
+                    "onregion_key": ok,
                     "unit": "s$^{-1}$",
-                    "mean": Rreco[sk][ok][pk],
-                    "absolute_uncertainty": Rreco_au[sk][ok][pk],
-                    "energy_binning_key": energy_bin["key"],
+                    "mean": Rreco[zk][ok][pk],
+                    "absolute_uncertainty": Rreco_au[zk][ok][pk],
                     "symbol": "Rreco",
                 },
             )
 
             json_utils.write(
-                opj(paths["out_dir"], sk, ok, pk, "true" + ".json"),
+                opj(res.paths["out_dir"], zk, ok, pk, "true" + ".json"),
                 {
                     "comment": "Rate after all cuts VS true energy",
+                    "zenith_key": zk,
+                    "particle_key": pk,
+                    "onregion_key": ok,
                     "unit": "s$^{-1}$",
-                    "mean": Rtrue[sk][ok][pk],
-                    "absolute_uncertainty": Rtrue[sk][ok][pk],
-                    "energy_binning_key": energy_bin["key"],
+                    "mean": Rtrue[zk][ok][pk],
+                    "absolute_uncertainty": Rtrue[zk][ok][pk],
                     "symbol": "Rtrue",
                 },
             )
 
 # plot
 # ----
-for sk in SITES:
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
     for ok in ONREGION_TYPES:
         fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
         ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-        for pk in COSMIC_RAYS:
+
+        sebplt.add_axes_zenith_range_indicator(
+            fig=fig,
+            span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
+            zenith_bin_edges_rad=zenith_bin["edges"],
+            zenith_bin=zd,
+            fontsize=6,
+        )
+
+        for pk in res.COSMIC_RAYS:
             sebplt.ax_add_histogram(
                 ax=ax,
                 bin_edges=energy_bin["edges"],
-                bincounts=Rreco[sk][ok][pk],
-                bincounts_upper=Rreco[sk][ok][pk] - Rreco_au[sk][ok][pk],
-                bincounts_lower=Rreco[sk][ok][pk] + Rreco_au[sk][ok][pk],
+                bincounts=Rreco[zk][ok][pk],
+                bincounts_upper=Rreco[zk][ok][pk] - Rreco_au[zk][ok][pk],
+                bincounts_lower=Rreco[zk][ok][pk] + Rreco_au[zk][ok][pk],
                 linestyle="-",
-                linecolor=sum_config["plot"]["particle_colors"][pk],
-                face_color=sum_config["plot"]["particle_colors"][pk],
+                linecolor=res.PARTICLE_COLORS[pk],
+                face_color=res.PARTICLE_COLORS[pk],
                 face_alpha=0.25,
             )
 
@@ -193,24 +198,26 @@ for sk in SITES:
             sebplt.ax_add_histogram(
                 ax=ax,
                 bin_edges=energy_bin["edges"],
-                bincounts=Rtrue[sk][ok][pk],
-                bincounts_upper=Rtrue[sk][ok][pk] - Rtrue_au[sk][ok][pk],
-                bincounts_lower=Rtrue[sk][ok][pk] + Rtrue_au[sk][ok][pk],
-                linecolor=sum_config["plot"]["particle_colors"][pk],
+                bincounts=Rtrue[zk][ok][pk],
+                bincounts_upper=Rtrue[zk][ok][pk] - Rtrue_au[zk][ok][pk],
+                bincounts_lower=Rtrue[zk][ok][pk] + Rtrue_au[zk][ok][pk],
+                linecolor=res.PARTICLE_COLORS[pk],
                 linealpha=alpha,
                 linestyle=":",
-                face_color=sum_config["plot"]["particle_colors"][pk],
+                face_color=res.PARTICLE_COLORS[pk],
                 face_alpha=alpha * 0.25,
             )
 
-        ax.set_ylabel("rate / s$^{-1}$")
-        ax.set_xlabel("reco. energy / GeV")
+        ax.set_ylabel(r"rate / s$^{-1}$")
+        ax.set_xlabel(r"reco. energy / GeV")
         ax.set_ylim([1e-6, 1e4])
         ax.loglog()
         fig.savefig(
             opj(
-                paths["out_dir"],
-                sk + "_" + ok + "_differential_rates_vs_reco_energy.jpg",
+                res.paths["out_dir"],
+                f"{zk:s}_{ok:s}_differential_rates_vs_reco_energy.jpg",
             )
         )
         sebplt.close(fig)
+
+res.stop()
