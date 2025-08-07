@@ -13,6 +13,10 @@ res.start()
 passing_trigger = json_utils.tree.read(
     opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
+zenith_assignment = json_utils.tree.read(
+    opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
+)
+zenith_bin = res.zenith_binning("once")
 
 trigger_modi = {}
 trigger_modi["passing_trigger"] = {}
@@ -26,66 +30,71 @@ for pk in res.PARTICLES:
 grid_bin_area_m2 = res.config["ground_grid"]["geometry"]["bin_width_m"] ** 2.0
 density_bin_edges_per_m2 = np.geomspace(1e-3, 1e4, 7 * 5 + 1)
 
-for pk in res.PARTICLES:
-    pk_dir = opj(res.paths["out_dir"], pk)
-    os.makedirs(pk_dir, exist_ok=True)
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
 
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(
-            levels_and_columns={
-                "cherenkovsizepart": "__all__",
-                "instrument_pointing": "__all__",
-                "trigger": "__all__",
-            }
+    for pk in res.PARTICLES:
+        os.makedirs(opj(res.paths["out_dir"], zk, pk), exist_ok=True)
+
+        with res.open_event_table(particle_key=pk) as arc:
+            event_table = arc.query(
+                levels_and_columns={
+                    "cherenkovsizepart": ["uid", "num_photons"],
+                    "instrument_pointing": "__all__",
+                    "trigger": ["uid"],
+                }
+            )
+        common_indices = snt.logic.intersection(
+            [event_table["trigger"]["uid"], zenith_assignment[zk][pk]]
         )
 
-    event_table = snt.logic.cut_and_sort_table_on_indices(
-        table=event_table,
-        common_indices=event_table["trigger"]["uid"],
-    )
-    df = snt.logic.make_rectangular_DataFrame(table=event_table)
-
-    for tm in trigger_modi:
-        mask_pasttrigger = snt.logic.make_mask_of_right_in_left(
-            left_indices=df["uid"].values,
-            right_indices=trigger_modi[tm][pk]["uid"],
-        ).astype(float)
-
-        projected_area_m2 = (
-            np.cos(df["instrument_pointing/zenith_rad"]) * grid_bin_area_m2
+        event_table = snt.logic.cut_and_sort_table_on_indices(
+            table=event_table,
+            common_indices=event_table["trigger"]["uid"],
         )
+        df = snt.logic.make_rectangular_DataFrame(table=event_table)
 
-        num_thrown = np.histogram(
-            df["cherenkovsizepart/num_photons"] / projected_area_m2,
-            bins=density_bin_edges_per_m2,
-        )[0]
+        for tm in trigger_modi:
+            mask_pasttrigger = snt.logic.make_mask_of_right_in_left(
+                left_indices=df["uid"].values,
+                right_indices=trigger_modi[tm][pk]["uid"],
+            ).astype(float)
 
-        num_pasttrigger = np.histogram(
-            df["cherenkovsizepart/num_photons"] / projected_area_m2,
-            bins=density_bin_edges_per_m2,
-            weights=mask_pasttrigger,
-        )[0]
+            projected_area_m2 = (
+                np.cos(df["instrument_pointing/zenith_rad"]) * grid_bin_area_m2
+            )
 
-        trigger_probability = irf.utils._divide_silent(
-            numerator=num_pasttrigger,
-            denominator=num_thrown,
-            default=np.nan,
-        )
+            num_thrown = np.histogram(
+                df["cherenkovsizepart/num_photons"] / projected_area_m2,
+                bins=density_bin_edges_per_m2,
+            )[0]
 
-        trigger_probability_unc = irf.utils._divide_silent(
-            numerator=np.sqrt(num_pasttrigger),
-            denominator=num_pasttrigger,
-            default=np.nan,
-        )
+            num_pasttrigger = np.histogram(
+                df["cherenkovsizepart/num_photons"] / projected_area_m2,
+                bins=density_bin_edges_per_m2,
+                weights=mask_pasttrigger,
+            )[0]
 
-        json_utils.write(
-            opj(pk_dir, tm + ".json"),
-            {
-                "Cherenkov_density_bin_edges_per_m2": density_bin_edges_per_m2,
-                "unit": "1",
-                "mean": trigger_probability,
-                "relative_uncertainty": trigger_probability_unc,
-            },
-        )
+            trigger_probability = irf.utils._divide_silent(
+                numerator=num_pasttrigger,
+                denominator=num_thrown,
+                default=np.nan,
+            )
+
+            trigger_probability_unc = irf.utils._divide_silent(
+                numerator=np.sqrt(num_pasttrigger),
+                denominator=num_pasttrigger,
+                default=np.nan,
+            )
+
+            json_utils.write(
+                opj(res.paths["out_dir"], zk, pk, tm + ".json"),
+                {
+                    "Cherenkov_density_bin_edges_per_m2": density_bin_edges_per_m2,
+                    "unit": "1",
+                    "mean": trigger_probability,
+                    "relative_uncertainty": trigger_probability_unc,
+                },
+            )
 
 res.stop()
