@@ -310,7 +310,7 @@ for zd in range(zenith_bin["num"]):
             os.makedirs(opj(res.paths["out_dir"], zk, pk, ak), exist_ok=True)
 
             json_utils.write(
-                opj(res.paths["out_dir"], zk, pk, ak, "idx.json"),
+                opj(res.paths["out_dir"], zk, pk, ak, "uid.json"),
                 out[zk][pk][ak],
             )
 

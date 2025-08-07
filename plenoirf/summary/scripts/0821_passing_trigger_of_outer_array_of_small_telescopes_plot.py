@@ -11,134 +11,137 @@ import numpy as np
 import pandas
 import propagate_uncertainties as pu
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start(sebplt=sebplt)
 
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
-
-SITES = irf_config["config"]["sites"]
-PARTICLES = irf_config["config"]["particles"]
-PLT = sum_config["plot"]
-
-os.makedirs(paths["out_dir"], exist_ok=True)
-
-energy_bin = json_utils.read(
-    opj(paths["analysis_dir"], "0005_common_binning", "energy.json")
-)["point_spread_function"]
+energy_bin = res.energy_binning(key="point_spread_function")
+zenith_bin = res.zenith_binning("once")
 
 passing_array_trigger = json_utils.tree.read(
     opj(
-        paths["analysis_dir"],
+        res.paths["analysis_dir"],
         "0820_passing_trigger_of_outer_array_of_small_telescopes",
     )
 )
-passing_plenoscope_trigger = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0055_passing_trigger")
+_passing_plenoscope_trigger = json_utils.tree.read(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger")
+)
+zenith_assignment = json_utils.tree.read(
+    opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
 )
 
+
 ARRAY_CONFIGS = copy.deepcopy(
-    sum_config["outer_telescope_array_configurations"]
+    res.analysis["outer_telescope_array_configurations"]
 )
 
 AX_SPAN = list(irf.summary.figure.AX_SPAN)
 AX_SPAN[3] = AX_SPAN[3] * 0.85
 
-pv = {}
-for sk in SITES:
-    pv[sk] = {}
-    for pk in PARTICLES:
-        pv[sk][pk] = {}
 
-        event_table = snt.read(
-            path=opj(
-                paths["plenoirf_dir"],
-                "event_table",
-                sk,
-                pk,
-                "event_table.tar",
-            ),
-            structure=irf.table.STRUCTURE,
+passing_plenoscope_trigger = {}
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
+    passing_plenoscope_trigger[zk] = {}
+    for pk in res.PARTICLES:
+        passing_plenoscope_trigger[zk][pk] = {}
+        passing_plenoscope_trigger[zk][pk]["uid"] = snt.logic.intersection(
+            [zenith_assignment[zk][pk], _passing_plenoscope_trigger[pk]["uid"]]
         )
 
+pv = {}
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
+    pv[zk] = {}
+    for pk in res.PARTICLES:
+        pv[zk][pk] = {}
+
+        with res.open_event_table(particle_key=pk) as arc:
+            event_table = arc.query(
+                levels_and_columns={
+                    "primary": ["uid", "energy_GeV"],
+                }
+            )
+
         for ak in ARRAY_CONFIGS:
-            print("estimate trigger ratio", sk, pk, ak)
+            print("estimate trigger ratio", zk, pk, ak)
 
             passing_plenoscope_and_not_array = np.array(
                 list(
                     set.difference(
-                        set(passing_plenoscope_trigger[sk][pk]["uid"]),
-                        set(passing_array_trigger[sk][pk][ak]["uid"]),
+                        set(passing_plenoscope_trigger[zk][pk]["uid"]),
+                        set(passing_array_trigger[zk][pk][ak]["uid"]),
                     )
                 )
             )
 
-            pleno_table = snt.cut_table_on_indices(
+            pleno_table = snt.logic.cut_table_on_indices(
                 table=event_table,
-                common_indices=passing_plenoscope_trigger[sk][pk]["uid"],
-                level_keys=[
-                    "primary",
-                ],
+                common_indices=passing_plenoscope_trigger[zk][pk]["uid"],
             )
 
-            veto_table = snt.cut_table_on_indices(
+            veto_table = snt.logic.cut_table_on_indices(
                 table=event_table,
                 common_indices=passing_plenoscope_and_not_array,
-                level_keys=[
-                    "primary",
-                ],
             )
 
-            pv[sk][pk][ak] = {}
-            pv[sk][pk][ak]["num_plenoscope"] = np.histogram(
+            pv[zk][pk][ak] = {}
+            pv[zk][pk][ak]["num_plenoscope"] = np.histogram(
                 pleno_table["primary"]["energy_GeV"],
                 bins=energy_bin["edges"],
             )[0]
-            pv[sk][pk][ak]["num_plenoscope_au"] = np.sqrt(
-                pv[sk][pk][ak]["num_plenoscope"]
+            pv[zk][pk][ak]["num_plenoscope_au"] = np.sqrt(
+                pv[zk][pk][ak]["num_plenoscope"]
             )
 
-            pv[sk][pk][ak]["num_outer_array"] = np.histogram(
+            pv[zk][pk][ak]["num_outer_array"] = np.histogram(
                 veto_table["primary"]["energy_GeV"],
                 bins=energy_bin["edges"],
             )[0]
-            pv[sk][pk][ak]["num_outer_array_au"] = np.sqrt(
-                pv[sk][pk][ak]["num_outer_array"]
+            pv[zk][pk][ak]["num_outer_array_au"] = np.sqrt(
+                pv[zk][pk][ak]["num_outer_array"]
             )
 
             with np.errstate(divide="ignore", invalid="ignore"):
                 (
-                    pv[sk][pk][ak]["ratio"],
-                    pv[sk][pk][ak]["ratio_au"],
+                    pv[zk][pk][ak]["ratio"],
+                    pv[zk][pk][ak]["ratio_au"],
                 ) = pu.divide(
-                    x=pv[sk][pk][ak]["num_outer_array"].astype(np.float),
-                    x_au=pv[sk][pk][ak]["num_outer_array_au"],
-                    y=pv[sk][pk][ak]["num_plenoscope"].astype(np.float),
-                    y_au=pv[sk][pk][ak]["num_plenoscope_au"],
+                    x=pv[zk][pk][ak]["num_outer_array"].astype(float),
+                    x_au=pv[zk][pk][ak]["num_outer_array_au"],
+                    y=pv[zk][pk][ak]["num_plenoscope"].astype(float),
+                    y_au=pv[zk][pk][ak]["num_plenoscope_au"],
                 )
 
 
-for sk in SITES:
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
+
     for ak in ARRAY_CONFIGS:
-        print("plot trigger ratio all particles", sk, ak)
+        print("plot trigger ratio all particles", zk, ak)
 
         fig = sebplt.figure(style=irf.summary.figure.FIGURE_STYLE)
         ax = sebplt.add_axes(fig=fig, span=AX_SPAN)
-        for pk in PARTICLES:
+        sebplt.add_axes_zenith_range_indicator(
+            fig=fig,
+            span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
+            zenith_bin_edges_rad=zenith_bin["edges"],
+            zenith_bin=zd,
+            fontsize=6,
+        )
+
+        for pk in res.PARTICLES:
             sebplt.ax_add_histogram(
                 ax=ax,
                 bin_edges=energy_bin["edges"],
-                bincounts=pv[sk][pk][ak]["ratio"],
+                bincounts=pv[zk][pk][ak]["ratio"],
                 linestyle="-",
                 linecolor=irf.summary.figure.PARTICLE_COLORS[pk],
                 linealpha=1.0,
-                bincounts_upper=pv[sk][pk][ak]["ratio"]
-                + pv[sk][pk][ak]["ratio_au"],
-                bincounts_lower=pv[sk][pk][ak]["ratio"]
-                - pv[sk][pk][ak]["ratio_au"],
+                bincounts_upper=pv[zk][pk][ak]["ratio"]
+                + pv[zk][pk][ak]["ratio_au"],
+                bincounts_lower=pv[zk][pk][ak]["ratio"]
+                - pv[zk][pk][ak]["ratio_au"],
                 face_color=irf.summary.figure.PARTICLE_COLORS[pk],
                 face_alpha=0.1,
                 label=None,
@@ -151,10 +154,5 @@ for sk in SITES:
         ax.set_ylabel(
             "trigger(plenoscope)\nAND NOT\nany(trigger(outer telescopes)) / 1"
         )
-        fig.savefig(
-            opj(
-                paths["out_dir"],
-                "{:s}_{:s}.jpg".format(sk, ak),
-            )
-        )
+        fig.savefig(opj(res.paths["out_dir"], f"{zk:s}_{ak:s}.jpg"))
         sebplt.close(fig)
