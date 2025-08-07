@@ -15,57 +15,7 @@ import sebastians_matplotlib_addons as sebplt
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-record_dtype = [("x_bin", "i4"), ("y_bin", "i4"), ("size", "f8")]
-
-
-class Reader:
-    def __init__(self, path):
-        self.path = path
-        self.zip = zipfile.ZipFile(self.path, "r")
-        self.uids = []
-        for zipitem in self.zip.infolist():
-            if zipitem.filename.endswith(".i4_i4_f8.gz"):
-                run_id = int(os.path.dirname(zipitem.filename))
-                event_id = int(os.path.basename(zipitem.filename)[0:6])
-                self.uids.append(
-                    irf.bookkeeping.uid.make_uid(
-                        run_id=run_id, event_id=event_id
-                    )
-                )
-
-    def close(self):
-        self.zip.close()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.close()
-
-    def _read_by_filename(self, filename):
-        with self.zip.open(filename) as f:
-            payload_gz = f.read()
-        payload = gzip.decompress(payload_gz)
-        return np.fromstring(payload, dtype=record_dtype)
-
-    def _read_by_uid(self, uid):
-        run_id, event_id = irf.bookkeeping.uid.split_uid(uid)
-        return self._read_by_filename(
-            filename=f"{run_id:06d}/{event_id:06d}.i4_i4_f8.gz"
-        )
-
-    def __getitem__(self, uid):
-        return self._read_by_uid(uid=uid)
-
-    def __iter__(self):
-        return iter(self.uids)
-
-    def __repr__(self):
-        return f"{self.__class__.__name__:s}(path='{self.path:s}')"
-
-
 size_bin = binning_utils.Binning(bin_edges=np.geomspace(1, 1e6, 13))
-
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 zenith_bin = res.zenith_binning(key="once")
 
@@ -109,7 +59,7 @@ else:
                 entry["zenith_rad"],
             )
 
-        with irf.ground_grid.io.IntensityReader(gpath) as rrr:
+        with irf.ground_grid.intensity.Reader(gpath) as rrr:
             for uid in rrr:
                 a = rrr[uid]
                 print(pk, uid, a.shape)
@@ -191,7 +141,7 @@ for pk in res.PARTICLES:
         ax_c.axhline(
             res.config["ground_grid"]["threshold_num_photons"],
             linestyle=":",
-            color="k",
+            color="black",
         )
         ax_c.text(
             s=f"grid bin threshold",
@@ -213,7 +163,7 @@ for pk in res.PARTICLES:
             bin_edges=energy_bin["edges"],
             bincounts=expo[pk][zd],
             linestyle="-",
-            linecolor="k",
+            linecolor="black",
         )
         fig.savefig(
             opj(
