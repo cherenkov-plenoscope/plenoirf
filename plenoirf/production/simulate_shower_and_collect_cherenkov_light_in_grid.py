@@ -430,6 +430,7 @@ def make_groundgrid_choice_record(uid, groundgrid_result):
 
 def ImgRoiTar_append(imgroitar, uid, groundgrid_result, groundgrid_histogram):
     bb = outer_telescope_array.init_binning()
+    bin_radius = (bb["num_bins_on_edge"] - 1) // 2
 
     dyn_roi = dynamicsizerecarray.DynamicSizeRecarray(
         dtype=ground_grid.make_histogram2d_dtype()
@@ -437,7 +438,7 @@ def ImgRoiTar_append(imgroitar, uid, groundgrid_result, groundgrid_histogram):
     for entry in groundgrid_histogram:
         dx = entry["x_bin"] - groundgrid_result["choice"]["bin_idx_x"]
         dy = entry["y_bin"] - groundgrid_result["choice"]["bin_idx_y"]
-        if abs(dx <= 12) and abs(dy <= 12):
+        if abs(dx) <= bin_radius and abs(dy) <= bin_radius:
             dyn_roi.append_recarray(entry)
     roi = dyn_roi.to_recarray()
 
