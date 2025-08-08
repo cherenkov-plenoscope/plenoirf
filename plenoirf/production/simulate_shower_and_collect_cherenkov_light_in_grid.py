@@ -429,6 +429,24 @@ def make_groundgrid_choice_record(uid, groundgrid_result):
 
 
 def ImgRoiTar_append(imgroitar, uid, groundgrid_result, groundgrid_histogram):
+    roi = ImgRoiTar_apply_cut(
+        groundgrid_histogram=groundgrid_histogram,
+        groundgrid_choice_bin_idx_x=groundgrid_result["choice"]["bin_idx_x"],
+        groundgrid_choice_bin_idx_y=groundgrid_result["choice"]["bin_idx_y"],
+    )
+
+    tar_append.tar_append(
+        tarout=imgroitar,
+        filename=uid["uid_path"] + ".i4_i4_f8.gz",
+        filebytes=gzip.compress(roi.tobytes()),
+    )
+
+
+def ImgRoiTar_apply_cut(
+    groundgrid_histogram,
+    groundgrid_choice_bin_idx_x,
+    groundgrid_choice_bin_idx_y,
+):
     bb = outer_telescope_array.init_binning()
     bin_radius = (bb["num_bins_on_edge"] - 1) // 2
 
@@ -436,17 +454,12 @@ def ImgRoiTar_append(imgroitar, uid, groundgrid_result, groundgrid_histogram):
         dtype=ground_grid.make_histogram2d_dtype()
     )
     for entry in groundgrid_histogram:
-        dx = entry["x_bin"] - groundgrid_result["choice"]["bin_idx_x"]
-        dy = entry["y_bin"] - groundgrid_result["choice"]["bin_idx_y"]
+        dx = entry["x_bin"] - groundgrid_choice_bin_idx_x
+        dy = entry["y_bin"] - groundgrid_choice_bin_idx_y
         if abs(dx) <= bin_radius and abs(dy) <= bin_radius:
-            dyn_roi.append_recarray(entry)
+            dyn_roi.append_numpy_record_or_numpy_void(entry)
     roi = dyn_roi.to_recarray()
-
-    tar_append.tar_append(
-        tarout=imgroitar,
-        filename=uid["uid_path"] + ".i4_i4_f8.gz",
-        filebytes=gzip.compress(roi.tobytes()),
-    )
+    return roi
 
 
 def ImgTar_append(imgtar, uid, groundgrid_histogram):

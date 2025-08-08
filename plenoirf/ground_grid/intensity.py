@@ -6,16 +6,21 @@ import zipfile
 from .. import bookkeeping
 
 
+def default_record_dtype():
+    return [("x_bin", "i4"), ("y_bin", "i4"), ("size", "f8")]
+
+
 class Reader:
     def __init__(
         self,
         path,
-        record_dtype=[("x_bin", "i4"), ("y_bin", "i4"), ("size", "f8")],
+        record_dtype=None,
     ):
         self.path = path
         self.zip = zipfile.ZipFile(self.path, "r")
         self.uids = []
-        self.record_dtype = record_dtype
+        if record_dtype is None:
+            self.record_dtype = default_record_dtype()
         for zipitem in self.zip.infolist():
             if zipitem.filename.endswith(".i4_i4_f8.gz"):
                 run_id = int(os.path.dirname(zipitem.filename))

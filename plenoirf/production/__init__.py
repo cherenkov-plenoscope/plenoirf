@@ -46,6 +46,8 @@ from . import estimate_primary_trajectory
 from . import benchmark_compute_environment
 from . import simulate_instrument_and_reconstruct_cherenkov
 
+from . import hotfix
+
 
 def make_example_jobs(
     plenoirf_dir,
