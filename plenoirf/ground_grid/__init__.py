@@ -334,7 +334,7 @@ def assert_histogram_bins_are_unique(hist):
         if xy in counts:
             counts[xy] += 1
         else:
-            counts[xy] = 0
+            counts[xy] = 1
     for cell in counts:
         assert counts[cell] == 1, (
             "Expected bins in sparse histogram to be unique, "
