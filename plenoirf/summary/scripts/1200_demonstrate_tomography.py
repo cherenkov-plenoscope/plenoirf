@@ -6,6 +6,7 @@ import scipy
 import os
 from os.path import join as opj
 import numpy as np
+import rename_after_writing as rnw
 import json_utils
 import sparse_numeric_table as snt
 import sebastians_matplotlib_addons as sebplt
@@ -14,37 +15,10 @@ import tempfile
 import tarfile
 import skimage
 import multiprocessing
-from skimage.draw import circle as skimage_draw_circle
 
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
-
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-
-production_key = "demo_helium_for_tomography"
-demo_helium_dir = opj(paths["plenoirf_dir"], production_key)
-
-if not os.path.exists(demo_helium_dir):
-    job = irf.production.example.make_helium_demo_for_tomography(
-        run_dir=paths["plenoirf_dir"],
-        num_air_showers=50,
-        production_key=production_key,
-        site_key="namibia",
-        max_scatter_radius_m=150,
-    )
-    irf.instrument_response.run_job(job)
-    irf.instrument_response.reduce(
-        run_dir=paths["plenoirf_dir"],
-        production_key=production_key,
-        site_key="namibia",
-        particle_key="helium",
-        LAZY=False,
-    )
-
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start(sebplt=sebplt)
 
 NUM_EVENTS_PER_PARTICLE = 5
 MIN_NUM_CHERENKOV_PHOTONS = 200
@@ -52,22 +26,25 @@ MAX_CORE_DISTANCE = 400
 TOMO_NUM_ITERATIONS = 550
 NUM_THREADS = 6
 
-os.makedirs(paths["out_dir"], exist_ok=True)
+passing_trigger = json_utils.tree.read(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger")
+)
+passing_quality = json_utils.tree.read(
+    opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
+)
 
 light_field_geometry = pl.LightFieldGeometry(
-    opj(paths["plenoirf_dir"], "light_field_geometry")
+    opj(
+        res.paths["plenoirf_dir"],
+        "plenoptics",
+        "instruments",
+        res.instrument_key,
+        "light_field_geometry",
+    )
 )
 FIELD_OF_VIEW_RADIUS_DEG = 0.5 * np.rad2deg(
     light_field_geometry.sensor_plane2imaging_system.max_FoV_diameter
 )
-
-
-def get_airshower_uids_in_directory(directory, wildcard="*.tar"):
-    raw_sensor_paths = glob.glob(opj(directory, wildcard))
-    filenames = [os.path.split(raw_path)[1] for raw_path in raw_sensor_paths]
-    airshower_uid_strs = [os.path.splitext(fn)[0] for fn in filenames]
-    airshower_uids = [int(uidstr) for uidstr in airshower_uid_strs]
-    return set(airshower_uids)
 
 
 def read_simulation_truth_for_tomography(
@@ -224,11 +201,13 @@ binning = make_binning_from_ligh_field_geometry(
 
 pl.Tomography.Image_Domain.Binning.write(
     binning=binning,
-    path=opj(paths["out_dir"], "binning_for_tomography_in_image_domain.json"),
+    path=opj(
+        res.paths["out_dir"], "binning_for_tomography_in_image_domain.json"
+    ),
 )
 
 system_matrix_path = opj(
-    paths["out_dir"], "system_matrix_for_tomography_in_image_domain.bin"
+    res.paths["out_dir"], "system_matrix_for_tomography_in_image_domain.bin"
 )
 
 pool = multiprocessing.Pool(NUM_THREADS)
@@ -239,7 +218,7 @@ if not os.path.exists(system_matrix_path):
         sen_x_bin_edges=binning["sen_x_bin_edges"],
         sen_y_bin_edges=binning["sen_y_bin_edges"],
         sen_z_bin_edges=binning["sen_z_bin_edges"],
-        random_seed=sum_config["random_seed"],
+        random_seed=res.analysis["random_seed"],
         num_lixels_in_job=1000,
         num_samples_per_lixel=10,
     )
@@ -259,118 +238,131 @@ tomo_psf = pl.Tomography.Image_Domain.Point_Spread_Function.init(
     sparse_system_matrix=sparse_system_matrix
 )
 
-for sk in ["namibia"]:
-    for pk in ["helium"]:
-        sk_pk_dir = opj(paths["plenoirf_dir"], production_key, sk, pk)
+for pk in ["helium"]:
+    print("===", pk, "===")
 
-        print("===", sk, pk, "===")
+    uid_trigger_and_quality = snt.logic.intersection(
+        [
+            passing_trigger[pk]["uid"],
+            passing_quality[pk]["uid"],
+        ]
+    )
 
-        print("- read event_table")
-        event_table = snt.read(
-            path=opj(
-                sk_pk_dir,
-                "event_table.tar",
-            ),
-            structure=irf.table.STRUCTURE,
+    with res.open_event_table(particle_key=pk) as arc:
+        event_table = arc.query(
+            levels_and_columns={
+                "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
+            }
+        )
+        event_table = snt.logic.cut_and_sort_table_on_indices(
+            event_table,
+            common_indices=uid_trigger_and_quality,
         )
 
-        print("- find events with full output")
-        raw_sensor_response_dir = opj(sk_pk_dir, "past_trigger.map")
-        have_raw_sensor_response_uids = get_airshower_uids_in_directory(
-            directory=raw_sensor_response_dir
+    run = pl.photon_stream.loph.LopfTarReader(
+        opj(
+            res.response_path(particle_key=pk),
+            "reconstructed_cherenkov.loph.tar",
+        )
+    )
+
+    event_counter = 0
+    while event_counter < NUM_EVENTS_PER_PARTICLE:
+        try:
+            event = next(run)
+        except StopIteration:
+            break
+
+        airshower_uid, loph_record = event
+
+        # mandatory
+        # ---------
+        if airshower_uid not in uid_trigger_and_quality:
+            continue
+
+        # optional for cherry picking
+        # ---------------------------
+        num_pe = len(loph_record["photons"]["arrival_time_slices"])
+        if num_pe < MIN_NUM_CHERENKOV_PHOTONS:
+            continue
+
+        event_cx = np.median(
+            light_field_geometry.cx_mean[loph_record["photons"]["channels"]]
+        )
+        event_cy = np.median(
+            light_field_geometry.cy_mean[loph_record["photons"]["channels"]]
+        )
+        event_off_deg = np.rad2deg(np.hypot(event_cx, event_cy))
+        if event_off_deg > 2.5:
+            continue
+
+        event_entry = snt.logic.cut_and_sort_table_on_indices(
+            event_table,
+            common_indices=np.array([airshower_uid]),
         )
 
-        print("- read list-of-photons")
-        run = pl.photon_stream.loph.LopfTarReader(
-            opj(sk_pk_dir, "cherenkov.phs.loph.tar")
+        core_m = np.hypot(
+            event_entry["groundgrid_choice"]["core_x_m"][0],
+            event_entry["groundgrid_choice"]["core_y_m"][0],
+        )
+        if core_m > num_pe / 5:
+            print(f"nope, core {core_m:f}m, size {num_pe:f}pe")
+            continue
+
+        event_counter += 1
+
+        print(pk, airshower_uid, core_m)
+
+        simulation_truth = read_simulation_truth_for_tomography(
+            raw_sensor_response_dir=raw_sensor_response_dir,
+            uid=airshower_uid,
+            tomography_binning=binning,
         )
 
-        event_counter = 0
-        while event_counter < NUM_EVENTS_PER_PARTICLE:
-            try:
-                event = next(run)
-            except StopIteration:
-                break
+        result_dir = opj(
+            res.paths["out_dir"],
+            pk,
+            irf.bookkeeping.uid.UID_FOTMAT_STR.format(airshower_uid),
+        )
 
-            uid, loph_record = event
+        os.makedirs(result_dir, exist_ok=True)
+        reconstruction_path = opj(result_dir, "reconstruction.json")
 
-            num_cherenkov_photons = len(loph_record["photons"]["channels"])
-            if num_cherenkov_photons < MIN_NUM_CHERENKOV_PHOTONS:
-                print(uid, "not enough photons")
-                continue
-
-            if uid not in have_raw_sensor_response_uids:
-                print(uid, "no full output avaiable")
-                continue
-
-            event_core = snt.cut_and_sort_table_on_indices(
-                table=event_table,
-                common_indices=np.array([uid]),
-                level_keys=["core"],
-            )["core"]
-            event_core_distance = np.hypot(
-                event_core["core_x_m"][0],
-                event_core["core_y_m"][0],
+        if not os.path.exists(reconstruction_path):
+            reconstruction = pl.Tomography.Image_Domain.Reconstruction.init(
+                light_field_geometry=light_field_geometry,
+                photon_lixel_ids=loph_record["photons"]["channels"],
+                binning=binning,
             )
+            with rnw.open(reconstruction_path, "wt") as f:
+                f.write(json_utils.dumps(reconstruction))
 
-            if event_core_distance > MAX_CORE_DISTANCE:
-                print(uid, "distance to core too large", event_core_distance)
-                continue
+        with rnw.open(reconstruction_path, "rt") as f:
+            reconstruction = json_utils.loads(f.read())
 
-            event_counter += 1
-
-            print(sk, pk, uid, event_core_distance)
-
-            simulation_truth = read_simulation_truth_for_tomography(
-                raw_sensor_response_dir=raw_sensor_response_dir,
-                uid=uid,
-                tomography_binning=binning,
-            )
-
-            result_dir = opj(
-                paths["out_dir"], sk, pk, irf.unique.UID_FOTMAT_STR.format(uid)
-            )
-
-            os.makedirs(result_dir, exist_ok=True)
-            reconstruction_path = opj(result_dir, "reconstruction.json")
-
-            if not os.path.exists(reconstruction_path):
+        num_missing_iterations = (
+            TOMO_NUM_ITERATIONS - reconstruction["iteration"]
+        )
+        if num_missing_iterations > 0:
+            for i in range(num_missing_iterations):
                 reconstruction = (
-                    pl.Tomography.Image_Domain.Reconstruction.init(
-                        light_field_geometry=light_field_geometry,
-                        photon_lixel_ids=loph_record["photons"]["channels"],
-                        binning=binning,
+                    pl.Tomography.Image_Domain.Reconstruction.iterate(
+                        reconstruction=reconstruction,
+                        point_spread_function=tomo_psf,
                     )
                 )
-                with open(reconstruction_path, "wt") as f:
-                    f.write(json_utils.dumps(reconstruction))
-
-            with open(reconstruction_path, "rt") as f:
-                reconstruction = json_utils.loads(f.read())
-
-            num_missing_iterations = (
-                TOMO_NUM_ITERATIONS - reconstruction["iteration"]
-            )
-            if num_missing_iterations > 0:
-                for i in range(num_missing_iterations):
-                    reconstruction = (
-                        pl.Tomography.Image_Domain.Reconstruction.iterate(
-                            reconstruction=reconstruction,
-                            point_spread_function=tomo_psf,
-                        )
+                if reconstruction["iteration"] % 25 == 0:
+                    stack_path = opj(
+                        result_dir,
+                        "stack_{:06d}.jpg".format(reconstruction["iteration"]),
                     )
-                    if reconstruction["iteration"] % 25 == 0:
-                        stack_path = opj(
-                            result_dir,
-                            "stack_{:06d}.jpg".format(
-                                reconstruction["iteration"]
-                            ),
-                        )
-                        write_figure_tomography(
-                            path=stack_path,
-                            binning=binning,
-                            reconstruction=reconstruction,
-                            simulation_truth=simulation_truth,
-                        )
-                with open(reconstruction_path, "wt") as f:
-                    f.write(json_utils.dumps(reconstruction))
+                    write_figure_tomography(
+                        path=stack_path,
+                        binning=binning,
+                        reconstruction=reconstruction,
+                        simulation_truth=simulation_truth,
+                    )
+            with rnw.open(reconstruction_path, "wt") as f:
+                f.write(json_utils.dumps(reconstruction))
+
+res.stop()

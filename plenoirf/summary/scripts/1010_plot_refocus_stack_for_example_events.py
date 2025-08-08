@@ -104,29 +104,23 @@ for pk in res.PARTICLES:
     pk_dir = opj(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(
-            levels_and_columns={
-                "primary": (
-                    "uid",
-                    "energy_GeV",
-                    "azimuth_rad",
-                    "zenith_rad",
-                ),
-                "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
-            }
-        )
-
-    uid_common = snt.logic.intersection(
+    uid_trigger_and_quality = snt.logic.intersection(
         [
             passing_trigger[pk]["uid"],
             passing_quality[pk]["uid"],
         ]
     )
-    events_truth = snt.logic.cut_and_sort_table_on_indices(
-        event_table,
-        common_indices=uid_common,
-    )
+
+    with res.open_event_table(particle_key=pk) as arc:
+        event_table = arc.query(
+            levels_and_columns={
+                "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
+            }
+        )
+        event_table = snt.logic.cut_and_sort_table_on_indices(
+            event_table,
+            common_indices=uid_trigger_and_quality,
+        )
 
     run = pl.photon_stream.loph.LopfTarReader(
         opj(
@@ -148,10 +142,7 @@ for pk in res.PARTICLES:
 
         # mandatory
         # ---------
-        if airshower_uid not in passing_trigger[pk]["uid"]:
-            continue
-
-        if airshower_uid not in passing_quality[pk]["uid"]:
+        if airshower_uid not in uid_trigger_and_quality:
             continue
 
         # optional for cherry picking
@@ -166,14 +157,14 @@ for pk in res.PARTICLES:
         if event_off_deg > 2.5:
             continue
 
-        event_truth = snt.logic.cut_and_sort_table_on_indices(
-            events_truth,
+        event_entry = snt.logic.cut_and_sort_table_on_indices(
+            event_table,
             common_indices=np.array([airshower_uid]),
         )
 
         core_m = np.hypot(
-            event_truth["groundgrid_choice"]["core_x_m"][0],
-            event_truth["groundgrid_choice"]["core_x_m"][0],
+            event_entry["groundgrid_choice"]["core_x_m"][0],
+            event_entry["groundgrid_choice"]["core_y_m"][0],
         )
         if core_m > num_pe / 5:
             print(f"nope, core {core_m:f}m, size {num_pe:f}pe")
@@ -187,7 +178,7 @@ for pk in res.PARTICLES:
         tabpath = opj(evt_dir, f"{pk:s}_{airshower_uid:012d}_truth.json")
         json_utils.write(
             tabpath,
-            table_to_dict(event_truth),
+            table_to_dict(event_entry),
             indent=4,
         )
 
