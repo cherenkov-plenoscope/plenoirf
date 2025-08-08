@@ -12,13 +12,13 @@ import matplotlib
 from matplotlib.collections import PolyCollection
 from plenopy.light_field_geometry.LightFieldGeometry import init_lixel_polygons
 
+
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start(sebplt=sebplt)
+
 DARKMODE = True
 FINE_STEPS = 9
 rrr = 2
-
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
 
 if DARKMODE:
     sebplt.plt.style.use("dark_background")
@@ -36,11 +36,9 @@ else:
     BEAM_ALPHA = 0.2
     colors = ["k", "g", "b", "r", "c", "m", "orange"]
 
-sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
-
 light_field_geometry = pl.LightFieldGeometry(
     opj(
-        paths["plenoirf_dir"],
+        res.paths["plenoirf_dir"],
         "plenoptics",
         "instruments",
         res.instrument_key,
@@ -121,7 +119,7 @@ for obj, object_distance in enumerate(object_distances):
     )
     ax2 = sebplt.add_axes(fig=fig, span=[0.82, 0.15, 0.2 * (3 / 4), 0.85])
 
-    cpath = opj(paths["out_dir"], "lixel_to_pixel_{:06d}.json".format(obj))
+    cpath = opj(res.paths["out_dir"], f"lixel_to_pixel_{obj:06d}.json")
 
     # compute a list of pixels where a lixel contributes to.
     if not os.path.exists(cpath):
@@ -247,10 +245,10 @@ for obj, object_distance in enumerate(object_distances):
 
     fig.savefig(
         opj(
-            paths["out_dir"],
-            "refocus_lixel_summation_7_{obj:d}{ext:s}".format(
-                obj=obj, ext=EXT
-            ),
+            res.paths["out_dir"],
+            f"refocus_lixel_summation_7_{obj:d}{EXT:s}",
         )
     )
-    sebplt.close("all")
+    sebplt.close(fig)
+
+res.stop()
