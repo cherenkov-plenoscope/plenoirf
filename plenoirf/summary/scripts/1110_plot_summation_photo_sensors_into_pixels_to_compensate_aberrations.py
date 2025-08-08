@@ -10,12 +10,11 @@ import numpy as np
 import sebastians_matplotlib_addons as sebplt
 from plenopy.light_field_geometry.LightFieldGeometry import init_lixel_polygons
 
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start(sebplt=sebplt)
+
 DARKMODE = True
 rrr = 3
-
-paths = irf.summary.paths_from_argv(sys.argv)
-res = irf.summary.Resources.from_argv(sys.argv)
-os.makedirs(paths["out_dir"], exist_ok=True)
 
 if DARKMODE:
     sebplt.plt.style.use("dark_background")
@@ -27,15 +26,11 @@ else:
     stroke = "black"
     cmap = "binary"
 
-sebplt.matplotlib.rcParams.update(res.analysis["plot"]["matplotlib"])
-
 AXES_STYLE = {"spines": ["left", "bottom"], "axes": ["x", "y"], "grid": False}
-
-os.makedirs(paths["out_dir"], exist_ok=True)
 
 light_field_geometry = pl.LightFieldGeometry(
     opj(
-        paths["plenoirf_dir"],
+        res.paths["plenoirf_dir"],
         "plenoptics",
         "instruments",
         res.instrument_key,
@@ -168,13 +163,13 @@ for pixel in pixels:
     off_axis_angle_mdeg = int(1000 * np.rad2deg(pixel["off_axis_angle"]))
     fig.savefig(
         opj(
-            paths["out_dir"],
+            res.paths["out_dir"],
             "aberration_pixel_{pixel:0d}_{angle:0d}mdeg{ext:s}".format(
                 pixel=pixel["id"], angle=off_axis_angle_mdeg, ext=EXT
             ),
         ),
     )
-    sebplt.close("all")
+    sebplt.close(fig)
 
 # plot all pixels overview
 # -------------------------
@@ -249,13 +244,13 @@ ax.spines["top"].set_visible(False)
 ax.set_xlabel("$x\\,/\\,$m")
 ax.set_ylabel("$y\\,/\\,$m")
 
-fig.savefig(opj(paths["out_dir"], "aberration_overview" + EXT))
-sebplt.close("all")
+fig.savefig(opj(res.paths["out_dir"], "aberration_overview" + EXT))
+sebplt.close(fig)
 
 # export table
 # ------------
 
-with open(opj(paths["out_dir"], "aberration_overview.txt"), "wt") as fout:
+with open(opj(res.paths["out_dir"], "aberration_overview.txt"), "wt") as fout:
     for pixel in pixels:
         _x, _y = pixel["mean_position_of_photosensors_on_sensor_plane"]
         fout.write(
@@ -266,3 +261,5 @@ with open(opj(paths["out_dir"], "aberration_overview.txt"), "wt") as fout:
                 np.hypot(_x, _y),
             )
         )
+
+res.stop()
