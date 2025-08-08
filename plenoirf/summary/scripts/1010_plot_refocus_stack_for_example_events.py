@@ -10,23 +10,25 @@ import gamma_ray_reconstruction as gamrec
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
-
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start(sebplt=sebplt)
 
 passing_trigger = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0055_passing_trigger")
+    opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0056_passing_basic_quality")
+    opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
 
-lfg = pl.LightFieldGeometry(opj(paths["plenoirf_dir"], "light_field_geometry"))
+lfg = pl.LightFieldGeometry(
+    opj(
+        res.paths["plenoirf_dir"],
+        "plenoptics",
+        "instruments",
+        res.instrument_key,
+        "light_field_geometry",
+    )
+)
 
 SAMPLE = {
     "bin_edges_pe": np.geomspace(7.5e1, 7.5e5, 5),
@@ -56,7 +58,7 @@ def recarray_to_dict(ra):
 
 
 def counter_init(sample):
-    return np.zeros(len(sample["count"]), dtype=np.int)
+    return np.zeros(len(sample["count"]), dtype=int)
 
 
 def counter_not_full(counter, sample):
@@ -98,201 +100,182 @@ number_depths = len(depths)
 
 image_rays = pl.image.ImageRays(light_field_geometry=lfg)
 
-# SITES = irf_config["config"]["sites"]
-SITES = ["namibia"]
+for pk in res.PARTICLES:
+    pk_dir = opj(res.paths["out_dir"], pk)
+    os.makedirs(pk_dir, exist_ok=True)
 
-# PARTICLES= irf_config["config"]["particles"]
-PARTICLES = ["gamma", "proton", "helium"]
-
-for sk in SITES:
-    sk_dir = opj(paths["out_dir"], sk)
-    os.makedirs(sk_dir, exist_ok=True)
-    for pk in PARTICLES:
-        pk_dir = opj(sk_dir, pk)
-        os.makedirs(pk_dir, exist_ok=True)
-
-        event_table = snt.read(
-            path=opj(
-                paths["plenoirf_dir"], "event_table", sk, pk, "event_table.tar"
-            ),
-            structure=irf.table.STRUCTURE,
-        )
-        common_idx = snt.intersection(
-            [passing_trigger[sk][pk]["uid"], passing_quality[sk][pk]["uid"]]
-        )
-        events_truth = snt.cut_and_sort_table_on_indices(
-            event_table,
-            common_indices=common_idx,
-            level_keys=[
-                "primary",
-                "cherenkovsize",
-                "grid",
-                "cherenkovpool",
-                "cherenkovsizepart",
-                "cherenkovpoolpart",
-                "core",
-                "trigger",
-                "pasttrigger",
-                "cherenkovclassification",
-            ],
+    with res.open_event_table(particle_key=pk) as arc:
+        event_table = arc.query(
+            levels_and_columns={
+                "primary": (
+                    "uid",
+                    "energy_GeV",
+                    "azimuth_rad",
+                    "zenith_rad",
+                ),
+                "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
+            }
         )
 
-        run = pl.photon_stream.loph.LopfTarReader(
-            opj(
-                paths["plenoirf_dir"],
-                "event_table",
-                sk,
-                pk,
-                "cherenkov.phs.loph.tar",
-            )
+    uid_common = snt.logic.intersection(
+        [
+            passing_trigger[pk]["uid"],
+            passing_quality[pk]["uid"],
+        ]
+    )
+    events_truth = snt.logic.cut_and_sort_table_on_indices(
+        event_table,
+        common_indices=uid_common,
+    )
+
+    run = pl.photon_stream.loph.LopfTarReader(
+        opj(
+            res.response_path(particle_key=pk),
+            "reconstructed_cherenkov.loph.tar",
+        )
+    )
+
+    os.makedirs(opj(res.paths["out_dir"], pk), exist_ok=True)
+
+    counter = counter_init(SAMPLE)
+    while counter_not_full(counter, SAMPLE):
+        try:
+            event = next(run)
+        except StopIteration:
+            break
+
+        airshower_uid, loph_record = event
+
+        # mandatory
+        # ---------
+        if airshower_uid not in passing_trigger[pk]["uid"]:
+            continue
+
+        if airshower_uid not in passing_quality[pk]["uid"]:
+            continue
+
+        # optional for cherry picking
+        # ---------------------------
+        num_pe = len(loph_record["photons"]["arrival_time_slices"])
+        if not counter_can_add(counter, num_pe, SAMPLE):
+            continue
+
+        event_cx = np.median(lfg.cx_mean[loph_record["photons"]["channels"]])
+        event_cy = np.median(lfg.cy_mean[loph_record["photons"]["channels"]])
+        event_off_deg = np.rad2deg(np.hypot(event_cx, event_cy))
+        if event_off_deg > 2.5:
+            continue
+
+        event_truth = snt.logic.cut_and_sort_table_on_indices(
+            events_truth,
+            common_indices=np.array([airshower_uid]),
         )
 
-        site_particle_dir = opj(paths["out_dir"], sk, pk)
-        os.makedirs(site_particle_dir, exist_ok=True)
+        core_m = np.hypot(
+            event_truth["groundgrid_choice"]["core_x_m"][0],
+            event_truth["groundgrid_choice"]["core_x_m"][0],
+        )
+        if core_m > num_pe / 5:
+            print(f"nope, core {core_m:f}m, size {num_pe:f}pe")
+            continue
 
-        counter = counter_init(SAMPLE)
-        while counter_not_full(counter, SAMPLE):
-            try:
-                event = next(run)
-            except StopIteration:
-                break
+        counter = counter_add(counter, num_pe, SAMPLE)
 
-            airshower_id, loph_record = event
+        evt_dir = opj(pk_dir, f"{airshower_uid:012d}")
+        os.makedirs(evt_dir, exist_ok=True)
 
-            # mandatory
-            # ---------
-            if airshower_id not in passing_trigger[sk][pk]["uid"]:
+        tabpath = opj(evt_dir, f"{pk:s}_{airshower_uid:012d}_truth.json")
+        json_utils.write(
+            tabpath,
+            table_to_dict(event_truth),
+            indent=4,
+        )
+
+        # prepare image intensities
+        # -------------------------
+        image_stack = np.zeros(shape=(number_depths, lfg.number_pixel))
+
+        for dek in range(number_depths):
+            depth = depths[dek]
+            (
+                pixel_indicies,
+                inside_fov,
+            ) = image_rays.pixel_ids_of_lixels_in_object_distance(depth)
+
+            # populate image:
+            for channel_id in loph_record["photons"]["channels"]:
+                if inside_fov[channel_id]:
+                    pixel_id = pixel_indicies[channel_id]
+                    image_stack[dek, pixel_id] += 1
+
+        # plot images
+        # -----------
+        for dek in range(number_depths):
+            print(pk, airshower_uid, "depth", dek, "counter", counter)
+            figpath = opj(
+                evt_dir,
+                f"{pk:s}_{airshower_uid:012d}_{dek:03d}.jpg",
+            )
+            if os.path.exists(figpath):
                 continue
 
-            if airshower_id not in passing_quality[sk][pk]["uid"]:
-                continue
+            depth = depths[dek]
 
-            # optional for cherry picking
-            # ---------------------------
-            num_pe = len(loph_record["photons"]["arrival_time_slices"])
-            if not counter_can_add(counter, num_pe, SAMPLE):
-                continue
-
-            event_cx = np.median(
-                lfg.cx_mean[loph_record["photons"]["channels"]]
+            fig = sebplt.figure(
+                style={
+                    "rows": FIG_ROWS,
+                    "cols": FIG_COLS,
+                    "fontsize": 0.5 * FIC_SCALE,
+                }
             )
-            event_cy = np.median(
-                lfg.cy_mean[loph_record["photons"]["channels"]]
+            ax = sebplt.add_axes(fig=fig, span=[0.175, 0.1, 0.7, 0.85])
+            axr = sebplt.add_axes(fig=fig, span=[0.1, 0.1, 0.05, 0.85])
+            cax = sebplt.add_axes(fig=fig, span=[0.8, 0.15, 0.025, 0.75])
+
+            colbar = pl.plot.image.add2ax(
+                ax=ax,
+                I=image_stack[dek, :],
+                px=np.rad2deg(lfg.pixel_pos_cx),
+                py=np.rad2deg(lfg.pixel_pos_cy),
+                colormap=colormap,
+                hexrotation=30,
+                vmin=0,
+                vmax=np.max(image_stack),
+                colorbar=False,
+                norm=sebplt.plt_colors.PowerNorm(gamma=CMAP_GAMMA),
             )
-            event_off_deg = np.rad2deg(np.hypot(event_cx, event_cy))
-            if event_off_deg > 2.5:
-                continue
+            ax.set_aspect("equal")
+            sebplt.plt.colorbar(colbar, cax=cax)
 
-            event_truth = snt.cut_and_sort_table_on_indices(
-                events_truth,
-                common_indices=np.array([airshower_id]),
+            # region of interest
+            roi_cx_deg = np.rad2deg(event_cx)
+            roi_cy_deg = np.rad2deg(event_cy)
+            cxstart = roi_cx_deg - REGION_OF_INTEREST_DEG / 2
+            cxstop = roi_cx_deg + REGION_OF_INTEREST_DEG / 2
+            cystart = roi_cy_deg - REGION_OF_INTEREST_DEG / 2
+            cystop = roi_cy_deg + REGION_OF_INTEREST_DEG / 2
+            ax.set_xlim([cxstart, cxstop])
+            ax.set_ylim([cystart, cystop])
+
+            ax.set_ylabel(r"$c_y\,/\,1^{\circ}$")
+            fig.text(
+                x=0.47,
+                y=0.15,
+                s=r"$c_x\,/\,1^{\circ}$",
+                color="grey",
             )
 
-            core_m = np.hypot(
-                event_truth["core"]["core_x_m"][0],
-                event_truth["core"]["core_x_m"][0],
-            )
-            if core_m > num_pe / 5:
-                print("nope", core_m, num_pe)
-                continue
-
-            counter = counter_add(counter, num_pe, SAMPLE)
-
-            evt_dir = opj(pk_dir, "{:012d}".format(airshower_id))
-            os.makedirs(evt_dir, exist_ok=True)
-
-            tabpath = opj(
-                evt_dir, "{:s}_{:012d}_truth.json".format(pk, airshower_id)
-            )
-            json_utils.write(
-                path=tabpath,
-                out_dict=table_to_dict(event_truth),
-                indent=4,
+            pl.plot.ruler.add2ax_object_distance_ruler(
+                ax=axr,
+                object_distance=depth,
+                object_distance_min=min(depths) * 0.9,
+                object_distance_max=max(depths) * 1.1,
+                label=r"depth$\,/\,$km",
+                print_value=False,
+                color="black",
             )
 
-            # prepare image intensities
-            # -------------------------
-            image_stack = np.zeros(shape=(number_depths, lfg.number_pixel))
+            fig.savefig(figpath)
+            sebplt.close(fig)
 
-            for dek in range(number_depths):
-                depth = depths[dek]
-                (
-                    pixel_indicies,
-                    inside_fov,
-                ) = image_rays.pixel_ids_of_lixels_in_object_distance(depth)
-
-                # populate image:
-                for channel_id in loph_record["photons"]["channels"]:
-                    if inside_fov[channel_id]:
-                        pixel_id = pixel_indicies[channel_id]
-                        image_stack[dek, pixel_id] += 1
-
-            # plot images
-            # -----------
-            for dek in range(number_depths):
-                print(sk, pk, airshower_id, dek, counter)
-                figpath = opj(
-                    evt_dir,
-                    "{:s}_{:012d}_{:03d}.jpg".format(pk, airshower_id, dek),
-                )
-                if os.path.exists(figpath):
-                    continue
-
-                depth = depths[dek]
-
-                fig = sebplt.figure(
-                    style={
-                        "rows": FIG_ROWS,
-                        "cols": FIG_COLS,
-                        "fontsize": 0.5 * FIC_SCALE,
-                    }
-                )
-                ax = sebplt.add_axes(fig=fig, span=[0.175, 0.1, 0.7, 0.85])
-                axr = sebplt.add_axes(fig=fig, span=[0.1, 0.1, 0.05, 0.85])
-                cax = sebplt.add_axes(fig=fig, span=[0.8, 0.15, 0.025, 0.75])
-
-                colbar = pl.plot.image.add2ax(
-                    ax=ax,
-                    I=image_stack[dek, :],
-                    px=np.rad2deg(lfg.pixel_pos_cx),
-                    py=np.rad2deg(lfg.pixel_pos_cy),
-                    colormap=colormap,
-                    hexrotation=30,
-                    vmin=0,
-                    vmax=np.max(image_stack),
-                    colorbar=False,
-                    norm=sebplt.plt_colors.PowerNorm(gamma=CMAP_GAMMA),
-                )
-                ax.set_aspect("equal")
-                sebplt.plt.colorbar(colbar, cax=cax)
-
-                # region of interest
-                roi_cx_deg = np.rad2deg(event_cx)
-                roi_cy_deg = np.rad2deg(event_cy)
-                cxstart = roi_cx_deg - REGION_OF_INTEREST_DEG / 2
-                cxstop = roi_cx_deg + REGION_OF_INTEREST_DEG / 2
-                cystart = roi_cy_deg - REGION_OF_INTEREST_DEG / 2
-                cystop = roi_cy_deg + REGION_OF_INTEREST_DEG / 2
-                ax.set_xlim([cxstart, cxstop])
-                ax.set_ylim([cystart, cystop])
-
-                ax.set_ylabel(r"$c_y\,/\,1^{\circ}$")
-                fig.text(
-                    x=0.47,
-                    y=0.15,
-                    s=r"$c_x\,/\,1^{\circ}$",
-                    color="grey",
-                )
-
-                pl.plot.ruler.add2ax_object_distance_ruler(
-                    ax=axr,
-                    object_distance=depth,
-                    object_distance_min=min(depths) * 0.9,
-                    object_distance_max=max(depths) * 1.1,
-                    label=r"depth$\,/\,$km",
-                    print_value=False,
-                    color="black",
-                )
-
-                fig.savefig(figpath)
-                sebplt.close(fig)
+res.stop()

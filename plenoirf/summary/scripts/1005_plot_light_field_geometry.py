@@ -6,8 +6,8 @@ from os.path import join as opj
 from importlib import resources as importlib_resources
 import subprocess
 
-argv = irf.summary.argv_since_py(sys.argv)
-pa = irf.summary.paths_from_argv(argv)
+res = irf.summary.ScriptResources.from_argv(sys.argv)
+res.start()
 
 script_path = opj(
     importlib_resources.files("plenoptics"),
@@ -20,8 +20,16 @@ subprocess.call(
         "python",
         script_path,
         "--light_field_geometry_path",
-        opj(paths["plenoirf_dir"], "light_field_geometry"),
+        opj(
+            res.paths["plenoirf_dir"],
+            "plenoptics",
+            "instruments",
+            res.instrument_key,
+            "light_field_geometry",
+        ),
         "--out_dir",
-        paths["out_dir"],
+        res.paths["out_dir"],
     ]
 )
+
+res.stop()
