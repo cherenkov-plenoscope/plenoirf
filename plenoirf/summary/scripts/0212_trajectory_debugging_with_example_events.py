@@ -11,27 +11,38 @@ import sebastians_matplotlib_addons as sebplt
 import json_utils
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
-res.start()
-
-irf_config = irf.summary.read_instrument_response_config(
-    run_dir=paths["plenoirf_dir"]
-)
-sum_config = irf.summary.read_summary_config(summary_dir=paths["analysis_dir"])
-sebplt.matplotlib.rcParams.update(sum_config["plot"]["matplotlib"])
+res.start(sebplt=sebplt)
 
 passing_trigger = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0055_passing_trigger")
+    opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 passing_quality = json_utils.tree.read(
-    opj(paths["analysis_dir"], "0056_passing_basic_quality")
+    opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
+zenith_assignment = json_utils.tree.read(
+    opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
+)
+zenith_bin = res.zenith_binning("once")
 
-onreion_config = sum_config["on_off_measuremnent"]["onregion_types"]["large"]
+fuzzy_config = gamrec.trajectory.v2020nov12fuzzy0.config.compile_user_config(
+    user_config=res.config["reconstruction"]["trajectory"]["fuzzy_method"]
+)
+model_fit_config = (
+    gamrec.trajectory.v2020dec04iron0b.config.compile_user_config(
+        user_config=res.config["reconstruction"]["trajectory"]["core_axis_fit"]
+    )
+)
+onreion_config = res.analysis["on_off_measuremnent"]["onregion_types"]["large"]
 
-# READ light-field-geometry
-# =========================
-lfg = pl.LightFieldGeometry(opj(paths["plenoirf_dir"], "light_field_geometry"))
-
+lfg = pl.LightFieldGeometry(
+    opj(
+        res.paths["plenoirf_dir"],
+        "plenoptics",
+        "instruments",
+        res.instrument_key,
+        "light_field_geometry",
+    )
+)
 fov_radius_deg = np.rad2deg(
     0.5 * lfg.sensor_plane2imaging_system.max_FoV_diameter
 )
@@ -55,70 +66,6 @@ def add_axes_fuzzy_debug(ax, ring_binning, fuzzy_result, fuzzy_debug):
     ax.set_ylabel("probability density / 1")
 
 
-fuzzy_config = gamrec.trajectory.v2020nov12fuzzy0.config.compile_user_config(
-    user_config=irf_config["config"]["reconstruction"]["trajectory"][
-        "fuzzy_method"
-    ]
-)
-
-long_fit_cfg = gamrec.trajectory.v2020dec04iron0b.config.compile_user_config(
-    user_config=irf_config["config"]["reconstruction"]["trajectory"][
-        "core_axis_fit"
-    ]
-)
-
-truth_by_index = {}
-for sk in irf_config["config"]["sites"]:
-    truth_by_index[sk] = {}
-    for pk in irf_config["config"]["particles"]:
-        truth_by_index[sk][pk] = {}
-
-        event_table = snt.read(
-            path=opj(
-                paths["plenoirf_dir"], "event_table", sk, pk, "event_table.tar"
-            ),
-            structure=irf.table.STRUCTURE,
-        )
-        common_idx = snt.intersection(
-            [passing_trigger[sk][pk]["uid"], passing_quality[sk][pk]["uid"]]
-        )
-        all_truth = snt.cut_and_sort_table_on_indices(
-            event_table,
-            common_indices=common_idx,
-            level_keys=[
-                "primary",
-                "cherenkovsize",
-                "grid",
-                "cherenkovpool",
-                "cherenkovsizepart",
-                "cherenkovpoolpart",
-                "core",
-                "trigger",
-                "pasttrigger",
-                "cherenkovclassification",
-            ],
-        )
-
-        (
-            true_cx,
-            true_cy,
-        ) = irf.analysis.gamma_direction.momentum_to_cx_cy_wrt_aperture(
-            momentum_x_GeV_per_c=all_truth["primary"]["momentum_x_GeV_per_c"],
-            momentum_y_GeV_per_c=all_truth["primary"]["momentum_y_GeV_per_c"],
-            momentum_z_GeV_per_c=all_truth["primary"]["momentum_z_GeV_per_c"],
-            plenoscope_pointing=irf_config["config"]["plenoscope_pointing"],
-        )
-
-        for ii in range(all_truth["primary"].shape[0]):
-            airshower_id = all_truth["primary"]["uid"][ii]
-            truth_by_index[sk][pk][airshower_id] = {
-                "cx": true_cx[ii],
-                "cy": true_cy[ii],
-                "x": -all_truth["core"]["core_x_m"][ii],
-                "y": -all_truth["core"]["core_y_m"][ii],
-                "energy_GeV": all_truth["primary"]["energy_GeV"][ii],
-            }
-
 axes_style = {"spines": [], "axes": ["x", "y"], "grid": True}
 
 
@@ -127,7 +74,7 @@ def read_shower_maximum_object_distance(
 ):
     event_table = snt.read(
         path=opj(
-            paths["plenoirf_dir"],
+            res.paths["plenoirf_dir"],
             "event_table",
             site_key,
             particle_key,
@@ -147,222 +94,288 @@ PLOT_RING = False
 PLOT_OVERVIEW = True
 PLOT_ONREGION = True
 
-
 NUM_EVENTS_PER_PARTICLE = 10
 
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
 
-for sk in irf_config["config"]["sites"]:
-    for pk in irf_config["config"]["particles"]:
-        reco_obj = read_shower_maximum_object_distance(
-            site_key=sk, particle_key=pk
+    for pk in res.PARTICLES:
+        os.makedirs(opj(res.paths["out_dir"], zk, pk), exist_ok=True)
+
+        uid_common = snt.logic.intersection(
+            [
+                passing_trigger[pk]["uid"],
+                zenith_assignment[zk][pk],
+                passing_quality[pk]["uid"],
+            ]
         )
 
-        run = pl.photon_stream.loph.LopfTarReader(
-            opj(
-                paths["plenoirf_dir"],
-                "event_table",
-                sk,
-                pk,
-                "cherenkov.phs.loph.tar",
+        with res.open_event_table(particle_key=pk) as arc:
+            event_table = arc.query(
+                levels_and_columns={
+                    "primary": "__all__",
+                    "instrument_pointing": "__all__",
+                    "groundgrid_choice": "__all__",
+                    "reconstructed_trajectory": "__all__",
+                    "features": "__all__",
+                }
             )
-        )
+            event_table = snt.logic.cut_and_sort_table_on_indices(
+                table=event_table,
+                common_indices=uid_common,
+            )
 
-        site_particle_dir = opj(paths["out_dir"], sk, pk)
-        os.makedirs(site_particle_dir, exist_ok=True)
+        uid_common = set(uid_common)
+
+        loph_path = opj(
+            res.response_path(particle_key=pk),
+            "reconstructed_cherenkov.loph.tar",
+        )
 
         event_counter = 0
-        while event_counter <= NUM_EVENTS_PER_PARTICLE:
-            event = next(run)
-            airshower_id, loph_record = event
+        with pl.photon_stream.loph.LopfTarReader(loph_path) as run:
 
-            if airshower_id not in truth_by_index[sk][pk]:
-                continue
-            else:
-                event_counter += 1
+            while event_counter <= NUM_EVENTS_PER_PARTICLE:
+                airshower_uid, loph_record = next(run)
 
-            truth = dict(truth_by_index[sk][pk][airshower_id])
+                if airshower_uid not in uid_common:
+                    continue
+                else:
+                    event_counter += 1
 
-            fit, debug = gamrec.trajectory.v2020dec04iron0b.estimate(
-                loph_record=loph_record,
-                light_field_geometry=lfg,
-                shower_maximum_object_distance=reco_obj[airshower_id],
-                fuzzy_config=fuzzy_config,
-                model_fit_config=long_fit_cfg,
-            )
-
-            if not gamrec.trajectory.v2020dec04iron0b.is_valid_estimate(fit):
-                print(
-                    "airshower_id",
-                    airshower_id,
-                    " Can not reconstruct trajectory",
+                event_entry = snt.logic.cut_and_sort_table_on_indices(
+                    table=event_table,
+                    common_indices=[airshower_uid],
+                )
+                fit, debug = gamrec.trajectory.v2020dec04iron0b.estimate(
+                    loph_record=loph_record,
+                    light_field_geometry=lfg,
+                    shower_maximum_object_distance=event_entry["features"][
+                        "image_smallest_ellipse_object_distance"
+                    ][0],
+                    fuzzy_config=fuzzy_config,
+                    model_fit_config=model_fit_config,
                 )
 
-            # true response
-            # -------------
-
-            true_response = gamrec.trajectory.v2020dec04iron0b.model_response_for_true_trajectory(
-                true_cx=truth["cx"],
-                true_cy=truth["cy"],
-                true_x=truth["x"],
-                true_y=truth["y"],
-                loph_record=loph_record,
-                light_field_geometry=lfg,
-                model_fit_config=long_fit_cfg,
-            )
-
-            if PLOT_RING:
-                fig = sebplt.figure(sebplt.FIGURE_16_9)
-                ax = sebplt.add_axes(fig=fig, span=[0.1, 0.1, 0.8, 0.8])
-                add_axes_fuzzy_debug(
-                    ax=ax,
-                    ring_binning=fuzzy_config["azimuth_ring"],
-                    fuzzy_result=debug["fuzzy_result"],
-                    fuzzy_debug=debug["fuzzy_debug"],
-                )
-                path = opj(
-                    paths["out_dir"],
-                    sk,
-                    pk,
-                    "{:09d}_ring.jpg".format(
-                        airshower_id,
-                    ),
-                )
-                fig.savefig(path)
-                sebplt.close(fig)
-
-            if PLOT_OVERVIEW:
-                split_light_field = (
-                    pl.split_light_field.make_split_light_field(
-                        loph_record=loph_record, light_field_geometry=lfg
+                if not gamrec.trajectory.v2020dec04iron0b.is_valid_estimate(
+                    fit
+                ):
+                    print(
+                        "airshower_uid",
+                        airshower_uid,
+                        " Can not reconstruct trajectory",
                     )
+
+                # true response
+                # -------------
+                event_truth_entry = irf.reconstruction.trajectory_quality.make_rectangular_table(
+                    event_table=event_entry,
+                    instrument_pointing_model=res.config["pointing"]["model"],
+                )
+                true_response = gamrec.trajectory.v2020dec04iron0b.model_response_for_true_trajectory(
+                    true_cx=event_truth_entry["true_trajectory/cx_rad"][0],
+                    true_cy=event_truth_entry["true_trajectory/cy_rad"][0],
+                    true_x=event_truth_entry["true_trajectory/x_m"][0],
+                    true_y=event_truth_entry["true_trajectory/y_m"][0],
+                    loph_record=loph_record,
+                    light_field_geometry=lfg,
+                    model_fit_config=model_fit_config,
                 )
 
-                fit_cx_deg = np.rad2deg(fit["primary_particle_cx"])
-                fit_cy_deg = np.rad2deg(fit["primary_particle_cy"])
-                fit_x = fit["primary_particle_x"]
-                fit_y = fit["primary_particle_y"]
+                if PLOT_RING:
+                    fig = sebplt.figure(sebplt.FIGURE_16_9)
+                    ax = sebplt.add_axes(fig=fig, span=[0.1, 0.1, 0.8, 0.8])
+                    add_axes_fuzzy_debug(
+                        ax=ax,
+                        ring_binning=fuzzy_config["azimuth_ring"],
+                        fuzzy_result=debug["fuzzy_result"],
+                        fuzzy_debug=debug["fuzzy_debug"],
+                    )
+                    path = opj(
+                        res.paths["out_dir"],
+                        zk,
+                        pk,
+                        "{:09d}_ring.jpg".format(
+                            airshower_uid,
+                        ),
+                    )
+                    fig.savefig(path)
+                    sebplt.close(fig)
 
-                fig = sebplt.figure(sebplt.FIGURE_16_9)
-                ax = sebplt.add_axes(
-                    fig=fig, span=[0.075, 0.1, 0.4, 0.8], style=axes_style
-                )
-                ax_core = sebplt.add_axes(
-                    fig=fig, span=[0.575, 0.1, 0.4, 0.8], style=axes_style
-                )
-                for pax in range(split_light_field["number_paxel"]):
+                if PLOT_OVERVIEW:
+                    split_light_field = (
+                        pl.split_light_field.make_split_light_field(
+                            loph_record=loph_record, light_field_geometry=lfg
+                        )
+                    )
+
+                    fit_cx_deg = np.rad2deg(fit["primary_particle_cx"])
+                    fit_cy_deg = np.rad2deg(fit["primary_particle_cy"])
+                    fit_x = fit["primary_particle_x"]
+                    fit_y = fit["primary_particle_y"]
+
+                    fig = sebplt.figure(sebplt.FIGURE_16_9)
+                    ax = sebplt.add_axes(
+                        fig=fig, span=[0.075, 0.1, 0.4, 0.8], style=axes_style
+                    )
+                    ax_core = sebplt.add_axes(
+                        fig=fig, span=[0.575, 0.1, 0.4, 0.8], style=axes_style
+                    )
+                    for pax in range(split_light_field["number_paxel"]):
+                        ax.plot(
+                            np.rad2deg(
+                                split_light_field["image_sequences"][pax][:, 0]
+                            ),
+                            np.rad2deg(
+                                split_light_field["image_sequences"][pax][:, 1]
+                            ),
+                            "xb",
+                            alpha=0.03,
+                        )
+                    ax.pcolor(
+                        np.rad2deg(fuzzy_config["image"]["c_bin_edges"]),
+                        np.rad2deg(fuzzy_config["image"]["c_bin_edges"]),
+                        debug["fuzzy_debug"]["fuzzy_image_smooth"],
+                        cmap="Reds",
+                    )
+                    sebplt.ax_add_grid(ax)
+                    sebplt.ax_add_circle(ax=ax, x=0.0, y=0.0, r=fov_radius_deg)
                     ax.plot(
-                        np.rad2deg(
-                            split_light_field["image_sequences"][pax][:, 0]
-                        ),
-                        np.rad2deg(
-                            split_light_field["image_sequences"][pax][:, 1]
-                        ),
-                        "xb",
-                        alpha=0.03,
+                        [
+                            np.rad2deg(fit["main_axis_support_cx"]),
+                            np.rad2deg(fit["main_axis_support_cx"])
+                            + 100 * np.cos(fit["main_axis_azimuth"]),
+                        ],
+                        [
+                            np.rad2deg(fit["main_axis_support_cy"]),
+                            np.rad2deg(fit["main_axis_support_cy"])
+                            + 100 * np.sin(fit["main_axis_azimuth"]),
+                        ],
+                        ":c",
                     )
-                ax.pcolor(
-                    np.rad2deg(fuzzy_config["image"]["c_bin_edges"]),
-                    np.rad2deg(fuzzy_config["image"]["c_bin_edges"]),
-                    debug["fuzzy_debug"]["fuzzy_image_smooth"],
-                    cmap="Reds",
-                )
-                sebplt.ax_add_grid(ax)
-                sebplt.ax_add_circle(ax=ax, x=0.0, y=0.0, r=fov_radius_deg)
-                ax.plot(
-                    [
-                        np.rad2deg(fit["main_axis_support_cx"]),
-                        np.rad2deg(fit["main_axis_support_cx"])
-                        + 100 * np.cos(fit["main_axis_azimuth"]),
-                    ],
-                    [
-                        np.rad2deg(fit["main_axis_support_cy"]),
-                        np.rad2deg(fit["main_axis_support_cy"])
-                        + 100 * np.sin(fit["main_axis_azimuth"]),
-                    ],
-                    ":c",
-                )
-
-                ax.plot(
-                    np.rad2deg(debug["fuzzy_result"]["reco_cx"]),
-                    np.rad2deg(debug["fuzzy_result"]["reco_cy"]),
-                    "og",
-                )
-                ax.plot(fit_cx_deg, fit_cy_deg, "oc")
-                ax.plot(np.rad2deg(truth["cx"]), np.rad2deg(truth["cy"]), "xk")
-
-                if PLOT_ONREGION:
-                    onregion = irf.reconstruction.onregion.estimate_onregion(
-                        reco_cx=fit["primary_particle_cx"],
-                        reco_cy=fit["primary_particle_cy"],
-                        reco_main_axis_azimuth=fit["main_axis_azimuth"],
-                        reco_num_photons=len(
-                            loph_record["photons"]["arrival_time_slices"]
-                        ),
-                        reco_core_radius=np.hypot(
-                            fit["primary_particle_x"],
-                            fit["primary_particle_y"],
-                        ),
-                        config=onreion_config,
-                    )
-
-                    ellxy = irf.reconstruction.onregion.make_polygon(
-                        onregion=onregion
-                    )
-
-                    hit = irf.reconstruction.onregion.is_direction_inside(
-                        cx=truth["cx"], cy=truth["cy"], onregion=onregion
-                    )
-
-                    if hit:
-                        look = "c"
-                    else:
-                        look = ":c"
 
                     ax.plot(
-                        np.rad2deg(ellxy[:, 0]),
-                        np.rad2deg(ellxy[:, 1]),
-                        look,
+                        np.rad2deg(debug["fuzzy_result"]["reco_cx"]),
+                        np.rad2deg(debug["fuzzy_result"]["reco_cy"]),
+                        "og",
+                    )
+                    ax.plot(fit_cx_deg, fit_cy_deg, "oc")
+                    ax.plot(
+                        np.rad2deg(
+                            event_truth_entry[
+                                "reconstructed_trajectory/cx_rad"
+                            ][0]
+                        ),
+                        np.rad2deg(
+                            event_truth_entry[
+                                "reconstructed_trajectory/cy_rad"
+                            ][0]
+                        ),
+                        "xk",
                     )
 
-                info_str = ""
-                info_str += "Energy: {: .1f}GeV, ".format(truth["energy_GeV"])
-                info_str += "reco. Cherenkov: {: 4d}p.e.\n ".format(
-                    loph_record["photons"]["channels"].shape[0]
-                )
-                info_str += "response of shower-model: {:.4f} ({:.4f})".format(
-                    fit["shower_model_response"],
-                    true_response,
-                )
+                    if PLOT_ONREGION:
+                        onregion = (
+                            irf.reconstruction.onregion.estimate_onregion(
+                                reco_cx=fit["primary_particle_cx"],
+                                reco_cy=fit["primary_particle_cy"],
+                                reco_main_axis_azimuth=fit[
+                                    "main_axis_azimuth"
+                                ],
+                                reco_num_photons=len(
+                                    loph_record["photons"][
+                                        "arrival_time_slices"
+                                    ]
+                                ),
+                                reco_core_radius=np.hypot(
+                                    fit["primary_particle_x"],
+                                    fit["primary_particle_y"],
+                                ),
+                                config=onreion_config,
+                            )
+                        )
 
-                ax.set_title(info_str)
+                        ellxy = irf.reconstruction.onregion.make_polygon(
+                            onregion=onregion
+                        )
 
-                ax.set_xlim([-1.05 * fov_radius_deg, 1.05 * fov_radius_deg])
-                ax.set_ylim([-1.05 * fov_radius_deg, 1.05 * fov_radius_deg])
-                ax.set_aspect("equal")
-                ax.set_xlabel("cx / deg")
-                ax.set_ylabel("cy / deg")
+                        hit = irf.reconstruction.onregion.is_direction_inside(
+                            cx=event_truth_entry[
+                                "reconstructed_trajectory/cx_rad"
+                            ][0],
+                            cy=event_truth_entry[
+                                "reconstructed_trajectory/cy_rad"
+                            ][0],
+                            onregion=onregion,
+                        )
 
-                ax_core.plot(fit_x, fit_y, "oc")
-                ax_core.plot([0, fit_x], [0, fit_y], "c", alpha=0.5)
+                        if hit:
+                            look = "c"
+                        else:
+                            look = ":c"
 
-                ax_core.plot(truth["x"], truth["y"], "xk")
-                ax_core.plot([0, truth["x"]], [0, truth["y"]], "k", alpha=0.5)
+                        ax.plot(
+                            np.rad2deg(ellxy[:, 0]),
+                            np.rad2deg(ellxy[:, 1]),
+                            look,
+                        )
 
-                ax_core.set_xlim([-640, 640])
-                ax_core.set_ylim([-640, 640])
-                ax_core.set_aspect("equal")
-                ax_core.set_xlabel("x / m")
-                ax_core.set_ylabel("y / m")
-                path = opj(
-                    paths["out_dir"],
-                    sk,
-                    pk,
-                    "{:09d}.jpg".format(
-                        airshower_id,
-                    ),
-                )
+                    info_str = ""
+                    info_str += "Energy: {: .1f}GeV, ".format(
+                        event_truth_entry["primary/energy_GeV"][0]
+                    )
+                    info_str += "reco. Cherenkov: {: 4d}p.e.\n ".format(
+                        loph_record["photons"]["channels"].shape[0]
+                    )
+                    info_str += (
+                        "response of shower model: {:.4f} ({:.4f})".format(
+                            fit["shower_model_response"],
+                            true_response,
+                        )
+                    )
 
-                fig.savefig(path)
-                sebplt.close(fig)
+                    ax.set_title(info_str)
+
+                    ax.set_xlim(
+                        [-1.05 * fov_radius_deg, 1.05 * fov_radius_deg]
+                    )
+                    ax.set_ylim(
+                        [-1.05 * fov_radius_deg, 1.05 * fov_radius_deg]
+                    )
+                    ax.set_aspect("equal")
+                    ax.set_xlabel(r"$cx$ / 1$^{\circ}$")
+                    ax.set_ylabel(r"$cy$ / 1$^{\circ}$")
+
+                    ax_core.plot(fit_x, fit_y, "oc")
+                    ax_core.plot([0, fit_x], [0, fit_y], "c", alpha=0.5)
+
+                    ax_core.plot(
+                        event_truth_entry["true_trajectory/x_m"][0],
+                        event_truth_entry["true_trajectory/y_m"][0],
+                        "xk",
+                    )
+                    ax_core.plot(
+                        [0, event_truth_entry["true_trajectory/x_m"][0]],
+                        [0, event_truth_entry["true_trajectory/y_m"][0]],
+                        "k",
+                        alpha=0.5,
+                    )
+
+                    ax_core.set_xlim([-640, 640])
+                    ax_core.set_ylim([-640, 640])
+                    ax_core.set_aspect("equal")
+                    ax_core.set_xlabel(r"$x$ / m")
+                    ax_core.set_ylabel(r"$y$ / m")
+                    path = opj(
+                        res.paths["out_dir"],
+                        zk,
+                        pk,
+                        "{:09d}.jpg".format(
+                            airshower_uid,
+                        ),
+                    )
+
+                    fig.savefig(path)
+                    sebplt.close(fig)
 
 res.stop()
