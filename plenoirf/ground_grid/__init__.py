@@ -298,6 +298,7 @@ class GGH:
             hist=hist,
             num_bins_each_axis=self.groundgrid_num_bins_each_axis,
         )
+        assert_histogram_bins_are_unique(hist=hist)
         return hist
 
     def close(self):
@@ -323,4 +324,19 @@ def assert_histogram_in_limits(hist, num_bins_each_axis):
     if any(hist["y_bin"] < 0) or any(hist["y_bin"] >= num):
         raise AssertionError(
             "merlict_c89 ground_grid_main hist y_bin out of range"
+        )
+
+
+def assert_histogram_bins_are_unique(hist):
+    counts = {}
+    for cell in hist:
+        xy = (cell["x_bin"], cell["y_bin"])
+        if xy in counts:
+            counts[xy] += 1
+        else:
+            counts[xy] = 0
+    for cell in counts:
+        assert counts[cell] == 1, (
+            "Expected bins in sparse histogram to be unique, "
+            f"but bin({cell[0]:d}, {cell[1]:d}) occurs {counts[cell]:d} times."
         )
