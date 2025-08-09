@@ -294,7 +294,7 @@ class GGH:
             hist=hist,
             num_bins_each_axis=self.groundgrid_num_bins_each_axis,
         )
-        histogram2d.assert_bins_are_unique(hist=hist)
+        histogram2d.assert_bins_unique(hist=hist)
         return hist
 
     def close(self):

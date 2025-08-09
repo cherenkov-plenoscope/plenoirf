@@ -1,6 +1,7 @@
 import plenoirf.ground_grid
 import numpy as np
 import corsika_primary as cpw
+import pytest
 
 
 def test_init():

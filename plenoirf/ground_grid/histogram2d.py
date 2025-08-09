@@ -22,7 +22,7 @@ def assert_bins_in_limits(hist, num_bins_each_axis):
         )
 
 
-def assert_bins_are_unique(hist):
+def assert_bins_unique(hist):
     counts = {}
     for cell in hist:
         xy = (cell["x_bin"], cell["y_bin"])
