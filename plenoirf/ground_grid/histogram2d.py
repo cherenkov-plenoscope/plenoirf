@@ -2,6 +2,7 @@ import numpy as np
 import gzip
 import os
 import zipfile
+import tarfile
 
 from .. import bookkeeping
 
@@ -35,6 +36,17 @@ def assert_bins_unique(hist):
             "Expected bins in sparse histogram to be unique, "
             f"but bin({cell[0]:d}, {cell[1]:d}) occurs {counts[cell]:d} times."
         )
+    # to be sure ...
+    assert _bins_unique(hist=hist)
+
+
+def _bins_unique(hist):
+    b = hist.tobytes()
+    i8f8 = np.frombuffer(b, dtype=[("xy_bin", "i8"), make_dtype()[-1]])
+    xy_bins = i8f8["xy_bin"]
+    num_total = xy_bins.shape[0]
+    num_unique = len(set(xy_bins))
+    return num_total == num_unique
 
 
 class Reader:
@@ -82,6 +94,45 @@ class Reader:
 
     def __iter__(self):
         return iter(self.uids)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__:s}(path='{self.path:s}')"
+
+
+class TarReader:
+    def __init__(
+        self,
+        path,
+        record_dtype=None,
+    ):
+        self.path = path
+        self.tar = tarfile.open(self.path, "r")
+        if record_dtype is None:
+            self.record_dtype = make_dtype()
+
+    def __enter__(self):
+        return self
+
+    def __next__(self):
+        tarh = self.tar.next()
+        if tarh is None:
+            raise StopIteration
+        run_id = int(tarh.name[0:6])
+        event_id = int(tarh.name[7:13])
+        uid = bookkeeping.uid.make_uid(run_id=run_id, event_id=event_id)
+        payload_gz = self.tar.extractfile(tarh).read()
+        payload = gzip.decompress(payload_gz)
+        hist = np.frombuffer(payload, dtype=self.record_dtype)
+        return (uid, hist)
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
+    def __iter__(self):
+        return self
+
+    def close(self):
+        self.tar.close()
 
     def __repr__(self):
         return f"{self.__class__.__name__:s}(path='{self.path:s}')"

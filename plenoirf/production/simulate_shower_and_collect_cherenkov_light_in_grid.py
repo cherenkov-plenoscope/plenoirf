@@ -451,7 +451,7 @@ def ImgRoiTar_apply_cut(
     bin_radius = (bb["num_bins_on_edge"] - 1) // 2
 
     dyn_roi = dynamicsizerecarray.DynamicSizeRecarray(
-        dtype=ground_grid.histogram2d.make_histogram2d_dtype()
+        dtype=ground_grid.histogram2d.make_dtype()
     )
     for entry in groundgrid_histogram:
         dx = entry["x_bin"] - groundgrid_choice_bin_idx_x
