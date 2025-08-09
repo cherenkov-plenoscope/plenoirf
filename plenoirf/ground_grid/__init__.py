@@ -11,7 +11,7 @@ import subprocess
 import json_line_logger
 import io
 
-from . import intensity
+from . import histogram2d
 from .. import configfile
 
 
@@ -177,10 +177,6 @@ def radii_for_area_power_space(start=1e6, factor=2.0, num_bins=16):
     return np.array(radii)
 
 
-def make_histogram2d_dtype():
-    return [("x_bin", "i4"), ("y_bin", "i4"), ("weight_photons", "f8")]
-
-
 def make_groundgrid_config_bytes(groundgrid):
     f = io.StringIO()
     M2CM = 1e2
@@ -293,12 +289,12 @@ class GGH:
         info = tar_read_header(fileobj=self.process.stdout)
         assert info.name == "histogram.int32_int32_float64"
         buff = tar_read_data(fileobj=self.process.stdout, size=info.size)
-        hist = np.frombuffer(buff, dtype=make_histogram2d_dtype())
-        assert_histogram_in_limits(
+        hist = np.frombuffer(buff, dtype=histogram2d.make_dtype())
+        histogram2d.assert_bins_in_limits(
             hist=hist,
             num_bins_each_axis=self.groundgrid_num_bins_each_axis,
         )
-        assert_histogram_bins_are_unique(hist=hist)
+        histogram2d.assert_bins_are_unique(hist=hist)
         return hist
 
     def close(self):
@@ -313,30 +309,3 @@ class GGH:
 
         self.process.wait()
         assert self.process.returncode == 0
-
-
-def assert_histogram_in_limits(hist, num_bins_each_axis):
-    num = num_bins_each_axis
-    if any(hist["x_bin"] < 0) or any(hist["x_bin"] >= num):
-        raise AssertionError(
-            "merlict_c89 ground_grid_main hist x_bin out of range"
-        )
-    if any(hist["y_bin"] < 0) or any(hist["y_bin"] >= num):
-        raise AssertionError(
-            "merlict_c89 ground_grid_main hist y_bin out of range"
-        )
-
-
-def assert_histogram_bins_are_unique(hist):
-    counts = {}
-    for cell in hist:
-        xy = (cell["x_bin"], cell["y_bin"])
-        if xy in counts:
-            counts[xy] += 1
-        else:
-            counts[xy] = 1
-    for cell in counts:
-        assert counts[cell] == 1, (
-            "Expected bins in sparse histogram to be unique, "
-            f"but bin({cell[0]:d}, {cell[1]:d}) occurs {counts[cell]:d} times."
-        )

@@ -6,8 +6,35 @@ import zipfile
 from .. import bookkeeping
 
 
-def default_record_dtype():
-    return [("x_bin", "i4"), ("y_bin", "i4"), ("size", "f8")]
+def make_dtype():
+    return [("x_bin", "i4"), ("y_bin", "i4"), ("weight_photons", "f8")]
+
+
+def assert_bins_in_limits(hist, num_bins_each_axis):
+    num = num_bins_each_axis
+    if any(hist["x_bin"] < 0) or any(hist["x_bin"] >= num):
+        raise AssertionError(
+            "merlict_c89 ground_grid_main hist x_bin out of range"
+        )
+    if any(hist["y_bin"] < 0) or any(hist["y_bin"] >= num):
+        raise AssertionError(
+            "merlict_c89 ground_grid_main hist y_bin out of range"
+        )
+
+
+def assert_bins_are_unique(hist):
+    counts = {}
+    for cell in hist:
+        xy = (cell["x_bin"], cell["y_bin"])
+        if xy in counts:
+            counts[xy] += 1
+        else:
+            counts[xy] = 1
+    for cell in counts:
+        assert counts[cell] == 1, (
+            "Expected bins in sparse histogram to be unique, "
+            f"but bin({cell[0]:d}, {cell[1]:d}) occurs {counts[cell]:d} times."
+        )
 
 
 class Reader:
@@ -20,7 +47,7 @@ class Reader:
         self.zip = zipfile.ZipFile(self.path, "r")
         self.uids = []
         if record_dtype is None:
-            self.record_dtype = default_record_dtype()
+            self.record_dtype = make_dtype()
         for zipitem in self.zip.infolist():
             if zipitem.filename.endswith(".i4_i4_f8.gz"):
                 run_id = int(os.path.dirname(zipitem.filename))
