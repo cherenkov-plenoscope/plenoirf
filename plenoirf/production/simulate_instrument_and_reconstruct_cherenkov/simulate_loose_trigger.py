@@ -139,7 +139,7 @@ def simulate_loose_trigger(
         insrec["start_time_of_exposure_s"] = (
             event.simulation_truth.photon_propagator.nsb_exposure_start_time()
         )
-        evttab["instrument"].append_record(insrec)
+        evttab["instrument"].append(insrec)
 
         # apply loose trigger
         # -------------------
@@ -202,7 +202,7 @@ def simulate_loose_trigger(
             trgtru["focus_{:02d}_response_pe".format(o)] = int(
                 trigger_responses[o]["response_pe"]
             )
-        evttab["trigger"].append_record(trgtru)
+        evttab["trigger"].append(trgtru)
 
         logger.debug(xml("EventTime", uid=uid_str, status="trigger_exported"))
 
@@ -218,7 +218,7 @@ def simulate_loose_trigger(
             table_past_trigger.append(ptp)
 
             patrec = uidrec.copy()
-            evttab["pasttrigger"].append_record(patrec)
+            evttab["pasttrigger"].append(patrec)
 
     return evttab
 

@@ -168,7 +168,7 @@ def corsika_second_run(
                 )
             )
 
-            evttab["instrument_pointing"].append_record(
+            evttab["instrument_pointing"].append(
                 make_instrument_pointing_record(
                     uid=uid, instrument_pointings=instrument_pointings
                 )
@@ -244,15 +244,11 @@ def corsika_second_run(
 
                 cherenkovsizepart_rec = cherenkovsizepartstats.make_record()
                 cherenkovsizepart_rec.update(uid["record"])
-                evttab["cherenkovsizepart"].append_record(
-                    cherenkovsizepart_rec
-                )
+                evttab["cherenkovsizepart"].append(cherenkovsizepart_rec)
 
                 cherenkovpoolpart_rec = cherenkovpoolpartstats.make_record()
                 cherenkovpoolpart_rec.update(uid["record"])
-                evttab["cherenkovpoolpart"].append_record(
-                    cherenkovpoolpart_rec
-                )
+                evttab["cherenkovpoolpart"].append(cherenkovpoolpart_rec)
 
                 assert_expected_num_photons_in_sphere(
                     num_photons_in_sphere=cherenkovsizepartstats.num_photons,

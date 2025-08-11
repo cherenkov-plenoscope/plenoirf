@@ -480,7 +480,7 @@ def reduce_benchmarks(
         rec["disk_create_write_close_open_read_remove_latency_std"] = ddd[
             "std"
         ]
-        stats.append_record(rec)
+        stats.append(rec)
 
     with rnw.Path(out_path, use_tmp_dir=mem["use_tmp_dir"]) as tmp_path:
         with snt.open(

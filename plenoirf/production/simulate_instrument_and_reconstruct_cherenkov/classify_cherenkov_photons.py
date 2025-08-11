@@ -148,7 +148,7 @@ def classify_cherenkov_photons(
                 photon_ids_cherenkov=cherenkov_photons.photon_ids,
             )
             crcl["uid"] = event_uid
-            evttab["cherenkovclassification"].append_record(crcl)
+            evttab["cherenkovclassification"].append(crcl)
 
             # export reconstructed Cherenkov photons
             # --------------------------------------

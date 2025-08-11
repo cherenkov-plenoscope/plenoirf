@@ -82,7 +82,7 @@ def read_sphere(
                     out_block.tobytes(),
                     dtype=BUNCH.DTYPE,
                 )
-                dyn_out.append_recarray(out_block_recarray)
+                dyn_out.append(out_block_recarray)
 
     buff = dyn_out.to_recarray().tobytes()
     raw_out = np.frombuffer(buff, dtype="f4")

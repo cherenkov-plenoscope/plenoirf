@@ -150,6 +150,6 @@ def estimate_primary_trajectory(
                     "fuzzy_result"
                 ]["main_axis_azimuth_uncertainty"]
 
-                evttab["reconstructed_trajectory"].append_record(rec)
+                evttab["reconstructed_trajectory"].append(rec)
 
     return evttab

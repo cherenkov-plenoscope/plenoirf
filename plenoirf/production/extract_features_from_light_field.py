@@ -91,7 +91,7 @@ def extract_features(
                     prng=prng,
                 )
                 lfft["uid"] = event_uid
-                evttab["features"].append_record(lfft)
+                evttab["features"].append(lfft)
             except Exception as excep:
                 logger.critical(
                     "uid:{:d}, exception:{:s}".format(

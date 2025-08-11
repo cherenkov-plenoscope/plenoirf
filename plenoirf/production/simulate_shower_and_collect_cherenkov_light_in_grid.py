@@ -148,7 +148,7 @@ def corsika_first_run(
                     )
                 )
 
-                evttab["primary"].append_record(
+                evttab["primary"].append(
                     make_primary_record(
                         uid=uid,
                         corsika_evth=corsika_evth,
@@ -214,7 +214,7 @@ def corsika_first_run(
 
                 cherenkovsize_rec = cherenkovsizestats.make_record()
                 cherenkovsize_rec.update(uid["record"])
-                evttab["cherenkovsize"].append_record(cherenkovsize_rec)
+                evttab["cherenkovsize"].append(cherenkovsize_rec)
 
                 if cherenkovsize_rec["num_bunches"] > 0:
                     logger.debug(
@@ -227,7 +227,7 @@ def corsika_first_run(
 
                     cherenkovpool_rec = cherenkovpoolstats.make_record()
                     cherenkovpool_rec.update(uid["record"])
-                    evttab["cherenkovpool"].append_record(cherenkovpool_rec)
+                    evttab["cherenkovpool"].append(cherenkovpool_rec)
 
                     groundgrid_histogram = GGH.get_histogram()
                     groundgrid_result = ground_grid.make_result(
@@ -252,7 +252,7 @@ def corsika_first_run(
                             )
                         )
 
-                        evttab["groundgrid_choice"].append_record(
+                        evttab["groundgrid_choice"].append(
                             make_groundgrid_choice_record(
                                 uid=uid,
                                 groundgrid_result=groundgrid_result,
@@ -272,7 +272,7 @@ def corsika_first_run(
                                 groundgrid_histogram=groundgrid_histogram,
                             )
 
-                evttab["groundgrid"].append_record(groundgrid_record)
+                evttab["groundgrid"].append(groundgrid_record)
 
                 logger.debug(
                     json_line_logger.xml(
@@ -457,7 +457,7 @@ def ImgRoiTar_apply_cut(
         dx = entry["x_bin"] - groundgrid_choice_bin_idx_x
         dy = entry["y_bin"] - groundgrid_choice_bin_idx_y
         if abs(dx) <= bin_radius and abs(dy) <= bin_radius:
-            dyn_roi.append_numpy_record_or_numpy_void(entry)
+            dyn_roi.append(entry)
     roi = dyn_roi.to_recarray()
     return roi
 

@@ -118,9 +118,9 @@ def inspect_particle_pool(evttab, env, logger):
                         aperture_radius_m=aperture_radius_m,
                     )
 
-            evttab["particlepool"].append_record(ppp)
+            evttab["particlepool"].append(ppp)
             if core:
-                evttab["particlepoolonaperture"].append_record(aaa)
+                evttab["particlepoolonaperture"].append(aaa)
 
     return evttab
 
