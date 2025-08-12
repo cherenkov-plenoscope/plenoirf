@@ -61,6 +61,15 @@ def read_groundgrid_choice_by_uid(fileobj):
     return out
 
 
+def read_run_id_from_run_zip_fileobj(fileobj):
+    run_ids = set()
+    with zipfile.ZipFile(fileobj, "r") as zin:
+        for fileitem in zin.filelist:
+            run_ids.add(fileitem.filename[0:6])
+    assert len(run_ids) == 1
+    return int(run_ids.pop())
+
+
 def assert_no_duplicate_bins_in_groundgrid_histogram2d(
     groundgrid_histogram2d_tar_bytes,
 ):
@@ -212,6 +221,8 @@ def apply_fix(
             fileobj=in_file
         )
         in_file.seek(0)
+        run_id = read_run_id_from_run_zip_fileobj(fileobj=in_file)
+        in_file.seek(0)
 
         with ZF(in_file, "r") as zin, ZF(tmp_out_path, "w") as zout:
             for fileitem in zin.filelist:
@@ -240,10 +251,19 @@ def apply_fix(
                 with zout.open(fileitem.filename, "w") as fout:
                     fout.write(payload)
 
-            hotfix_loglist = logfile.loads_loglist_from_run_zipfile(zin)
+            hotfix_loglist = logfile.loads_loglist_from_run_zipfile(
+                zin=zin, run_id=run_id, part="prm2cer"
+            )
             now = datetime.datetime.now().isoformat()
-            hotfix_loglist.append(f"{now:s}, {__name__:s}, v{__version__:s}")
-            logfile.dumps_loglist_to_run_zipfile(zout, hotfix_loglist)
+            hotfix_loglist.append(
+                {"t": now, "plenoirf-version": __version__, "fix": __name__}
+            )
+            logfile.dumps_loglist_to_run_zipfile(
+                zout=zout,
+                run_id=run_id,
+                part="prm2cer",
+                loglist=hotfix_loglist,
+            )
 
     in_size = os.stat(in_path).st_size
     out_size = os.stat(out_path).st_size
