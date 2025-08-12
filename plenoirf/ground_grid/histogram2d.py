@@ -2,7 +2,7 @@ import numpy as np
 import gzip
 import os
 import zipfile
-import tarfile
+import sequential_tar
 import dynamicsizerecarray
 
 from .. import bookkeeping
@@ -144,11 +144,15 @@ class Reader:
 class TarReader:
     def __init__(
         self,
-        path,
+        name=None,
+        fileobj=None,
         record_dtype=None,
     ):
-        self.path = path
-        self.tar = tarfile.open(self.path, "r")
+        self.name = name
+        self.fileobj = fileobj
+        self.sqtar = sequential_tar.open(
+            name=self.name, fileobj=self.fileobj, mode="r"
+        )
         if record_dtype is None:
             self.record_dtype = make_dtype()
 
@@ -156,14 +160,11 @@ class TarReader:
         return self
 
     def __next__(self):
-        tarh = self.tar.next()
-        if tarh is None:
-            raise StopIteration
-        run_id = int(tarh.name[0:6])
-        event_id = int(tarh.name[7:13])
-        uid = bookkeeping.uid.make_uid(run_id=run_id, event_id=event_id)
-        payload_gz = self.tar.extractfile(tarh).read()
-        payload = gzip.decompress(payload_gz)
+        item = next(self.sqtar)
+        uid = bookkeeping.uid.make_uid(
+            run_id=int(item.name[0:6]), event_id=int(item.name[7:13])
+        )
+        payload = item.read(mode="rb|gz")
         hist = np.frombuffer(payload, dtype=self.record_dtype)
         return (uid, hist)
 
@@ -174,7 +175,42 @@ class TarReader:
         return self
 
     def close(self):
-        self.tar.close()
+        self.sqtar.close()
 
     def __repr__(self):
-        return f"{self.__class__.__name__:s}(path='{self.path:s}')"
+        return f"{self.__class__.__name__:s}()"
+
+
+class TarWriter:
+    def __init__(
+        self,
+        name=None,
+        fileobj=None,
+        record_dtype=None,
+    ):
+        self.name = name
+        self.fileobj = fileobj
+        self.sqtar = sequential_tar.open(
+            name=self.name, fileobj=self.fileobj, mode="w"
+        )
+        if record_dtype is None:
+            self.record_dtype = make_dtype()
+
+    def write(self, uid, hist):
+        run_id, event_id = bookkeeping.uid.split_uid(uid=uid)
+        payload = hist.tobytes()
+        payload_gz = gzip.compress(payload)
+        name = f"{run_id:06d}/{event_id:06d}.i4_i4_f8.gz"
+        self.sqtar.write(name=name, payload=payload_gz, mode="wb")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
+    def close(self):
+        self.sqtar.close()
+
+    def __repr__(self):
+        return f"{self.__class__.__name__:s}()"
