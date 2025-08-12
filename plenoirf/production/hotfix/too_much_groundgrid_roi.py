@@ -43,7 +43,7 @@ if args.out_path is None:
 else:
     out_path = args.out_path
 
-plenoirf.production.hotfix.groundgrid_roi_2025_08_08.apply(
+plenoirf.production.hotfix.groundgrid_roi_2025_08_08.apply_fix(
     plenoirf_dir=plenoirf_dir,
     in_path=in_path,
     out_path=out_path,
