@@ -9,16 +9,18 @@ import rename_after_writing as rnw
 from .. import ground_grid
 from .. import configuration
 from .. import simulate_shower_and_collect_cherenkov_light_in_grid
+from .. import utils
+from ...version import __version__
 
 from . import logfile
 
 
-def read_groundgrid_choice_by_uid(in_path):
+def read_groundgrid_choice_by_uid(fileobj):
     """
     Parameters
     ----------
-    in_path : str
-        Path to a plenoirf production run e.g. RRRRRR.prm2cer.zip
+    fileobj : file like
+        File like plenoirf production run e.g. RRRRRR.prm2cer.zip
 
     Returns
     -------
@@ -32,7 +34,7 @@ def read_groundgrid_choice_by_uid(in_path):
         "event_table.snt.zip"
     )
 
-    with zipfile.ZipFile(in_path, "r") as zin:
+    with zipfile.ZipFile(fileobj, "r") as zin:
         for fileitem in zin.filelist:
             if PATTERN in fileitem.filename:
                 with zin.open(fileitem, "r") as fin:
@@ -172,16 +174,23 @@ def apply(plenoirf_dir, in_path, out_path, use_tmp_dir=True):
     GROUND_GRID_INTENSITY_ROI_PATTERN = _pattern + "_roi.tar"
     GROUND_GRID_INTENSITY_PATTERN = _pattern + ".tar"
     ZF = zipfile.ZipFile
+    OP = utils.open_and_read_into_memory_when_small_enough
 
     print(f"plenoirf_dir: {plenoirf_dir:s}")
     print(f"in_path     : {in_path:s}")
     print(f"out_path    : {out_path:s}")
 
     plenoirf_config = configuration.read(plenoirf_dir=plenoirf_dir)
-    groundgrid_choice_by_uid = read_groundgrid_choice_by_uid(in_path=in_path)
 
-    with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_out_path:
-        with ZF(in_path, "r") as zin, ZF(tmp_out_path, "w") as zout:
+    with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_out_path, OP(
+        in_path, size="128M"
+    ) as in_file:
+        groundgrid_choice_by_uid = read_groundgrid_choice_by_uid(
+            fileobj=in_file
+        )
+        in_file.seek(0)
+
+        with ZF(in_file, "r") as zin, ZF(tmp_out_path, "w") as zout:
             for fileitem in zin.filelist:
 
                 with zin.open(fileitem, "r") as fin:
@@ -212,7 +221,9 @@ def apply(plenoirf_dir, in_path, out_path, use_tmp_dir=True):
 
             hotfix_loglist = logfile.loads_loglist_from_run_zipfile(zin)
             now = datetime.datetime.now().isoformat()
-            hotfix_loglist.append(f"{now:s}, {__name__:s}")
+            hotfix_loglist.append(
+                f"{now:s}, {__name__:s}, v{__version__:s}"
+            )
             logfile.dumps_loglist_to_run_zipfile(zout, hotfix_loglist)
 
     in_size = os.stat(in_path).st_size
