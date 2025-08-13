@@ -187,13 +187,6 @@ def apply_fix(
     plenoirf_dir : str or None
         To read the plenoirf config in case num_bins_each_axis is None.
     """
-    _pattern = (
-        "prm2cer/"
-        "simulate_shower_and_collect_cherenkov_light_in_grid/"
-        "ground_grid_intensity"
-    )
-    GROUND_GRID_INTENSITY_ROI_PATTERN = _pattern + "_roi.tar"
-    GROUND_GRID_INTENSITY_PATTERN = _pattern + ".tar"
     ZF = zipfile.ZipFile
     OP = utils.open_and_read_into_memory_when_small_enough
 
@@ -214,6 +207,8 @@ def apply_fix(
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
+    FOUND = {"logfile": False, "ground_grid": False, "ground_grid_roi": False}
+
     with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_out_path, OP(
         in_path, size="128M"
     ) as in_file:
@@ -224,19 +219,30 @@ def apply_fix(
         run_id = read_run_id_from_run_zip_fileobj(fileobj=in_file)
         in_file.seek(0)
 
+        LOG_PATH = f"{run_id:06d}/prm2cer/log.jsonl.gz"
+        _pattern = (
+            f"{run_id:06d}/"
+            "prm2cer/"
+            "simulate_shower_and_collect_cherenkov_light_in_grid/"
+            "ground_grid_intensity"
+        )
+        GROUND_GRID_ROI_PATH = _pattern + "_roi.tar"
+        GROUND_GRID_PATH = _pattern + ".tar"
+
         with ZF(in_file, "r") as zin, ZF(tmp_out_path, "w") as zout:
             for fileitem in zin.filelist:
 
                 with zin.open(fileitem, "r") as fin:
                     payload = fin.read()
 
-                if GROUND_GRID_INTENSITY_PATTERN in fileitem.filename:
+                if GROUND_GRID_PATH == fileitem.filename:
                     print("__Assert no duplicates in ground grid__")
                     assert_no_duplicate_bins_in_groundgrid_histogram2d(
                         groundgrid_histogram2d_tar_bytes=payload,
                     )
+                    FOUND["ground_grid"] = True
 
-                if GROUND_GRID_INTENSITY_ROI_PATTERN in fileitem.filename:
+                if GROUND_GRID_ROI_PATH == fileitem.filename:
                     print("__Fixing__")
                     payload = fixing_groundgrid_histogram2d_tarfile(
                         groundgrid_histogram2d_tar_bytes=payload,
@@ -247,23 +253,23 @@ def apply_fix(
                     assert_no_duplicate_bins_in_groundgrid_histogram2d(
                         groundgrid_histogram2d_tar_bytes=payload,
                     )
+                    FOUND["ground_grid_roi"] = True
+
+                if LOG_PATH == fileitem.filename:
+                    with logfile.LoggerAppender(
+                        payload=payload, mode="b|gz"
+                    ) as logapp:
+                        logapp.logger.info(
+                            f"HOTFIX, plenoirf=v{__version__:s}"
+                        )
+                        payload = logapp.get_payload()
+                    FOUND["logfile"] = True
 
                 with zout.open(fileitem.filename, "w") as fout:
                     fout.write(payload)
 
-            hotfix_loglist = logfile.loads_loglist_from_run_zipfile(
-                zin=zin, run_id=run_id, part="prm2cer"
-            )
-            now = datetime.datetime.now().isoformat()
-            hotfix_loglist.append(
-                {"t": now, "plenoirf-version": __version__, "fix": __name__}
-            )
-            logfile.dumps_loglist_to_run_zipfile(
-                zout=zout,
-                run_id=run_id,
-                part="prm2cer",
-                loglist=hotfix_loglist,
-            )
+    for key in FOUND:
+        assert FOUND[key], f"Did not find '{key:s}' in '{in_path:s}'."
 
     in_size = os.stat(in_path).st_size
     out_size = os.stat(out_path).st_size
