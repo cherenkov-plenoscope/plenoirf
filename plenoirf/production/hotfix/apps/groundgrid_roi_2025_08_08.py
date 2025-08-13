@@ -1,16 +1,10 @@
 import plenoirf
-import zipfile
-import os
 import argparse
-import sparse_numeric_table as snt
-import rename_after_writing as rnw
-import gzip
-import sequential_tar
-import io
+
 
 parser = argparse.ArgumentParser(
-    prog="too_much_groundgrid_roi.py",
-    description=("hotfix: too_much_groundgrid_roi."),
+    prog="groundgrid_roi_2025_08_08.py",
+    description=("groundgrid_roi_2025_08_08"),
 )
 parser.add_argument(
     "plenoirf_dir",
@@ -47,4 +41,5 @@ plenoirf.production.hotfix.groundgrid_roi_2025_08_08.apply_fix(
     plenoirf_dir=plenoirf_dir,
     in_path=in_path,
     out_path=out_path,
+    use_tmp_dir=args.use_tmp_dir,
 )
