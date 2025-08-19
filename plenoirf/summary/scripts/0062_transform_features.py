@@ -9,6 +9,8 @@ import pandas
 import numpy as np
 import sebastians_matplotlib_addons as sebplt
 import json_utils
+import warnings
+
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
@@ -132,11 +134,21 @@ for fk in ALL_FEATURES:
                 face_alpha=0.3,
             )
 
-        ax.semilogy()
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                action="ignore",
+                category=UserWarning,
+            )
+            ax.semilogy()
         irf.summary.figure.mark_ax_thrown_spectrum(ax=ax)
         ax.set_xlabel("transformed {:s} / 1".format(fk))
         ax.set_ylabel("relative intensity / 1")
-        ax.set_xlim([start, stop])
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                action="ignore",
+                category=UserWarning,
+            )
+            ax.set_xlim([start, stop])
         ax.set_ylim([1e-5, 1.0])
         fig.savefig(fig_path)
         sebplt.close(fig)
