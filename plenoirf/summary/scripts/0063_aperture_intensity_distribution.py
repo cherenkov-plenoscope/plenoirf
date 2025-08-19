@@ -10,6 +10,7 @@ import sebastians_matplotlib_addons as sebplt
 import json_utils
 import binning_utils
 import confusion_matrix
+import warnings
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
@@ -206,24 +207,51 @@ for pk in flatness:
         "paxel_pairwise_product_weighted",
     ]:
         pp = flatness[pk]["aperture_flatness"][method]
-        flatness[pk]["aperture_flatness"][method] = pp_to_qq(pp)
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message="invalid value encountered in log10"
+            )
+            flatness[pk]["aperture_flatness"][method] = pp_to_qq(pp)
 
 
 table = {}
 for pk in flatness:
     with res.open_event_table(pk) as evttab_reader:
         table[pk] = evttab_reader.query(
-            levels_and_columns={"primary": ["uid", "energy_GeV"]}
+            levels_and_columns={
+                "primary": ["uid", "energy_GeV"],
+                "features": ["uid", "paxel_intensity_peakness_std_over_mean"],
+            }
         )
     table[pk]["flatness"] = flatness[pk]["aperture_flatness"]
     uid_common = snt.logic.intersection(
         [
             table[pk]["flatness"]["uid"],
             table[pk]["primary"]["uid"],
+            table[pk]["features"]["uid"],
         ]
     )
     table[pk] = snt.logic.cut_and_sort_table_on_indices(table[pk], uid_common)
     table[pk] = snt.logic.make_rectangular_DataFrame(table[pk])
+
+
+# is 'mean over std' really jsut the inverse of the existing feature
+# 'paxel_intensity_peakness_std_over_mean'?
+print(
+    f"===== features.paxel_intensity_peakness_std_over_mean vs. flatness.mean_over_std ====="
+)
+print("particle, uid, rel. delta, new, old")
+for pk in table:
+    UID = table[pk]["uid"]
+    MOS_NEW = table[pk]["flatness/mean_over_std"]
+    MOS_OLD = 1 / table[pk]["features/paxel_intensity_peakness_std_over_mean"]
+    for i in range(len(MOS_OLD)):
+        rel_delta = MOS_NEW[i] / MOS_OLD[i]
+        if not (0.97 < rel_delta <= 1.03):
+            print(
+                f"{pk:<12s}, {UID[i]:012d}, {rel_delta:.3f}, {MOS_NEW[i]:.3f}, {MOS_OLD[i]:.3f}"
+            )
 
 
 METHODS = {
@@ -254,14 +282,22 @@ for method in METHODS:
         fraction_pass[pk] = {"rel": [], "abs": []}
         for iqq in range(qq_bin["num"]):
             qq_cut = qq_bin["centers"][iqq]
-            fraction_pass[pk]["rel"].append(np.sum(qq >= qq_cut) / len(qq))
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore", message="invalid value encountered in divide"
+                )
+                fraction_pass[pk]["rel"].append(np.sum(qq >= qq_cut) / len(qq))
             fraction_pass[pk]["abs"].append(np.sum(qq >= qq_cut))
         fraction_pass[pk]["rel"] = np.array(fraction_pass[pk]["rel"])
         fraction_pass[pk]["abs"] = np.array(fraction_pass[pk]["abs"])
 
         qq_hist = np.histogram(qq, bins=qq_bin["edges"])[0]
-        qq_rel_unc = np.sqrt(qq_hist) / qq_hist
-        qq_norm = qq_hist / np.sum(qq_hist)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message="invalid value encountered in divide"
+            )
+            qq_rel_unc = np.sqrt(qq_hist) / qq_hist
+            qq_norm = qq_hist / np.sum(qq_hist)
 
         sebplt.ax_add_histogram(
             ax=ax,
@@ -274,9 +310,7 @@ for method in METHODS:
             bincounts_lower=qq_norm * (1 - qq_rel_unc),
             face_color=res.PARTICLE_COLORS[pk],
             face_alpha=0.3,
-            # draw_bin_walls=True,
         )
-    # ax.semilogy()
     ax.set_xlim(qq_bin["limits"])
     ax.set_xlabel(METHODS[method]["x_label"])
     ax.set_ylabel("rel. intensity / 1")
@@ -290,12 +324,21 @@ for method in METHODS:
     frac_valid = np.logical_and(
         fraction_pass["proton"]["abs"] > 10, fraction_pass["gamma"]["abs"] > 10
     )
-    snr = frac_gamma / frac_hadrons
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message="invalid value encountered in divide"
+        )
+        warnings.filterwarnings(
+            "ignore", message="divide by zero encountered in divide"
+        )
+        snr = frac_gamma / frac_hadrons
     snr_times_gamma = frac_gamma * snr
     arg_qq_cut = np.argmax(snr_times_gamma[frac_valid])
     good_qq_cut = qq_bin["centers"][frac_valid][arg_qq_cut]
 
     print(f"===== {method:s} =====")
+    print("cut, SNR, frac. gamma, SNR*frac gamma")
     for i in range(qq_bin["num"]):
         print(
             f"{qq_bin['edges'][i]: 6.2f}, "
@@ -313,6 +356,7 @@ for method in METHODS:
             color=res.PARTICLE_COLORS[pk],
         )
     ax.axvline(x=good_qq_cut, color="black", alpha=0.5, linestyle="-.")
+    ax.text(s=f" Cut = {good_qq_cut:.3f}", x=good_qq_cut, y=0.9)
     ax.set_ylim([-0.05, 1.05])
     ax.set_xlim(qq_bin["limits"])
     ax.set_xlabel(METHODS[method]["x_label"])
