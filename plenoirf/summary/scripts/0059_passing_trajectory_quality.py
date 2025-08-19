@@ -17,8 +17,17 @@ for pk in res.PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
         event_table = arc.query(
             levels_and_columns={
+                "primary": ["uid", "azimuth_rad", "zenith_rad"],
+                "groundgrid_choice": ["uid", "core_x_m", "core_y_m"],
+                "instrument_pointing": ["uid", "azimuth_rad", "zenith_rad"],
                 "reconstructed_trajectory": "__all__",
-                "features": "__all__",
+                "features": [
+                    "uid",
+                    "num_photons",
+                    "image_half_depth_shift_cx",
+                    "image_half_depth_shift_cy",
+                    "image_smallest_ellipse_solid_angle",
+                ],
             }
         )
 
