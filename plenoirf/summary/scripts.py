@@ -67,7 +67,12 @@ def _make_script_out_paths(
 
 
 def call_script_in_subprocess(
-    script_name, plenoirf_dir, instrument_key, site_key, scripts_dir=None
+    script_name,
+    plenoirf_dir,
+    instrument_key,
+    site_key,
+    scripts_dir=None,
+    skip_when_script_out_dir_exists=False,
 ):
     if scripts_dir is None:
         scripts_dir = get_scripts_dir()
@@ -79,6 +84,20 @@ def call_script_in_subprocess(
         site_key=site_key,
         scripts_dir=scripts_dir,
     )
+
+    if skip_when_script_out_dir_exists:
+        if os.path.exists(paths["out_dir"]):
+            rc = -100
+            if os.path.exists(paths["stdout_path"]):
+                stdout_size = os.stat(paths["stdout_path"]).st_size
+            else:
+                stdout_size = -1
+            if os.path.exists(paths["stderr_path"]):
+                stderr_size = os.stat(paths["stderr_path"]).st_size
+            else:
+                stderr_size = -1
+            return rc, stdout_size, stderr_size
+
     script_path = os.path.join(scripts_dir, script_name + ".py")
     os.makedirs(paths["out_dir"], exist_ok=True)
 
@@ -156,6 +175,7 @@ def run(
     pool=None,
     polling_interval=1.0,
     num_threads=None,
+    skip_when_script_out_dir_exists=False,
 ):
     if num_threads is None:
         num_threads = _safe_cpu_count()
@@ -214,6 +234,7 @@ def run(
                     instrument_key,
                     site_key,
                     scripts_dir,
+                    skip_when_script_out_dir_exists,
                 ),
             )
 
