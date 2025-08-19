@@ -7,6 +7,7 @@ from os.path import join as opj
 import numpy as np
 import sebastians_matplotlib_addons as sebplt
 import json_utils
+import warnings
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
@@ -166,12 +167,18 @@ for fk in Sfeatures:
     ax.set_xlabel("{:s} / {:s}".format(fk, Sfeatures[fk]["unit"]))
     ax.set_ylabel("relative intensity / 1")
     sebplt.ax_add_grid(ax)
-    ax.set_xlim(
-        [
-            lims[fk][pk]["bin_edges"]["start"],
-            lims[fk][pk]["bin_edges"]["stop"],
-        ]
-    )
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            action="ignore",
+            category=UserWarning,
+        )
+        ax.set_xlim(
+            [
+                lims[fk][pk]["bin_edges"]["start"],
+                lims[fk][pk]["bin_edges"]["stop"],
+            ]
+        )
     ax.set_ylim([1e-5, 1.0])
     fig.savefig(opj(res.paths["out_dir"], f"{fk:s}.jpg"))
     sebplt.close(fig)
