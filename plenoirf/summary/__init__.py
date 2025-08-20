@@ -621,6 +621,7 @@ def _guess_analysis_config_for_instrument(
             "max_relative_leakage": 0.1,
             "min_reconstructed_photons": 50,
             "min_trajectory_quality": 0.3,
+            "min_aperture_intensity_flatness_mean_over_std": 0.8,  # See 0063_aperture_intensity_distribution.py
         },
         "point_spread_function": {
             "theta_square": {
