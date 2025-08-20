@@ -26,6 +26,7 @@ from . import seeding
 from . import logging
 from . import benchmarking
 from . import reduction
+from . import bootstripping
 
 import os
 import numpy as np
