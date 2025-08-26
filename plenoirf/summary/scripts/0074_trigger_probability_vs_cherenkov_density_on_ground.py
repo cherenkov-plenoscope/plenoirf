@@ -45,7 +45,8 @@ for zd in range(zenith_bin["num"]):
                 }
             )
         common_indices = snt.logic.intersection(
-            [event_table["trigger"]["uid"], zenith_assignment[zk][pk]]
+            event_table["trigger"]["uid"],
+            zenith_assignment[zk][pk],
         )
 
         event_table = snt.logic.cut_and_sort_table_on_indices(

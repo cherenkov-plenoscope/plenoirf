@@ -99,12 +99,10 @@ def read_event_frame(
     out = {}
     for kk in ["test", "train"]:
         uids_valid_kk = snt.logic.intersection(
-            [
-                passing_trigger[pk]["uid"],
-                passing_quality[pk]["uid"],
-                passing_trajectory[pk]["uid"],
-                train_test[pk][kk],
-            ]
+            passing_trigger[pk]["uid"],
+            passing_quality[pk]["uid"],
+            passing_trajectory[pk]["uid"],
+            train_test[pk][kk],
         )
         table_kk = snt.logic.cut_and_sort_table_on_indices(
             table=airshower_table,
@@ -164,6 +162,25 @@ def make_x_y_arrays(event_frame):
         ]
     ).T
     return x, y
+
+
+BOOTSTRAPPING_FACTOR = 20
+
+for bootstrip in range(BOOTSTRAPPING_FACTOR):
+
+    # make train_test seperation for this bootstrapping
+    train_test = {}
+    for pk in res.PARTICLES:
+        with res.open_event_table(particle_key=pk) as arc:
+            _table = arc.query(levels_and_columns={"primary": ["uid"]})
+            _all_pk_uids = _table["primary"]["uid"]
+
+        train_test[pk] = {}
+        train_test[pk]["test"] = irf.bootstripping.train_test_split(
+            x=_all_pk_uids,
+            bootstrip=bootstrip,
+            num_bootstrips=BOOTSTRAPPING_FACTOR,
+        )
 
 
 train_test_gamma_energy = {}

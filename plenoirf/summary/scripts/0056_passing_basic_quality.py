@@ -146,11 +146,9 @@ for pk in res.PARTICLES:
     )
 
     uid_passed = snt.logic.intersection(
-        [
-            uid_passed_size,
-            uid_passed_leakage,
-            uid_passed_aperture_flatness,
-        ]
+        uid_passed_size,
+        uid_passed_leakage,
+        uid_passed_aperture_flatness,
     )
 
     json_utils.write(opj(pk_dir, "uid.json"), uid_passed)

@@ -84,7 +84,7 @@ if not os.path.exists(counts_cache_path):
                     stop=energy_bin["edges"][ebin + 1],
                 )
 
-                uid_zd_en = snt.logic.intersection([uid_zd, uid_en])
+                uid_zd_en = snt.logic.intersection(uid_zd, uid_en)
 
                 uid_passed_loose_trigger = get_uid_in_range(
                     event_table=event_table,
@@ -101,29 +101,23 @@ if not os.path.exists(counts_cache_path):
                 counts[pk]["thrown"][zbin, ebin] = len(uid_zd_en)
                 counts[pk]["loose_trigger"][zbin, ebin] = len(
                     snt.logic.intersection(
-                        [
-                            uid_zd_en,
-                            uid_passed_loose_trigger,
-                        ]
+                        uid_zd_en,
+                        uid_passed_loose_trigger,
                     )
                 )
                 counts[pk]["trigger"][zbin, ebin] = len(
                     snt.logic.intersection(
-                        [
-                            uid_zd_en,
-                            uid_passed_loose_trigger,
-                            uid_passed_trigger,
-                        ]
+                        uid_zd_en,
+                        uid_passed_loose_trigger,
+                        uid_passed_trigger,
                     )
                 )
                 counts[pk]["cherenkovclassification"][zbin, ebin] = len(
                     snt.logic.intersection(
-                        [
-                            uid_zd_en,
-                            uid_passed_loose_trigger,
-                            uid_passed_trigger,
-                            uid_cherenkovclassification,
-                        ]
+                        uid_zd_en,
+                        uid_passed_loose_trigger,
+                        uid_passed_trigger,
+                        uid_cherenkovclassification,
                     )
                 )
     json_utils.write(counts_cache_path, counts)

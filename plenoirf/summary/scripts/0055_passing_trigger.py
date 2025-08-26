@@ -130,10 +130,8 @@ for pk in res.PARTICLES:
     event_table = snt.logic.cut_and_sort_table_on_indices(
         table=event_table,
         common_indices=snt.logic.intersection(
-            [
-                event_table["trigger"]["uid"],
-                event_table["instrument_pointing"]["uid"],
-            ]
+            event_table["trigger"]["uid"],
+            event_table["instrument_pointing"]["uid"],
         ),
     )
 

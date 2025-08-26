@@ -68,12 +68,10 @@ with res.open_event_table(particle_key=pk) as arc:
     )
 
 uid_common = snt.logic.intersection(
-    [
-        passing_trigger[pk]["uid"],
-        passing_quality[pk]["uid"],
-        passing_trajectory_quality[pk]["trajectory_quality"]["uid"],
-        reconstructed_energy[pk][mk]["uid"],
-    ]
+    passing_trigger[pk]["uid"],
+    passing_quality[pk]["uid"],
+    passing_trajectory_quality[pk]["trajectory_quality"]["uid"],
+    reconstructed_energy[pk][mk]["uid"],
 )
 event_table = snt.logic.cut_and_sort_table_on_indices(
     table=event_table,

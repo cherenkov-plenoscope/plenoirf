@@ -61,12 +61,10 @@ for pk in res.PARTICLES:
         )
 
     uid_valid = snt.logic.intersection(
-        [
-            passing_trigger[pk]["uid"],
-            passing_quality[pk]["uid"],
-            passing_trajectory_quality[pk]["uid"],
-            reconstructed_energy[pk][mk]["uid"],
-        ]
+        passing_trigger[pk]["uid"],
+        passing_quality[pk]["uid"],
+        passing_trajectory_quality[pk]["uid"],
+        reconstructed_energy[pk][mk]["uid"],
     )
 
     valid_event_table = snt.logic.cut_and_sort_table_on_indices(

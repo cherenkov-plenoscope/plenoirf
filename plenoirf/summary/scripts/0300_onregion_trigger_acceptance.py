@@ -55,13 +55,11 @@ def cut_candidates_for_detection(
     uid_self = event_table["primary"]["uid"]
 
     uid_candidates = snt.logic.intersection(
-        [
-            uid_self,
-            uid_trigger,
-            uid_quality,
-            uid_trajectory_quality,
-            uid_zenith_assignment,
-        ]
+        uid_self,
+        uid_trigger,
+        uid_quality,
+        uid_trajectory_quality,
+        uid_zenith_assignment,
     )
 
     return snt.logic.cut_and_sort_table_on_indices(

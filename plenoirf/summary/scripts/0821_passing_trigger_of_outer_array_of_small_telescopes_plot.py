@@ -46,7 +46,8 @@ for zd in range(zenith_bin["num"]):
     for pk in res.PARTICLES:
         passing_plenoscope_trigger[zk][pk] = {}
         passing_plenoscope_trigger[zk][pk]["uid"] = snt.logic.intersection(
-            [zenith_assignment[zk][pk], _passing_plenoscope_trigger[pk]["uid"]]
+            zenith_assignment[zk][pk],
+            _passing_plenoscope_trigger[pk]["uid"],
         )
 
 pv = {}

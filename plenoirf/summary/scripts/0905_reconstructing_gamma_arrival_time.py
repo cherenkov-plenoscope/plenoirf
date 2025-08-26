@@ -63,12 +63,10 @@ for zd in range(zenith_bin["num"]):
             )
 
         uid_common = snt.logic.intersection(
-            [
-                zenith_assignment[zk][pk],
-                passing_trigger[pk]["uid"],
-                passing_quality[pk]["uid"],
-                passing_trajectory_quality[pk]["uid"],
-            ]
+            zenith_assignment[zk][pk],
+            passing_trigger[pk]["uid"],
+            passing_quality[pk]["uid"],
+            passing_trajectory_quality[pk]["uid"],
         )
 
         event_table = snt.logic.cut_table_on_indices(

@@ -103,11 +103,9 @@ for zd in range(zenith_bin["num"]):
         os.makedirs(opj(res.paths["out_dir"], zk, pk), exist_ok=True)
 
         uid_common = snt.logic.intersection(
-            [
-                passing_trigger[pk]["uid"],
-                zenith_assignment[zk][pk],
-                passing_quality[pk]["uid"],
-            ]
+            passing_trigger[pk]["uid"],
+            zenith_assignment[zk][pk],
+            passing_quality[pk]["uid"],
         )
 
         with res.open_event_table(particle_key=pk) as arc:

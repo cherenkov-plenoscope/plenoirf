@@ -49,11 +49,9 @@ for pk in res.PARTICLES:
         )
 
     uid_common = snt.logic.intersection(
-        [
-            event_table["primary"]["uid"],
-            event_table["trigger"]["uid"],
-            event_table["instrument_pointing"]["uid"],
-        ]
+        event_table["primary"]["uid"],
+        event_table["trigger"]["uid"],
+        event_table["instrument_pointing"]["uid"],
     )
 
     for zd in range(zenith_bin["num"]):
@@ -66,10 +64,8 @@ for pk in res.PARTICLES:
         )
 
         uid_zd_common = snt.logic.intersection(
-            [
-                uid_common,
-                zenith_assignment[zk][pk],
-            ]
+            uid_common,
+            zenith_assignment[zk][pk],
         )
 
         et = snt.logic.cut_and_sort_table_on_indices(

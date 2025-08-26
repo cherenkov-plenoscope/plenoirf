@@ -68,11 +68,9 @@ for zd in range(zenith_bin["num"]):
         )
 
         uid_common = snt.logic.intersection(
-            [
-                _shower_table["primary"]["uid"],
-                _shower_table["instrument_pointing"]["uid"][mask_zenith_bin],
-                _shower_table["groundgrid"]["uid"],
-            ]
+            _shower_table["primary"]["uid"],
+            _shower_table["instrument_pointing"]["uid"][mask_zenith_bin],
+            _shower_table["groundgrid"]["uid"],
         )
 
         shower_table = snt.logic.cut_and_sort_table_on_indices(

@@ -66,12 +66,10 @@ for zd in range(zenith_bin["num"]):
             )
 
         uid_common = snt.logic.intersection(
-            [
-                _diffuse_particle_table["primary"]["uid"],
-                zenith_assignment[zk][pk],
-                _diffuse_particle_table["groundgrid"]["uid"],
-                _diffuse_particle_table["trigger"]["uid"],
-            ]
+            _diffuse_particle_table["primary"]["uid"],
+            zenith_assignment[zk][pk],
+            _diffuse_particle_table["groundgrid"]["uid"],
+            _diffuse_particle_table["trigger"]["uid"],
         )
 
         diffuse_particle_table = snt.logic.cut_and_sort_table_on_indices(

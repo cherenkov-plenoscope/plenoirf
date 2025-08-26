@@ -24,6 +24,7 @@ from .. import configuration
 from . import figure
 from . import report
 from . import scripts
+from . import estimator
 from .scripts import run
 
 from .cosmic_flux import make_gamma_ray_reference_flux
@@ -783,11 +784,9 @@ def read_train_test_frame(
     out = {}
     for kk in ["test", "train"]:
         uids_valid_kk = snt.logic.intersection(
-            [
-                uids_triggered,
-                uids_quality,
-                train_test[sk][pk][kk],
-            ]
+            uids_triggered,
+            uids_quality,
+            train_test[sk][pk][kk],
         )
         table_kk = snt.logic.cut_and_sort_table_on_indices(
             table=airshower_table,

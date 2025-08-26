@@ -26,53 +26,51 @@ import sebastians_matplotlib_addons as sebplt
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-passing_trigger = json_utils.tree.read(
-    opj(res.paths["analysis_dir"], "0055_passing_trigger")
-)
-passing_quality = json_utils.tree.read(
-    opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
-)
+
 transformed_features_dir = opj(
     res.paths["analysis_dir"], "0062_transform_features"
 )
 
 zenith_bin = res.zenith_binning("twice")
-energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+
+_energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+energy_bin = binning_utils.Binning(
+    bin_edges=np.geomspace(
+        _energy_bin["start"], _energy_bin["stop"], zenith_bin["num"] + 1
+    )
+)
+
 altitude_bin = binning_utils.Binning(
     bin_edges=np.geomspace(5e3, 25e3, energy_bin["num"] + 1)
 )
 
-SIGNAL = ["gamma"]
-BACKGROUND = ["proton", "helium"]
 
-
-def make_final_uids(particles):
-    cache_dir = opj(res.paths["out_dir"], "final_uids")
+def make_passing_cuts(script_resources, particles):
+    res = script_resources
+    cache_dir = opj(res.paths["out_dir"], "passing_cuts.__cache__")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
+
+        passing_trigger = json_utils.tree.read(
+            opj(res.paths["analysis_dir"], "0055_passing_trigger")
+        )
+        passing_quality = json_utils.tree.read(
+            opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
+        )
+
         for pk in particles:
-            with res.open_event_table(particle_key=pk) as arc:
-                event_table = arc.query(
-                    levels_and_columns={"features": ["uid"]}
-                )
-                final_uids = snt.logic.intersection(
-                    [
-                        passing_trigger[pk]["uid"],
-                        passing_quality[pk]["uid"],
-                        event_table["features"]["uid"],
-                    ]
-                )
+            passing_cuts_pk = snt.logic.intersection(
+                passing_trigger[pk]["uid"],
+                passing_quality[pk]["uid"],
+            )
             with rnw.open(opj(cache_dir, pk + ".json"), "wt") as f:
-                f.write(json_utils.dumps(final_uids))
+                f.write(json_utils.dumps({"uid": passing_cuts_pk}))
     return json_utils.tree.read(cache_dir)
 
 
-"""
-signal_population = np.zeros(shape=(energy_bin["num"], altitude_bin["num"]))
-for pk in SIGNAL:
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(levels_and_columns={"features": ["uid"]})
-"""
+bins = irf.summary.estimator.Bins(
+    zenith_bin["edges"], energy_bin["edges"], altitude_bin["edges"]
+)
 
 
 def make_overlaps(size):
@@ -88,87 +86,6 @@ def make_overlaps(size):
     return overlaps
 
 
-def cut_uids(level, column_key, start, stop):
-    mask = np.logical_and(level[column_key] >= start, level[column_key] < stop)
-    return level["uid"][mask]
-
-
-def list_cube(shape, default=None):
-    x, y, z = shape
-    cube = []
-    for _ in range(x):
-        _x = []
-        for _ in range(y):
-            _y = []
-            for _ in range(z):
-                _y.append(default)
-            _x.append(_y)
-        cube.append(_x)
-    return cube
-
-
-def uid_assign_zenith_energy_altitude(
-    event_table, zenith_bin, energy_bin, altitude_bin
-):
-    assignment = list_cube(
-        shape=(zenith_bin["num"], energy_bin["num"], altitude_bin["num"])
-    )
-
-    uid_zd = []
-    for zd in range(zenith_bin["num"]):
-        _uid_zd = cut_uids(
-            level=event_table["instrument_pointing"],
-            column_key="zenith_rad",
-            start=zenith_bin["edges"][zd],
-            stop=zenith_bin["edges"][zd + 1],
-        )
-        uid_zd.append(_uid_zd)
-
-    uid_en = []
-    for en in range(energy_bin["num"]):
-        _uid_en = cut_uids(
-            level=event_table["primary"],
-            column_key="energy_GeV",
-            start=energy_bin["edges"][en],
-            stop=energy_bin["edges"][en + 1],
-        )
-        uid_en.append(_uid_en)
-
-    uid_al = []
-    for al in range(altitude_bin["num"]):
-        _uid_al = cut_uids(
-            level=event_table["cherenkovpool"],
-            column_key="z_emission_p50_m",
-            start=altitude_bin["edges"][al],
-            stop=altitude_bin["edges"][al + 1],
-        )
-        uid_al.append(_uid_al)
-
-    for zd in range(zenith_bin["num"]):
-        for en in range(energy_bin["num"]):
-            for al in range(altitude_bin["num"]):
-                assignment[zd][en][al] = snt.logic.intersection(
-                    [uid_zd[zd], uid_en[en], uid_al[al]]
-                )
-                assignment[zd][en][al] = np.sort(assignment[zd][en][al])
-    return assignment
-
-
-def uid_assign_zenith(
-    event_table,
-    zenith_bin,
-):
-    assignment = [None for zd in range(zenith_bin["num"])]
-    for zd in range(zenith_bin["num"]):
-        assignment[zd] = cut_uids(
-            level=event_table["instrument_pointing"],
-            column_key="zenith_rad",
-            start=zenith_bin["edges"][zd],
-            stop=zenith_bin["edges"][zd + 1],
-        )
-    return assignment
-
-
 def smoothen_uid_assign_zenith_energy_altitude(
     assignment,
     zenith_bin,
@@ -178,7 +95,7 @@ def smoothen_uid_assign_zenith_energy_altitude(
     altitude_bin,
     altitude_bin_overlaps,
 ):
-    smo = list_cube(
+    smo = irf.summary.all_in_one_estimator.make_cube_of_lists(
         shape=(zenith_bin["num"], energy_bin["num"], altitude_bin["num"]),
         default=None,
     )
@@ -220,8 +137,12 @@ def smoothen_uid_assign_zenith(
     return smo
 
 
-FINAL_UIDS = make_final_uids(particles=SIGNAL + BACKGROUND)
+SIGNAL = ["gamma"]
+BACKGROUND = ["proton", "helium"]
 
+FINAL_UIDS = make_passing_cuts(
+    script_resources=res, particles=SIGNAL + BACKGROUND
+)
 zenith_bin_overlaps = make_overlaps(size=zenith_bin["num"])
 energy_bin_overlaps = make_overlaps(size=energy_bin["num"])
 altitude_bin_overlaps = make_overlaps(size=altitude_bin["num"])
@@ -243,11 +164,11 @@ for pk in SIGNAL:
             common_indices=FINAL_UIDS[pk],
         )
 
-    signal_raw_assignment[pk] = uid_assign_zenith_energy_altitude(
-        event_table=event_table,
-        zenith_bin=zenith_bin,
-        energy_bin=energy_bin,
-        altitude_bin=altitude_bin,
+    signal_raw_assignment[pk] = (
+        irf.summary.all_in_one_estimator.assign_uids_to_zenith_energy_altitude(
+            event_table=event_table,
+            bins=bins,
+        )
     )
     signal_assignment[pk] = smoothen_uid_assign_zenith_energy_altitude(
         assignment=signal_raw_assignment[pk],
@@ -259,7 +180,7 @@ for pk in SIGNAL:
         altitude_bin_overlaps=altitude_bin_overlaps,
     )
 
-
+"""
 background_raw_assignment = {}
 background_assignment = {}
 for pk in BACKGROUND:
@@ -273,9 +194,9 @@ for pk in BACKGROUND:
             event_table,
             common_indices=FINAL_UIDS[pk],
         )
-    background_raw_assignment[pk] = uid_assign_zenith(
+    background_raw_assignment[pk] = irf.summary.all_in_one_estimator.assign_uids_zenith(
         event_table=event_table,
-        zenith_bin=zenith_bin,
+        bins=bins,
     )
     background_assignment[pk] = smoothen_uid_assign_zenith(
         assignment=background_raw_assignment[pk],
@@ -552,7 +473,7 @@ for zd in range(zenith_bin["num"]):
                             dtypes_and_index_key_from=arr,
                         ) as f:
                             f.append_table(arr)
-
+"""
 res.stop()
 
 # ConvergenceWarning
