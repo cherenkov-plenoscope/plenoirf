@@ -17,8 +17,6 @@ res.start(sebplt=sebplt)
 
 os.makedirs(res.paths["out_dir"], exist_ok=True)
 
-PARTICLES = res.PARTICLES
-SITES = res.SITES
 ORIGINAL_FEATURES = irf.event_table.structure.init_features_level_structure()
 COMBINED_FEATURES = (
     irf.features.combined_features.init_combined_features_structure()
@@ -47,7 +45,7 @@ for pk in ["gamma"]:
 
 
 transformed_features = {}
-for pk in PARTICLES:
+for pk in res.PARTICLES:
     transformed_features[pk] = {}
 
     with res.open_event_table(particle_key=pk) as arc:
@@ -86,7 +84,7 @@ for fk in ALL_FEATURES:
         fig = sebplt.figure(sebplt.FIGURE_16_9)
         ax = sebplt.add_axes(fig=fig, span=(0.1, 0.1, 0.8, 0.8))
 
-        for pk in PARTICLES:
+        for pk in res.PARTICLES:
             start = -5
             stop = 5
 
