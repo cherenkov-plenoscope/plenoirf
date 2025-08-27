@@ -199,6 +199,8 @@ def run(
     )
 
     script_names = list(script_dependencies.keys())
+    script_names = sorted(script_names)
+
     scripts_dir = get_scripts_dir()
 
     job_statii = {}
