@@ -17,12 +17,6 @@ from sklearn import utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
-train_test = json_utils.tree.read(
-    opj(
-        res.paths["analysis_dir"],
-        "0030_splitting_train_and_test_sample",
-    )
-)
 transformed_features_dir = opj(
     res.paths["analysis_dir"], "0062_transform_features"
 )
@@ -32,7 +26,7 @@ passing_trigger = json_utils.tree.read(
 passing_quality = json_utils.tree.read(
     opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
-passing_trajectory = json_utils.tree.read(
+passing_trajectory_quality = json_utils.tree.read(
     opj(res.paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
 
@@ -43,20 +37,20 @@ NON_GAMMA_PARTICLES = dict(PARTICLES)
 NON_GAMMA_PARTICLES.pop("gamma")
 
 targets = {
-    "energy": {
+    "energy_GeV": {
         "power_index": 0,
         "start": 1e-1,
         "stop": 1e3,
         "num_bins": 20,
-        "label": "energy",
+        "key": "energy_GeV",
         "unit": "GeV",
     },
-    "airshower_maximum": {
+    "z_emission_p50_m": {
         "power_index": 1,
         "start": 7.5e3,
         "stop": 25e3,
         "num_bins": 20,
-        "label": "airshower maximum",
+        "key": "z_emission_p50_m",
         "unit": "m",
     },
 }
@@ -69,8 +63,6 @@ def read_event_frame(
     particle_key,
     run_dir,
     transformed_features_dir,
-    passing_trigger,
-    passing_quality,
     train_test,
 ):
     pk = particle_key
@@ -98,15 +90,9 @@ def read_event_frame(
 
     out = {}
     for kk in ["test", "train"]:
-        uids_valid_kk = snt.logic.intersection(
-            passing_trigger[pk]["uid"],
-            passing_quality[pk]["uid"],
-            passing_trajectory[pk]["uid"],
-            train_test[pk][kk],
-        )
         table_kk = snt.logic.cut_and_sort_table_on_indices(
             table=airshower_table,
-            common_indices=uids_valid_kk,
+            common_indices=train_test[pk][kk],
             index_key="uid",
         )
         out[kk] = snt.logic.make_rectangular_DataFrame(
@@ -164,110 +150,206 @@ def make_x_y_arrays(event_frame):
     return x, y
 
 
-BOOTSTRAPPING_FACTOR = 20
+NUM_BOOTSTRIPS = 10
 
-for bootstrip in range(BOOTSTRAPPING_FACTOR):
-
-    # make train_test seperation for this bootstrapping
-    train_test = {}
-    for pk in res.PARTICLES:
-        with res.open_event_table(particle_key=pk) as arc:
-            _table = arc.query(levels_and_columns={"primary": ["uid"]})
-            _all_pk_uids = _table["primary"]["uid"]
-
-        train_test[pk] = {}
-        train_test[pk]["test"] = irf.bootstripping.train_test_split(
-            x=_all_pk_uids,
-            bootstrip=bootstrip,
-            num_bootstrips=BOOTSTRAPPING_FACTOR,
-        )
-
-
-train_test_gamma_energy = {}
-for pk in PARTICLES:
-    if pk == "gamma":
-        train_test_gamma_energy[pk] = {}
-        train_test_gamma_energy[pk]["train"] = train_test[pk]["train"]
-        train_test_gamma_energy[pk]["test"] = train_test[pk]["test"]
-    else:
-        train_test_gamma_energy[pk] = {}
-        train_test_gamma_energy[pk]["train"] = []
-        train_test_gamma_energy[pk]["test"] = np.concatenate(
-            [train_test[pk]["train"], train_test[pk]["test"]]
-        )
-
-
-particle_frames = {}
-for pk in PARTICLES:
-    particle_frames[pk] = read_event_frame(
-        res=res,
-        particle_key=pk,
-        run_dir=res.paths["plenoirf_dir"],
-        transformed_features_dir=transformed_features_dir,
-        passing_trigger=passing_trigger,
-        passing_quality=passing_quality,
-        train_test=train_test_gamma_energy,
+passing = {}
+for pk in res.PARTICLES:
+    passing[pk] = snt.logic.intersection(
+        passing_trigger[pk]["uid"],
+        passing_quality[pk]["uid"],
+        passing_trajectory_quality[pk]["uid"],
     )
 
-# prepare sets
-# ------------
-MA = {}
-for pk in PARTICLES:
-    MA[pk] = {}
-    for mk in ["test", "train"]:
-        MA[pk][mk] = {}
-        MA[pk][mk]["x"], MA[pk][mk]["y"] = make_x_y_arrays(
-            event_frame=particle_frames[pk][mk]
+for bootstrip in range(NUM_BOOTSTRIPS):
+    print("bootstrip", bootstrip)
+    bootstrip_dir = opj(res.paths["out_dir"], f"bootstrip-{bootstrip:02d}")
+
+    if os.path.exists(bootstrip_dir):
+        continue
+
+    os.makedirs(bootstrip_dir, exist_ok=True)
+
+    # make train_test seperation for this bootstrip
+    # ---------------------------------------------
+    train_test = {}
+    for pk in res.PARTICLES:
+        train_test[pk] = {}
+        if pk == "gamma":
+            (train_test[pk]["train"], train_test[pk]["test"]) = (
+                irf.bootstripping.train_test_split(
+                    x=passing[pk],
+                    bootstrip=bootstrip,
+                    num_bootstrips=NUM_BOOTSTRIPS,
+                )
+            )
+            print(
+                pk,
+                f"train: {train_test[pk]['train'].shape[0]:d}, "
+                f"test: {train_test[pk]['test'].shape[0]:d}.",
+            )
+        else:
+            train_test[pk]["train"] = []
+            train_test[pk]["test"] = np.array(passing[pk])
+
+    particle_frames = {}
+    for pk in res.PARTICLES:
+        particle_frames[pk] = read_event_frame(
+            res=res,
+            particle_key=pk,
+            run_dir=res.paths["plenoirf_dir"],
+            transformed_features_dir=transformed_features_dir,
+            train_test=train_test,
         )
 
-# train model on gamma only
-# -------------------------
-num_features = MA["gamma"]["train"]["x"].shape[1]
-models = {}
+    MA = {}
+    for pk in res.PARTICLES:
+        MA[pk] = {}
+        for mk in ["test", "train"]:
+            MA[pk][mk] = {}
+            MA[pk][mk]["x"], MA[pk][mk]["y"] = make_x_y_arrays(
+                event_frame=particle_frames[pk][mk]
+            )
 
-models["MultiLayerPerceptron"] = sklearn.neural_network.MLPRegressor(
-    solver="lbfgs",
-    alpha=1e-2,
-    hidden_layer_sizes=(num_features, num_features, num_features),
-    random_state=random_seed,
-    verbose=False,
-    max_iter=5000,
-    learning_rate_init=0.1,
-)
-models["RandomForest"] = sklearn.ensemble.RandomForestRegressor(
-    random_state=random_seed,
-    n_estimators=10,
-)
+    # train model on gamma only
+    # -------------------------
+    num_features = MA["gamma"]["train"]["x"].shape[1]
+    models = {}
 
-_X_shuffle, _y_shuffle = sklearn.utils.shuffle(
-    MA["gamma"]["train"]["x"],
-    MA["gamma"]["train"]["y"],
-    random_state=random_seed,
-)
+    models["MultiLayerPerceptron"] = sklearn.neural_network.MLPRegressor(
+        solver="lbfgs",
+        alpha=1e-2,
+        hidden_layer_sizes=(num_features, num_features, num_features),
+        random_state=random_seed,
+        verbose=False,
+        max_iter=5000,
+        learning_rate_init=0.1,
+    )
+    models["RandomForest"] = sklearn.ensemble.RandomForestRegressor(
+        random_state=random_seed,
+        n_estimators=10,
+    )
 
-for mk in models:
-    models[mk].fit(_X_shuffle, _y_shuffle)
+    _X_shuffle, _y_shuffle = sklearn.utils.shuffle(
+        MA["gamma"]["train"]["x"],
+        MA["gamma"]["train"]["y"],
+        random_state=random_seed,
+    )
 
-    model_path = opj(res.paths["out_dir"], mk + ".pkl")
-    with open(model_path, "wb") as fout:
-        fout.write(pickle.dumps(models[mk]))
+    for mk in models:
+        model_dir = opj(bootstrip_dir, mk)
+        os.makedirs(model_dir, exist_ok=True)
 
-    for pk in PARTICLES:
-        _y_score = models[mk].predict(MA[pk]["test"]["x"])
+        models[mk].fit(_X_shuffle, _y_shuffle)
+
+        model_path = opj(model_dir, mk + ".pkl")
+        with open(model_path, "wb") as fout:
+            fout.write(pickle.dumps(models[mk]))
+
+        for pk in res.PARTICLES:
+            pk_dir = opj(model_dir, pk)
+            os.makedirs(pk_dir, exist_ok=True)
+
+            _y_score = models[mk].predict(MA[pk]["test"]["x"])
+
+            for tk in targets:
+                y_true = (
+                    10 ** MA[pk]["test"]["y"][:, targets[tk]["power_index"]]
+                )
+                y_score = 10 ** _y_score[:, targets[tk]["power_index"]]
+
+                out = {}
+                out["comment"] = "Reconstructed from the test-set."
+                out["learner"] = mk
+                out[tk] = y_score
+                out["unit"] = targets[tk]["unit"]
+                out["uid"] = np.array(particle_frames[pk]["test"]["uid"])
+
+                json_utils.write(opj(pk_dir, tk + ".json"), out)
+
+# read bootstrippings
+# -------------------
+results = {}
+for mk in ["MultiLayerPerceptron", "RandomForest"]:
+    results[mk] = {}
+
+    for pk in res.PARTICLES:
+        results[mk][pk] = {}
 
         for tk in targets:
-            y_true = 10 ** MA[pk]["test"]["y"][:, targets[tk]["power_index"]]
-            y_score = 10 ** _y_score[:, targets[tk]["power_index"]]
+            results[mk][pk][tk] = {}
 
-            out = {}
-            out["comment"] = "Reconstructed from the test-set."
-            out["learner"] = mk
-            out[tk] = y_score
-            out["unit"] = targets[tk]["unit"]
-            out["uid"] = np.array(particle_frames[pk]["test"]["uid"])
+            for bootstrip in range(NUM_BOOTSTRIPS):
+                path = opj(
+                    res.paths["out_dir"],
+                    f"bootstrip-{bootstrip:02d}",
+                    mk,
+                    pk,
+                    tk + ".json",
+                )
+                boot = json_utils.read(path)
 
-            pk_dir = opj(res.paths["out_dir"], pk)
-            os.makedirs(pk_dir, exist_ok=True)
-            json_utils.write(opj(pk_dir, tk + ".json"), out)
+                for i in range(len(boot["uid"])):
+                    _uid = boot["uid"][i]
+                    _tgt = boot[tk][i]
+
+                    if _uid in results[mk][pk][tk]:
+                        results[mk][pk][tk][_uid].append(_tgt)
+                    else:
+                        results[mk][pk][tk][_uid] = [_tgt]
+
+# assert is complete
+# ------------------
+for mk in results:
+    for pk in results[mk]:
+        for tk in results[mk][pk]:
+            assert len(results[mk][pk][tk]) == len(passing[pk])
+            for uid in results[mk][pk][tk]:
+                if pk == "gamma":
+                    assert len(results[mk][pk][tk][uid]) == 1
+                else:
+                    assert len(results[mk][pk][tk][uid]) == NUM_BOOTSTRIPS
+
+
+# combine
+# -------
+out = {}
+for mk in results:
+    out[mk] = {}
+    for pk in results[mk]:
+        out[mk][pk] = {}
+
+        out[mk][pk] = np.recarray(
+            shape=len(passing[pk]),
+            dtype=[
+                ("uid", "<u8"),
+                ("energy_GeV", "<f4"),
+                ("z_emission_p50_m", "<f4"),
+            ],
+        )
+
+        for iii, uid in enumerate(passing[pk]):
+            out[mk][pk]["uid"][iii] = uid
+            for tk in results[mk][pk]:
+                out[mk][pk][tk][iii] = np.median(results[mk][pk][tk][uid])
+
+
+# create existing output format
+# -----------------------------
+for mk in out:
+    for pk in out[mk]:
+        mk_pk_dir = opj(res.paths["out_dir"], mk, pk)
+        os.makedirs(mk_pk_dir, exist_ok=True)
+
+        for tk in targets:
+
+            ooo = {}
+            ooo["comment"] = "Reconstructed from the test-set."
+            ooo["num_bootstrips"] = NUM_BOOTSTRIPS
+            ooo["learner"] = mk
+            ooo[tk] = out[mk][pk][tk]
+            ooo["unit"] = targets[tk]["unit"]
+            ooo["uid"] = out[mk][pk]["uid"]
+            json_utils.write(opj(mk_pk_dir, tk + ".json"), ooo)
+
 
 res.stop()

@@ -51,3 +51,32 @@ def test_splitting():
                 inter = set.intersection(si, sj)
                 assert len(inter) == 0
                 assert abs(len(si) - len(sj)) < (SIZE / NUM) * 0.1
+
+
+def test_train_test_split():
+    x = np.arange(1_000)
+
+    for num_bootstrips in range(2, 10):
+        for bootstrip in range(num_bootstrips):
+            x_train, x_test = bootstripping.train_test_split(
+                x=x,
+                bootstrip=bootstrip,
+                num_bootstrips=num_bootstrips,
+            )
+
+            assert len(x_train) > 0
+            assert len(x_test) > 0
+            assert len(x_train) + len(x_test) == len(x)
+
+            intersection = set.intersection(set(x_train), set(x_test))
+            assert len(intersection) == 0
+
+            union = set.union(set(x_train), set(x_test))
+            assert len(union) == len(x)
+
+            expected_train_test_ratio = num_bootstrips - 1
+            assert (
+                0.95 * expected_train_test_ratio
+                <= len(x_train) / len(x_test)
+                < expected_train_test_ratio * 1.05
+            )

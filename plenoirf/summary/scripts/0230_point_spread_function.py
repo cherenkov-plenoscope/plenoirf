@@ -24,7 +24,9 @@ passing_trajectory_quality = json_utils.tree.read(
 )
 reconstructed_energy = json_utils.tree.read(
     opj(
-        res.paths["analysis_dir"], "0065_learning_airshower_maximum_and_energy"
+        res.paths["analysis_dir"],
+        "0065_learning_airshower_maximum_and_energy",
+        "RandomForest",
     ),
 )
 

@@ -21,6 +21,7 @@ def draw(samples, bootstrip, num_bootstrips):
 
 
 def train_test_split(x, bootstrip, num_bootstrips):
+    assert num_bootstrips >= 2
     x = np.asarray(x)
     x_test = draw(
         samples=x, bootstrip=bootstrip, num_bootstrips=num_bootstrips
