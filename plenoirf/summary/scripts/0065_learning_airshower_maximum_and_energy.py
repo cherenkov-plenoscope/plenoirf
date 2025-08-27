@@ -41,6 +41,7 @@ targets = {
     },
 }
 
+
 def read_event_frame(
     res,
     particle_key,
@@ -120,11 +121,11 @@ def make_x_y_arrays(event_frame):
             ].values,
             norm_reco_radius_core_m,
             norm_reco_theta_rad,
-            f["transformed_features/combi_image_infinity_std_density"].values,
-            f[
-                "transformed_features/combi_paxel_intensity_median_hypot"
-            ].values,
-            f["transformed_features/combi_diff_image_and_light_front"].values,
+            # f["transformed_features/combi_image_infinity_std_density"].values,
+            # f[
+            #    "transformed_features/combi_paxel_intensity_median_hypot"
+            # ].values,
+            # f["transformed_features/combi_diff_image_and_light_front"].values,
         ]
     ).T
     y = np.array(
@@ -145,6 +146,31 @@ for pk in res.PARTICLES:
         passing_quality[pk]["uid"],
         passing_trajectory_quality[pk]["uid"],
     )
+
+num_features = 7
+
+REGRESSORS = {}
+REGRESSORS["MultiLayerPerceptron"] = {
+    "constructor": sklearn.neural_network.MLPRegressor,
+    "kwargs": {
+        "solver": "lbfgs",
+        "tol": 1e-5,
+        "alpha": 1e-4,
+        "hidden_layer_sizes": (2 * num_features, 1 * num_features),
+        "random_state": random_seed,
+        "verbose": True,
+        "max_iter": 5000,
+    },
+}
+"""
+REGRESSORS["RandomForest"] = {
+    "constructor": sklearn.ensemble.RandomForestRegressor,
+    "kwargs": {
+        "random_state": random_seed,
+        "n_estimators": 10 * num_features,
+    }
+}
+"""
 
 for bootstrip in range(NUM_BOOTSTRIPS):
     print("bootstrip", bootstrip)
@@ -198,22 +224,11 @@ for bootstrip in range(NUM_BOOTSTRIPS):
 
     # train model on gamma only
     # -------------------------
-    num_features = MA["gamma"]["train"]["x"].shape[1]
-    models = {}
+    assert MA["gamma"]["train"]["x"].shape[1] == num_features
 
-    models["MultiLayerPerceptron"] = sklearn.neural_network.MLPRegressor(
-        solver="lbfgs",
-        alpha=1e-2,
-        hidden_layer_sizes=(3 * num_features),
-        random_state=random_seed,
-        verbose=False,
-        max_iter=5000,
-        learning_rate_init=0.1,
-    )
-    models["RandomForest"] = sklearn.ensemble.RandomForestRegressor(
-        random_state=random_seed,
-        n_estimators=10,
-    )
+    models = {}
+    for mk in REGRESSORS:
+        models[mk] = REGRESSORS[mk]["constructor"](**REGRESSORS[mk]["kwargs"])
 
     _X_shuffle, _y_shuffle = sklearn.utils.shuffle(
         MA["gamma"]["train"]["x"],
@@ -221,7 +236,7 @@ for bootstrip in range(NUM_BOOTSTRIPS):
         random_state=random_seed,
     )
 
-    for mk in models:
+    for mk in REGRESSORS:
         model_dir = opj(bootstrip_dir, mk)
         os.makedirs(model_dir, exist_ok=True)
 
@@ -251,7 +266,7 @@ for bootstrip in range(NUM_BOOTSTRIPS):
 # read bootstrippings
 # -------------------
 results = {}
-for mk in ["MultiLayerPerceptron", "RandomForest"]:
+for mk in REGRESSORS:
     results[mk] = {}
 
     for pk in res.PARTICLES:
@@ -421,12 +436,12 @@ for mk in REGRESSORS:
 
 # create existing output format
 # -----------------------------
-
+"""
 combined_dir = opj(res.paths["out_dir"], "combined")
 for pk in res.PARTICLES:
     os.makedirs(opj(combined_dir, pk), exist_ok=True)
 
-    """
+
     merging_mask = merge_machine_lerners(
         energy_resolutions=[
             gamma_energy_resolution["MultiLayerPerceptron"]["deltaE_over_E"],
@@ -454,7 +469,7 @@ for pk in res.PARTICLES:
             out["RandomForest"][pk]["z_emission_p50_m"],
         ),
     )
-    """
+
     np.testing.assert_array_equal(
         out["RandomForest"][pk]["uid"],
         out["MultiLayerPerceptron"][pk]["uid"],
@@ -482,6 +497,6 @@ for pk in res.PARTICLES:
     )
     ooo["uid"] = uids
     json_utils.write(opj(combined_dir, pk, "z_emission_p50_m" + ".json"), ooo)
-
+"""
 
 res.stop()
