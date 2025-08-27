@@ -6,6 +6,7 @@ import os
 from os.path import join as opj
 import json_utils
 import warnings
+import numpy as np
 import sebastians_matplotlib_addons as sebplt
 
 
