@@ -55,10 +55,8 @@ for pk in PARTICLES:
         )
 
     uid_common = snt.logic.intersection(
-        [
-            passing_trigger[pk]["uid"],
-            passing_quality[pk]["uid"],
-        ]
+        passing_trigger[pk]["uid"],
+        passing_quality[pk]["uid"],
     )
 
     table = snt.logic.cut_and_sort_table_on_indices(
