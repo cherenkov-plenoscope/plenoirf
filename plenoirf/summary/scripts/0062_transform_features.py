@@ -15,13 +15,6 @@ import warnings
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-train_test = json_utils.tree.read(
-    opj(
-        res.paths["analysis_dir"],
-        "0030_splitting_train_and_test_sample",
-    )
-)
-
 os.makedirs(res.paths["out_dir"], exist_ok=True)
 
 PARTICLES = res.PARTICLES
@@ -39,10 +32,7 @@ for pk in ["gamma"]:
     with res.open_event_table(particle_key=pk) as arc:
         _table = arc.query(levels_and_columns={"features": "__all__"})
 
-    features = snt.logic.cut_table_on_indices(
-        table=_table,
-        common_indices=train_test[pk]["train"],
-    )["features"]
+    features = _table["features"]
 
     for fk in ALL_FEATURES:
         if fk in ORIGINAL_FEATURES:
