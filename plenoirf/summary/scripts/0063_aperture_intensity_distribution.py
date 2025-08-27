@@ -28,36 +28,10 @@ lfg = pl.LightFieldGeometry(
 
 energy_bin = res.energy_binning(key="trigger_acceptance")
 
-NUM_PLOT = 50
+NUM_PLOT = 25
 
 
-def estimate_paxel_baselines(light_field_geometry):
-    lfg = light_field_geometry
-    b = {}
-    for i in range(lfg.number_paxel):
-        for j in range(i + 1, lfg.number_paxel):
-            ix = lfg.paxel_pos_x[i]
-            iy = lfg.paxel_pos_y[i]
-            jx = lfg.paxel_pos_x[j]
-            jy = lfg.paxel_pos_y[j]
-            i_to_j = [ix - jx, iy - jy]
-            ij_distance = np.linalg.norm(i_to_j)
-            b[(i, j)] = ij_distance
-    return b
-
-
-def normed_paxel_baselines(paxel_baselines):
-    avg = 0
-    for key in paxel_baselines:
-        avg += paxel_baselines[key]
-    avg = avg / len(paxel_baselines)
-    out = {}
-    for key in paxel_baselines:
-        out[key] = paxel_baselines[key] / avg
-    return out
-
-
-def feature_pairwise_product(pax_hist, rel_paxel_baselines=None):
+def feature_pairwise_product(pax_hist):
     NUM = pax_hist.shape[0]
     vals = pax_hist / np.mean(pax_hist)
     corr = 0
@@ -65,8 +39,6 @@ def feature_pairwise_product(pax_hist, rel_paxel_baselines=None):
     for i in range(NUM):
         for j in range(i + 1, NUM):
             ppp = vals[i] * vals[j]
-            if rel_paxel_baselines is not None:
-                ppp *= rel_paxel_baselines[(i, j)]
             corr += ppp
     return corr / num_ij
 
@@ -81,8 +53,6 @@ def pp_to_qq(pp):
 
 cache_dir = opj(res.paths["out_dir"], "__cache__")
 os.makedirs(cache_dir, exist_ok=True)
-
-rel_paxel_baselines = normed_paxel_baselines(estimate_paxel_baselines(lfg))
 
 flatness = {}
 for pk in res.PARTICLES:
@@ -99,7 +69,6 @@ for pk in res.PARTICLES:
                 "aperture_flatness": [
                     ("uid", "<u8"),
                     ("paxel_pairwise_product", "<f8"),
-                    ("paxel_pairwise_product_weighted", "<f8"),
                     ("mean_over_std", "<f8"),
                 ]
             },
@@ -126,18 +95,12 @@ for pk in res.PARTICLES:
                 assert pax_hist.shape[0] == lfg.number_paxel
 
                 ft_pp = feature_pairwise_product(pax_hist=pax_hist)
-                ft_ppw = feature_pairwise_product(
-                    pax_hist=pax_hist, rel_paxel_baselines=rel_paxel_baselines
-                )
                 ft_mos = feature_mean_over_std(pax_hist=pax_hist)
-
-                np.std(pax_hist) / np.mean(pax_hist)
 
                 tab["aperture_flatness"].append(
                     {
                         "uid": uid,
                         "paxel_pairwise_product": ft_pp,
-                        "paxel_pairwise_product_weighted": ft_ppw,
                         "mean_over_std": ft_mos,
                     }
                 )
@@ -204,7 +167,6 @@ for pk in res.PARTICLES:
 for pk in flatness:
     for method in [
         "paxel_pairwise_product",
-        "paxel_pairwise_product_weighted",
     ]:
         pp = flatness[pk]["aperture_flatness"][method]
 
@@ -215,53 +177,10 @@ for pk in flatness:
             flatness[pk]["aperture_flatness"][method] = pp_to_qq(pp)
 
 
-table = {}
-for pk in flatness:
-    with res.open_event_table(pk) as evttab_reader:
-        table[pk] = evttab_reader.query(
-            levels_and_columns={
-                "primary": ["uid", "energy_GeV"],
-                "features": ["uid", "paxel_intensity_peakness_std_over_mean"],
-            }
-        )
-    table[pk]["flatness"] = flatness[pk]["aperture_flatness"]
-    uid_common = snt.logic.intersection(
-        [
-            table[pk]["flatness"]["uid"],
-            table[pk]["primary"]["uid"],
-            table[pk]["features"]["uid"],
-        ]
-    )
-    table[pk] = snt.logic.cut_and_sort_table_on_indices(table[pk], uid_common)
-    table[pk] = snt.logic.make_rectangular_DataFrame(table[pk])
-
-
-# is 'mean over std' really jsut the inverse of the existing feature
-# 'paxel_intensity_peakness_std_over_mean'?
-print(
-    f"===== features.paxel_intensity_peakness_std_over_mean vs. flatness.mean_over_std ====="
-)
-print("particle, uid, rel. delta, new, old")
-for pk in table:
-    UID = table[pk]["uid"]
-    MOS_NEW = table[pk]["flatness/mean_over_std"]
-    MOS_OLD = 1 / table[pk]["features/paxel_intensity_peakness_std_over_mean"]
-    for i in range(len(MOS_OLD)):
-        rel_delta = MOS_NEW[i] / MOS_OLD[i]
-        if not (0.97 < rel_delta <= 1.03):
-            print(
-                f"{pk:<12s}, {UID[i]:012d}, {rel_delta:.3f}, {MOS_NEW[i]:.3f}, {MOS_OLD[i]:.3f}"
-            )
-
-
 METHODS = {
     "paxel_pairwise_product": {
         "bin": binning_utils.Binning(np.linspace(0.0, 4, 101)),
         "x_label": "pairwise product / 1",
-    },
-    "paxel_pairwise_product_weighted": {
-        "bin": binning_utils.Binning(np.linspace(0.0, 4, 101)),
-        "x_label": "pairwise product (weighted) / 1",
     },
     "mean_over_std": {
         "bin": binning_utils.Binning(np.linspace(0.0, 4, 101)),
@@ -363,57 +282,5 @@ for method in METHODS:
     ax.set_ylabel("fraction passing cut / 1")
     fig.savefig(opj(res.paths["out_dir"], f"cut_{method:s}.jpg"))
     sebplt.close(fig)
-
-    for pk in res.PARTICLES:
-        min_number_samples = 10
-        cm = confusion_matrix.init(
-            ax0_key="true_energy_GeV",
-            ax0_values=table[pk]["primary/energy_GeV"],
-            ax0_bin_edges=energy_bin["edges"],
-            ax1_key=method,
-            ax1_values=table[pk][f"flatness/{method:s}"],
-            ax1_bin_edges=qq_bin["edges"],
-            weights=None,
-            min_exposure_ax0=min_number_samples,
-            default_low_exposure=0.0,
-        )
-
-        fig = sebplt.figure(style=sebplt.FIGURE_1_1)
-        ax_c = sebplt.add_axes(fig=fig, span=[0.25, 0.27, 0.55, 0.65])
-        ax_h = sebplt.add_axes(fig=fig, span=[0.25, 0.11, 0.55, 0.1])
-        ax_cb = sebplt.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
-        _pcm_confusion = ax_c.pcolormesh(
-            cm["ax0_bin_edges"],
-            cm["ax1_bin_edges"],
-            np.transpose(cm["counts_normalized_on_ax0"]),
-            cmap=res.PARTICLE_COLORMAPS[pk],
-            norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
-        )
-        sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
-        ax_c.set_aspect("equal")
-        ax_c.set_title("normalized for each column")
-        ax_c.set_ylabel(METHODS[method]["x_label"])
-        ax_c.semilogx()
-        sebplt.ax_add_grid(ax_c)
-
-        ax_h.semilogx()
-        ax_h.set_xlim(
-            [np.min(cm["ax0_bin_edges"]), np.max(cm["ax0_bin_edges"])]
-        )
-        ax_h.set_xlabel("energy / GeV")
-        ax_h.set_ylabel("num. events / 1")
-        ax_h.axhline(min_number_samples, linestyle=":", color="k")
-        sebplt.ax_add_histogram(
-            ax=ax_h,
-            bin_edges=cm["ax0_bin_edges"],
-            bincounts=cm["exposure_ax0"],
-            linestyle="-",
-            linecolor=res.PARTICLE_COLORS[pk],
-        )
-        fig.savefig(
-            opj(res.paths["out_dir"], f"{pk:s}_energy_vs_{method:s}.jpg")
-        )
-        sebplt.close(fig)
-
 
 res.stop()
