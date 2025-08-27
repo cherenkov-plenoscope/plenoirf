@@ -32,10 +32,6 @@ passing_trajectory_quality = json_utils.tree.read(
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 random_seed = res.analysis["random_seed"]
 
-PARTICLES = res.PARTICLES
-NON_GAMMA_PARTICLES = dict(PARTICLES)
-NON_GAMMA_PARTICLES.pop("gamma")
-
 targets = {
     "energy_GeV": {
         "column": 0,
