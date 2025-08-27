@@ -41,9 +41,6 @@ targets = {
     },
 }
 
-min_number_samples = 100
-
-
 def read_event_frame(
     res,
     particle_key,
