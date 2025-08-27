@@ -512,8 +512,8 @@ def _guess_trigger(
         },
         "threshold_pe": analysis_trigger_threshold_pe,
         "threshold_factor_vs_pointing_zenith": {
-            "zenith_rad": np.deg2rad([0, 45]),
-            "factor": np.array([1.0, 1.25]),
+            "zenith_rad": np.deg2rad([0, 22.5, 45.0]),
+            "factor": np.array([1.00, 1.02, 1.04]),
         },
         "ratescan_thresholds_pe": make_ratescan_trigger_thresholds(
             lower_threshold=int(collection_trigger_threshold_pe * 0.86),
@@ -569,7 +569,7 @@ def _guess_analysis_config_for_instrument(
 
     collection_trigger_threshold_pe = config["sum_trigger"]["threshold_pe"]
     analysis_trigger_threshold_pe = int(
-        np.round(1.14 * collection_trigger_threshold_pe)
+        np.round(1.05 * collection_trigger_threshold_pe)
     )
 
     fov_radius_deg = (
@@ -620,7 +620,7 @@ def _guess_analysis_config_for_instrument(
         "random_seed": 1,
         "quality": {
             "max_relative_leakage": 0.1,
-            "min_reconstructed_photons": 50,
+            "min_reconstructed_photons": 35,
             "min_trajectory_quality": 0.3,
             "min_aperture_intensity_flatness_mean_over_std": 0.8,  # See 0063_aperture_intensity_distribution.py
         },
