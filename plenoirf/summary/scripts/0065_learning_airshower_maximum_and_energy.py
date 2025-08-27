@@ -29,7 +29,7 @@ passing_quality = json_utils.tree.read(
 passing_trajectory_quality = json_utils.tree.read(
     opj(res.paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
-
+energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 random_seed = res.analysis["random_seed"]
 
 PARTICLES = res.PARTICLES
@@ -132,13 +132,16 @@ def make_x_y_arrays(event_frame):
             # f["transformed_features/combi_A"].values,
             # f["transformed_features/combi_B"].values,
             # f["transformed_features/combi_C"].values,
+            f[
+                "transformed_features/paxel_intensity_peakness_std_over_mean"
+            ].values,
             norm_reco_radius_core_m,
-            norm_reco_theta_rad,
-            # f["transformed_features/combi_image_infinity_std_density"].values,
-            # f[
-            #    "transformed_features/combi_paxel_intensity_median_hypot"
-            # ].values,
-            # f["transformed_features/combi_diff_image_and_light_front"].values,
+            # norm_reco_theta_rad,
+            f["transformed_features/combi_image_infinity_std_density"].values,
+            f[
+                "transformed_features/combi_paxel_intensity_median_hypot"
+            ].values,
+            f["transformed_features/combi_diff_image_and_light_front"].values,
         ]
     ).T
     y = np.array(
@@ -310,8 +313,8 @@ for mk in results:
                     assert len(results[mk][pk][tk][uid]) == NUM_BOOTSTRIPS
 
 
-# combine
-# -------
+# combine bootstrippings
+# ----------------------
 out = {}
 for mk in results:
     out[mk] = {}
@@ -333,23 +336,173 @@ for mk in results:
                 out[mk][pk][tk][iii] = np.median(results[mk][pk][tk][uid])
 
 
-# create existing output format
-# -----------------------------
-for mk in out:
-    for pk in out[mk]:
-        mk_pk_dir = opj(res.paths["out_dir"], mk, pk)
+# EXPORT
+# ======
+for mk in results:
+    mk_dir = opj(res.paths["out_dir"], mk)
+    for pk in results[mk]:
+        mk_pk_dir = opj(mk_dir, pk)
         os.makedirs(mk_pk_dir, exist_ok=True)
 
         for tk in targets:
-
             ooo = {}
-            ooo["comment"] = "Reconstructed from the test-set."
-            ooo["num_bootstrips"] = NUM_BOOTSTRIPS
-            ooo["learner"] = mk
             ooo[tk] = out[mk][pk][tk]
-            ooo["unit"] = targets[tk]["unit"]
             ooo["uid"] = out[mk][pk]["uid"]
             json_utils.write(opj(mk_pk_dir, tk + ".json"), ooo)
+
+
+"""
+def merge_machine_lerners(energy_resolutions, reco_energies, energy_bin):
+    NUM_REGRESSORS = len(energy_resolutions)
+    assert len(reco_energies) == NUM_REGRESSORS
+    NUM_EVENTS = reco_energies[0].shape[0]
+    for i in range(NUM_REGRESSORS):
+        assert len(reco_energies[i]) == NUM_EVENTS
+
+    reco_energy_bin_assignment = -1 * np.ones(shape=NUM_EVENTS)
+    median_reco_energy = np.median(np.asarray(reco_energies), axis=0)
+
+    assert median_reco_energy.shape == (NUM_EVENTS,)
+
+    reco_energy_bin_assignment = -1 + np.digitize(
+        median_reco_energy, bins=energy_bin["edges"]
+    )
+
+    resos = np.nan * np.ones(shape=(NUM_EVENTS, NUM_REGRESSORS))
+    for e in range(NUM_EVENTS):
+        for l in range(NUM_REGRESSORS):
+            ebin = reco_energy_bin_assignment[e]
+            if 0 <= ebin < energy_bin["num"]:
+                resos[e, l] = energy_resolutions[l][ebin]
+
+    mask = np.zeros(shape=NUM_EVENTS, dtype=int)
+
+    for e in range(NUM_EVENTS):
+        try:
+            lmin = np.nanargmin(resos[e, :])
+            mask[e] = lmin
+        except ValueError as err:
+            mask[e] = -1
+
+    return mask
+
+
+def apply_machine_lerner_merge(mask, reco_x):
+    NUM_REGRESSORS = len(reco_x)
+    assert NUM_REGRESSORS > 1
+    NUM_EVENTS = reco_x[0].shape[0]
+
+    out_x = np.nan * np.ones(shape=NUM_EVENTS)
+    for e in range(NUM_EVENTS):
+        if mask[e] == -1:
+            x_vals = [reco_x[l][e] for l in range(NUM_REGRESSORS)]
+            out_x = np.median(x_vals)
+        else:
+            l = mask[e]
+            out_x = reco_x[l]
+    return out_x
+
+
+# benchmark learners on gamma
+# ---------------------------
+REGRESSORS = ["MultiLayerPerceptron", "RandomForest"]
+pk = "gamma"
+with res.open_event_table(particle_key=pk) as arc:
+    _event_table = arc.query(
+        levels_and_columns={"primary": ["uid", "energy_GeV"]}
+    )
+gamma_primary = snt.logic.cut_and_sort_table_on_indices(
+    table=_event_table,
+    common_indices=passing[pk],
+)["primary"]
+
+true_energy = gamma_primary["energy_GeV"]
+
+gamma_energy_resolution = {}
+reco_energies = {}
+for mk in REGRESSORS:
+    gamma_energy_resolution[mk] = {}
+
+    reco_energies[mk] = irf.analysis.energy.align_on_idx(
+        input_idx=out[mk][pk]["uid"],
+        input_values=out[mk][pk]["energy_GeV"],
+        target_idxs=gamma_primary["uid"],
+    )
+
+    (
+        gamma_energy_resolution[mk]["deltaE_over_E"],
+        gamma_energy_resolution[mk]["deltaE_over_E_relunc"],
+    ) = irf.analysis.energy.estimate_energy_resolution_vs_reco_energy(
+        true_energy=true_energy,
+        reco_energy=reco_energies[mk],
+        reco_energy_bin_edges=energy_bin["edges"],
+        containment_fraction=0.68,
+    )
+"""
+
+# create existing output format
+# -----------------------------
+
+combined_dir = opj(res.paths["out_dir"], "combined")
+for pk in res.PARTICLES:
+    os.makedirs(opj(combined_dir, pk), exist_ok=True)
+
+    """
+    merging_mask = merge_machine_lerners(
+        energy_resolutions=[
+            gamma_energy_resolution["MultiLayerPerceptron"]["deltaE_over_E"],
+            gamma_energy_resolution["RandomForest"]["deltaE_over_E"],
+        ],
+        reco_energies=[
+            out["MultiLayerPerceptron"][pk]["energy_GeV"],
+            out["RandomForest"][pk]["energy_GeV"],
+        ],
+        energy_bin=energy_bin,
+    )
+
+    reco_energy = apply_machine_lerner_merge(
+        mask=merging_mask,
+        reco_x=(
+            out["MultiLayerPerceptron"][pk]["energy_GeV"],
+            out["RandomForest"][pk]["energy_GeV"],
+        ),
+    )
+
+    reco_z_emission_p50_m = apply_machine_lerner_merge(
+        mask=merging_mask,
+        reco_x=(
+            out["MultiLayerPerceptron"][pk]["z_emission_p50_m"],
+            out["RandomForest"][pk]["z_emission_p50_m"],
+        ),
+    )
+    """
+    np.testing.assert_array_equal(
+        out["RandomForest"][pk]["uid"],
+        out["MultiLayerPerceptron"][pk]["uid"],
+    )
+    uids = out["RandomForest"][pk]["uid"]
+
+    ooo = {}
+    ooo["energy_GeV"] = np.mean(
+        [
+            out["MultiLayerPerceptron"][pk]["energy_GeV"],
+            out["RandomForest"][pk]["energy_GeV"],
+        ],
+        axis=0,
+    )
+    ooo["uid"] = uids
+    json_utils.write(opj(combined_dir, pk, "energy_GeV" + ".json"), ooo)
+
+    ooo = {}
+    ooo["z_emission_p50_m"] = np.mean(
+        [
+            out["MultiLayerPerceptron"][pk]["z_emission_p50_m"],
+            out["RandomForest"][pk]["z_emission_p50_m"],
+        ],
+        axis=0,
+    )
+    ooo["uid"] = uids
+    json_utils.write(opj(combined_dir, pk, "z_emission_p50_m" + ".json"), ooo)
 
 
 res.stop()

@@ -104,3 +104,13 @@ def estimate_energy_resolution_vs_reco_energy(
     delta_energy = np.array(delta_energy)
     delta_energy_relunc = np.array(delta_energy_relunc)
     return delta_energy, delta_energy_relunc
+
+
+def align_on_idx(input_idx, input_values, target_idxs):
+    Q = {}
+    for ii in range(len(input_idx)):
+        Q[input_idx[ii]] = input_values[ii]
+    aligned_values = np.nan * np.ones(target_idxs.shape[0])
+    for ii in range(target_idxs.shape[0]):
+        aligned_values[ii] = Q[target_idxs[ii]]
+    return aligned_values

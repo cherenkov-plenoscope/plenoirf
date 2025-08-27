@@ -43,16 +43,6 @@ cta = irf.other_instruments.cherenkov_telescope_array_south
 fermi = irf.other_instruments.fermi_lat
 
 
-def align_on_idx(input_idx, input_values, target_idxs):
-    Q = {}
-    for ii in range(len(input_idx)):
-        Q[input_idx[ii]] = input_values[ii]
-    aligned_values = np.nan * np.ones(target_idxs.shape[0])
-    for ii in range(target_idxs.shape[0]):
-        aligned_values[ii] = Q[target_idxs[ii]]
-    return aligned_values
-
-
 pk = "gamma"
 
 pk_dir = opj(res.paths["out_dir"], pk)
@@ -93,9 +83,9 @@ rectab = irf.reconstruction.trajectory_quality.make_rectangular_table(
 )
 
 _true_energy = rectab["primary/energy_GeV"]
-_reco_energy = align_on_idx(
+_reco_energy = irf.analysis.energy.align_on_idx(
     input_idx=reconstructed_energy[pk][mk]["uid"],
-    input_values=reconstructed_energy[pk][mk]["energy"],
+    input_values=reconstructed_energy[pk][mk]["energy_GeV"],
     target_idxs=rectab["uid"],
 )
 
