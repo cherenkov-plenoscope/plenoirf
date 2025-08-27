@@ -26,7 +26,7 @@ reconstructed_energy = json_utils.tree.read(
     opj(
         res.paths["analysis_dir"],
         "0065_learning_airshower_maximum_and_energy",
-        "RandomForest",
+        "MultiLayerPerceptron",
     ),
 )
 
@@ -37,7 +37,7 @@ energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 containment_percents = [68, 95]
 num_containment_fractions = len(containment_percents)
 
-mk = "energy"
+mk = "energy_GeV"
 
 cta = irf.other_instruments.cherenkov_telescope_array_south
 fermi = irf.other_instruments.fermi_lat
@@ -85,7 +85,7 @@ rectab = irf.reconstruction.trajectory_quality.make_rectangular_table(
 _true_energy = rectab["primary/energy_GeV"]
 _reco_energy = irf.analysis.energy.align_on_idx(
     input_idx=reconstructed_energy[pk][mk]["uid"],
-    input_values=reconstructed_energy[pk][mk]["energy_GeV"],
+    input_values=reconstructed_energy[pk][mk][mk],
     target_idxs=rectab["uid"],
 )
 
