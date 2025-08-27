@@ -41,7 +41,7 @@ for pk in res.PARTICLES:
     )
 
     uid_ggi = []
-    ggi = irf.ground_grid.intensity.Reader(ggi_path)
+    ggi = irf.ground_grid.histogram2d.Reader(ggi_path)
     for uid in ggi:
         uid_ggi.append(uid)
 
@@ -77,7 +77,9 @@ for pk in res.PARTICLES:
         for uid in uid_energy_range:
             ground_grid_cell_intensity = ggi[uid]
             for cell in ground_grid_cell_intensity:
-                grid_intensity[cell["x_bin"], cell["y_bin"]] += cell["size"]
+                grid_intensity[cell["x_bin"], cell["y_bin"]] += cell[
+                    "weight_photons"
+                ]
             num_airshower += 1
             if num_airshower == MAX_AIRSHOWER_PER_ENERGY_BIN:
                 break

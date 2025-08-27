@@ -59,7 +59,7 @@ else:
                 entry["zenith_rad"],
             )
 
-        with irf.ground_grid.intensity.Reader(gpath) as rrr:
+        with irf.ground_grid.histogram2d.Reader(gpath) as rrr:
             for uid in rrr:
                 a = rrr[uid]
                 print(pk, uid, a.shape)
@@ -78,7 +78,7 @@ else:
 
                 expo[pk][zbin][ebin] += 1
                 hist[pk][zbin][ebin] += np.histogram(
-                    a["size"],
+                    a["weight_photons"],
                     bins=size_bin["edges"],
                 )[0]
 
