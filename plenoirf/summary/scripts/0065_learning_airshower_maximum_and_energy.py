@@ -38,20 +38,10 @@ NON_GAMMA_PARTICLES.pop("gamma")
 
 targets = {
     "energy_GeV": {
-        "power_index": 0,
-        "start": 1e-1,
-        "stop": 1e3,
-        "num_bins": 20,
-        "key": "energy_GeV",
-        "unit": "GeV",
+        "column": 0,
     },
     "z_emission_p50_m": {
-        "power_index": 1,
-        "start": 7.5e3,
-        "stop": 25e3,
-        "num_bins": 20,
-        "key": "z_emission_p50_m",
-        "unit": "m",
+        "column": 1,
     },
 }
 
@@ -136,7 +126,7 @@ def make_x_y_arrays(event_frame):
                 "transformed_features/paxel_intensity_peakness_std_over_mean"
             ].values,
             norm_reco_radius_core_m,
-            # norm_reco_theta_rad,
+            norm_reco_theta_rad,
             f["transformed_features/combi_image_infinity_std_density"].values,
             f[
                 "transformed_features/combi_paxel_intensity_median_hypot"
@@ -221,7 +211,7 @@ for bootstrip in range(NUM_BOOTSTRIPS):
     models["MultiLayerPerceptron"] = sklearn.neural_network.MLPRegressor(
         solver="lbfgs",
         alpha=1e-2,
-        hidden_layer_sizes=(num_features, num_features, num_features),
+        hidden_layer_sizes=(3 * num_features),
         random_state=random_seed,
         verbose=False,
         max_iter=5000,
@@ -255,16 +245,12 @@ for bootstrip in range(NUM_BOOTSTRIPS):
             _y_score = models[mk].predict(MA[pk]["test"]["x"])
 
             for tk in targets:
-                y_true = (
-                    10 ** MA[pk]["test"]["y"][:, targets[tk]["power_index"]]
-                )
-                y_score = 10 ** _y_score[:, targets[tk]["power_index"]]
+                y_score = 10 ** _y_score[:, targets[tk]["column"]]
 
                 out = {}
                 out["comment"] = "Reconstructed from the test-set."
                 out["learner"] = mk
                 out[tk] = y_score
-                out["unit"] = targets[tk]["unit"]
                 out["uid"] = np.array(particle_frames[pk]["test"]["uid"])
 
                 json_utils.write(opj(pk_dir, tk + ".json"), out)
