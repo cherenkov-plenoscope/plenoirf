@@ -52,11 +52,10 @@ def read_event_frame(
     pk = particle_key
 
     with res.open_event_table(particle_key=pk) as arc:
-        airshower_table = arc.query(
+        event_table = arc.query(
             levels_and_columns={
                 "primary": ["uid", "energy_GeV"],
                 "cherenkovpool": ["uid", "z_emission_p50_m"],
-                "reconstructed_trajectory": "__all__",
             }
         )
 
@@ -66,42 +65,23 @@ def read_event_frame(
         "transformed_features.zip",
     )
     with snt.open(transformed_features_path, "r") as arc:
-        airshower_table["transformed_features"] = arc.query()[
+        event_table["transformed_features"] = arc.query()[
             "transformed_features"
         ]
-
-    EXT_STRUCTRURE = irf.features.init_all_features_structure()
 
     out = {}
     for kk in ["test", "train"]:
         table_kk = snt.logic.cut_and_sort_table_on_indices(
-            table=airshower_table,
+            table=event_table,
             common_indices=train_test[pk][kk],
-            index_key="uid",
         )
-        out[kk] = snt.logic.make_rectangular_DataFrame(
-            table_kk,
-            index_key="uid",
-        )
+        out[kk] = snt.logic.make_rectangular_DataFrame(table_kk)
 
     return out
 
 
 def make_x_y_arrays(event_frame):
     f = event_frame
-
-    reco_radius_core_m = np.hypot(
-        f["reconstructed_trajectory/x_m"],
-        f["reconstructed_trajectory/y_m"],
-    )
-
-    norm_reco_radius_core_m = reco_radius_core_m / 640.0
-
-    reco_theta_rad = np.hypot(
-        f["reconstructed_trajectory/cx_rad"],
-        f["reconstructed_trajectory/cy_rad"],
-    )
-    norm_reco_theta_rad = reco_theta_rad / np.deg2rad(3.5)
 
     x = np.array(
         [
@@ -119,8 +99,8 @@ def make_x_y_arrays(event_frame):
             f[
                 "transformed_features/paxel_intensity_peakness_std_over_mean"
             ].values,
-            norm_reco_radius_core_m,
-            norm_reco_theta_rad,
+            f["transformed_features/trajectory_reco_core_radius_m"].values,
+            f["transformed_features/trajectory_reco_theta_rad"].values,
             # f["transformed_features/combi_image_infinity_std_density"].values,
             # f[
             #    "transformed_features/combi_paxel_intensity_median_hypot"

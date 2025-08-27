@@ -23,20 +23,36 @@ COMBINED_FEATURES = (
 )
 ALL_FEATURES = irf.features.init_all_features_structure()
 
+
+def open_event_frame(pk):
+    with res.open_event_table(particle_key=pk) as arc:
+        event_table = arc.query(
+            levels_and_columns={
+                "features": "__all__",
+                "reconstructed_trajectory": "__all__",
+            }
+        )
+    event_table = snt.logic.cut_and_sort_table_on_indices(
+        table=event_table,
+        common_indices=snt.logic.intersection(
+            event_table["features"]["uid"],
+            event_table["reconstructed_trajectory"]["uid"],
+        ),
+    )
+    return snt.logic.make_rectangular_DataFrame(event_table)
+
+
 particle_colors = res.analysis["plot"]["particle_colors"]
 
 ft_trafo = {}
 for pk in ["gamma"]:
-    with res.open_event_table(particle_key=pk) as arc:
-        _table = arc.query(levels_and_columns={"features": "__all__"})
-
-    features = _table["features"]
+    event_frame = open_event_frame(pk=pk)
 
     for fk in ALL_FEATURES:
         if fk in ORIGINAL_FEATURES:
-            f_raw = features[fk]
+            f_raw = event_frame[f"features/{fk:s}"]
         else:
-            f_raw = COMBINED_FEATURES[fk]["generator"](features)
+            f_raw = COMBINED_FEATURES[fk]["generator"](event_frame)
 
         ft_trafo[fk] = irf.features.find_transformation(
             feature_raw=f_raw,
@@ -48,17 +64,15 @@ transformed_features = {}
 for pk in res.PARTICLES:
     transformed_features[pk] = {}
 
-    with res.open_event_table(particle_key=pk) as arc:
-        _table = arc.query(levels_and_columns={"features": "__all__"})
-        features = _table["features"]
+    event_frame = open_event_frame(pk=pk)
 
-    transformed_features[pk]["uid"] = np.array(features["uid"])
+    transformed_features[pk]["uid"] = np.array(event_frame["uid"])
 
     for fk in ALL_FEATURES:
         if fk in ORIGINAL_FEATURES:
-            f_raw = features[fk]
+            f_raw = event_frame[f"features/{fk:s}"]
         else:
-            f_raw = COMBINED_FEATURES[fk]["generator"](features)
+            f_raw = COMBINED_FEATURES[fk]["generator"](event_frame)
 
         transformed_features[pk][fk] = irf.features.transform(
             feature_raw=f_raw, transformation=ft_trafo[fk]
