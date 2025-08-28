@@ -97,12 +97,39 @@ for zd in range(zenith_bin["num"]):
         with res.open_event_table(particle_key=pk) as arc:
             diffuse_thrown = arc.query(
                 levels_and_columns={
-                    "primary": "__all__",
-                    "instrument_pointing": "__all__",
-                    "groundgrid_choice": "__all__",
-                    "reconstructed_trajectory": "__all__",
-                    "features": "__all__",
-                    "groundgrid": "__all__",
+                    "primary": (
+                        "uid",
+                        "energy_GeV",
+                        "azimuth_rad",
+                        "zenith_rad",
+                        "solid_angle_thrown_sr",
+                    ),
+                    "instrument_pointing": (
+                        "uid",
+                        "azimuth_rad",
+                        "zenith_rad",
+                    ),
+                    "reconstructed_trajectory": (
+                        "uid",
+                        "x_m",
+                        "y_m",
+                        "cx_rad",
+                        "cy_rad",
+                        "fuzzy_main_axis_azimuth_rad",
+                    ),
+                    "features": (
+                        "uid",
+                        "num_photons",
+                        "image_half_depth_shift_cx",
+                        "image_half_depth_shift_cy",
+                    ),
+                    "groundgrid": (
+                        "uid",
+                        "num_bins_thrown",
+                        "num_bins_above_threshold",
+                        "area_thrown_m2",
+                    ),
+                    "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
                 }
             )
 
