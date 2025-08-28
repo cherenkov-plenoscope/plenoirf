@@ -37,6 +37,13 @@ for zd in range(zenith_bin["num"]):
 
     fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
     ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    sebplt.add_axes_zenith_range_indicator(
+        fig=fig,
+        span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
+        zenith_bin_edges_rad=zenith_bin["edges"],
+        zenith_bin=zd,
+        fontsize=6,
+    )
 
     text_y = 0.7
     for pk in res.PARTICLES:
