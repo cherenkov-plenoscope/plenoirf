@@ -500,21 +500,26 @@ def reduce_benchmarks(
 
 
 def reduce_event_uids_for_debugging(
-    instrument_site_particle_dir, run_ids, use_tmp_dir=True, read_buffer_size=0
+    instrument_site_particle_dir,
+    run_ids,
+    memory_config=None,
 ):
+    mem = fallback_memory_config_if_None(memory_config=memory_config)
     map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
     out_path = opj(reduce_dir, "event_uids_for_debugging.txt")
 
-    with rnw.Path(out_path, use_tmp_dir=use_tmp_dir) as tmp_path:
+    with rnw.Path(out_path, use_tmp_dir=mem["use_tmp_dir"]) as tmp_path:
         with open(
             tmp_path,
             "wt",
         ) as fout:
             for run_id in run_ids:
                 run_path = opj(map_dir, "prm2cer", f"{run_id:06d}.prm2cer.zip")
-                with ZipFileBufferIOInMemory(
-                    path=run_path, size=read_buffer_size
-                ) as zipbuff:
+
+                with utils.open_and_read_into_memory_when_small_enough(
+                    run_path,
+                    size=mem["read_buffer_size"],
+                ) as fin, ZipFileBufferIO(file=fin) as zipbuff:
                     buff = zipbuff.read(
                         path=opj(
                             f"{run_id:06d}",
