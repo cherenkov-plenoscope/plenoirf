@@ -399,7 +399,7 @@ def benchmark(pool, out_path, num_runs):
             jlout.write(result)
 
 
-def reduce(plenoirf_dir, config=None, pool=None, use_tmp_dir=True):
+def reduce(plenoirf_dir, config=None, pool=None):
     if pool is None:
         pool = utils.SerialPool()
 
