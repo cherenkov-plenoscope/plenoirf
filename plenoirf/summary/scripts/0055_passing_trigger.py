@@ -25,72 +25,6 @@ rejecting_height_above_observation_level_m = (
 )
 
 
-def assign_accepting_and_rejecting_focus_based_on_pointing_zenith(
-    pointing_zenith_rad,
-    accepting_height_above_observation_level_m,
-    rejecting_height_above_observation_level_m,
-    trigger_foci_bin_edges_m,
-):
-    cos_pointing_zd_rad = np.cos(pointing_zenith_rad)
-
-    accepting_depth_m = (
-        accepting_height_above_observation_level_m / cos_pointing_zd_rad
-    )
-    rejecting_depth_m = (
-        rejecting_height_above_observation_level_m / cos_pointing_zd_rad
-    )
-
-    accepting_focus = np.digitize(
-        x=accepting_depth_m, bins=trigger_foci_bin_edges_m
-    )
-    rejecting_focus = np.digitize(
-        x=rejecting_depth_m, bins=trigger_foci_bin_edges_m
-    )
-
-    return accepting_focus, rejecting_focus
-
-
-def copy_focus_response_into_matrix(trigger_table):
-    num_events = trigger_table.shape[0]
-    num_foci = 0
-    for key in trigger_table.dtype.names:
-        if "focus_" in key and "_response_pe" in key:
-            num_foci += 1
-
-    focus_response_pe = np.zeros(shape=(num_events, num_foci), dtype=int)
-    for f in range(num_foci):
-        focus_response_pe[:, f] = trigger_table[f"focus_{f:02d}_response_pe"]
-
-    return focus_response_pe
-
-
-def find_accepting_and_rejecting_response(
-    accepting_focus,
-    rejecting_focus,
-    focus_response_pe,
-):
-    num_events = focus_response_pe.shape[0]
-    assert accepting_focus.shape[0] == num_events
-    assert rejecting_focus.shape[0] == num_events
-    num_foci = focus_response_pe.shape[1]
-
-    accepting_response_pe = np.zeros(shape=num_events, dtype=int)
-    rejecting_response_pe = np.zeros(shape=num_events, dtype=int)
-
-    for focus in range(num_foci):
-        accepting_mask = accepting_focus == focus
-        accepting_response_pe[accepting_mask] = focus_response_pe[
-            accepting_mask, focus
-        ]
-
-        rejecting_mask = rejecting_focus == focus
-        rejecting_response_pe[rejecting_mask] = focus_response_pe[
-            rejecting_mask, focus
-        ]
-
-    return accepting_response_pe, rejecting_response_pe
-
-
 fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
 ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 x_zd_rad = np.linspace(0, np.deg2rad(45), 1337)
@@ -104,7 +38,7 @@ ax.plot(
     color="black",
 )
 ax.set_xlabel(r"zenith / (1$^{\circ}$)")
-ax.set_ylabel("threshold / p.e.")
+ax.set_ylabel("sum trigger threshold / p.e.")
 ax.set_xlim([0, 50])
 fig.savefig(
     opj(
@@ -138,7 +72,7 @@ for pk in res.PARTICLES:
     num_events = event_table["trigger"].shape[0]
 
     (accepting_focus, rejecting_focus) = (
-        assign_accepting_and_rejecting_focus_based_on_pointing_zenith(
+        irf.analysis.light_field_trigger_modi.assign_accepting_and_rejecting_focus_based_on_pointing_zenith(
             pointing_zenith_rad=event_table["instrument_pointing"][
                 "zenith_rad"
             ],
@@ -150,14 +84,16 @@ for pk in res.PARTICLES:
     assert accepting_focus.shape[0] == num_events
     assert rejecting_focus.shape[0] == num_events
 
-    focus_response_pe = copy_focus_response_into_matrix(
-        trigger_table=event_table["trigger"]
+    focus_response_pe = (
+        irf.analysis.light_field_trigger_modi.copy_focus_response_into_matrix(
+            trigger_table=event_table["trigger"]
+        )
     )
     assert focus_response_pe.shape[0] == num_events
     assert focus_response_pe.shape[1] == trigger["foci_bin"]["num"]
 
     (accepting_response_pe, rejecting_response_pe) = (
-        find_accepting_and_rejecting_response(
+        irf.analysis.light_field_trigger_modi.find_accepting_and_rejecting_response(
             accepting_focus=accepting_focus,
             rejecting_focus=rejecting_focus,
             focus_response_pe=focus_response_pe,

@@ -2,6 +2,93 @@ import numpy as np
 import sparse_numeric_table as snt
 
 
+def height_to_depth(height_m, zenith_rad):
+    # an = height
+    # hyp = depth
+    # cos(z) = an / hyp
+    # cos(z) = height / depth
+    #
+    #           O---------O
+    #           |_|     /
+    #           |     /
+    # an/heihgt | z / hyp/depth
+    #           | /
+    #           O
+    depth = height_m / np.cos(zenith_rad)
+    return depth
+
+
+def depth_to_height(depth_m, zenith_rad):
+    return np.cos(zenith_rad) * depth
+
+
+def assign_accepting_and_rejecting_focus_based_on_pointing_zenith(
+    pointing_zenith_rad,
+    accepting_height_above_observation_level_m,
+    rejecting_height_above_observation_level_m,
+    trigger_foci_bin_edges_m,
+):
+    accepting_depth_m = height_to_depth(
+        height_m=accepting_height_above_observation_level_m,
+        zenith_rad=pointing_zenith_rad,
+    )
+
+    rejecting_depth_m = height_to_depth(
+        height_m=rejecting_height_above_observation_level_m,
+        zenith_rad=pointing_zenith_rad,
+    )
+
+    accepting_focus = np.digitize(
+        x=accepting_depth_m, bins=trigger_foci_bin_edges_m
+    )
+    rejecting_focus = np.digitize(
+        x=rejecting_depth_m, bins=trigger_foci_bin_edges_m
+    )
+
+    return accepting_focus, rejecting_focus
+
+
+def copy_focus_response_into_matrix(trigger_table):
+    num_events = trigger_table.shape[0]
+    num_foci = 0
+    for key in trigger_table.dtype.names:
+        if "focus_" in key and "_response_pe" in key:
+            num_foci += 1
+
+    focus_response_pe = np.zeros(shape=(num_events, num_foci), dtype=int)
+    for f in range(num_foci):
+        focus_response_pe[:, f] = trigger_table[f"focus_{f:02d}_response_pe"]
+
+    return focus_response_pe
+
+
+def find_accepting_and_rejecting_response(
+    accepting_focus,
+    rejecting_focus,
+    focus_response_pe,
+):
+    num_events = focus_response_pe.shape[0]
+    assert accepting_focus.shape[0] == num_events
+    assert rejecting_focus.shape[0] == num_events
+    num_foci = focus_response_pe.shape[1]
+
+    accepting_response_pe = np.zeros(shape=num_events, dtype=int)
+    rejecting_response_pe = np.zeros(shape=num_events, dtype=int)
+
+    for focus in range(num_foci):
+        accepting_mask = accepting_focus == focus
+        accepting_response_pe[accepting_mask] = focus_response_pe[
+            accepting_mask, focus
+        ]
+
+        rejecting_mask = rejecting_focus == focus
+        rejecting_response_pe[rejecting_mask] = focus_response_pe[
+            rejecting_mask, focus
+        ]
+
+    return accepting_response_pe, rejecting_response_pe
+
+
 def get_trigger_threshold_corrected_for_pointing_zenith(
     pointing_zenith_rad, trigger, nominal_threshold_pe
 ):
