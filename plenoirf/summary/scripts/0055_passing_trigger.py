@@ -30,7 +30,7 @@ ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 x_zd_rad = np.linspace(0, np.deg2rad(45), 1337)
 ax.plot(
     np.rad2deg(x_zd_rad),
-    irf.analysis.light_field_trigger_modi.get_trigger_threshold_corrected_for_pointing_zenith(
+    irf.light_field_trigger.get_trigger_threshold_corrected_for_pointing_zenith(
         pointing_zenith_rad=x_zd_rad,
         trigger=trigger,
         nominal_threshold_pe=trigger["threshold_pe"],
@@ -72,7 +72,7 @@ for pk in res.PARTICLES:
     num_events = event_table["trigger"].shape[0]
 
     (accepting_focus, rejecting_focus) = (
-        irf.analysis.light_field_trigger_modi.assign_accepting_and_rejecting_focus_based_on_pointing_zenith(
+        irf.light_field_trigger.assign_accepting_and_rejecting_focus_based_on_pointing_zenith(
             pointing_zenith_rad=event_table["instrument_pointing"][
                 "zenith_rad"
             ],
@@ -85,7 +85,7 @@ for pk in res.PARTICLES:
     assert rejecting_focus.shape[0] == num_events
 
     focus_response_pe = (
-        irf.analysis.light_field_trigger_modi.copy_focus_response_into_matrix(
+        irf.light_field_trigger.copy_focus_response_into_matrix(
             trigger_table=event_table["trigger"]
         )
     )
@@ -93,7 +93,7 @@ for pk in res.PARTICLES:
     assert focus_response_pe.shape[1] == trigger["foci_bin"]["num"]
 
     (accepting_response_pe, rejecting_response_pe) = (
-        irf.analysis.light_field_trigger_modi.find_accepting_and_rejecting_response(
+        irf.light_field_trigger.find_accepting_and_rejecting_response(
             accepting_focus=accepting_focus,
             rejecting_focus=rejecting_focus,
             focus_response_pe=focus_response_pe,
@@ -125,7 +125,7 @@ for pk in res.PARTICLES:
     for irs in range(len(trigger["ratescan_thresholds_pe"])):
         nominal_threshold_pe = trigger["ratescan_thresholds_pe"][irs]
 
-        zenith_corrected_threshold_pe = irf.analysis.light_field_trigger_modi.get_trigger_threshold_corrected_for_pointing_zenith(
+        zenith_corrected_threshold_pe = irf.light_field_trigger.get_trigger_threshold_corrected_for_pointing_zenith(
             pointing_zenith_rad=event_table["instrument_pointing"][
                 "zenith_rad"
             ],

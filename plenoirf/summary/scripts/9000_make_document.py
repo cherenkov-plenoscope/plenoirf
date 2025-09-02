@@ -269,7 +269,7 @@ for sk in SITES:
                 "This includes airshowers below the geomagnetic-cutoff created by secondary, terrestrial particles."
             )
 
-    trgstr = irf.analysis.light_field_trigger_modi.make_trigger_modus_str(
+    trgstr = irf.light_field_trigger.make_trigger_modus_str(
         analysis_trigger=sum_config["trigger"][sk],
         production_trigger=irf_config["config"]["sum_trigger"],
     )

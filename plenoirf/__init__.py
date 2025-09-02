@@ -27,6 +27,7 @@ from . import logging
 from . import benchmarking
 from . import reduction
 from . import bootstripping
+from . import light_field_trigger
 
 import os
 import numpy as np

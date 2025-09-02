@@ -57,7 +57,7 @@ for pk in res.PARTICLES:
     for zd in range(zenith_bin["num"]):
         zk = f"zd{zd:d}"
 
-        ZENITH_CORRECTED_TRIGGER_THRESHOLD_PE = irf.analysis.light_field_trigger_modi.get_trigger_threshold_corrected_for_pointing_zenith(
+        ZENITH_CORRECTED_TRIGGER_THRESHOLD_PE = irf.light_field_trigger.get_trigger_threshold_corrected_for_pointing_zenith(
             pointing_zenith_rad=zenith_bin["centers"][zd],
             trigger=trigger,
             nominal_threshold_pe=trigger["threshold_pe"],
