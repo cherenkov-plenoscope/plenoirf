@@ -14,12 +14,17 @@ def height_to_depth(height_m, zenith_rad):
     # an/heihgt | z / hyp/depth
     #           | /
     #           O
-    depth = height_m / np.cos(zenith_rad)
-    return depth
+    depth_m = height_m / np.cos(zenith_rad)
+    return depth_m
 
 
 def depth_to_height(depth_m, zenith_rad):
-    return np.cos(zenith_rad) * depth
+    height_m = np.cos(zenith_rad) * depth_m
+    return height_m
+
+
+def assign_to_bin(x, bin_edges):
+    return np.digitize(x, bins=bin_edges) - 1
 
 
 def assign_accepting_and_rejecting_focus_based_on_pointing_zenith(
@@ -38,11 +43,11 @@ def assign_accepting_and_rejecting_focus_based_on_pointing_zenith(
         zenith_rad=pointing_zenith_rad,
     )
 
-    accepting_focus = np.digitize(
-        x=accepting_depth_m, bins=trigger_foci_bin_edges_m
+    accepting_focus = assign_to_bin(
+        x=accepting_depth_m, bin_edges=trigger_foci_bin_edges_m
     )
-    rejecting_focus = np.digitize(
-        x=rejecting_depth_m, bins=trigger_foci_bin_edges_m
+    rejecting_focus = assign_to_bin(
+        x=rejecting_depth_m, bin_edges=trigger_foci_bin_edges_m
     )
 
     return accepting_focus, rejecting_focus

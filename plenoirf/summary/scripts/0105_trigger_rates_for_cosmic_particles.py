@@ -7,6 +7,7 @@ from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 import propagate_uncertainties as pru
+import rename_after_writing as rnw
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
@@ -193,5 +194,66 @@ for zd in range(zenith_bin["num"]):
                 "absolute_uncertainty": R_au,
             },
         )
+
+
+# summarize rates
+
+_trigger_threshold_index = (
+    np.arange(len(trigger_thresholds)) * trigger_thresholds
+    == res.analysis["trigger"][res.site_key]["threshold_pe"]
+)
+tti = _trigger_threshold_index
+
+inte = {}
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
+
+    inte[zk] = {}
+    for pk in res.PARTICLES:
+        zk_pk_dir = opj(res.paths["out_dir"], zk, pk)
+        with open(opj(zk_pk_dir, "integral_rate.json"), "rt") as fin:
+            inr = json_utils.loads(fin.read())
+        inte[zk][pk] = {
+            "R": float(inr["mean"][tti][0]),
+            "R_au": float(inr["absolute_uncertainty"][tti][0]),
+        }
+
+    R_tot = []
+    R_tot_au = []
+    for pk in res.PARTICLES:
+        R_tot.append(inte[zk][pk]["R"])
+        R_tot_au.append(inte[zk][pk]["R_au"])
+
+    Rt, Rt_au = pru.sum(x=R_tot, x_au=R_tot_au)
+    inte[zk]["__total__"] = {"R": float(Rt), "R_au": float(Rt_au)}
+
+with rnw.open(
+    opj(res.paths["out_dir"], "summary.zenith.particle.json"), "wt"
+) as fout:
+    fout.write(json_utils.dumps(inte, indent=4))
+
+
+SNR = {}
+for zd in range(zenith_bin["num"]):
+    zk = f"zd{zd:d}"
+    SNR[zk] = {}
+
+    Rbg, Rbg_au = pru.add(
+        x=inte[zk]["proton"]["R"],
+        x_au=inte[zk]["proton"]["R_au"],
+        y=inte[zk]["helium"]["R"],
+        y_au=inte[zk]["helium"]["R_au"],
+    )
+
+    snr, snr_au = pru.divide(
+        x=inte[zk]["gamma"]["R"],
+        x_au=inte[zk]["gamma"]["R_au"],
+        y=Rbg,
+        y_au=Rbg_au,
+    )
+    SNR[zk] = {"snr_u": snr * 1e6, "snr_u_au": snr_au * 1e6}
+
+with rnw.open(opj(res.paths["out_dir"], "snr.json"), "wt") as fout:
+    fout.write(json_utils.dumps(SNR, indent=4))
 
 res.stop()

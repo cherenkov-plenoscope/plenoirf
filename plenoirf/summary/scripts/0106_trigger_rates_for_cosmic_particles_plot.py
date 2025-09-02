@@ -76,9 +76,7 @@ for zd in range(zenith_bin["num"]):
         ax.text(
             0.6,
             0.1 + text_y,
-            r"{: 8.1f} $\pm${: 6.1f} s$^{{-1}}$".format(
-                ir, np.ceil(ir_abs_unc)
-            ),
+            r"{: 8.1f} $\pm${: 6.1f} s$^{{-1}}$".format(ir, ir_abs_unc),
             color="k",
             family="monospace",
             transform=ax.transAxes,
