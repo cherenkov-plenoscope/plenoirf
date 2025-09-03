@@ -61,7 +61,7 @@ for zd in range(zenith_bin["num"]):
                         "num_bins_thrown",
                         "num_bins_above_threshold",
                     ),
-                    "trigger": "__all__",
+                    "trigger": ("uid",),
                 }
             )
 
