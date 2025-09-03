@@ -108,6 +108,8 @@ def call_script_in_subprocess(
     ) as e:
         rc = subprocess.call(call, stdout=o, stderr=e)
 
+    assert rc == 0, f"{script_name:s} return code: {rc:d} != 0."
+
     os.rename(src=paths["stdout_path"] + ".part", dst=paths["stdout_path"])
     os.rename(src=paths["stderr_path"] + ".part", dst=paths["stderr_path"])
 
