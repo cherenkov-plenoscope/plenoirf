@@ -1,5 +1,6 @@
 import numpy as np
 import sparse_numeric_table as snt
+import warnings
 
 
 def height_to_depth(height_m, zenith_rad):
@@ -60,7 +61,11 @@ def copy_focus_response_into_matrix(trigger_table):
         if "focus_" in key and "_response_pe" in key:
             num_foci += 1
 
-    focus_response_pe = np.zeros(shape=(num_events, num_foci), dtype=int)
+    focus_response_pe = np.zeros(
+        shape=(num_events, num_foci),
+        dtype=trigger_table[f"focus_00_response_pe"].dtype,
+    )
+
     for f in range(num_foci):
         focus_response_pe[:, f] = trigger_table[f"focus_{f:02d}_response_pe"]
 
