@@ -258,8 +258,8 @@ def print_info(
             draw_bin_walls=False,
         )
         ax.loglog()
-        ax.set_xlabel("ratio over threshold / 1")
-        ax.set_ylabel("sum trigger threshold / p.e.")
+        ax.set_xlabel("trigger focus depth / m")
+        ax.set_ylabel("fraction of events over\naccepting threshold / 1")
         ax.set_xlim([min(edges), max(edges)])
         ax.set_ylim([1e-6, 1.0])
         fig.savefig(
