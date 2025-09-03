@@ -470,59 +470,44 @@ FERMI_3FGL_PHD_THESIS_REFERENCE_SOURCE_NAME = "3FGL J2254.0+1608"
 def _guess_trigger(
     collection_trigger_threshold_pe,
     analysis_trigger_threshold_pe,
-    site_altitude_asl_m,
-    trigger_foci_object_distamces_m,
-    trigger_accepting_altitude_asl_m=19856,
-    trigger_rejecting_altitude_asl_m=13851,
 ):
-    """
-    Trigger rate vs zenith pointing 2025-07-09
-    site: chile. zd0: 130pe, zd1: 140pe, zd2: 150pe
-    """
-
-    """
-
-    example Namibia:
-    - accepting focus 17,556m, rejecting focus 11,551m, site's altitude 2,300m
-    """
-    accep = utils.get_index_of_closest_match(
-        x=trigger_foci_object_distamces_m,
-        y=trigger_accepting_altitude_asl_m - site_altitude_asl_m,
-    )
-    rejec = utils.get_index_of_closest_match(
-        x=trigger_foci_object_distamces_m,
-        y=trigger_rejecting_altitude_asl_m - site_altitude_asl_m,
-    )
-
+    """ """
     modus = {
         "modus": {
-            "accepting_focus": accep,
-            "rejecting_focus": rejec,
+            "accepting_altitude_asl_m": 5_000 + 15_000,
+            "rejecting_altitude_asl_m": 5_000 + 5_000,
             "accepting": {
                 "threshold_accepting_over_rejecting": [
-                    1,
-                    1,
-                    0.8,
-                    0.4,
+                    1.19,
+                    1.19,
+                    1.0,
+                    0.6,
+                    0.3,
                     0.2,
-                    0.1,
                 ],
-                "response_pe": [1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
+                "response_pe": [1e1, 3e2, 1e3, 1e4, 1e5, 1e6],
             },
         },
         "threshold_pe": analysis_trigger_threshold_pe,
         "threshold_factor_vs_pointing_zenith": {
             "zenith_rad": np.deg2rad([0, 22.5, 45.0]),
-            "factor": np.array([1.00, 1.02, 1.04]),
+            "factor": np.array([1.00, 0.99, 0.98]),
         },
-        "ratescan_thresholds_pe": make_ratescan_trigger_thresholds(
+    }
+
+    make_ratescan = False
+
+    if make_ratescan:
+        modus["ratescan_thresholds_pe"] = make_ratescan_trigger_thresholds(
             lower_threshold=int(collection_trigger_threshold_pe * 0.86),
             upper_threshold=int(collection_trigger_threshold_pe * 2.5),
             num_thresholds=32,
             collection_trigger_threshold=collection_trigger_threshold_pe,
             analysis_trigger_threshold=analysis_trigger_threshold_pe,
-        ),
-    }
+        )
+    else:
+        modus["ratescan_thresholds_pe"] = [analysis_trigger_threshold_pe]
+
     return modus
 
 
@@ -569,7 +554,7 @@ def _guess_analysis_config_for_instrument(
 
     collection_trigger_threshold_pe = config["sum_trigger"]["threshold_pe"]
     analysis_trigger_threshold_pe = int(
-        np.round(1.05 * collection_trigger_threshold_pe)
+        np.round(1.04 * collection_trigger_threshold_pe)
     )
 
     fov_radius_deg = (
@@ -719,12 +704,6 @@ def _guess_analysis_config_for_instrument(
         cfg["trigger"][sk] = _guess_trigger(
             collection_trigger_threshold_pe=collection_trigger_threshold_pe,
             analysis_trigger_threshold_pe=analysis_trigger_threshold_pe,
-            site_altitude_asl_m=SITES[sk]["observation_level_asl_m"],
-            trigger_foci_object_distamces_m=config["sum_trigger"][
-                "object_distances_m"
-            ],
-            trigger_accepting_altitude_asl_m=19856,
-            trigger_rejecting_altitude_asl_m=13851,
         )
     return cfg
 
