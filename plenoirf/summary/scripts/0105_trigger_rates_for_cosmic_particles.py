@@ -196,13 +196,25 @@ for zd in range(zenith_bin["num"]):
         )
 
 
+def find_index_of_analysis_trigger_threshold(
+    trigger_thresholds, script_resources
+):
+    res = script_resources
+    _index = -1
+    for i in range(len(trigger_thresholds)):
+        if (
+            trigger_thresholds[i]
+            == res.analysis["trigger"][res.site_key]["threshold_pe"]
+        ):
+            _index = i
+    return _index
+
+
 # summarize rates
 
-_trigger_threshold_index = (
-    np.arange(len(trigger_thresholds)) * trigger_thresholds
-    == res.analysis["trigger"][res.site_key]["threshold_pe"]
+tti = find_index_of_analysis_trigger_threshold(
+    trigger_thresholds=trigger_thresholds, script_resources=res
 )
-tti = _trigger_threshold_index
 
 inte = {}
 for zd in range(zenith_bin["num"]):
@@ -214,8 +226,8 @@ for zd in range(zenith_bin["num"]):
         with open(opj(zk_pk_dir, "integral_rate.json"), "rt") as fin:
             inr = json_utils.loads(fin.read())
         inte[zk][pk] = {
-            "R": float(inr["mean"][tti][0]),
-            "R_au": float(inr["absolute_uncertainty"][tti][0]),
+            "R": float(inr["mean"][tti]),
+            "R_au": float(inr["absolute_uncertainty"][tti]),
         }
 
     R_tot = []
