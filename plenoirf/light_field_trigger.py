@@ -102,7 +102,7 @@ def get_trigger_threshold_corrected_for_pointing_zenith(
         xp=trigger["threshold_factor_vs_pointing_zenith"]["zenith_rad"],
         fp=trigger["threshold_factor_vs_pointing_zenith"]["factor"],
     )
-    assert np.all(zenith_factor >= 1.0)
+    assert np.all(zenith_factor > 0)
     return np.round(zenith_factor * nominal_threshold_pe).astype(int)
 
 
