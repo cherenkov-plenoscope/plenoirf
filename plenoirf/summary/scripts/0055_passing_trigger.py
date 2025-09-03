@@ -54,6 +54,11 @@ fig.savefig(
 sebplt.close(fig)
 
 
+SIZE_BIN_EDGES = np.array(
+    sorted(list(set(np.round(np.geomspace(80, 8_000, 100)))))
+)
+
+
 def has_focus_above_threshold(
     focus_response_pe, zenith_corrected_threshold_pe
 ):
@@ -76,6 +81,7 @@ def explore_focus_ratios(
     zenith_corrected_threshold_pe,
     trigger_focus_bin_edges,
     pk,
+    small_size_ratio_threschold,
 ):
     num_foci = focus_response_pe.shape[1]
     num_events = uids.shape[0]
@@ -87,9 +93,9 @@ def explore_focus_ratios(
         accepting_response_pe >= zenith_corrected_threshold_pe
     )
 
-    num_ratios = num_foci * 3
+    num_ratios = 30
     ratio_bin = binning_utils.Binning(
-        bin_edges=np.linspace(0.7, 1 / 0.7, num_ratios + 1)
+        bin_edges=np.geomspace(0.5, 1 / 0.5, num_ratios + 1)
     )
 
     zdfocrat = np.zeros(shape=(zenith_bin["num"], num_foci, num_ratios))
@@ -132,15 +138,69 @@ def explore_focus_ratios(
             ratio_bin["edges"],
             trigger_focus_bin_edges,
             zdfocrat[zd, :, :],
-            cmap="Greys",
+            cmap=res.PARTICLE_COLORMAPS[pk],
             norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
         )
-        ax_c.semilogy()
+        ax_c.axvline(
+            small_size_ratio_threschold,
+            color="black",
+            linestyle=":",
+            alpha=0.25,
+        )
+        ax_c.loglog()
         sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
         ax_c.set_xlabel("accepting over rejecting  / 1")
         ax_c.set_ylabel("rejecting focus / m")
         fig.savefig(
             opj(res.paths["out_dir"], f"{zk:s}_{pk:s}_focus_ratios.jpg")
+        )
+        sebplt.close(fig)
+
+    size_bin = binning_utils.Binning(bin_edges=SIZE_BIN_EDGES)
+
+    for zd in range(zenith_bin["num"]):
+        zk = f"zd{zd:d}"
+
+        mask_zenith = snt.logic.make_mask_of_right_in_left(
+            left_indices=uids,
+            right_indices=zenith_assignment[zk][pk],
+        )
+        zd_accepting_response_pe = accepting_response_pe[mask_zenith]
+
+        hist_accepting_response = np.histogram(
+            zd_accepting_response_pe,
+            bins=size_bin["edges"],
+        )[0]
+        rel_hist_accepting_response = (
+            hist_accepting_response / zd_accepting_response_pe.shape[0]
+        )
+
+        fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+        ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+        sebplt.ax_add_histogram(
+            ax=ax,
+            bin_edges=size_bin["edges"],
+            bincounts=rel_hist_accepting_response,
+            linestyle="-",
+            linecolor=res.PARTICLE_COLORS[pk],
+            linealpha=1.0,
+            bincounts_upper=None,
+            bincounts_lower=None,
+            face_color=None,
+            face_alpha=None,
+            label=None,
+            draw_bin_walls=False,
+        )
+        ax.loglog()
+        ax.set_xlabel("accepting response / p.e.")
+        ax.set_ylabel("rel. intensity / 1\n(of what was thrown)")
+        ax.set_xlim(size_bin["limits"])
+        ax.set_ylim([1e-6, 1.0])
+        fig.savefig(
+            opj(
+                res.paths["out_dir"],
+                f"{zk:s}_{pk:s}_accepting_response_histogram.jpg",
+            )
         )
         sebplt.close(fig)
 
@@ -240,6 +300,8 @@ for pk in res.PARTICLES:
             trigger_foci_bin_edges_m=trigger["foci_bin"]["edges"],
         )
     )
+    # rejecting_focus = accepting_focus - 1  # one focus layer below
+
     assert accepting_focus.shape[0] == num_events
     assert rejecting_focus.shape[0] == num_events
 
@@ -261,15 +323,15 @@ for pk in res.PARTICLES:
     assert accepting_response_pe.shape[0] == num_events
     assert rejecting_response_pe.shape[0] == num_events
 
-    threshold_accepting_over_rejecting = np.interp(
-        x=accepting_response_pe,
-        xp=trigger["modus"]["accepting"]["response_pe"],
-        fp=trigger["modus"]["accepting"]["threshold_accepting_over_rejecting"],
-        left=None,
-        right=None,
-        period=None,
+    threshold_accepting_over_rejecting = (
+        irf.light_field_trigger.get_accepting_over_rejecting(
+            pointing_zenith_rad=event_table["instrument_pointing"][
+                "zenith_rad"
+            ],
+            trigger=trigger,
+            accepting_response_pe=accepting_response_pe,
+        )
     )
-    assert threshold_accepting_over_rejecting.shape[0] == num_events
 
     accepting_over_rejecting = accepting_response_pe / rejecting_response_pe
     is_ratio_over_threshold = (
@@ -291,6 +353,16 @@ for pk in res.PARTICLES:
         pk=pk,
     )
 
+    _small_size_pe = [150]
+    _pointing_to_zenith_rad = [0]
+    _small_size_ratio_threschold = (
+        irf.light_field_trigger.get_accepting_over_rejecting(
+            pointing_zenith_rad=_pointing_to_zenith_rad,
+            trigger=trigger,
+            accepting_response_pe=_small_size_pe,
+        )[0]
+    )
+
     zdfocrat, ratio_bin = explore_focus_ratios(
         uids=event_table["trigger"]["uid"],
         focus_response_pe=focus_response_pe,
@@ -298,6 +370,7 @@ for pk in res.PARTICLES:
         zenith_corrected_threshold_pe=zenith_corrected_threshold_pe,
         trigger_focus_bin_edges=trigger["foci_bin"]["edges"],
         pk=pk,
+        small_size_ratio_threschold=_small_size_ratio_threschold,
     )
 
     # export

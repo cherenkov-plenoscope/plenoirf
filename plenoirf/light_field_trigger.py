@@ -106,6 +106,39 @@ def get_trigger_threshold_corrected_for_pointing_zenith(
     return np.round(zenith_factor * nominal_threshold_pe).astype(int)
 
 
+def get_accepting_over_rejecting(
+    pointing_zenith_rad,
+    trigger,
+    accepting_response_pe,
+):
+    pointing_zenith_rad = np.asarray(pointing_zenith_rad)
+    accepting_response_pe = np.asarray(accepting_response_pe)
+    acc = trigger["modus"]["accepting"]
+    num_events = pointing_zenith_rad.shape[0]
+
+    threshold_accepting_over_rejecting = np.interp(
+        x=accepting_response_pe,
+        xp=acc["response_pe"],
+        fp=acc["threshold_accepting_over_rejecting"],
+        left=None,
+        right=None,
+        period=None,
+    )
+    assert threshold_accepting_over_rejecting.shape[0] == num_events
+
+    zenith_factor = np.interp(
+        x=pointing_zenith_rad,
+        xp=acc["correction_for_pointing_zenith"]["zenith_rad"],
+        fp=acc["correction_for_pointing_zenith"]["factor"],
+        left=None,
+        right=None,
+        period=None,
+    )
+    assert zenith_factor.shape[0] == num_events
+
+    return threshold_accepting_over_rejecting * zenith_factor
+
+
 def make_mask(
     trigger_table,
     threshold,

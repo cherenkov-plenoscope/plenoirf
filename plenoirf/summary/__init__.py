@@ -471,27 +471,30 @@ def _guess_trigger(
     collection_trigger_threshold_pe,
     analysis_trigger_threshold_pe,
 ):
-    """ """
     modus = {
         "modus": {
-            "accepting_altitude_asl_m": 5_000 + 15_000,
-            "rejecting_altitude_asl_m": 5_000 + 5_000,
+            "accepting_altitude_asl_m": 5_000 + 12_500,
+            "rejecting_altitude_asl_m": 5_000 + 7_000,
             "accepting": {
                 "threshold_accepting_over_rejecting": [
-                    1.19,
-                    1.19,
+                    1.2,
+                    1.2,
                     1.0,
                     0.6,
                     0.3,
                     0.2,
                 ],
-                "response_pe": [1e1, 3e2, 1e3, 1e4, 1e5, 1e6],
+                "response_pe": [1e1, 2e2, 1e3, 1e4, 1e5, 1e6],
+                "correction_for_pointing_zenith": {
+                    "zenith_rad": np.deg2rad([0, 22.5, 45.0]),
+                    "factor": [1.0, 1.0, 0.95],
+                },
             },
         },
         "threshold_pe": analysis_trigger_threshold_pe,
         "threshold_factor_vs_pointing_zenith": {
             "zenith_rad": np.deg2rad([0, 22.5, 45.0]),
-            "factor": np.array([1.00, 0.99, 0.98]),
+            "factor": np.array([1.00, 0.97, 0.95]),
         },
     }
 
@@ -554,7 +557,7 @@ def _guess_analysis_config_for_instrument(
 
     collection_trigger_threshold_pe = config["sum_trigger"]["threshold_pe"]
     analysis_trigger_threshold_pe = int(
-        np.round(1.04 * collection_trigger_threshold_pe)
+        np.round(1.125 * collection_trigger_threshold_pe)
     )
 
     fov_radius_deg = (
