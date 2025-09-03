@@ -256,7 +256,7 @@ for pe in pivot_energies:
                 ax.set_ylim(np.sort(_dFdE_lim))
                 ax.loglog()
                 # ax.legend(loc="best", fontsize=10)
-                ax.set_xlabel("observation-time / s")
+                ax.set_xlabel("observation time / s")
                 ax.set_ylabel(
                     sed_styles.PLENOIRF_SED_STYLE["y_label"]
                     + " /\n "
