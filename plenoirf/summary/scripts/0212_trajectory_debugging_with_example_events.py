@@ -111,12 +111,38 @@ for zd in range(zenith_bin["num"]):
         with res.open_event_table(particle_key=pk) as arc:
             event_table = arc.query(
                 levels_and_columns={
-                    "primary": "__all__",
-                    "instrument_pointing": "__all__",
-                    "groundgrid_choice": "__all__",
-                    "reconstructed_trajectory": "__all__",
-                    "features": "__all__",
+                    "primary": (
+                        "uid",
+                        "azimuth_rad",
+                        "zenith_rad",
+                        "energy_GeV",
+                    ),
+                    "instrument_pointing": (
+                        "uid",
+                        "azimuth_rad",
+                        "zenith_rad",
+                    ),
+                    "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
+                    "reconstructed_trajectory": (
+                        "uid",
+                        "cx_rad",
+                        "cy_rad",
+                        "x_m",
+                        "y_m",
+                    ),
+                    "features": (
+                        "uid",
+                        "image_smallest_ellipse_object_distance",
+                        "image_half_depth_shift_cx",
+                        "image_half_depth_shift_cy",
+                    ),
                 }
+            )
+            uid_common = snt.logic.intersection(
+                *(
+                    [uid_common]
+                    + [event_table[tab]["uid"] for tab in event_table]
+                )
             )
             event_table = snt.logic.cut_and_sort_table_on_indices(
                 table=event_table,
