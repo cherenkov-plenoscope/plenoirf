@@ -527,7 +527,7 @@ def _guess_trigger(
         },
     }
 
-    make_ratescan = False
+    make_ratescan = True
 
     if make_ratescan:
         modus["ratescan_thresholds_pe"] = make_ratescan_trigger_thresholds(
