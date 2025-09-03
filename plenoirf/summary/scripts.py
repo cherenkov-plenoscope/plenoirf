@@ -59,10 +59,15 @@ def _make_script_out_paths(
     out_dir = os.path.join(
         plenoirf_dir, "analysis", instrument_key, site_key, script_name
     )
+    log_dir = os.path.join(
+        plenoirf_dir, "analysis", instrument_key, site_key, f".{script_name:s}"
+    )
     return {
         "out_dir": out_dir,
-        "stdout_path": os.path.join(out_dir, "stdout.txt"),
-        "stderr_path": os.path.join(out_dir, "stderr.txt"),
+        "log_dir": log_dir,
+        "rc_path": os.path.join(log_dir, "rc.txt"),
+        "stdout_path": os.path.join(log_dir, "stdout.txt"),
+        "stderr_path": os.path.join(log_dir, "stderr.txt"),
     }
 
 
@@ -86,20 +91,23 @@ def call_script_in_subprocess(
     )
 
     if skip_when_script_out_dir_exists:
+        rc = 0
         if os.path.exists(paths["out_dir"]):
-            rc = -100
-            if os.path.exists(paths["stdout_path"]):
-                stdout_size = os.stat(paths["stdout_path"]).st_size
+            if os.path.exists(paths["log_dir"]):
+                if os.path.exists(paths["stdout_path"]):
+                    stdout_size = os.stat(paths["stdout_path"]).st_size
+                else:
+                    stdout_size = -1
+                if os.path.exists(paths["stderr_path"]):
+                    stderr_size = os.stat(paths["stderr_path"]).st_size
+                else:
+                    stderr_size = -1
+                return rc, stdout_size, stderr_size
             else:
-                stdout_size = -1
-            if os.path.exists(paths["stderr_path"]):
-                stderr_size = os.stat(paths["stderr_path"]).st_size
-            else:
-                stderr_size = -1
-            return rc, stdout_size, stderr_size
+                return rc, -1, -1
 
     script_path = os.path.join(scripts_dir, script_name + ".py")
-    os.makedirs(paths["out_dir"], exist_ok=True)
+    os.makedirs(paths["log_dir"], exist_ok=True)
 
     call = ["python", script_path, plenoirf_dir, instrument_key, site_key]
     rc = -1
@@ -108,10 +116,10 @@ def call_script_in_subprocess(
     ) as e:
         rc = subprocess.call(call, stdout=o, stderr=e)
 
-    assert rc == 0, f"{script_name:s} return code: {rc:d} != 0."
-
     os.rename(src=paths["stdout_path"] + ".part", dst=paths["stdout_path"])
     os.rename(src=paths["stderr_path"] + ".part", dst=paths["stderr_path"])
+    with open(paths["rc_path"], "wt") as f:
+        f.write(f"{rc:d}")
 
     stdout_size = os.stat(paths["stdout_path"]).st_size
     stderr_size = os.stat(paths["stderr_path"]).st_size
@@ -205,10 +213,12 @@ def run(
 
     scripts_dir = get_scripts_dir()
 
+    job_rc = {}
     job_statii = {}
     job_asyncs = {}
     job_stderr_len = {}
     for name in script_names:
+        job_rc[name] = None
         job_statii[name] = "pending"
         job_asyncs[name] = None
         job_stderr_len[name] = None
@@ -250,8 +260,11 @@ def run(
                             name
                         ].get()
 
+                        job_rc[name] = _script_rc
                         job_stderr_len[name] = _stderr_size
                         job_statii[name] = "complete"
+                        if _script_rc != 0:
+                            job_statii[name] = "error"
                     else:
                         job_statii[name] = "error"
 
@@ -272,7 +285,7 @@ def run(
                 elen = job_stderr_len[name]
                 print("{:<80s}     . .[C] {:d}".format(name, elen))
             elif status == "error":
-                print("{:<80s}     [ERROR]".format(name))
+                print("{:<80s}     [ERROR]".format(name), "rc:", job_rc[name])
             else:
                 print("{:<80s}     ? ? ? <{:s}>".format(name, status))
 

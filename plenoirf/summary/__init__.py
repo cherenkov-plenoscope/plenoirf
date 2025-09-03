@@ -60,6 +60,9 @@ class ScriptResources:
         )
 
     def start(self, sebplt=None):
+        self.final_out_dir = copy.copy(self.paths["out_dir"])
+        self.paths["out_dir"] += ".part"
+
         os.makedirs(self.paths["out_dir"], exist_ok=True)
         if sebplt is not None:
             sebplt.matplotlib.rcParams.update(
@@ -67,7 +70,8 @@ class ScriptResources:
             )
 
     def stop(self):
-        pass
+        os.rename(self.paths["out_dir"], self.final_out_dir)
+        self.paths["out_dir"] = copy.copy(self.paths["out_dir"])
 
     @classmethod
     def from_argv(cls, argv):
