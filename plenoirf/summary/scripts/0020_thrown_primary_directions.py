@@ -29,20 +29,11 @@ for pk in res.PARTICLES:
             levels_and_columns={
                 "primary": [
                     "uid",
-                    "energy_GeV",
                     "azimuth_rad",
                     "zenith_rad",
                 ],
-                "instrument_pointing": "__all__",
-                "groundgrid": "__all__",
             }
         )
-
-    table = snt.logic.sort_table_on_common_indices(
-        table=table,
-        common_indices=table["primary"]["uid"],
-        index_key="uid",
-    )
 
     hh.reset()
     hh.assign_azimuth_zenith(
