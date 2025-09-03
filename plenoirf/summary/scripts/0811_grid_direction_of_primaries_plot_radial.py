@@ -53,8 +53,17 @@ else:
         with res.open_event_table(particle_key=pk) as arc:
             evttab = arc.query(
                 levels_and_columns={
-                    "primary": "__all__",
-                    "instrument_pointing": "__all__",
+                    "primary": (
+                        "uid",
+                        "azimuth_rad",
+                        "zenith_rad",
+                        "energy_GeV",
+                    ),
+                    "instrument_pointing": (
+                        "uid",
+                        "azimuth_rad",
+                        "zenith_rad",
+                    ),
                 }
             )
 
