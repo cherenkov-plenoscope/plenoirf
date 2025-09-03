@@ -202,3 +202,5 @@ for zd in range(zenith_bin["num"]):
                 )
             )
             sebplt.close(fig)
+
+res.stop()

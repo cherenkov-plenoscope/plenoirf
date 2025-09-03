@@ -191,3 +191,5 @@ for zd in range(zenith_bin["num"]):
                     dRdE_per_s_per_GeV[ebin] * energy_fine_bin["widths"][ebin]
                 )
             array_to_txt(arr=[R_per_s], path=opj(zk_ok_pk_dir, "R_per_s.txt"))
+
+res.stop()

@@ -216,7 +216,7 @@ def histogram_ground_grid_intensity(
         x=intensity["x_bin"],
         y=intensity["y_bin"],
         bins=(x_bins, y_bins),
-        weights=intensity["size"],
+        weights=intensity["weight_photons"],
     )[0]
     return h
 
@@ -251,7 +251,7 @@ for pk in res.PARTICLES:
                 item["bin_idx_y"],
             )
 
-    with irf.ground_grid.intensity.Reader(
+    with irf.ground_grid.histogram2d.Reader(
         path=opj(
             res.response_path(particle_key=pk),
             "ground_grid_intensity_roi.zip",

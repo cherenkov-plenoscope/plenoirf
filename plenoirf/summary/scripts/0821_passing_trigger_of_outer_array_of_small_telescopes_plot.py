@@ -157,3 +157,5 @@ for zd in range(zenith_bin["num"]):
         )
         fig.savefig(opj(res.paths["out_dir"], f"{zk:s}_{ak:s}.jpg"))
         sebplt.close(fig)
+
+res.stop()
