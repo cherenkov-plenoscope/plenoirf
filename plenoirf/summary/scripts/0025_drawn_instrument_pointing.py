@@ -19,7 +19,7 @@ res.start(sebplt=sebplt)
 energy_bin = res.energy_binning(key="trigger_acceptance")
 
 hh = spherical_histogram.HemisphereHistogram(
-    num_vertices=12_000,
+    num_vertices=4_000,
     max_zenith_distance_rad=np.deg2rad(90),
 )
 

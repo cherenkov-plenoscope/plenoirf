@@ -68,7 +68,7 @@ for pk in res.PARTICLES:
             zenith_assignment[zk][pk],
         )
 
-        et = snt.logic.cut_and_sort_table_on_indices(
+        zd_evttab = snt.logic.cut_and_sort_table_on_indices(
             table=event_table,
             common_indices=uid_zd_common,
         )
@@ -78,8 +78,8 @@ for pk in res.PARTICLES:
             energy_stop_GeV = energy_bin["edges"][eee + 1]
 
             energy_mask = np.logical_and(
-                et["primary"]["energy_GeV"] >= energy_start_GeV,
-                et["primary"]["energy_GeV"] < energy_stop_GeV,
+                zd_evttab["primary"]["energy_GeV"] >= energy_start_GeV,
+                zd_evttab["primary"]["energy_GeV"] < energy_stop_GeV,
             )
 
             num_energy_zenith = np.sum(energy_mask)
@@ -93,7 +93,7 @@ for pk in res.PARTICLES:
             for fff in range(trigger["foci_bin"]["num"]):
                 fff_key = f"focus_{fff:02d}_response_pe"
                 trigger_in_energy_zenith[:, fff] = (
-                    et["trigger"][fff_key][energy_mask]
+                    zd_evttab["trigger"][fff_key][energy_mask]
                     >= ZENITH_CORRECTED_TRIGGER_THRESHOLD_PE
                 )
 
@@ -115,6 +115,10 @@ for pk in res.PARTICLES:
             ttt[pk]["num_have_at_least_one_focus_trigger"][zd][
                 eee
             ] = num_have_at_least_one_focus_trigger
+
+
+del event_table
+del zd_evttab
 
 cmap = irf.summary.figure.make_particle_colormaps(
     particle_colors=irf.summary.figure.PARTICLE_COLORS
