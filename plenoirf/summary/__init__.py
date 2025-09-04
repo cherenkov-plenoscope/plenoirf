@@ -272,11 +272,16 @@ class ScriptResources:
     def __repr__(self):
         return f"{self.__class__.__name__}()"
 
-    def read_provenance(self):
-        return provenance.read_all_provenance(
-            plenoirf_dir=self.paths["plenoirf_dir"],
-            analysis_dir=self.paths["analysis_dir"],
-        )
+    @property
+    def plenoirf_dir_provenance(self):
+        if not hasattr(self, "_plenoirf_dir_provenance"):
+            self._plenoirf_dir_provenance = (
+                provenance.read_plenoirf_dir_provenance(
+                    plenoirf_dir=self.paths["plenoirf_dir"],
+                    analysis_dir=self.paths["analysis_dir"],
+                )
+            )
+        return self._plenoirf_dir_provenance
 
 
 def _init_SITES(config):

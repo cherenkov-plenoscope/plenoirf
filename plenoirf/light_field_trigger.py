@@ -201,21 +201,19 @@ def make_trigger_modus_str(analysis_trigger, production_trigger):
     pro = production_trigger
     ana = analysis_trigger
 
-    acc_foc = ana["modus"]["accepting_focus"]
-    acc_obj = pro["object_distances_m"][acc_foc]
-    rej_foc = ana["modus"]["rejecting_focus"]
-    rej_obj = pro["object_distances_m"][rej_foc]
+    acc_alt = ana["modus"]["accepting_altitude_asl_m"]
+    rej_alt = ana["modus"]["rejecting_altitude_asl_m"]
 
     modus = ana["modus"]
 
     s = ""
-    s += "Modus\n"
-    s += "    Accepting object-distance "
-    s += "{:.1f}km, focus {:02d}\n".format(1e-3 * acc_obj, acc_foc)
-    s += "    Rejecting object-distance "
-    s += "{:.1f}km, focus {:02d}\n".format(1e-3 * rej_obj, rej_foc)
-    s += "    Intensity-ratio between foci:\n"
-    s += "        response / pe    ratio / 1\n"
+    s += "    Accepting focus altitude: "
+    s += "{:.2f}km\n".format(1e-3 * acc_alt)
+    s += "    Rejecting focus altitude: "
+    s += "{:.2f}km\n".format(1e-3 * rej_alt)
+    s += "    Intensity ratio between foci:\n"
+    s += "       accepting focus   accepting over\n"
+    s += "        response / pe     rejecting / 1\n"
     for i in range(len(modus["accepting"]["response_pe"])):
         xp = modus["accepting"]["response_pe"][i]
         fp = modus["accepting"]["threshold_accepting_over_rejecting"][i]

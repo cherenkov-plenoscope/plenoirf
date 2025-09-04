@@ -32,11 +32,13 @@ COSMIC_RAYS = res.COSMIC_RAYS
 SED_STYLE_KEY = "portal"
 OUTER_ARRAY_KEY = "ring-mst"
 
-ok = ["small", "medium", "large"][0]
-dk = "bell_spectrum"
+ok = ["small", "medium", "large"][1]
+dk = "black"
 
 energy_bin = res.energy_binning(key="point_spread_function")
 zenith_bin = res.zenith_binning(key="once")
+
+ZENITHS = [f"zd{zd:d}" for zd in range(zenith_bin["num"])]
 
 
 def noesc(text):
@@ -70,18 +72,17 @@ def verbatim(string):
     return r"\begin{verbatim}" + r"{:s}".format(string) + r"\end{verbatim}"
 
 
-provenance = res.read_provenance()
-
 total_trigger_rate_per_s = get_total_trigger_rate_at_analysis_threshold(
     trigger_rates_by_origin=json_utils.tree.read(
         ppath(res.paths["analysis_dir"], "0131_trigger_rates_total")
     )["trigger_rates_by_origin"]
 )
-"""
-total_trigger_rate_per_s_ltx = irf.utils.latex_scientific(
-    real=total_trigger_rate_per_s, format_template="{:.3e}"
-)
-"""
+
+total_trigger_rate_per_s_ltx = {}
+for zk in ZENITHS:
+    total_trigger_rate_per_s_ltx[zk] = irf.utils.latex_scientific(
+        real=total_trigger_rate_per_s[zk], format_template="{:.3e}"
+    )
 
 doc = ltx.Document(
     default_filepath=opj(
@@ -116,8 +117,7 @@ doc.append(noesc(r"\begin{multicols}{2}"))
 with doc.create(ltx.Section("Version", numbering=False)):
     _basic_version_str = irf.provenance.make_basic_version_str(
         production_dirname=res.production_dirname,
-        production_provenance=production_provenance,
-        analysis_provenance=analysis_provenance,
+        plenoirf_dir_provenance=res.plenoirf_dir_provenance,
     )
     doc.append(noesc(verbatim(_basic_version_str)))
 
@@ -125,6 +125,7 @@ with doc.create(ltx.Section("Version", numbering=False)):
         fig.add_image(
             opj(
                 res.paths["starter_kit_dir"],
+                "packages",
                 "portal-corporate-identity",
                 "images",
                 "side_total_from_distance.jpg",
@@ -133,50 +134,55 @@ with doc.create(ltx.Section("Version", numbering=False)):
         )
         fig.add_caption(
             noesc(
-                r"Portal, a Cherenkov-Plenoscope "
-                r"to observe gamma-rays with energies as low as 1\,GeV."
+                r"Portal, a Cherenkov plenoscope "
+                r"to observe cosmic gamma rays with energies as low as 1\,GeV."
             )
         )
-"""
+
 with doc.create(ltx.Section("Performance", numbering=False)):
     with doc.create(ltx.Figure(position="H")) as fig:
-        fig.add_image(
-            ppath(
-                paths["analysis_dir"],
-                "0550_diffsens_plot",
-                sk,
-                ok,
-                SED_STYLE_KEY,
-                "{:s}_{:s}_{:s}_differential_sensitivity_sed_style_{:s}_0180s.jpg".format(
-                    sk, ok, dk, SED_STYLE_KEY
+        for zk in ZENITHS:
+            fig.add_image(
+                ppath(
+                    res.paths["analysis_dir"],
+                    "0550_diffsens_plot",
+                    zk,
+                    ok,
+                    SED_STYLE_KEY,
+                    "{:s}_{:s}_{:s}_differential_sensitivity_sed_style_{:s}_0180s.jpg".format(
+                        zk, ok, dk, SED_STYLE_KEY
+                    ),
                 ),
-            ),
-            width=noesc(r"1.0\linewidth"),
-        )
+                width=noesc(r"1.0\linewidth"),
+            )
+            doc.append(noesc(r"\newline"))
         fig.add_caption(
             noesc(
-                r"Differential sensitivity for a point-like source of gamma-rays. "
+                r"Differential sensitivity for a point-like source of gamma rays. "
                 r"Fermi-LAT \cite{wood2016fermiperformance} in orange. "
-                r"CTA-south in blue based on the public instrument-response \cite{cta2018baseline}. "
+                r"CTA south in blue based on \cite{cta2018baseline}. "
+                r"Dashed grey lines are Crab Nebula fluxes decades 1 to $10^{-4}$."
             )
         )
 
     with doc.create(ltx.Figure(position="H")) as fig:
-        fig.add_image(
-            ppath(
-                paths["analysis_dir"],
-                "0610_sensitivity_vs_observation_time",
-                sk,
-                ok,
-                dk,
-                "sensitivity_vs_obseravtion_time_{:d}MeV.jpg".format(2500),
-            ),
-            width=noesc(r"1.0\linewidth"),
-        )
+        for zk in ZENITHS:
+            fig.add_image(
+                ppath(
+                    res.paths["analysis_dir"],
+                    "0610_sensitivity_vs_observation_time",
+                    zk,
+                    ok,
+                    dk,
+                    "sensitivity_vs_obseravtion_time_{:d}MeV.jpg".format(2500),
+                ),
+                width=noesc(r"1.0\linewidth"),
+            )
+            doc.append(noesc(r"\newline"))
         fig.add_caption(
             noesc(
-                r"Sensitivity vs. observation-time at 2.5\,GeV. "
-                r"Fermi-LAT in orange, and "
+                r"Sensitivity vs. observation time at 2.5\,GeV. "
+                r"Fermi-LAT in orange and "
                 r"Portal in black (dotted has $1\times{}10^{-3}$ sys.)."
             )
         )
@@ -184,9 +190,9 @@ with doc.create(ltx.Section("Performance", numbering=False)):
     with doc.create(ltx.Figure(position="H")) as fig:
         fig.add_image(
             ppath(
-                paths["analysis_dir"],
+                res.paths["analysis_dir"],
                 "0230_point_spread_function",
-                "{:s}_gamma.jpg".format(sk),
+                "gamma.jpg",
             ),
             width=noesc(r"1.0\linewidth"),
         )
@@ -194,7 +200,7 @@ with doc.create(ltx.Section("Performance", numbering=False)):
             noesc(
                 r"Angular resolution. "
                 r"Fermi-LAT \cite{wood2016fermiperformance} in orange, "
-                r"CTA-south \cite{cta2018baseline} in blue, and "
+                r"CTA south \cite{cta2018baseline} in blue, and "
                 r"Portal in black."
             )
         )
@@ -202,23 +208,24 @@ with doc.create(ltx.Section("Performance", numbering=False)):
     with doc.create(ltx.Figure(position="H")) as fig:
         fig.add_image(
             ppath(
-                paths["analysis_dir"],
+                res.paths["analysis_dir"],
                 "0066_energy_estimate_quality",
-                "{:s}_gamma_resolution.jpg".format(sk),
+                "gamma_resolution.jpg",
             ),
             width=noesc(r"1.0\linewidth"),
         )
         fig.add_caption(
             noesc(
                 r"Energy resolution. "
-                r"Fermi-LAT \cite{wood2016fermiperformance} in orange. "
-                r"CTA-south \cite{cta2018baseline} in blue. "
+                r"Fermi-LAT \cite{wood2016fermiperformance} in orange, "
+                r"CTA-south \cite{cta2018baseline} in blue, "
+                r"and Portal in black."
             )
         )
 
     doc.append(
         noesc(
-            r"The Crab Nebula's gamma-ray-flux \cite{aleksic2015measurement} "
+            r"The Crab Nebula's gamma-ray flux \cite{aleksic2015measurement} "
             r"\mbox{(100\%, 10\%, 1\%, and 0.1\%)} is shown in fading gray dashes. "
         )
     )
@@ -226,15 +233,9 @@ with doc.create(ltx.Section("Performance", numbering=False)):
 # doc.append(noesc(r"\columnbreak"))
 
 with doc.create(ltx.Section("Site", numbering=False)):
-    doc.append(sk)
+    doc.append(res.site_key)
     doc.append(
-        noesc(
-            verbatim(
-                irf.utils.dict_to_pretty_str(
-                    irf_config["config"]["sites"][sk]
-                )
-            )
-        )
+        noesc(verbatim(irf.utils.dict_to_pretty_str(res.SITES[res.site_key])))
     )
     doc.append(
         noesc(
@@ -249,32 +250,33 @@ with doc.create(ltx.Section("Site", numbering=False)):
     with doc.create(ltx.Figure(position="H")) as fig:
         fig.add_image(
             ppath(
-                paths["analysis_dir"],
+                res.paths["analysis_dir"],
                 "0016_flux_of_airshowers_plot",
-                sk + "_airshower_differential_flux.jpg",
+                "airshower_differential_flux.jpg",
             ),
             width=noesc(r"1.0\linewidth"),
         )
         fig.add_caption(
-            "Flux of airshowers (not particles) at the site. "
-            "This includes airshowers below the geomagnetic-cutoff created by secondary, terrestrial particles."
+            "Flux of airshowers (not cosmic particles) at the site. "
+            "This includes airshowers below the geomagnetic cutoff created by secondary, terrestrial particles."
         )
 
 trgstr = irf.light_field_trigger.make_trigger_modus_str(
-    analysis_trigger=sum_config["trigger"][sk],
-    production_trigger=irf_config["config"]["sum_trigger"],
+    analysis_trigger=res.analysis["trigger"][res.site_key],
+    production_trigger=res.config["sum_trigger"],
 )
 
+doc.append(noesc(r"\newpage"))
 with doc.create(ltx.Section("Trigger", numbering=False)):
     doc.append(noesc(verbatim(trgstr)))
     doc.append(
         noesc(
-            "Trigger-rate during observation is $\\approx{"
-            + total_trigger_rate_per_s_ltx
+            "Trigger rate during observation is $\\approx{"
+            + total_trigger_rate_per_s_ltx["zd0"]
             + r"}\,$s$^{-1}$"
         )
     )
-
+"""
     with doc.create(ltx.Figure(position="H")) as fig:
         fig.add_image(
             ppath(
@@ -623,9 +625,7 @@ doc.append(noesc(r"\bibliographystyle{apalike}"))
 doc.append(
     noesc(
         r"\bibliography{"
-        + opj(
-            res.paths["starter_kit_dir"], "sebastians_references", "references"
-        )
+        + opj(res.paths["starter_kit_dir"], "resources", "references")
         + "}"
     )
 )

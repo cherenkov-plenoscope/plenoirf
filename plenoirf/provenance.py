@@ -168,27 +168,36 @@ def add_corsika(prov, corsika_primary_path):
     return prov
 
 
-def make_basic_version_str(
-    production_dirname, production_provenance, analysis_provenance
-):
-    pp = production_provenance
-    ap = analysis_provenance
+def make_basic_version_str(production_dirname, plenoirf_dir_provenance):
+    pdp = plenoirf_dir_provenance
+
+    for key in sorted_keys(pdp["init"]):
+        ini = pdp["init"][key]
+        ini["key"] = key
+
+    for key in sorted_keys(pdp["analysis"]):
+        ana = pdp["analysis"][key]
+        ana["key"] = key
 
     ver = ""
     ver += "Production\n"
     ver += "    dirname: {:s}\n".format(production_dirname)
-    ver += "    date: {:s}\n".format(pp["time"]["iso"][0:16])
+    ver += "    date: {:s}\n".format(ini["time"]["iso"][0:16])
     ver += "    git-commit: {:s}\n".format(
-        pp["starter_kit"]["git"]["commit"][0:9]
+        ini["starter_kit"]["git"]["commit"][0:9]
     )
-    ver += "    hostname: {:s}\n".format(pp["hostname"])
+    ver += "    hostname: {:s}\n".format(ini["hostname"])
     ver += "Analysis\n"
-    ver += "    date: {:s}\n".format(ap["time"]["iso"][0:16])
+    ver += "    date: {:s}\n".format(ana["time"]["iso"][0:16])
     ver += "    git-commit:   {:s}\n".format(
-        ap["starter_kit"]["git"]["commit"][0:9]
+        ana["starter_kit"]["git"]["commit"][0:9]
     )
-    ver += "    hostname: {:s}\n".format(ap["hostname"])
+    ver += "    hostname: {:s}\n".format(ana["hostname"])
     return ver
+
+
+def sorted_keys(d):
+    return sorted(list(d.keys()))
 
 
 def iso_time_str_to_filename(iso_time_str):
@@ -228,10 +237,10 @@ def read_provenance_tar(path):
     return out
 
 
-def read_all_provenance(plenoirf_dir, analysis_dir=None):
+def read_plenoirf_dir_provenance(plenoirf_dir, analysis_dir=None):
     out = {}
     try:
-        out["init"] = provenance.read_provenance_tar(
+        out["init"] = read_provenance_tar(
             os.path.join(plenoirf_dir, "provenance", "init.tar")
         )
     except Exception as err:
@@ -239,7 +248,7 @@ def read_all_provenance(plenoirf_dir, analysis_dir=None):
         out["init"] = None
 
     try:
-        out["run"] = provenance.read_provenance_tar(
+        out["run"] = read_provenance_tar(
             os.path.join(plenoirf_dir, "provenance", "run.tar")
         )
     except Exception as err:
