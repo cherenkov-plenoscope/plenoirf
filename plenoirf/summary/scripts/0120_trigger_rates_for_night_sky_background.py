@@ -33,6 +33,7 @@ nsb = {
         dtype=int,
     ),
 }
+num_all_events = 0
 for pk in res.PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
         airshower_table = arc.query(
@@ -47,19 +48,24 @@ for pk in res.PARTICLES:
     ]
     uid_nsb = set(uid_nsb)
 
+    num_all_events += len(airshower_table["trigger"]["uid"])
+    nsb["num_exposures"] += len(uid_nsb)
+
     for tt, threshold in enumerate(trigger["ratescan_thresholds_pe"]):
         uid_trigger = set.intersection(
             set(passing_trigger[pk]["ratescan"][f"{threshold:d}pe"]["uid"]),
             set(uid_nsb),
         )
-        nsb["num_exposures"] += len(uid_nsb)
         nsb["num_triggers_vs_threshold"][tt] += len(uid_trigger)
 
 
 num_exposures = nsb["num_exposures"]
 num_triggers_vs_threshold = nsb["num_triggers_vs_threshold"]
 
-mean = num_triggers_vs_threshold / (num_exposures * EXPOSURE_TIME_PER_EVENT)
+mean_rate = num_triggers_vs_threshold / (
+    num_exposures * EXPOSURE_TIME_PER_EVENT
+)
+
 relative_uncertainty = irf.utils._divide_silent(
     numerator=np.sqrt(num_triggers_vs_threshold),
     denominator=num_triggers_vs_threshold,
@@ -74,7 +80,7 @@ json_utils.write(
             "VS trigger-ratescan-thresholds"
         ),
         "unit": "s$^{-1}$",
-        "mean": mean,
+        "mean": mean_rate,
         "relative_uncertainty": relative_uncertainty,
     },
 )
