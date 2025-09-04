@@ -17,21 +17,21 @@ trigger = res.trigger
 cosmic_rates = json_utils.tree.read(
     opj(res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles")
 )
-nsb_rates = json_utils.tree.read(
+nsb = json_utils.tree.read(
     opj(
         res.paths["analysis_dir"],
         "0120_trigger_rates_for_night_sky_background",
     )
-)
+)["night_sky_background_rates"]
 zenith_bin = res.zenith_binning("once")
 
 trigger_rates = {}
-trigger_rates["night_sky_background"] = np.array(
-    nsb_rates["night_sky_background_rates"]["mean"]
-)
+
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
     trigger_rates[zk] = {}
+    trigger_rates[zk]["night_sky_background"] = nsb[zk]["rate"]
+
     for pk in res.PARTICLES:
         trigger_rates[zk][pk] = np.array(
             cosmic_rates[zk][pk]["integral_rate"]["mean"]
@@ -54,7 +54,7 @@ for zd in range(zenith_bin["num"]):
 
     ax.plot(
         trigger["ratescan_thresholds_pe"],
-        tr["night_sky_background"]
+        tr[zk]["night_sky_background"]
         + tr[zk]["electron"]
         + tr[zk]["proton"]
         + tr[zk]["helium"],
@@ -63,7 +63,7 @@ for zd in range(zenith_bin["num"]):
     )
     ax.plot(
         trigger["ratescan_thresholds_pe"],
-        tr["night_sky_background"],
+        tr[zk]["night_sky_background"],
         "k:",
         label="night-sky",
     )
