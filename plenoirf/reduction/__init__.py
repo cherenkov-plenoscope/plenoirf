@@ -155,19 +155,19 @@ def make_jobs(
                     site_key,
                     particle_key,
                 )
+
+                map_dir, reduce_dir = _map_reduce_dirs(
+                    instrument_site_particle_dir=instrument_site_particle_dir
+                )
                 if has_filenames_of_certain_pattern_in_path(
                     path=opj(
-                        instrument_site_particle_dir,
-                        "map",
+                        map_dir,
                         production_final_checkpoint_key,
                     ),
                     filename_wildcard="*.zip",
                 ):
                     for item_key in list_items():
-                        job_out_path = opj(
-                            instrument_site_particle_dir,
-                            item_key,
-                        )
+                        job_out_path = opj(reduce_dir, item_key)
 
                         if os.path.exists(job_out_path) and lazy:
                             print(f"skipping: '{job_out_path:s}'")
