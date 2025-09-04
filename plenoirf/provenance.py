@@ -6,7 +6,10 @@ import shutil
 import corsika_primary
 import json_utils
 import gzip
+import tarfile
+import glob
 from . import tar_append
+from . import utils
 
 
 def list_important_programs():
@@ -213,3 +216,43 @@ def gather_and_bumb(path):
         provenance=prov,
     )
     return prov
+
+
+def read_provenance_tar(path):
+    out = {}
+    with tarfile.open(path, "r") as tin:
+        for item in tin:
+            payload_gz = tin.extractfile(item).read()
+            payload = gzip.decompress(payload_gz)
+            out[item.name] = json_utils.loads(payload)
+    return out
+
+
+def read_all_provenance(plenoirf_dir, analysis_dir=None):
+    out = {}
+    try:
+        out["init"] = provenance.read_provenance_tar(
+            os.path.join(plenoirf_dir, "provenance", "init.tar")
+        )
+    except Exception as err:
+        print(err)
+        out["init"] = None
+
+    try:
+        out["run"] = provenance.read_provenance_tar(
+            os.path.join(plenoirf_dir, "provenance", "run.tar")
+        )
+    except Exception as err:
+        print(err)
+        out["run"] = None
+
+    if analysis_dir is not None:
+        out["analysis"] = {}
+        for propath in glob.glob(
+            os.path.join(analysis_dir, "provenance.*.json")
+        ):
+            fname = os.path.basename(propath)
+            fname = fname.replace("provenance.", "")
+            fname = fname.replace(".json", "")
+            out["analysis"][fname] = utils.read_json_but_forgive(propath)
+    return out

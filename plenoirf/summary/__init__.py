@@ -58,6 +58,22 @@ class ScriptResources:
         self.paths["out_dir"] = os.path.join(
             self.paths["analysis_dir"], script_name
         )
+        try:
+            ppp = __path__[0]
+            ppp, e = os.path.split(ppp)
+            assert e == "summary"
+            ppp, e = os.path.split(ppp)
+            assert e == "plenoirf"
+            ppp, e = os.path.split(ppp)
+            assert e == "plenoirf"
+            ppp, e = os.path.split(ppp)
+            assert e == "packages"
+            self.paths["starter_kit_dir"] = ppp
+            assert "starter_kit" in os.path.basename(
+                self.paths["starter_kit_dir"]
+            )
+        except Exception as err:
+            self.paths["starter_kit_dir"] = None
 
     def start(self, sebplt=None):
         self.final_out_dir = copy.copy(self.paths["out_dir"])
@@ -245,8 +261,18 @@ class ScriptResources:
         trg["foci_bin"] = self.trigger_image_object_distance_binning()
         return trg
 
+    @property
+    def production_dirname(self):
+        return production_name_from_run_dir(self.paths["plenoirf_dir"])
+
     def __repr__(self):
         return f"{self.__class__.__name__}()"
+
+    def read_provenance(self):
+        return provenance.read_all_provenance(
+            plenoirf_dir=self.paths["plenoirf_dir"],
+            analysis_dir=self.paths["analysis_dir"],
+        )
 
 
 def _init_SITES(config):
