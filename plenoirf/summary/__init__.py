@@ -86,6 +86,10 @@ class ScriptResources:
             )
 
     def stop(self):
+        # overwrite existing out_dir
+        if os.path.exists(self.final_out_dir):
+            shutil.rmtree(path=self.final_out_dir)
+
         os.rename(self.paths["out_dir"], self.final_out_dir)
         self.paths["out_dir"] = copy.copy(self.paths["out_dir"])
 
