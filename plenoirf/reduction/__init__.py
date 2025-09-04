@@ -131,7 +131,7 @@ def list_run_ids_ready_for_reduction(map_dir, checkpoint_keys=None):
 def make_jobs(
     plenoirf_dir,
     config=None,
-    lazy=False,
+    lazy=True,
     memory_scheme="hpc-nfs",
 ):
     if memory_scheme == "hpc-nfs":
@@ -164,22 +164,23 @@ def make_jobs(
                     filename_wildcard="*.zip",
                 ):
                     for item_key in list_items():
-                        if lazy:
-                            job_out_path = opj(
-                                instrument_site_particle_dir,
-                                item_key,
-                            )
-                            if os.path.exists(job_out_path):
-                                continue
-                        job = {
-                            "plenoirf_dir": plenoirf_dir,
-                            "instrument_key": instrument_key,
-                            "site_key": site_key,
-                            "particle_key": particle_key,
-                            "item_key": item_key,
-                            "memory_config": memory_config,
-                        }
-                        jobs.append(job)
+                        job_out_path = opj(
+                            instrument_site_particle_dir,
+                            item_key,
+                        )
+
+                        if os.path.exists(job_out_path) and lazy:
+                            print(f"skipping: '{job_out_path:s}'")
+                        else:
+                            job = {
+                                "plenoirf_dir": plenoirf_dir,
+                                "instrument_key": instrument_key,
+                                "site_key": site_key,
+                                "particle_key": particle_key,
+                                "item_key": item_key,
+                                "memory_config": memory_config,
+                            }
+                            jobs.append(job)
     return jobs
 
 
