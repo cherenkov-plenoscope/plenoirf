@@ -7,6 +7,7 @@ from os.path import join as opj
 import numpy as np
 import sebastians_matplotlib_addons as sebplt
 import json_utils
+import propagate_uncertainties as pru
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
@@ -27,15 +28,49 @@ zenith_bin = res.zenith_binning("once")
 
 trigger_rates = {}
 
+num_trigger_thresholds = len(trigger["ratescan_thresholds_pe"])
+
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
     trigger_rates[zk] = {}
-    trigger_rates[zk]["night_sky_background"] = nsb[zk]["rate"]
+    trigger_rates[zk]["night_sky_background"] = {}
+    trigger_rates[zk]["night_sky_background"]["rate"] = nsb[zk]["rate"]
+    trigger_rates[zk]["night_sky_background"]["rate_au"] = nsb[zk]["rate_au"]
 
     for pk in res.PARTICLES:
-        trigger_rates[zk][pk] = np.array(
-            cosmic_rates[zk][pk]["integral_rate"]["mean"]
-        )
+        trigger_rates[zk][pk] = {}
+        trigger_rates[zk][pk]["rate"] = cosmic_rates[zk][pk]["integral_rate"][
+            "mean"
+        ]
+        trigger_rates[zk][pk]["rate_au"] = cosmic_rates[zk][pk][
+            "integral_rate"
+        ]["absolute_uncertainty"]
+
+
+def ax_plot_au(ax, x, y, y_au, alpha_ratio=0.25, **kwargs):
+    if "alpha" in kwargs:
+        line_alpha = kwargs.pop("alpha")
+    else:
+        line_alpha = 1.0
+
+    fill_alpha = line_alpha * alpha_ratio
+
+    if "label" in kwargs:
+        line_label = kwargs.pop("label")
+    else:
+        line_label = None
+    fill_label = None
+
+    ax.fill_between(
+        x=x,
+        y1=y - y_au,
+        y2=y + y_au,
+        alpha=fill_alpha,
+        label=fill_label,
+        **kwargs,
+    )
+    ax.plot(x, y, alpha=line_alpha, label=line_label, **kwargs)
+
 
 tr = trigger_rates
 
@@ -52,26 +87,41 @@ for zd in range(zenith_bin["num"]):
         fontsize=6,
     )
 
-    ax.plot(
-        trigger["ratescan_thresholds_pe"],
-        tr[zk]["night_sky_background"]
-        + tr[zk]["electron"]
-        + tr[zk]["proton"]
-        + tr[zk]["helium"],
-        "k",
-        label="night-sky + cosmic-rays",
+    total_rate = np.zeros(num_trigger_thresholds)
+    total_rate_au = np.zeros(num_trigger_thresholds)
+    for tt in range(num_trigger_thresholds):
+        _xsum = []
+        _xsum_au = []
+        for ck in tr[zk]:
+            _xsum.append(tr[zk][ck]["rate"][tt])
+            _xsum_au.append(tr[zk][ck]["rate_au"][tt])
+        total_rate[tt], total_rate_au[tt] = pru.sum(x=_xsum, x_au=_xsum_au)
+
+    ax_plot_au(
+        ax=ax,
+        x=trigger["ratescan_thresholds_pe"],
+        y=total_rate,
+        y_au=total_rate_au,
+        color="black",
+        label="night sky + cosmic rays",
     )
-    ax.plot(
-        trigger["ratescan_thresholds_pe"],
-        tr[zk]["night_sky_background"],
-        "k:",
-        label="night-sky",
+
+    ax_plot_au(
+        ax=ax,
+        x=trigger["ratescan_thresholds_pe"],
+        y=tr[zk]["night_sky_background"]["rate"],
+        y_au=tr[zk]["night_sky_background"]["rate_au"],
+        color="black",
+        linestyle=":",
+        label="night sky",
     )
 
     for ck in res.COSMIC_RAYS:
-        ax.plot(
-            trigger["ratescan_thresholds_pe"],
-            tr[zk][ck],
+        ax_plot_au(
+            ax=ax,
+            x=trigger["ratescan_thresholds_pe"],
+            y=tr[zk][ck]["rate"],
+            y_au=tr[zk][ck]["rate_au"],
             color=res.PARTICLE_COLORS[ck],
             label=ck,
         )
@@ -80,7 +130,16 @@ for zd in range(zenith_bin["num"]):
     ax.set_xlabel("trigger threshold / photo electrons (p.e.)")
     ax.set_ylabel("trigger rate / s$^{-1}$")
     ax.legend(loc="best", fontsize=8)
-    ax.axvline(x=trigger["threshold_pe"], color="k", linestyle="-", alpha=0.25)
+
+    zenith_corrected_threshold_pe = irf.light_field_trigger.get_trigger_threshold_corrected_for_pointing_zenith(
+        pointing_zenith_rad=zenith_bin["centers"][zd],
+        trigger=trigger,
+        nominal_threshold_pe=trigger["threshold_pe"],
+    )
+
+    ax.axvline(
+        x=zenith_corrected_threshold_pe, color="k", linestyle="--", alpha=0.25
+    )
     ax.set_ylim([1e0, 1e7])
     fig.savefig(opj(res.paths["out_dir"], f"zd{zd:d}_ratescan.jpg"))
     sebplt.close(fig)
