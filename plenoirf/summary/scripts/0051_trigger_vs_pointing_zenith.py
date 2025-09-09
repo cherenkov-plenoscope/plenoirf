@@ -39,23 +39,18 @@ for pk in res.PARTICLES:
         shape=(zenith_bin["num"], energy_bin["num"])
     )
 
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(
-            levels_and_columns={
-                "primary": ["uid", "energy_GeV"],
-                "trigger": "__all__",
-                "instrument_pointing": "__all__",
-            }
-        )
-
-    uid_common = snt.logic.intersection(
-        event_table["primary"]["uid"],
-        event_table["trigger"]["uid"],
-        event_table["instrument_pointing"]["uid"],
-    )
-
     for zd in range(zenith_bin["num"]):
         zk = f"zd{zd:d}"
+
+        with res.open_event_table(particle_key=pk) as arc:
+            zd_evttab = arc.query(
+                levels_and_columns={
+                    "primary": ["uid", "energy_GeV"],
+                    "trigger": "__all__",
+                    "instrument_pointing": "__all__",
+                },
+                indices=zenith_assignment[zk][pk],
+            )
 
         ZENITH_CORRECTED_TRIGGER_THRESHOLD_PE = irf.light_field_trigger.get_trigger_threshold_corrected_for_pointing_zenith(
             pointing_zenith_rad=zenith_bin["centers"][zd],
@@ -64,12 +59,13 @@ for pk in res.PARTICLES:
         )
 
         uid_zd_common = snt.logic.intersection(
-            uid_common,
-            zenith_assignment[zk][pk],
+            zd_evttab["primary"]["uid"],
+            zd_evttab["trigger"]["uid"],
+            zd_evttab["instrument_pointing"]["uid"],
         )
 
         zd_evttab = snt.logic.cut_and_sort_table_on_indices(
-            table=event_table,
+            table=zd_evttab,
             common_indices=uid_zd_common,
         )
 
@@ -117,7 +113,6 @@ for pk in res.PARTICLES:
             ] = num_have_at_least_one_focus_trigger
 
 
-del event_table
 del zd_evttab
 
 cmap = irf.summary.figure.make_particle_colormaps(
