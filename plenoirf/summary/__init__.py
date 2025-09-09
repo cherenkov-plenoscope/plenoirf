@@ -459,11 +459,9 @@ def _estimate_num_events_past_trigger_for_instrument(
             )
 
             with snt.open(path, mode="r") as arc:
-                pt_idx = arc.read_column(
-                    level_key="pasttrigger", column_key="uid"
-                )
-                if pt_idx.shape[0] < num:
-                    num = pt_idx.shape[0]
+                tab = arc.query(levels_and_columns={"pasttrigger": ("uid",)})
+                if tab["pasttrigger"]["uid"].shape[0] < num:
+                    num = tab["pasttrigger"]["uid"].shape[0]
     return num
 
 
