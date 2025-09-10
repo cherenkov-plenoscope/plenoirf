@@ -277,15 +277,17 @@ for pk in res.PARTICLES:
         event_table = arc.query(
             levels_and_columns={
                 "trigger": "__all__",
-                "instrument_pointing": "__all__",
+                "instrument_pointing": ("uid", "zenith_rad"),
             }
         )
+    common_indices = snt.logic.intersection(
+        event_table["trigger"]["uid"],
+        event_table["instrument_pointing"]["uid"],
+    )
     event_table = snt.logic.cut_and_sort_table_on_indices(
         table=event_table,
-        common_indices=snt.logic.intersection(
-            event_table["trigger"]["uid"],
-            event_table["instrument_pointing"]["uid"],
-        ),
+        common_indices=common_indices,
+        inplace=True,
     )
 
     num_events = event_table["trigger"].shape[0]
