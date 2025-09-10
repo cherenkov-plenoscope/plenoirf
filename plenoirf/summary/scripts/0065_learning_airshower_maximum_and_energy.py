@@ -148,7 +148,7 @@ REGRESSORS["RandomForest"] = {
     "kwargs": {
         "random_state": random_seed,
         "n_estimators": 32 * num_features,
-    }
+    },
 }
 
 
