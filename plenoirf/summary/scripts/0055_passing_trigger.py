@@ -207,67 +207,6 @@ def explore_focus_ratios(
     return zdfocrat, ratio_bin
 
 
-def print_info(
-    uids,
-    focus_response_pe,
-    accepting_over_rejecting,
-    zenith_corrected_threshold_pe,
-    trigger_focus_bin_edges,
-    pk,
-):
-    mask_above_threshold = has_focus_above_threshold(
-        focus_response_pe=focus_response_pe,
-        zenith_corrected_threshold_pe=zenith_corrected_threshold_pe,
-    )
-
-    num_events = mask_above_threshold.shape[0]
-    num_foci = focus_response_pe.shape[1]
-    assert num_events == focus_response_pe.shape[0]
-    assert num_events == zenith_corrected_threshold_pe.shape[0]
-
-    edges = trigger_focus_bin_edges
-
-    for zd in range(zenith_bin["num"]):
-        zk = f"zd{zd:d}"
-
-        mask_zenith = snt.logic.make_mask_of_right_in_left(
-            left_indices=uids,
-            right_indices=zenith_assignment[zk][pk],
-        )
-        num_zenith = sum(mask_zenith)
-
-        foci_ratio = np.zeros(shape=num_foci, dtype=float)
-        for ff in range(num_foci):
-            mask = np.logical_and(mask_above_threshold[:, ff], mask_zenith)
-            foci_ratio[ff] = sum(mask) / num_zenith
-
-        fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-        ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-        sebplt.ax_add_histogram(
-            ax=ax,
-            bin_edges=trigger_focus_bin_edges,
-            bincounts=foci_ratio,
-            linestyle="-",
-            linecolor=res.PARTICLE_COLORS[pk],
-            linealpha=1.0,
-            bincounts_upper=None,
-            bincounts_lower=None,
-            face_color=None,
-            face_alpha=None,
-            label=None,
-            draw_bin_walls=False,
-        )
-        ax.loglog()
-        ax.set_xlabel("trigger focus depth / m")
-        ax.set_ylabel("fraction of events over\naccepting threshold / 1")
-        ax.set_xlim([min(edges), max(edges)])
-        ax.set_ylim([1e-6, 1.0])
-        fig.savefig(
-            opj(res.paths["out_dir"], f"{zk:s}_{pk:s}_focus_layer.jpg")
-        )
-        sebplt.close(fig)
-
-
 for pk in res.PARTICLES:
     print(pk)
     pk_dir = opj(res.paths["out_dir"], pk)
@@ -344,15 +283,6 @@ for pk in res.PARTICLES:
         pointing_zenith_rad=event_table["instrument_pointing"]["zenith_rad"],
         trigger=trigger,
         nominal_threshold_pe=trigger["threshold_pe"],
-    )
-
-    print_info(
-        uids=event_table["trigger"]["uid"],
-        focus_response_pe=focus_response_pe,
-        accepting_over_rejecting=accepting_over_rejecting,
-        zenith_corrected_threshold_pe=zenith_corrected_threshold_pe,
-        trigger_focus_bin_edges=trigger["foci_bin"]["edges"],
-        pk=pk,
     )
 
     _small_size_pe = [150]
