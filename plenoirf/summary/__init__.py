@@ -514,8 +514,8 @@ def _guess_trigger(
             "rejecting_altitude_asl_m": 5_000 + 7_000,
             "accepting": {
                 "threshold_accepting_over_rejecting": [
-                    1.2,
-                    1.2,
+                    1.21,
+                    1.21,
                     1.0,
                     0.6,
                     0.3,
@@ -540,7 +540,7 @@ def _guess_trigger(
                     "factor": [
                         1.0,
                         1.0,
-                        0.95,
+                        1.0,
                     ],
                 },
             },
@@ -557,8 +557,8 @@ def _guess_trigger(
             "factor": np.array(
                 [
                     1.00,
-                    0.97,
-                    0.94,
+                    1.00,
+                    1.00,
                 ]
             ),
         },
@@ -623,7 +623,7 @@ def _guess_analysis_config_for_instrument(
 
     collection_trigger_threshold_pe = config["sum_trigger"]["threshold_pe"]
     analysis_trigger_threshold_pe = int(
-        np.round(1.125 * collection_trigger_threshold_pe)
+        np.round(1.085 * collection_trigger_threshold_pe)
     )
 
     fov_radius_deg = (
