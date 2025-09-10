@@ -52,16 +52,20 @@ def ppath(*args):
 
 
 def get_total_trigger_rate_at_analysis_threshold(trigger_rates_by_origin):
-    tti = trigger_rates_by_origin["analysis_trigger_threshold_idx"]
+    tti = irf.utils.find_closest_index_in_array_for_value(
+        arr=res.analysis["trigger"][res.site_key]["ratescan_thresholds_pe"],
+        val=res.analysis["trigger"][res.site_key]["threshold_pe"],
+    )
+
     total_rate_per_s = {}
     for zd in range(zenith_bin["num"]):
         zk = f"zd{zd:d}"
 
         total_rate_per_s[zk] = float(
-            trigger_rates_by_origin["origins"]["night_sky_background"][tti]
+            trigger_rates_by_origin[zk]["night_sky_background"]["rate"][tti]
         )
-        for pk in trigger_rates_by_origin["origins"][zk]:
-            total_rate_per_s[zk] += trigger_rates_by_origin["origins"][zk][pk][
+        for pk in trigger_rates_by_origin[zk]:
+            total_rate_per_s[zk] += trigger_rates_by_origin[zk][pk]["rate"][
                 tti
             ]
 
@@ -72,10 +76,12 @@ def verbatim(string):
     return r"\begin{verbatim}" + r"{:s}".format(string) + r"\end{verbatim}"
 
 
+trigger_rates_by_origin = json_utils.tree.read(
+    ppath(res.paths["analysis_dir"], "0128_trigger_rates_total")
+)["trigger_rates_by_origin"]["origins"]
+
 total_trigger_rate_per_s = get_total_trigger_rate_at_analysis_threshold(
-    trigger_rates_by_origin=json_utils.tree.read(
-        ppath(res.paths["analysis_dir"], "0131_trigger_rates_total")
-    )["trigger_rates_by_origin"]
+    trigger_rates_by_origin=trigger_rates_by_origin
 )
 
 total_trigger_rate_per_s_ltx = {}
