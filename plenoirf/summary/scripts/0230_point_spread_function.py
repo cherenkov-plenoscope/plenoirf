@@ -48,6 +48,13 @@ pk = "gamma"
 pk_dir = opj(res.paths["out_dir"], pk)
 os.makedirs(pk_dir, exist_ok=True)
 
+uid_common = snt.logic.intersection(
+    passing_trigger[pk]["uid"],
+    passing_quality[pk]["uid"],
+    passing_trajectory_quality[pk]["trajectory_quality"]["uid"],
+    reconstructed_energy[pk][mk]["uid"],
+)
+
 with res.open_event_table(particle_key=pk) as arc:
     event_table = arc.query(
         levels_and_columns={
@@ -56,31 +63,16 @@ with res.open_event_table(particle_key=pk) as arc:
             "groundgrid_choice": "__all__",
             "reconstructed_trajectory": "__all__",
             "features": "__all__",
-        }
+        },
+        indices=uid_common,
+        sort=True,
     )
-
-uid_common = snt.logic.intersection(
-    passing_trigger[pk]["uid"],
-    passing_quality[pk]["uid"],
-    passing_trajectory_quality[pk]["trajectory_quality"]["uid"],
-    reconstructed_energy[pk][mk]["uid"],
-)
-event_table = snt.logic.cut_and_sort_table_on_indices(
-    table=event_table,
-    common_indices=uid_common,
-    level_keys=[
-        "primary",
-        "instrument_pointing",
-        "groundgrid_choice",
-        "reconstructed_trajectory",
-        "features",
-    ],
-)
 
 rectab = irf.reconstruction.trajectory_quality.make_rectangular_table(
     event_table=event_table,
     instrument_pointing_model=res.config["pointing"]["model"],
 )
+del event_table
 
 _true_energy = rectab["primary/energy_GeV"]
 _reco_energy = irf.analysis.energy.align_on_idx(
