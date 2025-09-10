@@ -51,9 +51,7 @@ json_utils.write(
     {
         "comment": (
             "Trigger rates by origin VS. zenith-bin VS. trigger threshold. "
-            "Including the analysis_trigger_threshold."
         ),
-        "analysis_trigger_threshold_idx": analysis_trigger_threshold_idx,
         "unit": "s$^{-1}$",
         "origins": trigger_rates,
     },
