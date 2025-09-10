@@ -59,21 +59,6 @@ SIZE_BIN_EDGES = np.array(
 )
 
 
-def has_focus_above_threshold(
-    focus_response_pe, zenith_corrected_threshold_pe
-):
-    num_events, num_foci = focus_response_pe.shape
-    assert zenith_corrected_threshold_pe.shape[0] == num_events
-
-    is_above = np.zeros(shape=focus_response_pe.shape, dtype=bool)
-    for eee in range(num_events):
-        is_above[eee] = (
-            focus_response_pe[eee, :] >= zenith_corrected_threshold_pe[eee]
-        )
-
-    return is_above
-
-
 def explore_focus_ratios(
     uids,
     focus_response_pe,
