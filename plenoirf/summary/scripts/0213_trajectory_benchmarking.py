@@ -188,6 +188,12 @@ for pk in res.PARTICLES:
     pk_dir = opj(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
+    uid_common = snt.logic.intersection(
+        passing_trigger[pk]["uid"],
+        passing_quality[pk]["uid"],
+        passing_trajectory_quality[pk]["trajectory_quality"]["uid"],
+    )
+
     with res.open_event_table(particle_key=pk) as arc:
         event_table = arc.query(
             levels_and_columns={
@@ -196,25 +202,10 @@ for pk in res.PARTICLES:
                 "groundgrid_choice": "__all__",
                 "reconstructed_trajectory": "__all__",
                 "features": "__all__",
-            }
+            },
+            indices=uid_common,
+            sort=True,
         )
-
-    uid_common = snt.logic.intersection(
-        passing_trigger[pk]["uid"],
-        passing_quality[pk]["uid"],
-        passing_trajectory_quality[pk]["trajectory_quality"]["uid"],
-    )
-    event_table = snt.logic.cut_and_sort_table_on_indices(
-        table=event_table,
-        common_indices=uid_common,
-        level_keys=[
-            "primary",
-            "instrument_pointing",
-            "groundgrid_choice",
-            "reconstructed_trajectory",
-            "features",
-        ],
-    )
 
     reconstructed_event_table = (
         irf.reconstruction.trajectory_quality.make_rectangular_table(
