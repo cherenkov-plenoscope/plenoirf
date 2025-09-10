@@ -71,7 +71,7 @@ def make_rectangular_table(event_table, instrument_pointing_model):
         table=event_table,
         common_indices=event_table["reconstructed_trajectory"]["uid"],
     )
-    df = snt.logic.make_rectangular_DataFrame(tab, index_key="uid")
+    df = snt.logic.make_rectangular_DataFrame(tab)
 
     df["reconstructed_trajectory/r_m"] = np.hypot(
         df["reconstructed_trajectory/x_m"],

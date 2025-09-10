@@ -15,6 +15,13 @@ for pk in res.PARTICLES:
     os.makedirs(pk_dir, exist_ok=True)
 
     with res.open_event_table(particle_key=pk) as arc:
+        _table = arc.query(
+            levels_and_columns={
+                "features": [
+                    "uid",
+                ]
+            }
+        )
         event_table = arc.query(
             levels_and_columns={
                 "primary": ["uid", "azimuth_rad", "zenith_rad"],
@@ -28,8 +35,10 @@ for pk in res.PARTICLES:
                     "image_half_depth_shift_cy",
                     "image_smallest_ellipse_solid_angle",
                 ],
-            }
+            },
+            indices=_table["features"]["uid"],
         )
+        del _table
 
     event_frame = irf.reconstruction.trajectory_quality.make_rectangular_table(
         event_table=event_table,
