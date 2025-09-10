@@ -142,15 +142,15 @@ REGRESSORS["MultiLayerPerceptron"] = {
         "max_iter": 5000,
     },
 }
-"""
+
 REGRESSORS["RandomForest"] = {
     "constructor": sklearn.ensemble.RandomForestRegressor,
     "kwargs": {
         "random_state": random_seed,
-        "n_estimators": 10 * num_features,
+        "n_estimators": 32 * num_features,
     }
 }
-"""
+
 
 for bootstrip in range(NUM_BOOTSTRIPS):
     print("bootstrip", bootstrip)
