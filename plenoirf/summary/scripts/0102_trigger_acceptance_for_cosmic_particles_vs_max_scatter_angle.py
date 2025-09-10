@@ -21,6 +21,9 @@ MAX_SOURCE_ANGLE_DEG = res.analysis["gamma_ray_source_direction"][
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 zenith_bin = res.zenith_binning("once")
 
+zenith_assignment = json_utils.tree.read(
+    opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
+)
 passing_trigger = json_utils.tree.read(
     opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
@@ -28,9 +31,6 @@ passing_trigger = json_utils.tree.read(
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
     print(zk)
-
-    zenith_start_rad = zenith_bin["edges"][zd]
-    zenith_stop_rad = zenith_bin["edges"][zd + 1]
 
     zd_dir = opj(res.paths["out_dir"], zk)
     os.makedirs(zd_dir, exist_ok=True)
@@ -44,38 +44,47 @@ for zd in range(zenith_bin["num"]):
         with res.open_event_table(particle_key=pk) as arc:
             _shower_table = arc.query(
                 levels_and_columns={
+                    "primary": ["uid"],
+                    "instrument_pointing": ["uid"],
+                    "groundgrid": ["uid"],
+                },
+                indices=zenith_assignment[zk][pk],
+            )
+
+            uid_common = snt.logic.intersection(
+                zenith_assignment[zk][pk],
+                _shower_table["primary"]["uid"],
+                _shower_table["instrument_pointing"]["uid"],
+                _shower_table["groundgrid"]["uid"],
+            )
+
+            _shower_table = arc.query(
+                levels_and_columns={
                     "primary": [
                         "uid",
                         "energy_GeV",
                         "azimuth_rad",
                         "zenith_rad",
                     ],
-                    "instrument_pointing": "__all__",
+                    "instrument_pointing": [
+                        "uid",
+                        "azimuth_rad",
+                        "zenith_rad",
+                    ],
                     "groundgrid": [
                         "uid",
                         "num_bins_thrown",
                         "area_thrown_m2",
                         "num_bins_above_threshold",
                     ],
-                }
+                },
+                indices=uid_common,
             )
-
-        mask_zenith_bin = np.logical_and(
-            _shower_table["instrument_pointing"]["zenith_rad"]
-            >= zenith_start_rad,
-            _shower_table["instrument_pointing"]["zenith_rad"]
-            < zenith_stop_rad,
-        )
-
-        uid_common = snt.logic.intersection(
-            _shower_table["primary"]["uid"],
-            _shower_table["instrument_pointing"]["uid"][mask_zenith_bin],
-            _shower_table["groundgrid"]["uid"],
-        )
 
         shower_table = snt.logic.cut_and_sort_table_on_indices(
             table=_shower_table,
             common_indices=uid_common,
+            inplace=True,
         )
 
         # diffuse source
@@ -126,14 +135,22 @@ for zd in range(zenith_bin["num"]):
             mask_shower_within_max_scatter = (
                 shower_table_scatter_angle_deg <= max_scatter_angle_deg
             )
-            idx_showers_within_max_scatter = shower_table["primary"]["uid"][
+            uid_showers_within_max_scatter = shower_table["primary"]["uid"][
                 mask_shower_within_max_scatter
             ]
 
+            S_shower_table = shower_table.query(
+                levels_and_columns={
+                    "primary": ["uid", "energy_GeV"],
+                    "groundgrid": "__all__",
+                },
+                indices=uid_showers_within_max_scatter,
+            )
+
             S_shower_table = snt.logic.cut_and_sort_table_on_indices(
-                table=shower_table,
-                common_indices=idx_showers_within_max_scatter,
-                level_keys=["primary", "groundgrid"],
+                table=S_shower_table,
+                common_indices=uid_showers_within_max_scatter,
+                inplace=True,
             )
 
             S_mask_shower_detected = snt.logic.make_mask_of_right_in_left(
