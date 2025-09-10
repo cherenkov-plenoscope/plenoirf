@@ -51,7 +51,7 @@ for sk in ["chile"]:  # SITES:
             ),
         )
 
-        particlepool = snt.cut_level_on_indices(
+        particlepool = snt.logic._cut_level_on_indices(
             level=event_table["particlepool"],
             indices=passing_trigger[sk][pk]["uid"],
         )
