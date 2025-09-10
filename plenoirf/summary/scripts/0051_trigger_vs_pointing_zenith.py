@@ -47,7 +47,7 @@ for pk in res.PARTICLES:
                 levels_and_columns={
                     "primary": ["uid", "energy_GeV"],
                     "trigger": "__all__",
-                    "instrument_pointing": "__all__",
+                    "instrument_pointing": ["uid", "zenith_rad"],
                 },
                 indices=zenith_assignment[zk][pk],
             )
@@ -67,6 +67,7 @@ for pk in res.PARTICLES:
         zd_evttab = snt.logic.cut_and_sort_table_on_indices(
             table=zd_evttab,
             common_indices=uid_zd_common,
+            inplace=True,
         )
 
         for eee in range(energy_bin["num"]):
