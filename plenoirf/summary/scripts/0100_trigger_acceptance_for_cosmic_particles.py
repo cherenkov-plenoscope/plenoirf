@@ -41,7 +41,7 @@ for zd in range(zenith_bin["num"]):
         os.makedirs(pk_dir, exist_ok=True)
 
         with res.open_event_table(particle_key=pk) as arc:
-            _diffuse_particle_table = arc.query(
+            diffuse_particle_table = arc.query(
                 levels_and_columns={
                     "primary": (
                         "uid",
@@ -62,19 +62,21 @@ for zd in range(zenith_bin["num"]):
                         "num_bins_above_threshold",
                     ),
                     "trigger": ("uid",),
-                }
+                },
+                indices=zenith_assignment[zk][pk],
             )
 
         uid_common = snt.logic.intersection(
-            _diffuse_particle_table["primary"]["uid"],
+            diffuse_particle_table["primary"]["uid"],
             zenith_assignment[zk][pk],
-            _diffuse_particle_table["groundgrid"]["uid"],
-            _diffuse_particle_table["trigger"]["uid"],
+            diffuse_particle_table["groundgrid"]["uid"],
+            diffuse_particle_table["trigger"]["uid"],
         )
 
         diffuse_particle_table = snt.logic.cut_and_sort_table_on_indices(
-            table=_diffuse_particle_table,
+            table=diffuse_particle_table,
             common_indices=uid_common,
+            inplace=True,
         )
 
         # point source
