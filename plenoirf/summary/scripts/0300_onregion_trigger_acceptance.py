@@ -48,7 +48,6 @@ def cut_candidates_for_detection(
     uid_trajectory_quality,
     uid_trigger,
     uid_quality,
-    uid_zenith_assignment,
 ):
     uid_self = event_table["primary"]["uid"]
 
@@ -57,7 +56,6 @@ def cut_candidates_for_detection(
         uid_trigger,
         uid_quality,
         uid_trajectory_quality,
-        uid_zenith_assignment,
     )
 
     return snt.logic.cut_and_sort_table_on_indices(
@@ -128,7 +126,8 @@ for zd in range(zenith_bin["num"]):
                         "area_thrown_m2",
                     ),
                     "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
-                }
+                },
+                indices=zenith_assignment[zk][pk],
             )
 
         uid_possible_onregion = irf.analysis.cuts.cut_primary_direction_within_angle(
@@ -151,7 +150,6 @@ for zd in range(zenith_bin["num"]):
             uid_trajectory_quality=passing_trajectory_quality[pk]["uid"],
             uid_trigger=passing_trigger[pk]["uid"],
             uid_quality=passing_quality[pk]["uid"],
-            uid_zenith_assignment=zenith_assignment[zk][pk],
         )
 
         poicanarr = (
@@ -239,7 +237,6 @@ for zd in range(zenith_bin["num"]):
             uid_trajectory_quality=passing_trajectory_quality[pk]["uid"],
             uid_trigger=passing_trigger[pk]["uid"],
             uid_quality=passing_quality[pk]["uid"],
-            uid_zenith_assignment=zenith_assignment[zk][pk],
         )
 
         difcanarr = (
