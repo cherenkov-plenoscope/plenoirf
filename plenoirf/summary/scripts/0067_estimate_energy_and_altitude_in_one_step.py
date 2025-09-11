@@ -157,11 +157,9 @@ for pk in SIGNAL:
                 "primary": ["uid", "energy_GeV"],
                 "instrument_pointing": ["uid", "zenith_rad"],
                 "cherenkovpool": ["uid", "z_emission_p50_m"],
-            }
-        )
-        event_table = snt.logic.cut_table_on_indices(
-            event_table,
-            common_indices=FINAL_UIDS[pk],
+            },
+            indices=FINAL_UIDS[pk],
+            sort=True,
         )
 
     signal_raw_assignment[pk] = (
