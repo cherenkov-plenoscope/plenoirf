@@ -172,3 +172,5 @@ for pk in res.PARTICLES:
             )
         )
         sebplt.close(fig)
+
+res.stop()
