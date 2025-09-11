@@ -38,8 +38,6 @@ SOLID_ANGLE_TO_CONTAIN_SOURCE_SR = solid_angle_utils.cone.solid_angle(
 POSSIBLE_ONREGION_POLYGON = irf.reconstruction.onregion.make_circular_polygon(
     radius=MAX_SOURCE_ANGLE_RAD, num_steps=37
 )
-pointing_azimuth_deg = None
-pointing_zenith_deg = None
 
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 zenith_bin = res.zenith_binning("once")
