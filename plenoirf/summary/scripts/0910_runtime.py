@@ -46,7 +46,7 @@ for pk in res.PARTICLES:
     with open(
         opj(res.paths["out_dir"], f"benchmarks_by_hostname.json"), "wt"
     ) as f:
-        f.write(by_hostname)
+        f.write(json_utils.dumps(by_hostname, indent=4))
 
     key = "corsika_energy_rate_GeV_per_s_avg"
     report = "CORSIKA proton shower performance\n"
@@ -65,4 +65,22 @@ for pk in res.PARTICLES:
     with open(opj(res.paths["out_dir"], f"{key:s}.txt"), "wt") as f:
         f.write(report)
 
+    PERCENTILES = ["p16", "p50", "p84"]
+    # make table
+    with open(opj(res.paths["out_dir"], f"benchmarks.csv"), "wt") as f:
+        # header line
+        head = []
+        head.append("hostname")
+        for benchmark_key in benchmark_keys:
+            for per in PERCENTILES:
+                head.append(f"{benchmark_key:s} {per:s}")
+        f.write(str.join(",", head) + "\n")
+
+        for hostname in by_hostname:
+            line = [hostname]
+            for benchmark_key in benchmark_keys:
+                for per in PERCENTILES:
+                    val = by_hostname[hostname][benchmark_key][per]
+                    line.append(f"{val:f}")
+            f.write(str.join(",", line) + "\n")
 res.stop()
