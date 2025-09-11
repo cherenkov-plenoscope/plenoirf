@@ -43,6 +43,11 @@ for pk in res.PARTICLES:
                 "p84": np.percentile(a=table["benchmark"][key][mask], q=0.84),
             }
 
+    with open(
+        opj(res.paths["out_dir"], f"benchmarks_by_hostname.json"), "wt"
+    ) as f:
+        f.write(by_hostname)
+
     key = "corsika_energy_rate_GeV_per_s_avg"
     report = "CORSIKA proton shower performance\n"
     report += "--------------------------------\n"
