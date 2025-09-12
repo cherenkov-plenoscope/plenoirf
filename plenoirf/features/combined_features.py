@@ -1,4 +1,5 @@
 import numpy as np
+from . import default
 
 
 def generate_paxel_intensity_median_hypot(event_frame):
@@ -11,20 +12,18 @@ def generate_paxel_intensity_median_hypot(event_frame):
 
 def generate_diff_image_and_light_front(event_frame):
     ev = event_frame
-    f_raw = np.hypot(
-        ev["features/image_infinity_cx_mean"] - ev["features/light_front_cx"],
-        ev["features/image_infinity_cy_mean"] - ev["features/light_front_cy"],
-    )
-    return f_raw
+    dcx = ev["features/image_infinity_cx_mean"] - ev["features/light_front_cx"]
+    dcy = ev["features/image_infinity_cy_mean"] - ev["features/light_front_cy"]
+    return np.hypot(dcx, dcy)
 
 
 def generate_image_infinity_std_density(event_frame):
     ev = event_frame
-    std = np.hypot(
-        ev["features/image_infinity_cx_std"],
-        ev["features/image_infinity_cx_std"],
+    solid_angle = (
+        ev["features/image_infinity_cx_std"]
+        * ev["features/image_infinity_cy_std"]
     )
-    return np.log10(ev["features/num_photons"]) / std**2.0
+    return solid_angle
 
 
 def generate_A(event_frame):
@@ -72,6 +71,11 @@ def generate_reco_theta_rad(event_frame):
 
 
 def init_combined_features_structure():
+    fx_median = default.transformation_fx_median()
+    fx_containment_percentile_90 = (
+        default.transformation_fx_containment_percentile_90()
+    )
+
     out = {}
     out["trajectory_reco_core_radius_m"] = {
         "generator": generate_reco_core_radius_m,
@@ -79,9 +83,8 @@ def init_combined_features_structure():
         "unit": "m",
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
     }
     out["trajectory_reco_theta_rad"] = {
@@ -90,9 +93,8 @@ def init_combined_features_structure():
         "unit": "rad",
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
     }
     out["combi_diff_image_and_light_front"] = {
@@ -100,10 +102,9 @@ def init_combined_features_structure():
         "dtype": "<f4",
         "unit": "rad",
         "transformation": {
-            "function": "sqrt(x)",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "function": "x",
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
     }
     out["combi_paxel_intensity_median_hypot"] = {
@@ -112,9 +113,8 @@ def init_combined_features_structure():
         "unit": "$m^{1/2}$",
         "transformation": {
             "function": "log(x)",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
     }
     out["combi_image_infinity_std_density"] = {
@@ -123,9 +123,8 @@ def init_combined_features_structure():
         "unit": "$sr^{-1}$",
         "transformation": {
             "function": "log(x)",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
     }
     out["combi_A"] = {
@@ -134,9 +133,8 @@ def init_combined_features_structure():
         "unit": "$sr m^{-1}$",
         "transformation": {
             "function": "log(x)",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
     }
     out["combi_B"] = {
@@ -145,9 +143,8 @@ def init_combined_features_structure():
         "unit": "$m^{-2}$",
         "transformation": {
             "function": "log(x)",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
     }
     out["combi_C"] = {
@@ -156,9 +153,8 @@ def init_combined_features_structure():
         "unit": "$1$",
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
     }
     return out

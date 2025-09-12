@@ -25,20 +25,34 @@ ALL_FEATURES = irf.features.init_all_features_structure()
 
 
 def open_event_frame(pk):
+    passing_trigger = json_utils.tree.read(
+        opj(res.paths["analysis_dir"], "0055_passing_trigger")
+    )
+    passing_quality = json_utils.tree.read(
+        opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
+    )
+
     with res.open_event_table(particle_key=pk) as arc:
+        event_table = arc.query(
+            levels_and_columns={
+                "features": ["uid"],
+                "reconstructed_trajectory": ["uid"],
+            }
+        )
+        common_indices = snt.logic.intersection(
+            passing_trigger[pk]["uid"],
+            passing_quality[pk]["uid"],
+            event_table["features"]["uid"],
+            event_table["reconstructed_trajectory"]["uid"],
+        )
         event_table = arc.query(
             levels_and_columns={
                 "features": "__all__",
                 "reconstructed_trajectory": "__all__",
-            }
+            },
+            indices=common_indices,
+            sort=True,
         )
-    event_table = snt.logic.cut_and_sort_table_on_indices(
-        table=event_table,
-        common_indices=snt.logic.intersection(
-            event_table["features"]["uid"],
-            event_table["reconstructed_trajectory"]["uid"],
-        ),
-    )
     return snt.logic.make_rectangular_DataFrame(event_table)
 
 
@@ -91,17 +105,35 @@ for pk in res.PARTICLES:
             arc.append_table(out_table)
 
 
+start_stop = {}
+for fk in ALL_FEATURES:
+    start_stop[fk] = []
+    for pk in res.PARTICLES:
+        start = np.quantile(transformed_features[pk][fk], 0.01)
+        stop = np.quantile(transformed_features[pk][fk], 0.99)
+        if np.isnan(start) or np.isnan(stop):
+            start = -1
+            stop = 1
+        start_stop[fk].append([start, stop])
+
+for fk in ALL_FEATURES:
+    start_stop[fk] = np.asarray(start_stop[fk])
+    start_stop[fk] = [
+        np.min(start_stop[fk][:, 0]),
+        np.max(start_stop[fk][:, 1]),
+    ]
+
+
 for fk in ALL_FEATURES:
     fig_path = opj(res.paths["out_dir"], f"{fk}.jpg")
 
+    start, stop = start_stop[fk]
+
     if not os.path.exists(fig_path):
-        fig = sebplt.figure(sebplt.FIGURE_16_9)
-        ax = sebplt.add_axes(fig=fig, span=(0.1, 0.1, 0.8, 0.8))
+        fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+        ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
         for pk in res.PARTICLES:
-            start = -5
-            stop = 5
-
             bin_edges_fk = np.linspace(start, stop, 101)
             bin_counts_fk = np.histogram(
                 transformed_features[pk][fk], bins=bin_edges_fk

@@ -2,6 +2,7 @@ import collections
 import numpy as np
 import sparse_numeric_table as snt
 import dynamicsizerecarray
+from .. import features
 
 UID_DTYPE = ("uid", "<u8")
 
@@ -335,15 +336,19 @@ def init_cherenkovclassification_level_structure():
 
 
 def init_features_level_structure():
+    fx_median = features.default.transformation_fx_median()
+    fx_containment_percentile_90 = (
+        features.default.transformation_fx_containment_percentile_90()
+    )
+
     t = collections.OrderedDict()
     t["num_photons"] = {
         "dtype": "<i4",
         "comment": "The number of photon-eqivalents that are identified to be dense cluster(s) of Cherenkov-photons",
         "transformation": {
             "function": "log(x)",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "1",
     }
@@ -352,9 +357,8 @@ def init_features_level_structure():
         "comment": "A measure for the intensity distribution on the aperture-plane. The larger the value, the less evenly the intensity is distributed on the plane.",
         "transformation": {
             "function": "log(x)",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "1",
     }
@@ -363,9 +367,8 @@ def init_features_level_structure():
         "comment": "A measure for the intensity distribution on the aperture-plane. The larger the value, the more the intensity is concentrated in a small area on the aperture-plane.",
         "transformation": {
             "function": "log(x)",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "1",
     }
@@ -376,9 +379,8 @@ def init_features_level_structure():
         "comment": paxel_intensity_median_str.format("x"),
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "m",
     }
@@ -387,9 +389,8 @@ def init_features_level_structure():
         "comment": paxel_intensity_median_str.format("y"),
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "m",
     }
@@ -400,9 +401,8 @@ def init_features_level_structure():
         "comment": _watershed_str,
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "1",
     }
@@ -411,9 +411,8 @@ def init_features_level_structure():
         "comment": _watershed_str,
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "1",
     }
@@ -422,9 +421,8 @@ def init_features_level_structure():
         "comment": _watershed_str,
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "1",
     }
@@ -435,9 +433,8 @@ def init_features_level_structure():
         "comment": _light_front_c_str.format("x"),
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "rad",
     }
@@ -446,9 +443,8 @@ def init_features_level_structure():
         "comment": _light_front_c_str.format("y"),
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "rad",
     }
@@ -459,9 +455,8 @@ def init_features_level_structure():
         "comment": _image_infinity_c_mean_str.format("x"),
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "rad",
     }
@@ -470,9 +465,8 @@ def init_features_level_structure():
         "comment": _image_infinity_c_mean_str.format("y"),
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "rad",
     }
@@ -481,9 +475,8 @@ def init_features_level_structure():
         "comment": "",
         "transformation": {
             "function": "log(x)",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "rad",
     }
@@ -492,9 +485,8 @@ def init_features_level_structure():
         "comment": "",
         "transformation": {
             "function": "log(x)",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "rad",
     }
@@ -503,9 +495,8 @@ def init_features_level_structure():
         "comment": "Number of photon-eqivalents on the edge of the field-of-view in an image focused on infinity.",
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "p.e.",
     }
@@ -514,9 +505,8 @@ def init_features_level_structure():
         "comment": "The solid angle of the Hillas-ellipse with focus set to infinity.",
         "transformation": {
             "function": "log(x)",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "sr",
     }
@@ -525,9 +515,8 @@ def init_features_level_structure():
         "comment": "The object-distance in front of the aperture where the refocused image of the airshower yields the Hillas-ellipse with the smallest solid angle. See also 'image_smallest_ellipse_solid_angle'.",
         "transformation": {
             "function": "log(x)",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "m",
     }
@@ -536,9 +525,8 @@ def init_features_level_structure():
         "comment": "The solid angle of the smallest Hillas-ellipse in all refocused images. See also 'image_smallest_ellipse_object_distance'.",
         "transformation": {
             "function": "log(x)",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "sr",
     }
@@ -547,9 +535,8 @@ def init_features_level_structure():
         "comment": "The range in object-distance for the Hillas-ellipse to double its solid angle when refocusing starts at the smallest ellipse.",
         "transformation": {
             "function": "log(x)",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "m",
     }
@@ -560,9 +547,8 @@ def init_features_level_structure():
         "comment": image_half_depth_shift_c_str.format("cx"),
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "rad",
     }
@@ -571,9 +557,8 @@ def init_features_level_structure():
         "comment": image_half_depth_shift_c_str.format("cy"),
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "rad",
     }
@@ -582,9 +567,8 @@ def init_features_level_structure():
         "comment": "Number of photon-eqivalents on the edge of the field-of-view in an image focused to the smallest Hillas-ellipse.",
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "p.e.",
     }
@@ -593,9 +577,8 @@ def init_features_level_structure():
         "comment": "The number of individual dense clusters of reconstructed Cherenkov-photons in the image-space.",
         "transformation": {
             "function": "x",
-            "shift": "mean(x)",
-            "scale": "std(x)",
-            "quantile_range": [0.01, 0.99],
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
         },
         "unit": "1",
     }

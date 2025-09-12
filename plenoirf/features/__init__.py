@@ -9,28 +9,6 @@ from sympy.abc import x
 from sympy import lambdify
 
 
-def find_values_quantile_range(values, quantile_range):
-    """
-    Returns (start, stop) of values range while excluding outliers
-    outside of the quantile-range.
-    """
-    start = quantile_range[0]
-    stop = quantile_range[1]
-    assert start >= 0.0
-    assert start < 1.0
-    assert stop > 0.0
-    assert stop <= 1.0
-    sorted_values = np.sort(values)
-    num = len(values)
-    start_idx = int(np.ceil(num * start))
-    stop_idx = int(np.floor(num * stop))
-    if start_idx >= num:
-        start_idx = num - 1
-    if stop_idx >= num:
-        stop_idx = num - 1
-    return sorted_values[start_idx], sorted_values[stop_idx]
-
-
 def function_from_string(function_string="1*x"):
     expression = sympy.parsing.sympy_parser.parse_expr(function_string)
     function = sympy.lambdify(sympy.abc.x, expression)
@@ -66,21 +44,12 @@ def find_transformation(feature_raw, transformation_instruction):
     func = function_from_string(function_string=ti["function"])
     f_trans = func(feature_raw)
 
-    # find quantile
-    start, stop = find_values_quantile_range(
-        values=f_trans,
-        quantile_range=ti["quantile_range"],
-    )
-    transformation["quantile_range"] = ti["quantile_range"]
-    transformation["range"] = [start, stop]
-    mask_quanitle = np.logical_and(f_trans >= start, f_trans <= stop)
-
     # scale
     shift_func = function_from_string(function_string=ti["shift"])
     scale_func = function_from_string(function_string=ti["scale"])
 
-    transformation["shift"] = shift_func(f_trans[mask_quanitle])
-    transformation["scale"] = scale_func(f_trans[mask_quanitle])
+    transformation["shift"] = shift_func(f_trans)
+    transformation["scale"] = scale_func(f_trans)
 
     return transformation
 

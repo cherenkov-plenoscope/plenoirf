@@ -11,7 +11,7 @@ import warnings
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
-res.start()
+res.start(sebplt=sebplt)
 
 weights_thrown2expected = json_utils.tree.read(
     opj(
@@ -36,23 +36,21 @@ PARTICLES = res.PARTICLES
 tables = {}
 
 for pk in PARTICLES:
-    with res.open_event_table(particle_key=pk) as arc:
-        _table = arc.query(
-            levels_and_columns={
-                "primary": ["uid", "energy_GeV"],
-                "features": "__all__",
-            }
-        )
-
     uid_common = snt.logic.intersection(
         passing_trigger[pk]["uid"],
         passing_quality[pk]["uid"],
     )
 
-    tables[pk] = snt.logic.cut_and_sort_table_on_indices(
-        table=_table,
-        common_indices=uid_common,
-    )
+    with res.open_event_table(particle_key=pk) as arc:
+        tables[pk] = arc.query(
+            levels_and_columns={
+                "primary": ["uid", "energy_GeV"],
+                "features": "__all__",
+            },
+            indices=uid_common,
+            sort=True,
+        )
+
 
 # guess bin edges
 lims = {}
@@ -68,9 +66,9 @@ for fk in Sfeatures:
         lims[fk][pk]["bin_edges"] = {}
         lims[fk][pk]["bin_edges"]["num"] = num_bin_edges
 
-        start, stop = irf.features.find_values_quantile_range(
-            values=features[fk], quantile_range=[0.01, 0.99]
-        )
+        start = np.quantile(features[fk], 0.01)
+        stop = np.quantile(features[fk], 0.99)
+
         if "log(x)" in Sfeatures[fk]["transformation"]["function"]:
             start = 10 ** np.floor(np.log10(start))
             stop = 10 ** np.ceil(np.log10(stop))
@@ -101,8 +99,8 @@ for fk in Sfeatures:
         lims[fk][pk]["bin_edges"]["num"] = num
 
 for fk in Sfeatures:
-    fig = sebplt.figure(style=sebplt.FIGURE_1_1)
-    ax = sebplt.add_axes(fig=fig, span=[0.175, 0.15, 0.75, 0.8])
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
     for pk in PARTICLES:
         reweight_spectrum = np.interp(
