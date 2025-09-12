@@ -2,12 +2,18 @@ import numpy as np
 from . import default
 
 
-def generate_paxel_intensity_median_hypot(event_frame):
-    slope = np.hypot(
+def generate_paxel_intensity_median_hypot_x_y(event_frame):
+    return np.hypot(
         event_frame["features/paxel_intensity_median_x"],
         event_frame["features/paxel_intensity_median_y"],
     )
-    return np.sqrt(slope)
+
+
+def generate_image_half_depth_shift_hypot_cx_cy(event_frame):
+    return np.hypot(
+        event_frame["features/image_half_depth_shift_cx"],
+        event_frame["features/image_half_depth_shift_cy"],
+    )
 
 
 def generate_diff_image_and_light_front(event_frame):
@@ -17,13 +23,17 @@ def generate_diff_image_and_light_front(event_frame):
     return np.hypot(dcx, dcy)
 
 
-def generate_image_infinity_std_density(event_frame):
+def generate_diff_image_and_trajectory_reconstruction(event_frame):
     ev = event_frame
-    solid_angle = (
-        ev["features/image_infinity_cx_std"]
-        * ev["features/image_infinity_cy_std"]
+    dcx = (
+        ev["features/image_infinity_cx_mean"]
+        - ev["reconstructed_trajectory/cx_rad"]
     )
-    return solid_angle
+    dcy = (
+        ev["features/image_infinity_cy_mean"]
+        - ev["reconstructed_trajectory/cy_rad"]
+    )
+    return np.hypot(dcx, dcy)
 
 
 def generate_A(event_frame):
@@ -54,7 +64,7 @@ def generate_C(event_frame):
     )
 
 
-def generate_reco_core_radius_m(event_frame):
+def generate_reconstructed_trajectory_hypot_x_y(event_frame):
     ev = event_frame
     return np.hypot(
         ev["reconstructed_trajectory/x_m"],
@@ -77,8 +87,8 @@ def init_combined_features_structure():
     )
 
     out = {}
-    out["trajectory_reco_core_radius_m"] = {
-        "generator": generate_reco_core_radius_m,
+    out["reconstructed_trajectory_hypot_x_y"] = {
+        "generator": generate_reconstructed_trajectory_hypot_x_y,
         "dtype": "<f4",
         "unit": "m",
         "transformation": {
@@ -87,6 +97,18 @@ def init_combined_features_structure():
             "scale": fx_containment_percentile_90,
         },
     }
+
+    out["image_half_depth_shift_hypot_cx_cy"] = {
+        "generator": generate_image_half_depth_shift_hypot_cx_cy,
+        "dtype": "<f4",
+        "unit": "rad",
+        "transformation": {
+            "function": "x",
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
+        },
+    }
+
     out["trajectory_reco_theta_rad"] = {
         "generator": generate_reco_theta_rad,
         "dtype": "<f4",
@@ -107,22 +129,22 @@ def init_combined_features_structure():
             "scale": fx_containment_percentile_90,
         },
     }
-    out["combi_paxel_intensity_median_hypot"] = {
-        "generator": generate_paxel_intensity_median_hypot,
+    out["combi_diff_image_and_trajectory_reconstruction"] = {
+        "generator": generate_diff_image_and_trajectory_reconstruction,
         "dtype": "<f4",
-        "unit": "$m^{1/2}$",
+        "unit": "rad",
         "transformation": {
-            "function": "log(x)",
+            "function": "x",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },
     }
-    out["combi_image_infinity_std_density"] = {
-        "generator": generate_image_infinity_std_density,
+    out["combi_paxel_intensity_median_hypot_x_y"] = {
+        "generator": generate_paxel_intensity_median_hypot_x_y,
         "dtype": "<f4",
-        "unit": "$sr^{-1}$",
+        "unit": "$m$",
         "transformation": {
-            "function": "log(x)",
+            "function": "x",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },

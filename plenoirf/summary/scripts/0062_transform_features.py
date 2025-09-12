@@ -124,8 +124,34 @@ for fk in ALL_FEATURES:
     ]
 
 
+NOT_VERY_USEFULL = [
+    "image_num_islands",
+    "aperture_num_islands_watershed_rel_thr_2",
+    "aperture_num_islands_watershed_rel_thr_4",
+    "aperture_num_islands_watershed_rel_thr_8",
+    "image_infinity_num_photons_on_edge_field_of_view",
+    "image_smallest_ellipse_num_photons_on_edge_field_of_view",
+    "light_front_cx",
+    "light_front_cy",
+    "image_infinity_cx_mean",
+    "image_infinity_cy_mean",
+    "image_infinity_cx_std",
+    "image_infinity_cy_std",
+    "paxel_intensity_median_x",
+    "paxel_intensity_median_y",
+    "image_half_depth_shift_cx",
+    "image_half_depth_shift_cy",
+]
+
+
 for fk in ALL_FEATURES:
-    fig_path = opj(res.paths["out_dir"], f"{fk}.jpg")
+    if fk in NOT_VERY_USEFULL:
+        os.makedirs(
+            opj(res.paths["out_dir"], "not_very_usefull"), exist_ok=True
+        )
+        fig_path = opj(res.paths["out_dir"], "not_very_usefull", f"{fk}.jpg")
+    else:
+        fig_path = opj(res.paths["out_dir"], f"{fk}.jpg")
 
     start, stop = start_stop[fk]
 
