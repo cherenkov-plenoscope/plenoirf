@@ -10,6 +10,8 @@ import numpy as np
 import sebastians_matplotlib_addons as sebplt
 import json_utils
 import warnings
+import copy
+import binning_utils
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
@@ -24,7 +26,7 @@ COMBINED_FEATURES = (
 ALL_FEATURES = irf.features.init_all_features_structure()
 
 
-def open_event_frame(pk):
+def open_feature_frame(pk, return_spectral_weight=False):
     passing_trigger = json_utils.tree.read(
         opj(res.paths["analysis_dir"], "0055_passing_trigger")
     )
@@ -53,14 +55,41 @@ def open_event_frame(pk):
             indices=common_indices,
             sort=True,
         )
-    return snt.logic.make_rectangular_DataFrame(event_table)
+
+    df = snt.logic.make_rectangular_DataFrame(event_table)
+
+    if return_spectral_weight:
+        weights_thrown2expected = json_utils.tree.read(
+            opj(
+                res.paths["analysis_dir"],
+                "0040_weights_from_thrown_to_expected_energy_spectrum",
+            )
+        )
+        with res.open_event_table(particle_key=pk) as arc:
+            energy_GeV = arc.query(
+                levels_and_columns={
+                    "primary": ["uid", "energy_GeV"],
+                },
+                indices=common_indices,
+                sort=True,
+            )["primary"]["energy_GeV"]
+
+        spectral_weight = np.interp(
+            x=energy_GeV,
+            xp=weights_thrown2expected[pk]["weights_vs_energy"]["energy_GeV"],
+            fp=weights_thrown2expected[pk]["weights_vs_energy"]["mean"],
+        )
+
+        return df, spectral_weight
+    else:
+        return df
 
 
 particle_colors = res.analysis["plot"]["particle_colors"]
 
 ft_trafo = {}
 for pk in ["gamma"]:
-    event_frame = open_event_frame(pk=pk)
+    event_frame = open_feature_frame(pk=pk)
 
     for fk in ALL_FEATURES:
         if fk in ORIGINAL_FEATURES:
@@ -78,9 +107,12 @@ transformed_features = {}
 for pk in res.PARTICLES:
     transformed_features[pk] = {}
 
-    event_frame = open_event_frame(pk=pk)
+    event_frame, spectral_weight = open_feature_frame(
+        pk=pk, return_spectral_weight=True
+    )
 
     transformed_features[pk]["uid"] = np.array(event_frame["uid"])
+    transformed_features[pk]["spectral_weight"] = spectral_weight
 
     for fk in ALL_FEATURES:
         if fk in ORIGINAL_FEATURES:
@@ -141,8 +173,13 @@ NOT_VERY_USEFULL = [
     "paxel_intensity_median_y",
     "image_half_depth_shift_cx",
     "image_half_depth_shift_cy",
+    "paxel_intensity_peakness_std_over_mean",
+    "paxel_intensity_peakness_max_over_mean",
 ]
 
+ax_span = copy.deepcopy(irf.summary.figure.AX_SPAN)
+ax_span_hist = [ax_span[0], ax_span[1] + 0.2, ax_span[2], 0.55]
+ax_span_cums = [ax_span[0], ax_span[1], ax_span[2], 0.18]
 
 for fk in ALL_FEATURES:
     if fk in NOT_VERY_USEFULL:
@@ -154,15 +191,19 @@ for fk in ALL_FEATURES:
         fig_path = opj(res.paths["out_dir"], f"{fk}.jpg")
 
     start, stop = start_stop[fk]
+    fk_bin = binning_utils.Binning(bin_edges=np.linspace(start, stop, 51))
 
     if not os.path.exists(fig_path):
         fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-        ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+        ax_hist = sebplt.add_axes(fig=fig, span=ax_span_hist)
+        ax_cums = sebplt.add_axes(fig=fig, span=ax_span_cums)
+        cut_cumsum = {}
 
         for pk in res.PARTICLES:
-            bin_edges_fk = np.linspace(start, stop, 101)
             bin_counts_fk = np.histogram(
-                transformed_features[pk][fk], bins=bin_edges_fk
+                transformed_features[pk][fk],
+                bins=fk_bin["edges"],
+                weights=transformed_features[pk]["spectral_weight"],
             )[0]
 
             bin_counts_unc_fk = irf.utils._divide_silent(
@@ -177,13 +218,14 @@ for fk in ALL_FEATURES:
                 ),
                 default=0,
             )
+            cut_cumsum[pk] = np.cumsum(bin_counts_norm_fk)
 
             bincounts_lower = bin_counts_norm_fk * (1 - bin_counts_unc_fk)
             bincounts_lower[bincounts_lower < 0] = 0
 
             sebplt.ax_add_histogram(
-                ax=ax,
-                bin_edges=bin_edges_fk,
+                ax=ax_hist,
+                bin_edges=fk_bin["edges"],
                 bincounts=bin_counts_norm_fk,
                 linestyle="-",
                 linecolor=particle_colors[pk],
@@ -194,22 +236,30 @@ for fk in ALL_FEATURES:
                 face_alpha=0.3,
             )
 
+            ax_cums.plot(
+                fk_bin["centers"],
+                cut_cumsum[pk],
+                particle_colors[pk],
+            )
+
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 action="ignore",
                 category=UserWarning,
             )
-            ax.semilogy()
-        irf.summary.figure.mark_ax_thrown_spectrum(ax=ax)
-        ax.set_xlabel("transformed {:s} / 1".format(fk))
-        ax.set_ylabel("relative intensity / 1")
+            ax_hist.semilogy()
+        irf.summary.figure.mark_ax_airshower_spectrum(ax=ax_hist)
+        ax_cums.set_xlabel("transformed {:s} / 1".format(fk))
+        ax_hist.set_ylabel("relative intensity / 1")
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 action="ignore",
                 category=UserWarning,
             )
-            ax.set_xlim([start, stop])
-        ax.set_ylim([1e-5, 1.0])
+            ax_hist.set_xlim([start, stop])
+            ax_cums.set_xlim([start, stop])
+        ax_hist.set_ylim([1e-5, 1.0])
+        ax_cums.set_ylim([0, 1])
         fig.savefig(fig_path)
         sebplt.close(fig)
 

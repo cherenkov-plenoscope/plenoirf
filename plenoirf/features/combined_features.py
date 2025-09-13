@@ -36,6 +36,13 @@ def generate_diff_image_and_trajectory_reconstruction(event_frame):
     return np.hypot(dcx, dcy)
 
 
+def generate_diff_light_front_and_trajectory_reconstruction(event_frame):
+    ev = event_frame
+    dcx = ev["reconstructed_trajectory/cx_rad"] - ev["features/light_front_cx"]
+    dcy = ev["reconstructed_trajectory/cy_rad"] - ev["features/light_front_cy"]
+    return np.hypot(dcx, dcy)
+
+
 def generate_A(event_frame):
     ev = event_frame
     shift = np.hypot(
@@ -43,7 +50,7 @@ def generate_A(event_frame):
         ev["features/image_half_depth_shift_cy"],
     )
     return (
-        ev["features/num_photons"]
+        np.log10(ev["features/num_photons"])
         * shift
         / ev["features/image_smallest_ellipse_half_depth"]
     )
@@ -52,16 +59,52 @@ def generate_A(event_frame):
 def generate_B(event_frame):
     ev = event_frame
     return (
-        ev["features/num_photons"]
+        np.log10(ev["features/num_photons"])
         / ev["features/image_smallest_ellipse_object_distance"] ** 2.0
     )
 
 
 def generate_C(event_frame):
     ev = event_frame
-    return ev["features/paxel_intensity_peakness_std_over_mean"] / np.log10(
-        ev["features/image_smallest_ellipse_object_distance"]
+    return (
+        ev["features/image_smallest_ellipse_half_depth"]
+        * ev["features/image_smallest_ellipse_object_distance"]
     )
+
+
+def _shower_volume(shower_sr, half_depth, object_distance):
+    full_sphere_sr = 4 * np.pi
+    shower_fraction_sphere = shower_sr / full_sphere_sr
+    area_of_focus_sphere_m2 = np.pi * object_distance**2
+    shower_area_m2 = shower_fraction_sphere * area_of_focus_sphere_m2
+    shower_volume_m3 = shower_area_m2 * half_depth
+    return shower_volume_m3
+
+
+def genetate_shower_volume(event_frame):
+    ev = event_frame
+    return _shower_volume(
+        shower_sr=ev["features/image_smallest_ellipse_solid_angle"],
+        half_depth=ev["features/image_smallest_ellipse_half_depth"],
+        object_distance=ev["features/image_smallest_ellipse_object_distance"],
+    )
+
+
+def generate_shower_shift_volume(event_frame):
+    ev = event_frame
+    shower_sr = np.abs(ev["features/image_half_depth_shift_cx"]) * np.abs(
+        ev["features/image_half_depth_shift_cy"]
+    )
+    return _shower_volume(
+        shower_sr=shower_sr,
+        half_depth=ev["features/image_smallest_ellipse_half_depth"],
+        object_distance=ev["features/image_smallest_ellipse_object_distance"],
+    )
+
+
+def genetate_shower_density(event_frame):
+    shower_volume_m3 = genetate_shower_volume(event_frame=event_frame)
+    return event_frame["features/num_photons"] / shower_volume_m3
 
 
 def generate_reconstructed_trajectory_hypot_x_y(event_frame):
@@ -72,12 +115,8 @@ def generate_reconstructed_trajectory_hypot_x_y(event_frame):
     )
 
 
-def generate_reco_theta_rad(event_frame):
-    ev = event_frame
-    return np.hypot(
-        ev["reconstructed_trajectory/cx_rad"],
-        ev["reconstructed_trajectory/cy_rad"],
-    )
+def generate_paxel_intensity_peakness_mean_over_std(event_frame):
+    return 1.0 / event_frame["features/paxel_intensity_peakness_std_over_mean"]
 
 
 def init_combined_features_structure():
@@ -87,6 +126,18 @@ def init_combined_features_structure():
     )
 
     out = {}
+
+    out["paxel_intensity_peakness_mean_over_std"] = {
+        "generator": generate_paxel_intensity_peakness_mean_over_std,
+        "dtype": "<f4",
+        "unit": "1",
+        "transformation": {
+            "function": "log(x)",
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
+        },
+    }
+
     out["reconstructed_trajectory_hypot_x_y"] = {
         "generator": generate_reconstructed_trajectory_hypot_x_y,
         "dtype": "<f4",
@@ -109,22 +160,12 @@ def init_combined_features_structure():
         },
     }
 
-    out["trajectory_reco_theta_rad"] = {
-        "generator": generate_reco_theta_rad,
-        "dtype": "<f4",
-        "unit": "rad",
-        "transformation": {
-            "function": "x",
-            "shift": fx_median,
-            "scale": fx_containment_percentile_90,
-        },
-    }
     out["combi_diff_image_and_light_front"] = {
         "generator": generate_diff_image_and_light_front,
         "dtype": "<f4",
         "unit": "rad",
         "transformation": {
-            "function": "x",
+            "function": "log(x)",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },
@@ -134,7 +175,17 @@ def init_combined_features_structure():
         "dtype": "<f4",
         "unit": "rad",
         "transformation": {
-            "function": "x",
+            "function": "log(x)",
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
+        },
+    }
+    out["combi_diff_light_front_and_trajectory_reconstruction"] = {
+        "generator": generate_diff_light_front_and_trajectory_reconstruction,
+        "dtype": "<f4",
+        "unit": "rad",
+        "transformation": {
+            "function": "log(x)",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },
@@ -175,6 +226,39 @@ def init_combined_features_structure():
         "unit": "$1$",
         "transformation": {
             "function": "x",
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
+        },
+    }
+
+    out["combi_shower_volume"] = {
+        "generator": genetate_shower_volume,
+        "dtype": "<f4",
+        "unit": "$m{^3}$",
+        "transformation": {
+            "function": "log(x)",
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
+        },
+    }
+
+    out["combi_shower_shift_volume"] = {
+        "generator": generate_shower_shift_volume,
+        "dtype": "<f4",
+        "unit": "$m{^3}$",
+        "transformation": {
+            "function": "log(x)",
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
+        },
+    }
+
+    out["combi_shower_density"] = {
+        "generator": genetate_shower_density,
+        "dtype": "<f4",
+        "unit": "$m{^-3}$",
+        "transformation": {
+            "function": "log(x)",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },
