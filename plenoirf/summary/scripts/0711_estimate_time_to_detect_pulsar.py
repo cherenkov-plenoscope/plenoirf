@@ -389,7 +389,7 @@ for zd in range(zenith_bin["num"]):
                     linecolor="k",
                     face_color="k",
                     face_alpha=0.2,
-                    draw_bin_walls=False,
+                    draw_bin_walls=True,
                 )
                 ax.set_ylim([rate_min, rate_max])
                 ax.set_xlim([0, 1])
