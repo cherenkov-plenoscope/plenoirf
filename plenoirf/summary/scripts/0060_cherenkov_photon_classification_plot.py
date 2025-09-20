@@ -83,12 +83,12 @@ for pk in res.PARTICLES:
         size_bin_edges,
         size_bin_edges,
         np.transpose(np_bins_normalized),
-        cmap="Greys",
+        cmap=res.PARTICLE_COLORMAPS[pk],
         norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
     )
     sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
     ax.set_aspect("equal")
-    ax.set_title("normalized for each column")
+    # ax.set_title("normalized for each column")
     ax.set_ylabel("reco. Cherenkov size / p.e.")
     ax.loglog()
     ax.set_xticklabels([])
@@ -98,7 +98,7 @@ for pk in res.PARTICLES:
         bin_edges=size_bin_edges,
         bincounts=np_exposure_bins,
         linestyle="-",
-        linecolor="k",
+        linecolor=res.PARTICLE_COLORS[pk],
     )
     ax_h.semilogx()
     ax_h.set_xlim([np.min(size_bin_edges), np.max(size_bin_edges)])
@@ -141,32 +141,36 @@ for pk in res.PARTICLES:
     _v = num_events > 0
     num_events_relunc[_v] = np.sqrt(num_events[_v]) / num_events[_v]
 
-    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    fstyle, axspan = irf.summary.figure.style("16:5")
+
+    fig = sebplt.figure(fstyle)
+    ax = sebplt.add_axes(fig=fig, span=axspan)
     sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=energy_bin["edges"],
         bincounts=tprs,
         linestyle="-",
-        linecolor="k",
+        linecolor=res.PARTICLE_COLORS[pk],
         bincounts_upper=tprs * (1 + num_events_relunc),
         bincounts_lower=tprs * (1 - num_events_relunc),
-        face_color="k",
+        face_color=res.PARTICLE_COLORS[pk],
         face_alpha=0.05,
+        label="true positive rate",
     )
     sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=energy_bin["edges"],
         bincounts=ppvs,
         linestyle=":",
-        linecolor="k",
+        linecolor=res.PARTICLE_COLORS[pk],
         bincounts_upper=ppvs * (1 + num_events_relunc),
         bincounts_lower=ppvs * (1 - num_events_relunc),
-        face_color="k",
+        face_color=res.PARTICLE_COLORS[pk],
         face_alpha=0.05,
+        label="positive predictive value",
     )
+    ax.legend()
     ax.set_xlabel("energy / GeV")
-    ax.set_ylabel("true-positive-rate -\npositive-predictive-value :\n")
     ax.set_xlim(energy_bin["limits"])
     ax.set_ylim([0, 1])
     ax.semilogx()
@@ -213,22 +217,22 @@ for pk in res.PARTICLES:
     _v = num_events > 0
     num_events_relunc[_v] = np.sqrt(num_events[_v]) / num_events[_v]
 
-    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    fig = sebplt.figure(fstyle)
+    ax = sebplt.add_axes(fig=fig, span=axspan)
     sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=energy_bin["edges"],
         bincounts=true_over_reco_ratios,
         linestyle="-",
-        linecolor="k",
+        linecolor=res.PARTICLE_COLORS[pk],
         bincounts_upper=true_over_reco_ratios * (1 + num_events_relunc),
         bincounts_lower=true_over_reco_ratios * (1 - num_events_relunc),
-        face_color="k",
+        face_color=res.PARTICLE_COLORS[pk],
         face_alpha=0.1,
     )
-    ax.axhline(y=1, color="k", linestyle=":")
+    ax.axhline(y=1, color="black", linestyle=":")
     ax.set_xlabel("energy / GeV")
-    ax.set_ylabel("Cherenkov size, true/extracted / 1")
+    ax.set_ylabel("Cherenkov size,\ntrue/extracted / 1")
     ax.set_xlim(energy_bin["limits"])
     ax.semilogx()
     fig.savefig(opj(res.paths["out_dir"], pk + "_" + key + ".jpg"))
@@ -273,22 +277,22 @@ for pk in res.PARTICLES:
     _v = num_events > 0
     num_events_relunc[_v] = np.sqrt(num_events[_v]) / num_events[_v]
 
-    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    fig = sebplt.figure(fstyle)
+    ax = sebplt.add_axes(fig=fig, span=axspan)
     sebplt.ax_add_histogram(
         ax=ax,
         bin_edges=size_bin_edges,
         bincounts=num_ratios,
         linestyle="-",
-        linecolor="k",
+        linecolor=res.PARTICLE_COLORS[pk],
         bincounts_upper=num_ratios * (1 + num_events_relunc),
         bincounts_lower=num_ratios * (1 - num_events_relunc),
-        face_color="k",
+        face_color=res.PARTICLE_COLORS[pk],
         face_alpha=0.1,
     )
     ax.axhline(y=1, color="k", linestyle=":")
     ax.set_xlabel("true Cherenkov size / p.e.")
-    ax.set_ylabel("Cherenkov size, true/extracted / 1")
+    ax.set_ylabel("true size /\nextracted size")
     ax.set_xlim([np.min(size_bin_edges), np.max(size_bin_edges)])
     ax.semilogx()
     fig.savefig(opj(res.paths["out_dir"], pk + "_" + key + ".jpg"))

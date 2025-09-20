@@ -8,6 +8,33 @@ AX_SPAN_ZENITH_INDICATOR = [0.0, 0.075, 0.175, 0.175]
 AX_SPAN_WITH_COLORBAR_PAYLOAD = [0.2, 0.2, 0.55, 0.75]
 AX_SPAN_WITH_COLORBAR_COLORBAR = [0.8, 0.2, 0.025, 0.75]
 
+
+def style(key="16:9"):
+    """
+    Returns
+    -------
+    (figure_style, axes_span)
+    """
+    _w, _h = str.split(key, ":")
+    w = float(_w)
+    h = float(_h)
+
+    cols = 1280
+    rows = int(np.round((h / w) * cols))
+
+    ax_x = 256
+    ax_y = 144
+
+    top_height = 30
+    ax_width = 870
+    ax_height = rows - ax_y - top_height
+
+    return (
+        {"rows": rows, "cols": cols, "fontsize": 1.0},
+        [ax_x / cols, ax_y / rows, ax_width / cols, ax_height / rows],
+    )
+
+
 SOURCES = {
     "diffuse": {
         "label": "area $\\times$ solid angle",

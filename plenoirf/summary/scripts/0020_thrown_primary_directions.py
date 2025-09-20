@@ -21,7 +21,7 @@ hh = spherical_histogram.HemisphereHistogram(
     max_zenith_distance_rad=np.deg2rad(90),
 )
 
-cmap = sebplt.plt.colormaps["inferno"].resampled(256)
+cmap = sebplt.plt.colormaps["magma_r"].resampled(256)
 
 for pk in res.PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
@@ -31,7 +31,7 @@ for pk in res.PARTICLES:
                     "uid",
                     "azimuth_rad",
                     "zenith_rad",
-                ],
+                ]
             }
         )
 
@@ -42,9 +42,10 @@ for pk in res.PARTICLES:
     )
 
     pointing_range_color = "yellowgreen"
-    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    fstyle, _ = irf.summary.figure.style("4:3")
+    fig = sebplt.figure(fstyle)
     ax = sebplt.add_axes(
-        fig=fig, span=[0.0, 0.0, 1, 1], style=sebplt.AXES_BLANK
+        fig=fig, span=[0.0, 0.0, 0.8, 1], style=sebplt.AXES_BLANK
     )
     ax_legend = sebplt.add_axes(
         fig=fig, span=[0.8, 0.05, 0.2, 0.9], style=sebplt.AXES_BLANK
@@ -83,7 +84,7 @@ for pk in res.PARTICLES:
         ax=ax,
         azimuths_rad=ptg_circ_az,
         zeniths_rad=ptg_circ_zd,
-        linewidth=0.66,
+        linewidth=1,
         color=pointing_range_color,
     )
     sebplt.hemisphere.ax_add_grid_stellarium_style(
@@ -94,7 +95,7 @@ for pk in res.PARTICLES:
         [0.0, 0.1],
         [0.1, 0.1],
         color=pointing_range_color,
-        linewidth=0.66,
+        linewidth=1,
     )
     ax_legend.text(
         x=0.15,
