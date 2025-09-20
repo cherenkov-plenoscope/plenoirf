@@ -383,11 +383,12 @@ for pk in res.PARTICLES:
     num_panels = energy_bin["num"] + 1
     num_cols = 4
     num_rows = num_panels // num_cols
+    num_pixel_on_edge = 320
 
     fig = sebplt.figure(
         {
-            "rows": (1 + num_rows) * 200,
-            "cols": num_cols * 200,
+            "rows": (1 + num_rows) * num_pixel_on_edge,
+            "cols": num_cols * num_pixel_on_edge,
             "fontsize": 1,
         }
     )
@@ -459,7 +460,7 @@ for pk in res.PARTICLES:
                 c_bin_edges_shrink_deg,
                 c_bin_edges_shrink_deg,
                 ene_psf_image,
-                cmap="Blues",
+                cmap="magma_r",
                 vmax=None,
             )
 

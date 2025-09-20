@@ -31,6 +31,13 @@ for zd in range(zenith_bin["num"]):
 
     for ok in ONREGION_TYPES:
         fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+        sebplt.add_axes_zenith_range_indicator(
+            fig=fig,
+            span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
+            zenith_bin_edges_rad=zenith_bin["edges"],
+            zenith_bin=zd,
+            fontsize=6,
+        )
         ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
         text_y = 0.7
@@ -73,7 +80,7 @@ for zd in range(zenith_bin["num"]):
         ax.set_xlim(fine_energy_bin["limits"])
         ax.set_ylim([1e-5, 1e3])
         ax.loglog()
-        ax.set_xlabel("Energy / GeV")
+        ax.set_xlabel("energy / GeV")
         ax.set_ylabel("differential rate /\ns$^{-1}$ (GeV)$^{-1}$")
         fig.savefig(
             opj(
