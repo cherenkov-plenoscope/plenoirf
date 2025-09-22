@@ -137,14 +137,14 @@ for pk in res.PARTICLES:
         cm["ax0_bin_edges"],
         cm["ax1_bin_edges"],
         np.transpose(cm["reco_given_true"]),
-        cmap="Greys",
+        cmap=res.PARTICLE_COLORMAPS[pk],
         norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
     )
     ax_c.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1)
     sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
-    irf.summary.figure.mark_ax_thrown_spectrum(ax=ax_c)
+    # irf.summary.figure.mark_ax_thrown_spectrum(ax=ax_c)
     ax_c.set_aspect("equal")
-    ax_c.set_title(r"$P(E_\mathrm{reco} \vert E_\mathrm{true})$")
+    # ax_c.set_title(r"$P$ $($ reco. energy $\vert$ true energy $)$")
     ax_c.set_ylabel("reco. energy / GeV")
     ax_c.loglog()
     ax_c.set_xticklabels([])
@@ -152,14 +152,14 @@ for pk in res.PARTICLES:
     ax_h.set_xlim([np.min(cm["ax0_bin_edges"]), np.max(cm["ax1_bin_edges"])])
     ax_h.set_xlabel("true energy / GeV")
     ax_h.set_ylabel("num. events / 1")
-    irf.summary.figure.mark_ax_thrown_spectrum(ax_h)
+    # irf.summary.figure.mark_ax_thrown_spectrum(ax_h)
     ax_h.axhline(min_number_samples, linestyle=":", color="k")
     sebplt.ax_add_histogram(
         ax=ax_h,
         bin_edges=cm["ax0_bin_edges"],
         bincounts=cm["exposure_ax0"],
         linestyle="-",
-        linecolor="k",
+        linecolor=res.PARTICLE_COLORS[pk],
     )
     fig.savefig(opj(res.paths["out_dir"], f"{pk}.jpg"))
     sebplt.close(fig)
@@ -184,10 +184,10 @@ for pk in res.PARTICLES:
             bincounts=mm,
             bincounts_upper=mm + mm_abs_unc,
             bincounts_lower=mm - mm_abs_unc,
-            face_color="k",
+            face_color=res.PARTICLE_COLORS[pk],
             face_alpha=0.25,
             linestyle="-",
-            linecolor="k",
+            linecolor=res.PARTICLE_COLORS[pk],
         )
         axe.set_ylim([0, 1])
         axe.set_xlim(energy_bin["limits"])
