@@ -29,20 +29,26 @@ passing_quality = json_utils.tree.read(
 )
 
 num_bins = 32
-min_number_samples = num_bins
+min_number_samples = 3 * num_bins
 
 max_relative_leakage = res.analysis["quality"]["max_relative_leakage"]
 min_reconstructed_photons = res.analysis["quality"][
     "min_reconstructed_photons"
 ]
 
-distance_bin_edges = np.geomspace(5e3, 25e3, num_bins + 1)
+distance_bin_edges = np.linspace(10e3, 22.5e3, num_bins + 1)
 
 STRUCTURE = irf.event_table.structure.init_event_table_structure()
 
 for pk in PARTICLES:
+
+    uid_common = snt.logic.intersection(
+        passing_trigger[pk]["uid"],
+        passing_quality[pk]["uid"],
+    )
+
     with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(
+        table = arc.query(
             levels_and_columns={
                 "primary": ["uid", "energy_GeV"],
                 "instrument_pointing": ["uid", "zenith_rad"],
@@ -51,18 +57,10 @@ for pk in PARTICLES:
                     "uid",
                     "image_smallest_ellipse_object_distance",
                 ],
-            }
+            },
+            indices=uid_common,
+            sort=True,
         )
-
-    uid_common = snt.logic.intersection(
-        passing_trigger[pk]["uid"],
-        passing_quality[pk]["uid"],
-    )
-
-    table = snt.logic.cut_and_sort_table_on_indices(
-        table=event_table,
-        common_indices=uid_common,
-    )
 
     true_airshower_maximum_altitude = table["cherenkovpool"][
         "z_emission_p50_m"
@@ -98,7 +96,7 @@ for pk in PARTICLES:
         cm["ax0_bin_edges"],
         cm["ax1_bin_edges"],
         np.transpose(cm["counts_normalized_on_ax0"]),
-        cmap="Greys",
+        cmap=res.PARTICLE_COLORMAPS[pk],
         norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
     )
     sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
@@ -106,21 +104,21 @@ for pk in PARTICLES:
     ax_c.set_aspect("equal")
     ax_c.set_title("normalized for each column")
     ax_c.set_ylabel("(depth of smallest ellipse) cos(zenith) / m")
-    ax_c.loglog()
+    # ax_c.loglog()
     sebplt.ax_add_grid(ax_c)
 
     ax_h.semilogx()
     ax_h.set_xlim([np.min(cm["ax0_bin_edges"]), np.max(cm["ax0_bin_edges"])])
     ax_h.set_xlabel("true maximum of airshower / m")
     ax_h.set_ylabel("num. events / 1")
-    irf.summary.figure.mark_ax_thrown_spectrum(ax_h)
+    # irf.summary.figure.mark_ax_thrown_spectrum(ax_h)
     ax_h.axhline(min_number_samples, linestyle=":", color="k")
     sebplt.ax_add_histogram(
         ax=ax_h,
         bin_edges=cm["ax0_bin_edges"],
         bincounts=cm["exposure_ax0"],
         linestyle="-",
-        linecolor="k",
+        linecolor=res.PARTICLE_COLORS[pk],
     )
     fig.savefig(opj(res.paths["out_dir"], f"{pk}_maximum.jpg"))
     sebplt.close(fig)
