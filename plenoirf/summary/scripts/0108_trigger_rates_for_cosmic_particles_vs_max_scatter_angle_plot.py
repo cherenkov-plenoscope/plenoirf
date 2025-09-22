@@ -140,9 +140,9 @@ for zd in range(zenith_bin["num"]):
     )
     ax.set_ylabel(
         (
-            "R: trigger-rate / s$^{-1}$\n"
-            "S: scatter solid angle / msr\n"
-            "dR/dS R$^{-1}$ / (msr)$^{-1}$"
+            "$R$: trigger rate / s$^{-1}$\n"
+            "$S$: scatter solid angle / msr\n"
+            "d$R$/d$S$ $R^{-1}$ / (msr)$^{-1}$"
         )
     )
     ax.set_xlabel("scatter solid angle / msr")
