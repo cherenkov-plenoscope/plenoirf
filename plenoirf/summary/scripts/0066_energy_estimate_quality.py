@@ -40,19 +40,16 @@ mk = "energy_GeV"
 for pk in res.PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
         event_table = arc.query(
-            levels_and_columns={"primary": ["uid", "energy_GeV"]}
+            levels_and_columns={"primary": ["uid", "energy_GeV"]},
+            indices=reconstructed_energy[pk][mk]["uid"],
+            sort=True,
         )
 
-    valid_event_table = snt.logic.cut_and_sort_table_on_indices(
-        table=event_table,
-        common_indices=reconstructed_energy[pk][mk]["uid"],
-    )
-
-    true_energy = valid_event_table["primary"]["energy_GeV"]
+    true_energy = event_table["primary"]["energy_GeV"]
     reco_energy = irf.analysis.energy.align_on_idx(
         input_idx=reconstructed_energy[pk][mk]["uid"],
         input_values=reconstructed_energy[pk][mk][mk],
-        target_idxs=valid_event_table["primary"]["uid"],
+        target_idxs=event_table["primary"]["uid"],
     )
 
     cm = confusion_matrix.init(
