@@ -14,7 +14,7 @@ import json_utils
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
-res.start()
+res.start(sebplt=sebplt)
 
 passing_trigger = json_utils.tree.read(
     opj(res.paths["analysis_dir"], "0055_passing_trigger")
@@ -50,18 +50,6 @@ for zd in range(zenith_bin["num"]):
     for pk in ["gamma"]:
         tds[zk][pk] = {}
 
-        with res.open_event_table(particle_key=pk) as arc:
-            event_table = arc.query(
-                levels_and_columns={
-                    "primary": "__all__",
-                    "groundgrid_choice": "__all__",
-                    "groundgrid": "__all__",
-                    "instrument": "__all__",
-                    "features": "__all__",
-                    "reconstructed_trajectory": "__all__",
-                }
-            )
-
         uid_common = snt.logic.intersection(
             zenith_assignment[zk][pk],
             passing_trigger[pk]["uid"],
@@ -69,10 +57,29 @@ for zd in range(zenith_bin["num"]):
             passing_trajectory_quality[pk]["uid"],
         )
 
-        event_table = snt.logic.cut_table_on_indices(
-            table=event_table,
-            common_indices=uid_common,
-        )
+        with res.open_event_table(particle_key=pk) as arc:
+            event_table = arc.query(
+                levels_and_columns={
+                    "primary": (
+                        "uid",
+                        "energy_GeV",
+                        "momentum_x_GeV_per_c",
+                        "momentum_y_GeV_per_c",
+                        "momentum_z_GeV_per_c",
+                        "starting_x_m",
+                        "starting_y_m",
+                        "starting_height_asl_m",
+                    ),
+                    "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
+                    "instrument": ("uid", "start_time_of_exposure_s"),
+                    "features": (
+                        "uid",
+                        "image_smallest_ellipse_object_distance",
+                    ),
+                },
+                indices=uid_common,
+                sort=True,
+            )
 
         et = snt.logic.make_rectangular_DataFrame(event_table).to_records()
 
@@ -171,12 +178,12 @@ for zd in range(zenith_bin["num"]):
         )
         tDelta_rel = tDelta - np.median(tDelta)
 
-        E_MAX = 5.0
-        e_mask = np.array(tds[zk][pk]["energy_GeV"]) <= E_MAX
+        max_energy_GeV = 5.0
+        e_mask = np.array(tds[zk][pk]["energy_GeV"]) <= max_energy_GeV
         tDelta_10 = tDelta[e_mask]
         tDelta_rel_10 = tDelta_10 - np.median(tDelta_10)
 
-        Y_LIM = [-0.05, 0.5]
+        Y_LIM = [-0.025, 0.325]
         ALPHA_ALL_ENERGY = 0.33
         # plot all energies
         fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
@@ -189,6 +196,9 @@ for zd in range(zenith_bin["num"]):
             fontsize=6,
         )
         bincounts = np.histogram(a=tDelta_rel, bins=TIME_BIN_EDGES)[0]
+        tDelta_rel_p16 = np.percentile(tDelta_rel, q=16)
+        tDelta_rel_p84 = np.percentile(tDelta_rel, q=84)
+        tDelta_rel_containment_p68 = tDelta_rel_p84 - tDelta_rel_p16
         numall = np.sum(bincounts)
         bincounts = bincounts / numall
         sebplt.ax_add_histogram(
@@ -208,11 +218,16 @@ for zd in range(zenith_bin["num"]):
         ax.text(
             x=0.1,
             y=0.8,
-            s="std. dev.: {:0.1f}ns".format(1e9 * np.std(tDelta_rel)),
+            s=r"68% containment: {:0.1f} ns".format(
+                1e9 * tDelta_rel_containment_p68
+            ),
             transform=ax.transAxes,
             alpha=ALPHA_ALL_ENERGY,
         )
         bincounts10 = np.histogram(a=tDelta_rel_10, bins=TIME_BIN_EDGES)[0]
+        tDelta_rel_p16_10 = np.percentile(tDelta_rel_10, q=16)
+        tDelta_rel_p84_10 = np.percentile(tDelta_rel_10, q=84)
+        tDelta_rel_containment_p68_10 = tDelta_rel_p84_10 - tDelta_rel_p16_10
         num10 = np.sum(bincounts10)
         bincounts10 = bincounts10 / num10
         sebplt.ax_add_histogram(
@@ -232,14 +247,16 @@ for zd in range(zenith_bin["num"]):
         ax.text(
             x=0.1,
             y=0.9,
-            s="std. dev.: {:0.1f}ns".format(1e9 * np.std(tDelta_rel_10)),
+            s=r"68% containment: {:0.1f} ns".format(
+                1e9 * tDelta_rel_containment_p68_10
+            ),
             transform=ax.transAxes,
         )
 
         ax.text(
             x=0.6,
             y=0.9,
-            s="below {:.1f}GeV ({:,d} events)".format(E_MAX, num10),
+            s="below {:.1f} GeV ({:,d} events)".format(max_energy_GeV, num10),
             transform=ax.transAxes,
         )
         ax.text(
@@ -250,8 +267,8 @@ for zd in range(zenith_bin["num"]):
             alpha=ALPHA_ALL_ENERGY,
         )
         ax.set_ylim(Y_LIM)
-        ax.set_xlabel("(reconstructed - true) time of arrival / ns")
-        ax.set_ylabel("intensity")
+        ax.set_xlabel(r"(reco. $-$ true) arrival time / ns")
+        ax.set_ylabel("rel. intensity")
         fig.savefig(
             opj(
                 res.paths["out_dir"],
