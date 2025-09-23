@@ -294,6 +294,10 @@ for pk in res.PARTICLES:
     # ------
     pk_ratescan_dir = opj(pk_dir, "ratescan")
     os.makedirs(pk_ratescan_dir, exist_ok=True)
+    pk_only_accepting_dir = opj(pk_dir, "only_accepting_not_rejecting")
+    os.makedirs(pk_only_accepting_dir, exist_ok=True)
+    pk_only_accepting_ratescan_dir = opj(pk_only_accepting_dir, "ratescan")
+    os.makedirs(pk_only_accepting_ratescan_dir, exist_ok=True)
 
     for irs in range(len(trigger["ratescan_thresholds_pe"])):
         nominal_threshold_pe = trigger["ratescan_thresholds_pe"][irs]
@@ -327,18 +331,24 @@ for pk in res.PARTICLES:
             {"uid": uids_pasttrigger},
         )
 
+        uids_past_excepting_trigger = event_table["trigger"]["uid"][
+            is_size_over_threshold
+        ]
+
+        json_utils.write(
+            opj(pk_only_accepting_ratescan_dir, filename),
+            {"uid": uids_past_excepting_trigger},
+        )
+
         if nominal_threshold_pe == trigger["threshold_pe"]:
             json_utils.write(
                 opj(pk_dir, "uid.json"),
                 uids_pasttrigger,
             )
 
-            pk_only_accepting_dir = opj(pk_dir, "only_accepting_not_rejecting")
-            os.makedirs(pk_only_accepting_dir, exist_ok=True)
-
             json_utils.write(
                 opj(pk_only_accepting_dir, "uid.json"),
-                event_table["trigger"]["uid"][is_size_over_threshold],
+                uids_past_excepting_trigger,
             )
 
 res.stop()
