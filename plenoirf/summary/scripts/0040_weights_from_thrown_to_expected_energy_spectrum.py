@@ -21,7 +21,7 @@ airshower_rates["energy_bin_centers"] = fine_energy_bin["centers"]
 
 # cosmic-ray-flux
 # ----------------
-_airshower_differential_fluxes = json_utils.tree.read(
+_airshower_differential_fluxes = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 
@@ -113,7 +113,7 @@ for pk in res.PARTICLES:
         },
     )
 
-weights = json_utils.tree.read(res.paths["out_dir"])
+weights = json_utils.tree.Tree(res.paths["out_dir"])
 
 fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
 ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)

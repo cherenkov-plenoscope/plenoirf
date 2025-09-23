@@ -12,7 +12,7 @@ import propagate_uncertainties as pru
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
-acceptance = json_utils.tree.read(
+acceptance = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0102_trigger_acceptance_for_cosmic_particles_vs_max_scatter_angle",
@@ -24,7 +24,7 @@ zenith_bin = res.zenith_binning("once")
 
 # cosmic-ray-flux
 # ----------------
-airshower_fluxes = json_utils.tree.read(
+airshower_fluxes = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0017_flux_of_airshowers_rebin")
 )
 

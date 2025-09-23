@@ -21,10 +21,10 @@ MAX_SOURCE_ANGLE_DEG = res.analysis["gamma_ray_source_direction"][
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 zenith_bin = res.zenith_binning("once")
 
-zenith_assignment = json_utils.tree.read(
+zenith_assignment = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
 )
-passing_trigger = json_utils.tree.read(
+passing_trigger = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 

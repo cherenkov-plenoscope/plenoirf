@@ -12,7 +12,7 @@ res.start(sebplt=sebplt)
 
 zenith_bin = res.zenith_binning("once")
 
-trigger_vs_size = json_utils.tree.read(
+trigger_vs_size = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0074_trigger_probability_vs_cherenkov_density_on_ground",

@@ -13,16 +13,16 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-passing_trigger = json_utils.tree.read(
+passing_trigger = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
-passing_quality = json_utils.tree.read(
+passing_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
-passing_trajectory_quality = json_utils.tree.read(
+passing_trajectory_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
-reconstructed_energy = json_utils.tree.read(
+reconstructed_energy = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0065_learning_airshower_maximum_and_energy",

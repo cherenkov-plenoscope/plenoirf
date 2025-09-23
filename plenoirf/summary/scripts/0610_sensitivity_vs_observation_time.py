@@ -21,7 +21,7 @@ ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 zenith_bin = res.zenith_binning("once")
 ZENITH_ZD_ZK = [(zd, f"zd{zd:d}") for zd in range(zenith_bin["num"])]
 
-dS = json_utils.tree.read(
+dS = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0540_diffsens_estimate")
 )
 

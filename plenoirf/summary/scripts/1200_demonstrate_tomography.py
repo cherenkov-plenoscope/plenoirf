@@ -26,10 +26,10 @@ MAX_CORE_DISTANCE = 400
 TOMO_NUM_ITERATIONS = 550
 NUM_THREADS = 6
 
-passing_trigger = json_utils.tree.read(
+passing_trigger = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
-passing_quality = json_utils.tree.read(
+passing_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
 

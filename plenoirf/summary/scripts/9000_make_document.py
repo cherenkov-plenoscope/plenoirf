@@ -76,7 +76,7 @@ def verbatim(string):
     return r"\begin{verbatim}" + r"{:s}".format(string) + r"\end{verbatim}"
 
 
-trigger_rates_by_origin = json_utils.tree.read(
+trigger_rates_by_origin = json_utils.tree.Tree(
     ppath(res.paths["analysis_dir"], "0128_trigger_rates_total")
 )["trigger_rates_by_origin"]["origins"]
 

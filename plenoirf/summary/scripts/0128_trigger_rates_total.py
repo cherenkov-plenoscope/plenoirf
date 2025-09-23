@@ -15,10 +15,10 @@ res.start(sebplt=sebplt)
 
 trigger = res.trigger
 
-cosmic_rates = json_utils.tree.read(
+cosmic_rates = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles")
 )
-nsb = json_utils.tree.read(
+nsb = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0120_trigger_rates_for_night_sky_background",

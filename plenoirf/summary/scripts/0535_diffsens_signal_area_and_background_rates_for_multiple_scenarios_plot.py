@@ -18,11 +18,11 @@ ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 zenith_bin = res.zenith_binning("once")
 
-acceptance = json_utils.tree.read(
+acceptance = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 
-scenarios = json_utils.tree.read(
+scenarios = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0534_diffsens_signal_area_and_background_rates_for_multiple_scenarios",

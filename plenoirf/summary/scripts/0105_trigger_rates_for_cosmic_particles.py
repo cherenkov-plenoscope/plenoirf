@@ -17,7 +17,7 @@ energy_bin = res.energy_binning(key="trigger_acceptance")
 zenith_bin = res.zenith_binning("once")
 fine_energy_bin = res.energy_binning(key="interpolation")
 
-acceptance = json_utils.tree.read(
+acceptance = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0100_trigger_acceptance_for_cosmic_particles",
@@ -26,7 +26,7 @@ acceptance = json_utils.tree.read(
 
 # cosmic-ray-flux
 # ----------------
-airshower_fluxes = json_utils.tree.read(
+airshower_fluxes = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 

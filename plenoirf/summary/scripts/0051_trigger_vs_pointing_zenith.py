@@ -17,7 +17,7 @@ res.start(sebplt=sebplt)
 
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 zenith_bin = res.zenith_binning(key="once")
-zenith_assignment = json_utils.tree.read(
+zenith_assignment = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
 )
 trigger = res.trigger

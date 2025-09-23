@@ -11,7 +11,7 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
-passing_trigger = json_utils.tree.read(
+passing_trigger = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 energy_bin = res.energy_binning(key="point_spread_function")

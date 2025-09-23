@@ -12,7 +12,7 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
 zenith_bin = res.zenith_binning(key="once")
-zenith_assignment = json_utils.tree.read(
+zenith_assignment = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
 )
 
@@ -28,7 +28,7 @@ NUM_TIME_SLICES_PER_EVENT = (
 EXPOSURE_TIME_PER_EVENT = NUM_TIME_SLICES_PER_EVENT * TIME_SLICE_DURATION
 EXPOSURE_TIME_PER_EVENT_AU = 0.0
 
-passing_trigger = json_utils.tree.read(
+passing_trigger = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 trigger = res.trigger

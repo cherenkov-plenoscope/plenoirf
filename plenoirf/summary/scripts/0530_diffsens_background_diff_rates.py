@@ -19,13 +19,13 @@ res.start(sebplt=sebplt)
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 zenith_bin = res.zenith_binning("once")
 
-energy_migration = json_utils.tree.read(
+energy_migration = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0066_energy_estimate_quality")
 )
-acceptance = json_utils.tree.read(
+acceptance = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
-airshower_fluxes = json_utils.tree.read(
+airshower_fluxes = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0017_flux_of_airshowers_rebin")
 )
 ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]

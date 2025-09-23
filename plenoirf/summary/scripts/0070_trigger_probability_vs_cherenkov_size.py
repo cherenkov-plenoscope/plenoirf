@@ -11,14 +11,14 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
 zenith_bin = res.zenith_binning(key="once")
-zenith_assignment = json_utils.tree.read(
+zenith_assignment = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
 )
 
 num_size_bins = 12
 size_bin_edges = np.geomspace(1, 2**num_size_bins, (3 * num_size_bins) + 1)
 
-passing_trigger = json_utils.tree.read(
+passing_trigger = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
 

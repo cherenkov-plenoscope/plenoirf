@@ -14,7 +14,7 @@ trigger = res.trigger
 
 # trigger
 # -------
-A = json_utils.tree.read(
+A = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0100_trigger_acceptance_for_cosmic_particles",
@@ -23,7 +23,7 @@ A = json_utils.tree.read(
 
 # trigger fix onregion
 # --------------------
-G = json_utils.tree.read(
+G = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 

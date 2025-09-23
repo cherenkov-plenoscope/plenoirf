@@ -15,16 +15,16 @@ res.start()
 
 ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
-passing_trigger = json_utils.tree.read(
+passing_trigger = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
-passing_quality = json_utils.tree.read(
+passing_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
-passing_trajectory_quality = json_utils.tree.read(
+passing_trajectory_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
-zenith_assignment = json_utils.tree.read(
+zenith_assignment = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
 )
 

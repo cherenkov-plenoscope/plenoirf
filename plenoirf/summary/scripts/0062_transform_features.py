@@ -27,10 +27,10 @@ ALL_FEATURES = irf.features.init_all_features_structure()
 
 
 def open_feature_frame(pk, return_spectral_weight=False):
-    passing_trigger = json_utils.tree.read(
+    passing_trigger = json_utils.tree.Tree(
         opj(res.paths["analysis_dir"], "0055_passing_trigger")
     )
-    passing_quality = json_utils.tree.read(
+    passing_quality = json_utils.tree.Tree(
         opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
     )
 
@@ -59,7 +59,7 @@ def open_feature_frame(pk, return_spectral_weight=False):
     df = snt.logic.make_rectangular_DataFrame(event_table)
 
     if return_spectral_weight:
-        weights_thrown2expected = json_utils.tree.read(
+        weights_thrown2expected = json_utils.tree.Tree(
             opj(
                 res.paths["analysis_dir"],
                 "0040_weights_from_thrown_to_expected_energy_spectrum",

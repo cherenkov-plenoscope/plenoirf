@@ -44,10 +44,10 @@ def make_passing_cuts(script_resources, particles):
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
 
-        passing_trigger = json_utils.tree.read(
+        passing_trigger = json_utils.tree.Tree(
             opj(res.paths["analysis_dir"], "0055_passing_trigger")
         )
-        passing_quality = json_utils.tree.read(
+        passing_quality = json_utils.tree.Tree(
             opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
         )
 
@@ -58,7 +58,7 @@ def make_passing_cuts(script_resources, particles):
             )
             with rnw.open(opj(cache_dir, pk + ".json"), "wt") as f:
                 f.write(json_utils.dumps({"uid": passing_cuts_pk}))
-    return json_utils.tree.read(cache_dir)
+    return json_utils.tree.Tree(cache_dir)
 
 
 bins = make_binning(script_resources=res)
@@ -138,7 +138,7 @@ for pk in BACKGROUND:
 # PLOT
 # ====
 
-foo = json_utils.tree.read(opj(res.paths["out_dir"]))
+foo = json_utils.tree.Tree(opj(res.paths["out_dir"]))
 
 exposure = irf.summary.estimator.binning.len_cube(
     foo["assignment"]["signal"]["gamma"]["raw"]

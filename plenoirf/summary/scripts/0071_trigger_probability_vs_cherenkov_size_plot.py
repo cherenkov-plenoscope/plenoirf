@@ -11,7 +11,7 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 zenith_bin = res.zenith_binning(key="once")
-trigger_vs_size = json_utils.tree.read(
+trigger_vs_size = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"], "0070_trigger_probability_vs_cherenkov_size"
     )

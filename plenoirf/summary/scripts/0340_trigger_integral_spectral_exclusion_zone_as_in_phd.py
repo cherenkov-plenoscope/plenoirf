@@ -38,14 +38,14 @@ PHD_DETECTION_THRESHOLD_STD = 5.0
 PHD_ON_OVER_OFF_RATIO = 1.0 / 5.0
 PHD_OBSERVATION_TIME_S = 50 * 3600
 
-all_fov_acceptance = json_utils.tree.read(
+all_fov_acceptance = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0100_trigger_acceptance_for_cosmic_particles",
     )
 )
 
-all_fov_rates = json_utils.tree.read(
+all_fov_rates = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles")
 )
 

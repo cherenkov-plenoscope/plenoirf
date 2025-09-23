@@ -10,7 +10,7 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
-raw_cosmic_ray_fluxes = json_utils.tree.read(
+raw_cosmic_ray_fluxes = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0010_flux_of_cosmic_rays")
 )
 

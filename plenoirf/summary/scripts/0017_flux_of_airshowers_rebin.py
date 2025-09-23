@@ -17,7 +17,7 @@ res.start(sebplt=sebplt)
 
 # load
 # ----
-airshower_fluxes = json_utils.tree.read(
+airshower_fluxes = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 

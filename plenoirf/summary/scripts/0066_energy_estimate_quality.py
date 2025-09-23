@@ -20,7 +20,7 @@ import sebastians_matplotlib_addons as sebplt
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-reconstructed_energy = json_utils.tree.read(
+reconstructed_energy = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0065_learning_airshower_maximum_and_energy",

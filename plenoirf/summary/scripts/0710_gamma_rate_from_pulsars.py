@@ -18,13 +18,13 @@ res.start(sebplt=sebplt)
 
 ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
-onregion_rates = json_utils.tree.read(
+onregion_rates = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0320_onregion_trigger_rates_for_cosmic_rays",
     )
 )
-onregion_acceptance = json_utils.tree.read(
+onregion_acceptance = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 

@@ -23,7 +23,7 @@ zenith_bin = res.zenith_binning("once")
 
 energy_bin_width_au = np.zeros(energy_bin["num"])
 
-S = json_utils.tree.read(
+S = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0534_diffsens_signal_area_and_background_rates_for_multiple_scenarios",

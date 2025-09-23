@@ -13,7 +13,7 @@ res.start(sebplt=sebplt)
 fine_energy_bin = res.energy_binning(key="interpolation")
 zenith_bin = res.zenith_binning("once")
 
-cosmic_rates = json_utils.tree.read(
+cosmic_rates = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles")
 )
 

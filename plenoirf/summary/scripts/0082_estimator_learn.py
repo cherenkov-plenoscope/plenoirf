@@ -121,11 +121,11 @@ signal_and_background = json_utils.read(
 SIGNAL = signal_and_background["signal"]
 BACKGROUND = signal_and_background["background"]
 
-passing_cuts = json_utils.tree.read(
+passing_cuts = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0081_estimator_binning", "passing_cuts")
 )
 
-signal_assignment = json_utils.tree.read(
+signal_assignment = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0081_estimator_binning",
@@ -134,7 +134,7 @@ signal_assignment = json_utils.tree.read(
     )
 )
 
-background_assignment = json_utils.tree.read(
+background_assignment = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0081_estimator_binning",

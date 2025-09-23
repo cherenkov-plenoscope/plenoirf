@@ -18,15 +18,15 @@ ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 zenith_bin = res.zenith_binning("once")
 
-Q = json_utils.tree.read(
+Q = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 
-M = json_utils.tree.read(
+M = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0066_energy_estimate_quality")
 )
 
-R = json_utils.tree.read(
+R = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0530_diffsens_background_diff_rates")
 )
 

@@ -13,16 +13,16 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 
-passing_trigger = json_utils.tree.read(
+passing_trigger = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
-passing_quality = json_utils.tree.read(
+passing_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
-passing_trajectory_quality = json_utils.tree.read(
+passing_trajectory_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
-weights_thrown2expected = json_utils.tree.read(
+weights_thrown2expected = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0040_weights_from_thrown_to_expected_energy_spectrum",

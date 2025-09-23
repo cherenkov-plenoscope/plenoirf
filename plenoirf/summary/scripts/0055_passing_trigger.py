@@ -14,7 +14,7 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 zenith_bin = res.zenith_binning(key="once")
-zenith_assignment = json_utils.tree.read(
+deltaA_over_A = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
 )
 

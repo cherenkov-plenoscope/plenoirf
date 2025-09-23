@@ -16,7 +16,7 @@ res.start(sebplt=sebplt)
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 zenith_bin = res.zenith_binning("once")
 
-rates = json_utils.tree.read(
+rates = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0107_trigger_rates_for_cosmic_particles_vs_max_scatter_angle",

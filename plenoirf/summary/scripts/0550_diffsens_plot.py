@@ -16,7 +16,7 @@ res.start(sebplt=sebplt)
 
 ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
-dS = json_utils.tree.read(
+dS = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0540_diffsens_estimate")
 )
 
@@ -96,11 +96,11 @@ def com_add_diff_flux(
     return com
 
 
-cta_diffsens = json_utils.tree.read(
+cta_diffsens = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0545_diffsens_estimate_cta_south")
 )
 
-fermi_diffsens = json_utils.tree.read(
+fermi_diffsens = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0544_diffsens_estimate_fermi_lat")
 )["flux_sensitivity"]
 

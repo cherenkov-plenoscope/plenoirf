@@ -11,7 +11,7 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
-onregion_acceptance = json_utils.tree.read(
+onregion_acceptance = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0300_onregion_trigger_acceptance")
 )
 
@@ -25,7 +25,7 @@ ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
 # cosmic-ray-flux
 # ----------------
-airshower_fluxes = json_utils.tree.read(
+airshower_fluxes = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 

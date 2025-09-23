@@ -20,13 +20,13 @@ res.start()
 transformed_features_dir = opj(
     res.paths["analysis_dir"], "0062_transform_features"
 )
-passing_trigger = json_utils.tree.read(
+passing_trigger = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0055_passing_trigger")
 )
-passing_quality = json_utils.tree.read(
+passing_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
-passing_trajectory_quality = json_utils.tree.read(
+passing_trajectory_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")

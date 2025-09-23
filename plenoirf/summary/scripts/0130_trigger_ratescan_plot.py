@@ -16,7 +16,7 @@ res.start(sebplt=sebplt)
 trigger = res.trigger
 zenith_bin = res.zenith_binning("once")
 
-trigger_rates = json_utils.tree.read(
+trigger_rates = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0128_trigger_rates_total")
 )["trigger_rates_by_origin"]["origins"]
 
