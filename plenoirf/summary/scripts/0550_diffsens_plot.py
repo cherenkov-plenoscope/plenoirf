@@ -26,7 +26,7 @@ ZENITH_D_K = [(zd, f"zd{zd:d}") for zd in range(zenith_bin["num"])]
 
 fermi = irf.other_instruments.fermi_lat
 cta = irf.other_instruments.cherenkov_telescope_array_south
-
+portal = irf.other_instruments.portal
 
 # gamma-ray-flux of crab-nebula
 # -----------------------------
@@ -235,8 +235,8 @@ for obsk in observation_times:
                     obstidx=obstidx,
                     sysuncix=sysuncix,
                 )
-                com["label"] = "Portal, " + observation_time_str
-                com["color"] = "black"
+                com["label"] = f"{portal.LABEL:s}, " + observation_time_str
+                com["color"] = portal.COLOR
                 com["alpha"] = 1.0
                 com["linestyle"] = "-"
                 components.append(com)

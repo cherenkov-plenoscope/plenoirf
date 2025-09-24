@@ -6,7 +6,7 @@ from ._sensitivity_vs_observation_time import (
 )
 
 
-COLOR = "mediumblue"
+COLOR = "darkturquoise"
 LABEL = "CTA-South"
 
 

@@ -1,0 +1,2 @@
+COLOR = "darkviolet"
+LABEL = "Portal"

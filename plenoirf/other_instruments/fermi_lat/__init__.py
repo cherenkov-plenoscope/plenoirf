@@ -8,7 +8,7 @@ from .._sensitivity_vs_observation_time import (
     sensitivity_vs_observation_time as _sens_vs_obs,
 )
 
-COLOR = "darkorange"
+COLOR = "goldenrod"
 LABEL = "Fermi-LAT"
 
 
