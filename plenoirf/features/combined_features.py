@@ -115,6 +115,13 @@ def generate_reconstructed_trajectory_hypot_x_y(event_frame):
     )
 
 
+def generate_reconstructed_trajectory_hypot_cx_cy(event_frame):
+    ev = event_frame
+    return np.hypot(
+        ev["reconstructed_trajectory/cx_rad"],
+        ev["reconstructed_trajectory/cy_rad"],
+    )
+
 def generate_paxel_intensity_peakness_mean_over_std(event_frame):
     return 1.0 / event_frame["features/paxel_intensity_peakness_std_over_mean"]
 
@@ -189,23 +196,34 @@ def init_combined_features_structure():
         },
     }
 
-    out["paxel_intensity_peakness_mean_over_std"] = {
-        "generator": generate_paxel_intensity_peakness_mean_over_std,
-        "dtype": "<f4",
-        "unit": "1",
-        "transformation": {
-            "function": "log(x)",
-            "shift": fx_median,
-            "scale": fx_containment_percentile_90,
-        },
-    }
-
     out["reconstructed_trajectory_hypot_x_y"] = {
         "generator": generate_reconstructed_trajectory_hypot_x_y,
         "dtype": "<f4",
         "unit": "m",
         "transformation": {
             "function": "x",
+            "shift": fx_median,
+            "scale": fx_containment_percentile_90,
+        },
+    }
+
+    out["reconstructed_trajectory_hypot_cx_cy"] = {
+        "generator": generate_reconstructed_trajectory_hypot_cx_cy,
+        "dtype": "<f4",
+        "unit": "m",
+        "transformation": {
+            "function": "x",
+            "shift": "0",
+            "scale": fx_containment_percentile_90,
+        },
+    }
+
+    out["paxel_intensity_peakness_mean_over_std"] = {
+        "generator": generate_paxel_intensity_peakness_mean_over_std,
+        "dtype": "<f4",
+        "unit": "1",
+        "transformation": {
+            "function": "log(x)",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },
