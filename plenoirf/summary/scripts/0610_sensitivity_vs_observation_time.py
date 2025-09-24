@@ -14,6 +14,11 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
+fermi = irf.other_instruments.fermi_lat
+cta = irf.other_instruments.cherenkov_telescope_array_south
+portal = irf.other_instruments.portal
+
+
 ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
 # load
@@ -59,9 +64,6 @@ for pe in pivot_energies:
     )
 
     energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
-
-    fermi = irf.other_instruments.fermi_lat
-    cta = irf.other_instruments.cherenkov_telescope_array_south
 
     # gamma-ray-flux of crab-nebula
     # -----------------------------
@@ -114,7 +116,7 @@ for pe in pivot_energies:
                     com["label"] = (
                         "{:1.1e} Crab".format(scale_factor) if i == 0 else None
                     )
-                    com["color"] = "k"
+                    com["color"] = "black"
                     com["alpha"] = 0.25 / (1.0 + i)
                     com["linestyle"] = "--"
                     components.append(com.copy())
@@ -123,7 +125,7 @@ for pe in pivot_energies:
                 # ---------
                 try:
                     if PLOT_FERMI_LAT_ESTIMATE_BY_HINTON_AND_FUNK:
-                        fermi_s_vs_t = irf.other_instruments.fermi_lat.sensitivity_vs_observation_time(
+                        fermi_s_vs_t = fermi.sensitivity_vs_observation_time(
                             energy_GeV=pivot_energies[pe]
                         )
                         com = {}
@@ -136,8 +138,8 @@ for pe in pivot_energies:
                         com["differential_flux"] = np.array(
                             fermi_s_vs_t["differential_flux"]["values"]
                         )
-                        com["label"] = irf.other_instruments.fermi_lat.LABEL
-                        com["color"] = irf.other_instruments.fermi_lat.COLOR
+                        com["label"] = fermi.LABEL
+                        com["color"] = fermi.COLOR
                         com["alpha"] = 1.0
                         com["linestyle"] = "-"
                         components.append(com)
@@ -150,10 +152,8 @@ for pe in pivot_energies:
                 )
                 com["observation_time"] = odnde["observation_times"]["value"]
                 com["differential_flux"] = odnde["dnde"]["value"][:, lo_ebin]
-                com["label"] = (
-                    irf.other_instruments.fermi_lat.LABEL + "sebplt."
-                )
-                com["color"] = irf.other_instruments.fermi_lat.COLOR
+                com["label"] = fermi.LABEL + "sebplt."
+                com["color"] = fermi.COLOR
                 com["alpha"] = 1.0
                 com["linestyle"] = "-"
                 components.append(com)
@@ -174,12 +174,8 @@ for pe in pivot_energies:
                     com["differential_flux"] = np.array(
                         cta_s_vs_t["differential_flux"]["values"]
                     )
-                    com["label"] = (
-                        irf.other_instruments.cherenkov_telescope_array_south.LABEL
-                    )
-                    com["color"] = (
-                        irf.other_instruments.cherenkov_telescope_array_south.COLOR
-                    )
+                    com["label"] = cta.LABEL
+                    com["color"] = cta.COLOR
                     com["alpha"] = 1.0
                     com["linestyle"] = "-"
                     components.append(com)
@@ -206,10 +202,10 @@ for pe in pivot_energies:
                         len(observation_times)
                     )
                     com["differential_flux"] = portal_dFdE[enidx, :]
-                    com["label"] = "Portal sys.: {:.1e}".format(
-                        systematic_uncertainties[sysuncix]
+                    com["label"] = (
+                        f"{portal.LABEL:s} sys.: {systematic_uncertainties[sysuncix]:.1e}"
                     )
-                    com["color"] = "black"
+                    com["color"] = portal.COLOR
                     com["alpha"] = _alpha
                     com["linestyle"] = _linestyle
                     components.append(com)

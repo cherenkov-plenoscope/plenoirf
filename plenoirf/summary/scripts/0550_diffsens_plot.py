@@ -119,7 +119,7 @@ for obsk in observation_times:
     ]
 
     x_lim_GeV = np.array([1e-1, 1e4])
-    y_lim_per_m2_per_s_per_GeV = np.array([1e3, 1e-16])
+    y_lim_per_m2_per_s_per_GeV = np.array([1e3, 1e-13])
 
     for zd, zk in ZENITH_D_K:
         for ok in ONREGION_TYPES:

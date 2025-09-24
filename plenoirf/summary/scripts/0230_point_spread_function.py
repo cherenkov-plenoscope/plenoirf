@@ -140,6 +140,7 @@ mk = "energy_GeV"
 
 cta = irf.other_instruments.cherenkov_telescope_array_south
 fermi = irf.other_instruments.fermi_lat
+portal = irf.other_instruments.portal
 
 
 pk = "gamma"
@@ -238,13 +239,13 @@ sebplt.ax_add_histogram(
     bin_edges=energy_bin["edges"],
     bincounts=tt_deg,
     linestyle="-",
-    linecolor="k",
+    linecolor=portal.COLOR,
     linealpha=1.0,
     bincounts_upper=tt_deg * (1 + tt_relunc),
     bincounts_lower=tt_deg * (1 - tt_relunc),
-    face_color="k",
+    face_color=portal.COLOR,
     face_alpha=0.1,
-    label="Portal",
+    label=portal.LABEL,
 )
 
 ax.plot(
