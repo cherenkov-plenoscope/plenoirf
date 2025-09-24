@@ -44,6 +44,7 @@ setuptools.setup(
         "xmltodict",
         "sympy>=1.11.1",
         "scikit-image",
+        "scikit-learn>=1.7.2",
         "un_bound_histogram>=0.0.1",
         "sparse_numeric_table_sebastian-achim-mueller>=1.1.0",
         "cosmic_fluxes_cherenkov-plenoscope-project>=0.0.3",
