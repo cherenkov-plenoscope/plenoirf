@@ -128,6 +128,7 @@ ax.set_xlabel("energy / GeV")
 ax.set_ylabel("relative re-weights / 1")
 ax.set_xlim([1e-1, 1e4])
 ax.set_ylim([1e-6, 1.0])
+"""
 ax.text(
     0.1,
     0.1,
@@ -136,6 +137,7 @@ ax.text(
     # verticalalignment="center",
     transform=ax.transAxes,
 )
+"""
 fig.savefig(opj(res.paths["out_dir"], "weights.jpg"))
 sebplt.close(fig)
 
