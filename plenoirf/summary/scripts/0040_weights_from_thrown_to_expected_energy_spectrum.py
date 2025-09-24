@@ -21,7 +21,7 @@ airshower_rates["energy_bin_centers"] = fine_energy_bin["centers"]
 
 # cosmic-ray-flux
 # ----------------
-_airshower_differential_fluxes = json_utils.tree.Tree(
+_airshower_differential_fluxes = json_utils.tree.read(
     opj(res.paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 
