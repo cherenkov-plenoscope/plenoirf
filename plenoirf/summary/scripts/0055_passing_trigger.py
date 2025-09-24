@@ -14,7 +14,7 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 zenith_bin = res.zenith_binning(key="once")
-deltaA_over_A = json_utils.tree.Tree(
+zenith_assignment = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
 )
 
@@ -188,6 +188,8 @@ def explore_focus_ratios(
             )
         )
         sebplt.close(fig)
+
+    zenith_assignment.clear_cache()
 
     return zdfocrat, ratio_bin
 
