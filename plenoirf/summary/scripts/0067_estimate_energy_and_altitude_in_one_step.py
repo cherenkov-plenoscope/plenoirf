@@ -12,21 +12,12 @@ import numpy as np
 import pickle
 import json_utils
 import binning_utils
-
-#
-import sklearn
-import sklearn.neural_network
-import sklearn.ensemble
-import sklearn.model_selection
-import sklearn.utils
-
-#
 import sebastians_matplotlib_addons as sebplt
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-
+"""
 transformed_features_dir = opj(
     res.paths["analysis_dir"], "0062_transform_features"
 )
@@ -178,7 +169,7 @@ for pk in SIGNAL:
         altitude_bin_overlaps=altitude_bin_overlaps,
     )
 
-"""
+
 background_raw_assignment = {}
 background_assignment = {}
 for pk in BACKGROUND:
