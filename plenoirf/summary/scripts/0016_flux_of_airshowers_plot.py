@@ -6,6 +6,7 @@ import os
 from os.path import join as opj
 import json_utils
 import sebastians_matplotlib_addons as sebplt
+import binning_utils
 
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
@@ -17,26 +18,54 @@ airshower_fluxes = json_utils.tree.Tree(
 
 energy_bin = res.energy_binning(key="interpolation")
 
+
+def _ge(x, v):
+    return x >= v
+
+
+def _lt(x, v):
+    return x < v
+
+
+parts = {
+    "is_simulated": {"alpha": 1.0, "maskmaker": _ge, "label": True},
+    "not_simulated": {"alpha": 0.25, "maskmaker": _lt, "label": False},
+}
+
 fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
 ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 for pk in airshower_fluxes:
+
+    E_start = binning_utils.power10.lower_bin_edge(
+        **res.config["particles_simulated_energy_distribution"][pk][
+            "energy_start_GeV_power10"
+        ]
+    )
+
     dFdE = airshower_fluxes[pk]["differential_flux"]["values"]
     dFdE_au = airshower_fluxes[pk]["differential_flux"]["absolute_uncertainty"]
 
-    ax.plot(
-        energy_bin["centers"],
-        dFdE,
-        label=pk,
-        color=res.PARTICLE_COLORS[pk],
-    )
-    ax.fill_between(
-        x=energy_bin["centers"],
-        y1=dFdE - dFdE_au,
-        y2=dFdE + dFdE_au,
-        facecolor=res.PARTICLE_COLORS[pk],
-        alpha=0.2,
-        linewidth=0.0,
-    )
+    for part in parts:
+        alpha = parts[part]["alpha"]
+        _maskmaker = parts[part]["maskmaker"]
+        mask = _maskmaker(x=energy_bin["centers"], v=E_start)
+        label = parts[part]["label"]
+
+        ax.plot(
+            energy_bin["centers"][mask],
+            dFdE[mask],
+            label=pk if label else None,
+            color=res.PARTICLE_COLORS[pk],
+            alpha=alpha,
+        )
+        ax.fill_between(
+            x=energy_bin["centers"][mask],
+            y1=dFdE[mask] - dFdE_au[mask],
+            y2=dFdE[mask] + dFdE_au[mask],
+            facecolor=res.PARTICLE_COLORS[pk],
+            alpha=0.2 * alpha,
+            linewidth=0.0,
+        )
 
 ax.set_xlabel("energy / GeV")
 ax.set_ylabel(
