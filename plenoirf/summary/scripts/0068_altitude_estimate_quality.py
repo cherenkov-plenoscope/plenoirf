@@ -24,7 +24,7 @@ reconstructed = json_utils.tree.Tree(
     ),
 )
 
-altitude_bin = binning_utils.Binning(bin_edges=np.linspace(5e3, 25e3, 16))
+altitude_bin = binning_utils.Binning(bin_edges=np.linspace(5e3, 25e3, 31))
 
 portal = irf.other_instruments.portal
 
@@ -90,7 +90,7 @@ for pk in res.PARTICLES:
             face_color=portal.COLOR,
             face_alpha=0.1,
         )
-        # ax1.semilogx()
+        ax1.semilogy()
         ax1.set_xlim(altitude_bin["limits"] * M_TO_KM)
         ax1.axvline(
             altitude_bin["start"], color="black", linestyle=":", alpha=0.1
@@ -98,7 +98,7 @@ for pk in res.PARTICLES:
         ax1.axvline(
             altitude_bin["stop"], color="black", linestyle=":", alpha=0.1
         )
-        ax1.set_ylim([0, 0.3])
+        ax1.set_ylim([0.01, 1.0])
         ax1.set_xlabel("reco. altitude / km")
         ax1.set_ylabel(r"$\Delta{}$altitude / altitude 68% / 1")
         # ax1.legend(loc="best", fontsize=10)
