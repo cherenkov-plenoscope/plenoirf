@@ -20,11 +20,17 @@ import sebastians_matplotlib_addons as sebplt
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
+METHOD = "MultiLayerPerceptron"
+METHODS = {
+    "MultiLayerPerceptron": {"bias_GeV": -1.5},
+    "RandomForest": {"bias_GeV": -1.2},
+}
+
 reconstructed_energy = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0065_learning_airshower_maximum_and_energy",
-        "MultiLayerPerceptron",
+        METHOD,
     ),
 )
 
@@ -47,7 +53,9 @@ for pk in res.PARTICLES:
         )
 
     true_energy = event_table["primary"]["energy_GeV"]
-    reco_energy = irf.analysis.energy.align_on_idx(
+    reco_energy = METHODS[METHOD][
+        "bias_GeV"
+    ] + irf.analysis.energy.align_on_idx(
         input_idx=reconstructed_energy[pk][mk]["uid"],
         input_values=reconstructed_energy[pk][mk][mk],
         target_idxs=event_table["primary"]["uid"],

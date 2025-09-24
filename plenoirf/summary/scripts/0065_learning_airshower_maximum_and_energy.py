@@ -51,12 +51,18 @@ def read_event_frame(
 ):
     pk = particle_key
 
+    uid_train_and_test = snt.logic.union(
+        train_test[pk]["train"],
+        train_test[pk]["test"],
+    )
+
     with res.open_event_table(particle_key=pk) as arc:
         event_table = arc.query(
             levels_and_columns={
                 "primary": ["uid", "energy_GeV"],
                 "cherenkovpool": ["uid", "z_emission_p50_m"],
-            }
+            },
+            indices=uid_train_and_test,
         )
 
     transformed_features_path = opj(
@@ -80,34 +86,52 @@ def read_event_frame(
     return out
 
 
+FEATURE_KEYS = [
+    "num_photons",
+    "image_smallest_ellipse_object_distance",
+    "image_smallest_ellipse_solid_angle",
+    "image_smallest_ellipse_half_depth",
+    "paxel_intensity_peakness_mean_over_std",
+    # "combi_shower_density",
+    "combi_shower_volume",
+    # "reconstructed_trajectory_cx_rad",
+    # "reconstructed_trajectory_cy_rad",
+    # "reconstructed_trajectory_x_m",
+    # "reconstructed_trajectory_y_m",
+    # "combi_A",
+    # "combi_B",
+    # "combi_C",
+    "reconstructed_trajectory_hypot_cx_cy",
+    "reconstructed_trajectory_hypot_x_y",
+]
+
+
+def make_sample_weights(event_frame, energy_bin):
+
+    bin_population = np.histogram(
+        event_frame["primary/energy_GeV"],
+        bins=energy_bin["edges"],
+    )[0]
+
+    bin_weights = (1.0 / bin_population) ** 0.5
+
+    bin_assignment = -1 + np.digitize(
+        event_frame["primary/energy_GeV"],
+        bins=energy_bin["edges"],
+    )
+
+    sample_weights = bin_weights[bin_assignment]
+    return sample_weights
+
+
 def make_x_y_arrays(event_frame):
     f = event_frame
 
-    x = np.array(
-        [
-            f["transformed_features/num_photons"].values,
-            f[
-                "transformed_features/image_smallest_ellipse_object_distance"
-            ].values,
-            f[
-                "transformed_features/image_smallest_ellipse_solid_angle"
-            ].values,
-            f["transformed_features/image_smallest_ellipse_half_depth"].values,
-            # f["transformed_features/combi_A"].values,
-            # f["transformed_features/combi_B"].values,
-            # f["transformed_features/combi_C"].values,
-            f[
-                "transformed_features/paxel_intensity_peakness_std_over_mean"
-            ].values,
-            f["transformed_features/trajectory_reco_core_radius_m"].values,
-            f["transformed_features/trajectory_reco_theta_rad"].values,
-            # f["transformed_features/combi_image_infinity_std_density"].values,
-            # f[
-            #    "transformed_features/combi_paxel_intensity_median_hypot"
-            # ].values,
-            # f["transformed_features/combi_diff_image_and_light_front"].values,
-        ]
-    ).T
+    xll = []
+    for key in FEATURE_KEYS:
+        xll.append(f[f"transformed_features/{key:s}"].values)
+    x = np.array(xll).T
+
     y = np.array(
         [
             np.log10(f["primary/energy_GeV"].values),
@@ -117,7 +141,7 @@ def make_x_y_arrays(event_frame):
     return x, y
 
 
-NUM_BOOTSTRIPS = 10
+NUM_BOOTSTRIPS = 2
 
 passing = {}
 for pk in res.PARTICLES:
@@ -127,19 +151,20 @@ for pk in res.PARTICLES:
         passing_trajectory_quality[pk]["uid"],
     )
 
-num_features = 7
+num_features = len(FEATURE_KEYS)
+
 
 REGRESSORS = {}
 REGRESSORS["MultiLayerPerceptron"] = {
     "constructor": sklearn.neural_network.MLPRegressor,
     "kwargs": {
-        "solver": "lbfgs",
-        "tol": 1e-5,
-        "alpha": 1e-4,
-        "hidden_layer_sizes": (2 * num_features, 1 * num_features),
+        "hidden_layer_sizes": (
+            3 * num_features,
+            5 * num_features,
+            3 * num_features,
+        ),
         "random_state": random_seed,
         "verbose": True,
-        "max_iter": 5000,
     },
 }
 
@@ -148,6 +173,7 @@ REGRESSORS["RandomForest"] = {
     "kwargs": {
         "random_state": random_seed,
         "n_estimators": 32 * num_features,
+        "verbose": True,
     },
 }
 
@@ -201,6 +227,12 @@ for bootstrip in range(NUM_BOOTSTRIPS):
             MA[pk][mk]["x"], MA[pk][mk]["y"] = make_x_y_arrays(
                 event_frame=particle_frames[pk][mk]
             )
+            if pk == "gamma" and mk == "train":
+                MA[pk][mk]["w"] = make_sample_weights(
+                    event_frame=particle_frames[pk][mk],
+                    energy_bin=energy_bin,
+                )
+                print(MA[pk][mk]["w"])
 
     # train model on gamma only
     # -------------------------
@@ -210,9 +242,10 @@ for bootstrip in range(NUM_BOOTSTRIPS):
     for mk in REGRESSORS:
         models[mk] = REGRESSORS[mk]["constructor"](**REGRESSORS[mk]["kwargs"])
 
-    _X_shuffle, _y_shuffle = sklearn.utils.shuffle(
+    _X_shuffle, _y_shuffle, _w_shuffle = sklearn.utils.shuffle(
         MA["gamma"]["train"]["x"],
         MA["gamma"]["train"]["y"],
+        MA["gamma"]["train"]["w"],
         random_state=random_seed,
     )
 
@@ -220,7 +253,7 @@ for bootstrip in range(NUM_BOOTSTRIPS):
         model_dir = opj(bootstrip_dir, mk)
         os.makedirs(model_dir, exist_ok=True)
 
-        models[mk].fit(_X_shuffle, _y_shuffle)
+        models[mk].fit(X=_X_shuffle, y=_y_shuffle, sample_weight=_w_shuffle)
 
         model_path = opj(model_dir, mk + ".pkl")
         with open(model_path, "wb") as fout:
