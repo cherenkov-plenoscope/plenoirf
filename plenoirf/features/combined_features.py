@@ -119,6 +119,22 @@ def generate_paxel_intensity_peakness_mean_over_std(event_frame):
     return 1.0 / event_frame["features/paxel_intensity_peakness_std_over_mean"]
 
 
+def generate_reconstructed_trajectory_x_m(event_frame):
+    return event_frame["reconstructed_trajectory/x_m"]
+
+
+def generate_reconstructed_trajectory_y_m(event_frame):
+    return event_frame["reconstructed_trajectory/y_m"]
+
+
+def generate_reconstructed_trajectory_cx_rad(event_frame):
+    return event_frame["reconstructed_trajectory/cx_rad"]
+
+
+def generate_reconstructed_trajectory_cy_rad(event_frame):
+    return event_frame["reconstructed_trajectory/cy_rad"]
+
+
 def init_combined_features_structure():
     fx_median = default.transformation_fx_median()
     fx_containment_percentile_90 = (
@@ -126,6 +142,52 @@ def init_combined_features_structure():
     )
 
     out = {}
+
+    # reconstructed_trajectory
+    # ------------------------
+    out["reconstructed_trajectory_x_m"] = {
+        "generator": generate_reconstructed_trajectory_x_m,
+        "dtype": "<f4",
+        "unit": "1",
+        "transformation": {
+            "function": "x",
+            "shift": "0",
+            "scale": fx_containment_percentile_90,
+        },
+    }
+
+    out["reconstructed_trajectory_y_m"] = {
+        "generator": generate_reconstructed_trajectory_y_m,
+        "dtype": "<f4",
+        "unit": "1",
+        "transformation": {
+            "function": "x",
+            "shift": "0",
+            "scale": fx_containment_percentile_90,
+        },
+    }
+
+    out["reconstructed_trajectory_cx_rad"] = {
+        "generator": generate_reconstructed_trajectory_cx_rad,
+        "dtype": "<f4",
+        "unit": "1",
+        "transformation": {
+            "function": "x",
+            "shift": "0",
+            "scale": fx_containment_percentile_90,
+        },
+    }
+
+    out["reconstructed_trajectory_cy_rad"] = {
+        "generator": generate_reconstructed_trajectory_cy_rad,
+        "dtype": "<f4",
+        "unit": "1",
+        "transformation": {
+            "function": "x",
+            "shift": "0",
+            "scale": fx_containment_percentile_90,
+        },
+    }
 
     out["paxel_intensity_peakness_mean_over_std"] = {
         "generator": generate_paxel_intensity_peakness_mean_over_std,
