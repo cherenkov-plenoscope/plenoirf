@@ -644,7 +644,7 @@ def _guess_analysis_config_for_instrument(
     cfg = {
         "energy_binning": {
             "start": {"decade": -1, "bin": 2},
-            "stop": {"decade": 3, "bin": 2},
+            "stop": {"decade": 3, "bin": 3},
             "num_bins_per_decade": 5,
             "fine": {
                 "trigger_acceptance": 2,
