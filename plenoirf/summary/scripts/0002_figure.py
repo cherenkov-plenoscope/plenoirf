@@ -36,6 +36,7 @@ def make_line_label(path, **kwargs):
 
 
 colors = [
+    "grey",
     "lightgrey",
     irf.other_instruments.fermi_lat.COLOR,
     irf.other_instruments.cherenkov_telescope_array_south.COLOR,

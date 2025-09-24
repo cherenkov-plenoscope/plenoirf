@@ -43,6 +43,7 @@ ax.set_ylabel(
     "differential flux of airshowers /\n"
     + "m$^{-2}$ s$^{-1}$ sr$^{-1}$ (GeV)$^{-1}$"
 )
+"""
 ax.text(
     0.1,
     0.1,
@@ -51,6 +52,7 @@ ax.text(
     # verticalalignment="center",
     transform=ax.transAxes,
 )
+"""
 ax.loglog()
 ax.set_xlim(energy_bin["limits"])
 ax.legend()
