@@ -32,6 +32,7 @@ energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 
 cta = irf.other_instruments.cherenkov_telescope_array_south
 fermi_lat = irf.other_instruments.fermi_lat
+portal = irf.other_instruments.portal
 
 min_number_samples = 5
 mk = "energy_GeV"
@@ -91,7 +92,8 @@ for pk in res.PARTICLES:
             bincounts=deltaE_over_E,
             bincounts_upper=deltaE_over_E * (1 + deltaE_over_E_relunc),
             bincounts_lower=deltaE_over_E * (1 - deltaE_over_E_relunc),
-            face_color="k",
+            linecolor=portal.COLOR,
+            face_color=portal.COLOR,
             face_alpha=0.1,
         )
         cta_res = cta.energy_resolution()

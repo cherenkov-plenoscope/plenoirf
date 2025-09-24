@@ -26,8 +26,7 @@ reconstructed = json_utils.tree.Tree(
 
 altitude_bin = binning_utils.Binning(bin_edges=np.linspace(5e3, 25e3, 16))
 
-cta = irf.other_instruments.cherenkov_telescope_array_south
-fermi_lat = irf.other_instruments.fermi_lat
+portal = irf.other_instruments.portal
 
 min_number_samples = 5
 mk = "z_emission_p50_m"
@@ -87,7 +86,8 @@ for pk in res.PARTICLES:
             bincounts=deltaA_over_A,
             bincounts_upper=deltaA_over_A * (1 + deltaA_over_A_relunc),
             bincounts_lower=deltaA_over_A * (1 - deltaA_over_A_relunc),
-            face_color="k",
+            linecolor=portal.COLOR,
+            face_color=portal.COLOR,
             face_alpha=0.1,
         )
         # ax1.semilogx()
@@ -100,7 +100,7 @@ for pk in res.PARTICLES:
         )
         ax1.set_ylim([0, 0.3])
         ax1.set_xlabel("reco. altitude / km")
-        ax1.set_ylabel(r"$\Delta{}$Alt./Alt. 68% / 1")
+        ax1.set_ylabel(r"$\Delta{}$altitude / altitude 68% / 1")
         # ax1.legend(loc="best", fontsize=10)
 
         fig.savefig(opj(res.paths["out_dir"], f"{pk}_resolution.jpg"))
