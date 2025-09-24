@@ -3,7 +3,7 @@ from plenopy.light_field_geometry.LightFieldGeometry import init_lixel_polygons
 
 
 FIGURE_STYLE = {"rows": 720, "cols": 1280, "fontsize": 1.0}
-AX_SPAN = [0.2, 0.2, 0.68, 0.75]
+AX_SPAN = [0.2, 0.2, 0.75, 0.75]
 AX_SPAN_ZENITH_INDICATOR = [0.0, 0.075, 0.175, 0.175]
 
 
@@ -24,7 +24,7 @@ def style(key="16:9"):
     ax_y = 144
 
     top_height = 30
-    ax_width = 870
+    ax_width = 960
     ax_height = rows - ax_y - top_height
 
     return (
