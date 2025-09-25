@@ -95,30 +95,18 @@ for zd in range(zenith_bin["num"]):
         dRdS_au = np.zeros(dRdS.shape)
         for sc in range(scatter_bin[pk]["num"] - 1):
             dR, dR_au = pru.add(
-                x=R[sc + 1],
-                x_au=R_au[sc + 1],
-                y=-R[sc],
-                y_au=R_au[sc],
+                x=R[sc + 1], x_au=R_au[sc + 1], y=-R[sc], y_au=R_au[sc]
             )
             _Rmean, _Rmean_au = pru.add(
-                x=R[sc + 1],
-                x_au=R_au[sc + 1],
-                y=R[sc],
-                y_au=R_au[sc],
+                x=R[sc + 1], x_au=R_au[sc + 1], y=R[sc], y_au=R_au[sc]
             )
             Rmean, Rmean_au = pru.multiply(
-                x=0.5,
-                x_au=0.0,
-                y=_Rmean,
-                y_au=_Rmean_au,
+                x=0.5, x_au=0.0, y=_Rmean, y_au=_Rmean_au
             )
             dS = 1e3 * scatter_bin[pk]["widths"][sc]
             _dRdS, _dRdS_au = pru.divide(x=dR, x_au=dR_au, y=dS, y_au=0.0)
             dRdS[sc], dRdS_au[sc] = pru.divide(
-                x=_dRdS,
-                x_au=_dRdS_au,
-                y=Rmean,
-                y_au=Rmean_au,
+                x=_dRdS, x_au=_dRdS_au, y=Rmean, y_au=Rmean_au
             )
 
         sebplt.ax_add_histogram(
