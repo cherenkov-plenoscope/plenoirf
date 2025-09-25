@@ -78,8 +78,25 @@ class ScriptResources:
     def start(self, sebplt=None):
         self.final_out_dir = copy.copy(self.paths["out_dir"])
         self.paths["out_dir"] += ".part"
-
         os.makedirs(self.paths["out_dir"], exist_ok=True)
+
+        # caching
+        # -------
+        self.paths["cache_dir"] = os.path.join(
+            self.paths["out_dir"], "__cache__"
+        )
+        old_cache_dir = os.path.join(self.final_out_dir, "__cache__")
+        if os.path.exists(old_cache_dir):
+            shutil.copytree(
+                src=old_cache_dir,
+                dst=self.paths["cache_dir"],
+                dirs_exist_ok=True,
+            )
+        else:
+            os.makedirs(self.paths["cache_dir"], exist_ok=True)
+
+        # plotting
+        # --------
         if sebplt is not None:
             sebplt.matplotlib.rcParams.update(
                 self.analysis["plot"]["matplotlib"]
@@ -92,6 +109,9 @@ class ScriptResources:
 
         os.rename(self.paths["out_dir"], self.final_out_dir)
         self.paths["out_dir"] = copy.copy(self.paths["out_dir"])
+        self.paths["cache_dir"] = os.path.join(
+            self.paths["out_dir"], "__cache__"
+        )
 
     @classmethod
     def from_argv(cls, argv):
