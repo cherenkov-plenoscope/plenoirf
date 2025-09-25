@@ -13,9 +13,11 @@ from sklearn import neural_network
 from sklearn import ensemble
 from sklearn import model_selection
 from sklearn import utils
+from sklearn.preprocessing import StandardScaler
+import sebastians_matplotlib_addons as sebplt
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
-res.start()
+res.start(sebplt=sebplt)
 
 transformed_features_dir = opj(
     res.paths["analysis_dir"], "0062_transform_features"
@@ -29,17 +31,78 @@ passing_quality = json_utils.tree.Tree(
 passing_trajectory_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
+energy_population_function = json_utils.read(
+    opj(
+        res.paths["analysis_dir"],
+        "0065_01_energy_population_function",
+        "energy_population_function.json",
+    )
+)
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 random_seed = res.analysis["random_seed"]
+
+
+def _energy_to_sx(e):
+    pop = energy_population_function
+    return (np.log10(e) - pop["log10_shift"]) / pop["log10_scale"]
+
+
+def energy_to_flat(e):
+    pop = energy_population_function
+    sx = _energy_to_sx(e=e)
+    return np.interp(xp=pop["xp"], fp=pop["fp"], x=sx)
+
+
+def _sx_to_energy(sx):
+    pop = energy_population_function
+    return 10 ** ((sx * pop["log10_scale"]) + pop["log10_shift"])
+
+
+def flat_to_energy(f):
+    pop = energy_population_function
+    sx = np.interp(xp=pop["fp"], fp=pop["xp"], x=f)
+    return _sx_to_energy(sx=sx)
+
+
+def test_energy_to_flat(max_rel_delta_energy=0.05):
+    E_original = energy_bin["centers"]
+    sx = _energy_to_sx(e=E_original)
+    assert np.all(sx <= 1.0)
+    assert np.all(sx >= 0.0)
+    E_back = _sx_to_energy(sx=sx)
+    delta = np.abs(E_original - E_back) / E_original
+    assert np.all(delta < max_rel_delta_energy)
+
+    flat = energy_to_flat(e=E_original)
+    assert np.all(flat <= 1.0)
+    assert np.all(flat >= 0.0)
+    E_back = flat_to_energy(f=flat)
+    delta = np.abs(E_original - E_back) / E_original
+    assert np.all(delta < max_rel_delta_energy)
+
+
+def altitude_to_flat(a):
+    return np.log10(a)
+
+
+def flat_to_altitude(f):
+    return 10**f
+
 
 targets = {
     "energy_GeV": {
         "column": 0,
+        "to_flat": energy_to_flat,
+        "from_flat": flat_to_energy,
     },
     "z_emission_p50_m": {
         "column": 1,
+        "to_flat": altitude_to_flat,
+        "from_flat": flat_to_altitude,
     },
 }
+
+test_energy_to_flat()
 
 
 def read_event_frame(
@@ -94,10 +157,10 @@ FEATURE_KEYS = [
     "paxel_intensity_peakness_mean_over_std",
     # "combi_shower_density",
     "combi_shower_volume",
-    # "reconstructed_trajectory_cx_rad",
-    # "reconstructed_trajectory_cy_rad",
-    # "reconstructed_trajectory_x_m",
-    # "reconstructed_trajectory_y_m",
+    "reconstructed_trajectory_cx_rad",
+    "reconstructed_trajectory_cy_rad",
+    "reconstructed_trajectory_x_m",
+    "reconstructed_trajectory_y_m",
     # "combi_A",
     # "combi_B",
     # "combi_C",
@@ -134,8 +197,10 @@ def make_x_y_arrays(event_frame):
 
     y = np.array(
         [
-            np.log10(f["primary/energy_GeV"].values),
-            np.log10(f["cherenkovpool/z_emission_p50_m"].values),
+            targets["energy_GeV"]["to_flat"](f["primary/energy_GeV"].values),
+            targets["z_emission_p50_m"]["to_flat"](
+                f["cherenkovpool/z_emission_p50_m"].values
+            ),
         ]
     ).T
     return x, y
@@ -161,13 +226,13 @@ REGRESSORS["MultiLayerPerceptron"] = {
         "hidden_layer_sizes": (
             3 * num_features,
             5 * num_features,
+            5 * num_features,
             3 * num_features,
         ),
         "random_state": random_seed,
         "verbose": True,
     },
 }
-
 REGRESSORS["RandomForest"] = {
     "constructor": sklearn.ensemble.RandomForestRegressor,
     "kwargs": {
@@ -180,7 +245,7 @@ REGRESSORS["RandomForest"] = {
 
 for bootstrip in range(NUM_BOOTSTRIPS):
     print("bootstrip", bootstrip)
-    bootstrip_dir = opj(res.paths["out_dir"], f"bootstrip-{bootstrip:02d}")
+    bootstrip_dir = opj(res.paths["cache_dir"], f"bootstrip-{bootstrip:02d}")
 
     if os.path.exists(bootstrip_dir):
         continue
@@ -266,8 +331,9 @@ for bootstrip in range(NUM_BOOTSTRIPS):
             _y_score = models[mk].predict(MA[pk]["test"]["x"])
 
             for tk in targets:
-                y_score = 10 ** _y_score[:, targets[tk]["column"]]
-
+                y_score = targets[tk]["from_flat"](
+                    _y_score[:, targets[tk]["column"]]
+                )
                 out = {}
                 out["comment"] = "Reconstructed from the test-set."
                 out["learner"] = mk
@@ -290,7 +356,7 @@ for mk in REGRESSORS:
 
             for bootstrip in range(NUM_BOOTSTRIPS):
                 path = opj(
-                    res.paths["out_dir"],
+                    res.paths["cache_dir"],
                     f"bootstrip-{bootstrip:02d}",
                     mk,
                     pk,
@@ -356,6 +422,79 @@ for mk in results:
             ooo[tk] = out[mk][pk][tk]
             ooo["uid"] = out[mk][pk]["uid"]
             json_utils.write(opj(mk_pk_dir, tk + ".json"), ooo)
+
+
+def read_true_energy(uid):
+    with res.open_event_table(particle_key="gamma") as arc:
+        table = arc.query(
+            levels_and_columns={"primary": ["uid", "energy_GeV"]},
+            indices=uid,
+            sort=True,
+        )
+
+    np.testing.assert_array_equal(uid, table["primary"]["uid"])
+    return table["primary"]["energy_GeV"]
+
+
+gam = {}
+for mk in REGRESSORS:
+    gam[mk] = {}
+    reco = json_utils.read(
+        opj(res.paths["out_dir"], mk, "gamma", "energy_GeV.json")
+    )
+    gam[mk]["uid"] = reco["uid"]
+    gam[mk]["reco"] = reco["energy_GeV"]
+    gam[mk]["true"] = read_true_energy(uid=gam[mk]["uid"])
+
+    gam[mk]["log10_poly"] = np.polyfit(
+        x=np.log10(gam[mk]["true"]),
+        y=np.log10(gam[mk]["reco"]),
+        deg=1,
+    )
+
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    ax.scatter(
+        x=gam[mk]["true"],
+        y=gam[mk]["reco"],
+        alpha=0.01,
+    )
+    ax.plot(
+        energy_bin["edges"],
+        10
+        ** np.polyval(
+            p=gam[mk]["log10_poly"], x=np.log10(energy_bin["edges"])
+        ),
+    )
+    ax.loglog()
+    ax.set_aspect("equal")
+    ax.set_ylim(energy_bin["limits"])
+    ax.set_xlim(energy_bin["limits"])
+    ax.set_xlabel("true energy / GeV")
+    ax.set_ylabel("reco. energy / GeV")
+    fig.savefig(opj(res.paths["out_dir"], f"{mk:s}_polyfit.jpg"))
+    sebplt.close(fig)
+
+    assert len(gam[mk]["log10_poly"]) == 2
+    offset = 10 ** gam[mk]["log10_poly"][1]
+
+    gam[mk]["reco2"] = gam[mk]["reco"] - offset
+
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    ax.scatter(
+        x=gam[mk]["true"],
+        y=gam[mk]["reco2"],
+        alpha=0.01,
+    )
+    ax.loglog()
+    ax.set_aspect("equal")
+    ax.set_ylim(energy_bin["limits"])
+    ax.set_xlim(energy_bin["limits"])
+    ax.set_xlabel("true energy / GeV")
+    ax.set_ylabel("reco. energy / GeV")
+    fig.savefig(opj(res.paths["out_dir"], f"{mk:s}_polyfit2.jpg"))
+    sebplt.close(fig)
 
 
 """

@@ -20,10 +20,10 @@ import sebastians_matplotlib_addons as sebplt
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-METHOD = "MultiLayerPerceptron"
+METHOD = "RandomForest"
 METHODS = {
     "MultiLayerPerceptron": {"bias_GeV": -1.5},
-    "RandomForest": {"bias_GeV": -1.2},
+    "RandomForest": {"bias_GeV": -1.5},
 }
 
 reconstructed_energy = json_utils.tree.Tree(
