@@ -23,6 +23,9 @@ zenith_bin = res.zenith_binning("once")
 nat_bin = binning_utils.Binning(
     bin_edges=np.geomspace(10, 100_000, energy_bin["num"])
 )
+population_statistics = json_utils.tree.Tree(
+    opj(res.paths["analysis_dir"], "0003_population_statistics")
+)
 
 
 def histogram(x, uid, bin_edges):
@@ -53,6 +56,17 @@ def size_num_bin_edges(start_decade, stop_decade, num_steps_per_decade):
     num_decades = stop_decade - start_decade
     return num_decades * num_steps_per_decade + 1
 
+
+# estimate range for count histogram
+
+MAX_COUNTS = 0
+for pk in res.PARTICLES:
+    _max = np.max(
+        population_statistics[pk]["num_thrown_energy_vs_zenith"]["counts"]
+    )
+    MAX_COUNTS = np.max([MAX_COUNTS, _max])
+
+MAX_COUNTS = 10 ** np.ceil(np.log10(MAX_COUNTS))
 
 bbb = {}
 huh = {}
@@ -170,6 +184,7 @@ for pk in res.PARTICLES:
         ax_h.set_xlim(
             [np.min(cm["ax0_bin_edges"]), np.max(cm["ax0_bin_edges"])]
         )
+        ax_h.set_ylim([1e1, MAX_COUNTS])
         ax_h.set_xlabel("energy / GeV")
         ax_h.set_ylabel("counts")
         ax_h.axhline(min_number_samples, linestyle=":", color="k")
