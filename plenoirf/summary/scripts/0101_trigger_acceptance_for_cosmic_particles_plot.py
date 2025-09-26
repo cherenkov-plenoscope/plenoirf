@@ -47,7 +47,6 @@ for zd in range(zenith_bin["num"]):
 
             ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
-            text_y = 0
             for pk in res.PARTICLES:
                 Q = np.array(cr[zk][pk][source_key]["mean"][tt])
                 Q_au = np.array(
@@ -65,15 +64,6 @@ for zd in range(zenith_bin["num"]):
                     face_color=res.PARTICLE_COLORS[pk],
                     face_alpha=0.25,
                 )
-
-                ax.text(
-                    0.9,
-                    0.1 + text_y,
-                    pk,
-                    color=res.PARTICLE_COLORS[pk],
-                    transform=ax.transAxes,
-                )
-                text_y += 0.06
 
             ax.set_xlabel("energy / GeV")
             ax.set_ylabel(
@@ -95,7 +85,7 @@ for zd in range(zenith_bin["num"]):
                     opj(res.paths["out_dir"], f"{source_key:s}_zd{zd:d}.jpg")
                 )
             ax.set_title(
-                "trigger-threshold: {:d} p.e.".format(trigger_thresholds[tt]),
+                "trigger threshold: {:d} p.e.".format(trigger_thresholds[tt]),
                 fontsize=5,
             )
             fig.savefig(opj(zd_dir, f"{source_key:s}_{tt:06d}.jpg"))

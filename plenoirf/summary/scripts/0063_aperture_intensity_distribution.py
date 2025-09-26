@@ -31,6 +31,7 @@ energy_bin = res.energy_binning(key="trigger_acceptance")
 NUM_PLOT = 25
 NUM_SHOWER = 100
 
+
 def feature_pairwise_product(pax_hist):
     NUM = pax_hist.shape[0]
     vals = pax_hist / np.mean(pax_hist)

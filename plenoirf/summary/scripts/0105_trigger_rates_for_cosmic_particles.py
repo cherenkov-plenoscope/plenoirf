@@ -134,7 +134,7 @@ for zd in range(zenith_bin["num"]):
 
     # cosmic-rays
     # -----------
-    for ck in airshower_fluxes:
+    for ck in res.COSMIC_RAYS:
         ck_dir = opj(res.paths["out_dir"], zk, ck)
         os.makedirs(ck_dir, exist_ok=True)
 
