@@ -20,7 +20,7 @@ reconstructed = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0065_learning_airshower_maximum_and_energy",
-        "MultiLayerPerceptron",
+        "RandomForest",
     ),
 )
 
@@ -28,7 +28,7 @@ altitude_bin = binning_utils.Binning(bin_edges=np.linspace(5e3, 25e3, 31))
 
 portal = irf.other_instruments.portal
 
-min_number_samples = 5
+min_number_samples = 3
 mk = "z_emission_p50_m"
 M_TO_KM = 1e-3
 
@@ -77,8 +77,9 @@ for pk in res.PARTICLES:
             containment_fraction=0.68,
         )
 
-        fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-        ax1 = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+        fstyle, aspan = irf.summary.figure.style(key="1:1")
+        fig = sebplt.figure(fstyle)
+        ax1 = sebplt.add_axes(fig=fig, span=aspan)
 
         sebplt.ax_add_histogram(
             ax=ax1,
@@ -90,17 +91,16 @@ for pk in res.PARTICLES:
             face_color=portal.COLOR,
             face_alpha=0.1,
         )
-        ax1.semilogy()
-        ax1.set_xlim(altitude_bin["limits"] * M_TO_KM)
+        ax1.set_xlim([5, 20])
         ax1.axvline(
             altitude_bin["start"], color="black", linestyle=":", alpha=0.1
         )
         ax1.axvline(
             altitude_bin["stop"], color="black", linestyle=":", alpha=0.1
         )
-        ax1.set_ylim([0.01, 1.0])
-        ax1.set_xlabel("reco. altitude / km")
-        ax1.set_ylabel(r"$\Delta{}$altitude / altitude 68% / 1")
+        ax1.set_ylim([0.0, 0.2])
+        ax1.set_xlabel("reco. altitude (above sea level) / km")
+        ax1.set_ylabel(r"altitude (above sea level) containment 68%" "\n" "(reco. - true) (true)$^{-1}$ / 1")
         # ax1.legend(loc="best", fontsize=10)
 
         fig.savefig(opj(res.paths["out_dir"], f"{pk}_resolution.jpg"))
