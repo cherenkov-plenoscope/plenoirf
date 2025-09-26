@@ -9,11 +9,14 @@ import numpy as np
 import sklearn
 import pickle
 import json_utils
+import confusion_matrix
+import binning_utils
 from sklearn import neural_network
 from sklearn import ensemble
 from sklearn import model_selection
 from sklearn import utils
 from sklearn.preprocessing import StandardScaler
+import scipy.signal
 import sebastians_matplotlib_addons as sebplt
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
@@ -88,6 +91,8 @@ def altitude_to_flat(a):
 def flat_to_altitude(f):
     return 10**f
 
+
+APPLY_INVERSE_POPULATION_WEIGHTS = True
 
 targets = {
     "energy_GeV": {
@@ -169,24 +174,6 @@ FEATURE_KEYS = [
 ]
 
 
-def make_sample_weights(event_frame, energy_bin):
-
-    bin_population = np.histogram(
-        event_frame["primary/energy_GeV"],
-        bins=energy_bin["edges"],
-    )[0]
-
-    bin_weights = (1.0 / bin_population) ** 0.5
-
-    bin_assignment = -1 + np.digitize(
-        event_frame["primary/energy_GeV"],
-        bins=energy_bin["edges"],
-    )
-
-    sample_weights = bin_weights[bin_assignment]
-    return sample_weights
-
-
 def make_x_y_arrays(event_frame):
     f = event_frame
 
@@ -226,9 +213,12 @@ REGRESSORS["MultiLayerPerceptron"] = {
         "hidden_layer_sizes": (
             3 * num_features,
             5 * num_features,
+            7 * num_features,
             5 * num_features,
             3 * num_features,
+            1 * num_features,
         ),
+        "alpha": 0.01,
         "random_state": random_seed,
         "verbose": True,
     },
@@ -293,11 +283,10 @@ for bootstrip in range(NUM_BOOTSTRIPS):
                 event_frame=particle_frames[pk][mk]
             )
             if pk == "gamma" and mk == "train":
-                MA[pk][mk]["w"] = make_sample_weights(
-                    event_frame=particle_frames[pk][mk],
-                    energy_bin=energy_bin,
+                MA[pk][mk]["w"] = irf.features.scaling.make_sample_weights(
+                    x=particle_frames[pk][mk]["primary/energy_GeV"],
+                    bin_edges=energy_bin["edges"],
                 )
-                print(MA[pk][mk]["w"])
 
     # train model on gamma only
     # -------------------------
@@ -318,7 +307,12 @@ for bootstrip in range(NUM_BOOTSTRIPS):
         model_dir = opj(bootstrip_dir, mk)
         os.makedirs(model_dir, exist_ok=True)
 
-        models[mk].fit(X=_X_shuffle, y=_y_shuffle, sample_weight=_w_shuffle)
+        if APPLY_INVERSE_POPULATION_WEIGHTS:
+            models[mk].fit(
+                X=_X_shuffle, y=_y_shuffle, sample_weight=_w_shuffle
+            )
+        else:
+            models[mk].fit(X=_X_shuffle, y=_y_shuffle)
 
         model_path = opj(model_dir, mk + ".pkl")
         with open(model_path, "wb") as fout:
@@ -436,6 +430,79 @@ def read_true_energy(uid):
     return table["primary"]["energy_GeV"]
 
 
+def smooth1d(x, num_iterations=1000):
+    x = np.array(x, dtype=float)
+    NUM = x.shape[0]
+    for jj in range(num_iterations):
+        for i_start in range(NUM - 1):
+            i_stop = i_start + 1
+            if x[i_start] >= x[i_stop]:
+                i_before = i_start - 1
+                i_after = i_stop + 1
+                if i_before >= 0:
+                    x[i_start] = np.mean([x[i_start], x[i_before]])
+                if i_after < NUM:
+                    x[i_stop] = np.mean([x[i_stop], x[i_after]])
+    return x
+
+
+def add_points_in_between(xp, fp, num_points=10):
+    xp = np.asarray(xp)
+    fp = np.asarray(fp)
+    num = xp.shape[0]
+    assert fp.shape[0] == num
+    x = []
+    f = []
+    for j_start in range(num - 1):
+        j_stop = j_start + 1
+        for ii in range(num_points):
+            weight_stop = ii / num_points
+            weight_start = 1.0 - weight_stop
+            inter_x = xp[j_start] * weight_start + xp[j_stop] * weight_stop
+            inter_f = fp[j_start] * weight_start + fp[j_stop] * weight_stop
+            x.append(inter_x)
+            f.append(inter_f)
+
+    return np.array(x), np.array(f)
+
+
+def w_p95(i, fine_num):
+    return np.interp(
+        xp=[0.0, 0.7, 0.9, 1.0],
+        fp=[0.0, 0.0, 1.0, 1.0],
+        x=i / (fine_num),
+    )
+
+
+def w_p05(i, fine_num):
+    return np.interp(
+        xp=[0.0, 0.1, 0.3, 1.0],
+        fp=[1.0, 1.0, 0.0, 0.0],
+        x=i / (fine_num),
+    )
+
+
+def w_max(i, fine_num):
+    return np.interp(
+        xp=[0.0, 0.1, 0.3, 0.7, 0.9, 1.0],
+        fp=[0.0, 0.0, 1.0, 1.0, 0.0, 0.0],
+        x=i / (fine_num),
+    )
+
+
+min_number_samples = 1
+
+kernerl1d = np.array([1, 2, 5, 2, 1])
+kernerl1d = kernerl1d / np.sum(kernerl1d)
+
+matrix_kernel = np.array([[1, 2, 1], [2, 5, 2], [1, 2, 1]])
+matrix_kernel = matrix_kernel / np.sum(matrix_kernel)
+fine_energy_bin = binning_utils.Binning(
+    np.geomspace(
+        energy_bin["start"], energy_bin["stop"], energy_bin["num"] * 2 + 1
+    )
+)
+
 gam = {}
 for mk in REGRESSORS:
     gam[mk] = {}
@@ -446,25 +513,31 @@ for mk in REGRESSORS:
     gam[mk]["reco"] = reco["energy_GeV"]
     gam[mk]["true"] = read_true_energy(uid=gam[mk]["uid"])
 
-    gam[mk]["log10_poly"] = np.polyfit(
-        x=np.log10(gam[mk]["true"]),
-        y=np.log10(gam[mk]["reco"]),
-        deg=1,
+    gam[mk]["matrix"] = confusion_matrix.init(
+        ax0_key="true",
+        ax0_values=gam[mk]["true"],
+        ax0_bin_edges=fine_energy_bin["edges"],
+        ax1_key="reco",
+        ax1_values=gam[mk]["reco"],
+        ax1_bin_edges=fine_energy_bin["edges"],
+        min_exposure_ax0=min_number_samples,
+        default_low_exposure=0.0,
+    )
+
+    gam[mk]["matrix"]["convolve"] = scipy.signal.convolve2d(
+        gam[mk]["matrix"]["counts"],
+        matrix_kernel,
+        mode="same",
     )
 
     fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
     ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-    ax.scatter(
-        x=gam[mk]["true"],
-        y=gam[mk]["reco"],
-        alpha=0.01,
-    )
-    ax.plot(
-        energy_bin["edges"],
-        10
-        ** np.polyval(
-            p=gam[mk]["log10_poly"], x=np.log10(energy_bin["edges"])
-        ),
+    _pcm_confusion = ax.pcolormesh(
+        gam[mk]["matrix"]["ax0_bin_edges"],
+        gam[mk]["matrix"]["ax1_bin_edges"],
+        np.transpose(gam[mk]["matrix"]["convolve"]),
+        cmap="Greys",
+        norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
     )
     ax.loglog()
     ax.set_aspect("equal")
@@ -475,17 +548,120 @@ for mk in REGRESSORS:
     fig.savefig(opj(res.paths["out_dir"], f"{mk:s}_polyfit.jpg"))
     sebplt.close(fig)
 
-    assert len(gam[mk]["log10_poly"]) == 2
-    offset = 10 ** gam[mk]["log10_poly"][1]
+    fine_one_edges = np.linspace(
+        0, fine_energy_bin["num"], fine_energy_bin["num"] + 1
+    )
 
-    gam[mk]["reco2"] = gam[mk]["reco"] - offset
+    f_reco = []
+    f_true = []
+    con = gam[mk]["matrix"]["convolve"]
+    fine_num = fine_energy_bin["num"]
+    for i in range(fine_energy_bin["num"]):
+        con_slice = con[i, :]
+        if np.sum(con_slice) > 0:
+            f_true.append(i)
+
+            p05 = binning_utils.quantile(
+                bin_edges=fine_one_edges,
+                bin_counts=con_slice,
+                q=0.05,
+            )
+            p95 = binning_utils.quantile(
+                bin_edges=fine_one_edges,
+                bin_counts=con_slice,
+                q=0.95,
+            )
+            pmax = np.argmax(con_slice)
+            _w_p05 = w_p05(i=i, fine_num=fine_num)
+            _w_max = w_max(i=i, fine_num=fine_num)
+            _w_p95 = w_p95(i=i, fine_num=fine_num)
+            _w_sum = _w_p05 + _w_max + _w_p95
+            assert 0.95 < _w_sum < 1.05
+            f_reco.append(_w_p05 * p05 + _w_max * pmax + _w_p95 * p95)
+
+    f_reco_smooth = smooth1d(
+        x=f_reco,
+        num_iterations=1_000,
+    )
+
+    gam[mk]["f_true"], gam[mk]["f_reco"] = add_points_in_between(
+        xp=f_true,
+        fp=f_reco_smooth,
+        num_points=3,
+    )
+
+    gam[mk]["f_reco_smooth"] = np.array(gam[mk]["f_reco"])
+
+    for i in range(50):
+        gam[mk]["f_reco_smooth"] = scipy.signal.convolve(
+            gam[mk]["f_reco_smooth"], kernerl1d, mode="same"
+        )
+        for j in range(3):
+            gam[mk]["f_reco_smooth"][j] = gam[mk]["f_reco"][j]
+            gam[mk]["f_reco_smooth"][-j] = gam[mk]["f_reco"][-j]
+        """
+        gam[mk]["f_reco_smooth"] = smooth1d(
+            x=gam[mk]["f_reco"],
+            num_iterations=100,
+        )
+        """
 
     fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
     ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-    ax.scatter(
-        x=gam[mk]["true"],
-        y=gam[mk]["reco2"],
-        alpha=0.01,
+    ax.plot(
+        gam[mk]["f_true"],
+        gam[mk]["f_reco"],
+        color="black",
+    )
+    ax.plot(
+        gam[mk]["f_true"],
+        gam[mk]["f_reco_smooth"],
+        color="red",
+    )
+    ax.set_aspect("equal")
+    ax.set_ylim([0, fine_energy_bin["num"]])
+    ax.set_xlim([0, fine_energy_bin["num"]])
+    ax.set_xlabel("true energy")
+    ax.set_ylabel("reco. energy")
+    fig.savefig(opj(res.paths["out_dir"], f"{mk:s}_f.jpg"))
+    sebplt.close(fig)
+
+    gam[mk]["fE_true"] = np.geomspace(
+        energy_bin["start"],
+        energy_bin["stop"],
+        gam[mk]["f_true"].shape[0],
+    )
+    gam[mk]["fE_reco_smooth"] = np.interp(
+        xp=gam[mk]["f_true"],
+        fp=gam[mk]["fE_true"],
+        x=gam[mk]["f_reco_smooth"],
+    )
+
+    gam[mk]["reco2"] = np.interp(
+        xp=gam[mk]["fE_reco_smooth"],
+        fp=gam[mk]["fE_true"],
+        x=gam[mk]["reco"],
+    )
+
+    gam[mk]["matrix2"] = confusion_matrix.init(
+        ax0_key="true",
+        ax0_values=gam[mk]["true"],
+        ax0_bin_edges=fine_energy_bin["edges"],
+        ax1_key="reco2",
+        ax1_values=gam[mk]["reco2"],
+        ax1_bin_edges=fine_energy_bin["edges"],
+        min_exposure_ax0=min_number_samples,
+        default_low_exposure=0.0,
+    )
+
+    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    _pcm_confusion = ax.pcolormesh(
+        gam[mk]["matrix2"]["ax0_bin_edges"],
+        gam[mk]["matrix2"]["ax1_bin_edges"],
+        np.transpose(gam[mk]["matrix2"]["counts_normalized_on_ax0"]),
+        cmap="Greys",
+        norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
     )
     ax.loglog()
     ax.set_aspect("equal")
@@ -493,8 +669,35 @@ for mk in REGRESSORS:
     ax.set_xlim(energy_bin["limits"])
     ax.set_xlabel("true energy / GeV")
     ax.set_ylabel("reco. energy / GeV")
-    fig.savefig(opj(res.paths["out_dir"], f"{mk:s}_polyfit2.jpg"))
+    fig.savefig(opj(res.paths["out_dir"], f"{mk:s}_reco2.jpg"))
     sebplt.close(fig)
+
+
+# EXPORT TRANSFORM
+# ================
+for mk in gam:
+    mk_dir = opj(res.paths["out_dir"], mk + "Transformed")
+    for pk in results[mk]:
+        mk_pk_dir = opj(mk_dir, pk)
+        os.makedirs(mk_pk_dir, exist_ok=True)
+
+        for tk in targets:
+            ooo = {}
+            ooo["uid"] = out[mk][pk]["uid"]
+            if tk == "energy_GeV":
+                ooo[tk] = np.interp(
+                    xp=gam[mk]["fE_reco_smooth"],
+                    fp=gam[mk]["fE_true"],
+                    x=out[mk][pk][tk],
+                )
+                # Fall back when out of range
+                mask_too_low = ooo[tk] < energy_bin["start"]
+                mask_too_high = ooo[tk] > energy_bin["stop"]
+                mask_out_of_range = np.logical_and(mask_too_low, mask_too_high)
+                ooo[tk][mask_out_of_range] = out[mk][pk][tk][mask_out_of_range]
+            else:
+                ooo[tk] = out[mk][pk][tk]
+            json_utils.write(opj(mk_pk_dir, tk + ".json"), ooo)
 
 
 """

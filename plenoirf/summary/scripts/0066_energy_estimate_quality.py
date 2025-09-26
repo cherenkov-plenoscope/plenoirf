@@ -22,8 +22,10 @@ res.start(sebplt=sebplt)
 
 METHOD = "RandomForest"
 METHODS = {
-    "MultiLayerPerceptron": {"bias_GeV": -1.5},
-    "RandomForest": {"bias_GeV": -1.5},
+    "MultiLayerPerceptron": {"bias_GeV": -1.5, "power": 1.07, "factor": 1.0},
+    "RandomForest": {"bias_GeV": -1.5, "power": 1.025, "factor": 0.975},
+    "RandomForestTransformed": {"bias_GeV": 0.0, "power": 1.0, "factor": 1.0},
+    "MultiLayerPerceptronTransformed": {"bias_GeV": 0.0, "power": 1.0, "factor": 1.0},
 }
 
 reconstructed_energy = json_utils.tree.Tree(
@@ -53,13 +55,14 @@ for pk in res.PARTICLES:
         )
 
     true_energy = event_table["primary"]["energy_GeV"]
-    reco_energy = METHODS[METHOD][
-        "bias_GeV"
-    ] + irf.analysis.energy.align_on_idx(
+    reco_energy = irf.analysis.energy.align_on_idx(
         input_idx=reconstructed_energy[pk][mk]["uid"],
         input_values=reconstructed_energy[pk][mk][mk],
         target_idxs=event_table["primary"]["uid"],
     )
+    reco_energy = reco_energy ** METHODS[METHOD]["power"]
+    reco_energy = reco_energy * METHODS[METHOD]["factor"]
+    reco_energy = reco_energy + METHODS[METHOD]["bias_GeV"]
 
     cm = confusion_matrix.init(
         ax0_key="true_energy",
