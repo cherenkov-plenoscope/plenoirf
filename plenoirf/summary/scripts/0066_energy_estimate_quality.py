@@ -22,8 +22,8 @@ res.start(sebplt=sebplt)
 
 METHOD = "RandomForest"
 METHODS = {
-    "MultiLayerPerceptron": {"bias_GeV": -1.5, "power": 1.07, "factor": 1.0},
-    "RandomForest": {"bias_GeV": -1.5, "power": 1.025, "factor": 0.975},
+    "MultiLayerPerceptron": {"bias_GeV": -1.5, "power": 1.0, "factor": 1.0},
+    "RandomForest": {"bias_GeV": -1.0, "power": 1.09, "factor": 0.68},
     "RandomForestTransformed": {"bias_GeV": 0.0, "power": 1.0, "factor": 1.0},
     "MultiLayerPerceptronTransformed": {"bias_GeV": 0.0, "power": 1.0, "factor": 1.0},
 }
@@ -42,7 +42,7 @@ cta = irf.other_instruments.cherenkov_telescope_array_south
 fermi_lat = irf.other_instruments.fermi_lat
 portal = irf.other_instruments.portal
 
-min_number_samples = 5
+min_number_samples = 3
 mk = "energy_GeV"
 
 
@@ -94,8 +94,9 @@ for pk in res.PARTICLES:
             containment_fraction=0.68,
         )
 
-        fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-        ax1 = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+        fstyle, aspan = irf.summary.figure.style(key="1:1")
+        fig = sebplt.figure(fstyle)
+        ax1 = sebplt.add_axes(fig=fig, span=aspan)
 
         sebplt.ax_add_histogram(
             ax=ax1,
@@ -133,7 +134,7 @@ for pk in res.PARTICLES:
         )
         ax1.set_ylim([0, 1])
         ax1.set_xlabel("reco. energy / GeV")
-        ax1.set_ylabel(r"$\Delta{}$E/E 68% / 1")
+        ax1.set_ylabel(r"energy containment 68%" "\n" "(reco. - true) (true)$^{-1}$ / 1")
         # ax1.legend(loc="best", fontsize=10)
 
         fig.savefig(opj(res.paths["out_dir"], f"{pk}_resolution.jpg"))

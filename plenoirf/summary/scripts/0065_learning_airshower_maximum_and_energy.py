@@ -160,17 +160,17 @@ FEATURE_KEYS = [
     "image_smallest_ellipse_solid_angle",
     "image_smallest_ellipse_half_depth",
     "paxel_intensity_peakness_mean_over_std",
-    # "combi_shower_density",
+    "combi_shower_density",
     "combi_shower_volume",
     "reconstructed_trajectory_cx_rad",
     "reconstructed_trajectory_cy_rad",
     "reconstructed_trajectory_x_m",
     "reconstructed_trajectory_y_m",
-    # "combi_A",
-    # "combi_B",
-    # "combi_C",
-    "reconstructed_trajectory_hypot_cx_cy",
-    "reconstructed_trajectory_hypot_x_y",
+    "combi_A",
+    "combi_B",
+    "combi_C",
+    # "reconstructed_trajectory_hypot_cx_cy",
+    # "reconstructed_trajectory_hypot_x_y",
 ]
 
 
@@ -193,7 +193,7 @@ def make_x_y_arrays(event_frame):
     return x, y
 
 
-NUM_BOOTSTRIPS = 2
+NUM_BOOTSTRIPS = 10
 
 passing = {}
 for pk in res.PARTICLES:
@@ -218,7 +218,7 @@ REGRESSORS["MultiLayerPerceptron"] = {
             3 * num_features,
             1 * num_features,
         ),
-        "alpha": 0.01,
+        "alpha": 0.025,
         "random_state": random_seed,
         "verbose": True,
     },
