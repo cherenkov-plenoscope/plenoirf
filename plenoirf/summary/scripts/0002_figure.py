@@ -35,7 +35,7 @@ cm = confusion_matrix.init(
     default_low_exposure=0.0,
 )
 fig = sebplt.figure(irf.summary.figure.style(key="6:7")[0])
-ax_c = sebplt.add_axes(fig=fig, span=[0.2, 0.2, 0.75, 0.75])
+ax_c = sebplt.add_axes(fig=fig, span=[0.2, 0.25, 0.75, 0.65])
 ax_h = sebplt.add_axes(fig=fig, span=[0.2, 0.13, 0.75, 0.10])
 ax_cb = sebplt.add_axes(fig=fig, span=[0.25, 0.96, 0.65, 0.015])
 sebplt.add_axes_zenith_range_indicator(
@@ -45,7 +45,6 @@ sebplt.add_axes_zenith_range_indicator(
     zenith_bin=1,
     fontsize=6,
 )
-
 _pcm_confusion = ax_c.pcolormesh(
     cm["ax0_bin_edges"],
     cm["ax1_bin_edges"],
@@ -57,7 +56,6 @@ ax_c.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1)
 sebplt.plt.colorbar(
     _pcm_confusion, cax=ax_cb, extend="max", orientation="horizontal"
 )
-ax_c.set_aspect("equal")
 ax_c.set_ylabel("reco. energy / GeV")
 ax_c.loglog()
 ax_c.set_xticklabels([])
