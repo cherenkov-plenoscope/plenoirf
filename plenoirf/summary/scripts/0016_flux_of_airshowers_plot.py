@@ -34,7 +34,8 @@ parts = {
 
 fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
 ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
-for pk in airshower_fluxes:
+
+for pk in res.COSMIC_RAYS:
 
     E_start = binning_utils.power10.lower_bin_edge(
         **res.config["particles_simulated_energy_distribution"][pk][
@@ -72,16 +73,6 @@ ax.set_ylabel(
     "differential flux of airshowers /\n"
     + "m$^{-2}$ s$^{-1}$ sr$^{-1}$ (GeV)$^{-1}$"
 )
-"""
-ax.text(
-    0.1,
-    0.1,
-    f"site: {res.SITE['name']}",
-    horizontalalignment="center",
-    # verticalalignment="center",
-    transform=ax.transAxes,
-)
-"""
 ax.loglog()
 ax.set_xlim(energy_bin["limits"])
 ax.legend()

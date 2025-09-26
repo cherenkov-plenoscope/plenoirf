@@ -4,6 +4,7 @@ import plenoirf as irf
 import os
 from os.path import join as opj
 import json_utils
+import numpy as np
 import confusion_matrix
 import sebastians_matplotlib_addons as sebplt
 

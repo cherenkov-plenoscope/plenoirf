@@ -29,7 +29,7 @@ lfg = pl.LightFieldGeometry(
 energy_bin = res.energy_binning(key="trigger_acceptance")
 
 NUM_PLOT = 25
-
+NUM_SHOWER = 100
 
 def feature_pairwise_product(pax_hist):
     NUM = pax_hist.shape[0]
@@ -57,6 +57,7 @@ os.makedirs(cache_dir, exist_ok=True)
 flatness = {}
 for pk in res.PARTICLES:
     pk_plot_counter = 0
+    pk_counter = 0
     cache_path = opj(cache_dir, f"{pk:s}.snt.zip")
 
     if not os.path.exists(cache_path):
@@ -104,6 +105,9 @@ for pk in res.PARTICLES:
                         "mean_over_std": ft_mos,
                     }
                 )
+
+                if pk_counter >= NUM_SHOWER:
+                    break
 
                 if pk_plot_counter < NUM_PLOT:
 
