@@ -346,7 +346,7 @@ def init_features_level_structure():
         "dtype": "<i4",
         "comment": "The number of photon-eqivalents that are identified to be dense cluster(s) of Cherenkov-photons",
         "transformation": {
-            "function": "log(x)",
+            "function": "log10(x)**(-3)",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },
@@ -504,7 +504,7 @@ def init_features_level_structure():
         "dtype": "<f4",
         "comment": "The solid angle of the Hillas-ellipse with focus set to infinity.",
         "transformation": {
-            "function": "log(x)",
+            "function": "log(x)**(10)",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },
@@ -524,7 +524,7 @@ def init_features_level_structure():
         "dtype": "<f4",
         "comment": "The solid angle of the smallest Hillas-ellipse in all refocused images. See also 'image_smallest_ellipse_object_distance'.",
         "transformation": {
-            "function": "log(x)",
+            "function": "log(x)**10",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },

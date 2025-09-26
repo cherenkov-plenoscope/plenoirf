@@ -158,8 +158,8 @@ def init_combined_features_structure():
         "dtype": "<f4",
         "unit": "1",
         "transformation": {
-            "function": "x",
-            "shift": "0",
+            "function": "log10(abs(x)) * sign(x)",
+            "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },
     }
@@ -169,8 +169,8 @@ def init_combined_features_structure():
         "dtype": "<f4",
         "unit": "1",
         "transformation": {
-            "function": "x",
-            "shift": "0",
+            "function": "log10(abs(x)) * sign(x)",
+            "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },
     }
@@ -202,7 +202,7 @@ def init_combined_features_structure():
         "dtype": "<f4",
         "unit": "m",
         "transformation": {
-            "function": "x",
+            "function": "log10(x)",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },
@@ -235,7 +235,7 @@ def init_combined_features_structure():
         "dtype": "<f4",
         "unit": "rad",
         "transformation": {
-            "function": "x",
+            "function": "log10(x)**(-3)",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },
@@ -286,7 +286,7 @@ def init_combined_features_structure():
         "dtype": "<f4",
         "unit": "$sr m^{-1}$",
         "transformation": {
-            "function": "log(x)",
+            "function": "log(x)**(-2)",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },
@@ -296,7 +296,7 @@ def init_combined_features_structure():
         "dtype": "<f4",
         "unit": "$m^{-2}$",
         "transformation": {
-            "function": "log(x)",
+            "function": "log(x)**(-2)",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },
@@ -306,7 +306,7 @@ def init_combined_features_structure():
         "dtype": "<f4",
         "unit": "$1$",
         "transformation": {
-            "function": "x",
+            "function": "log(x)",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },
@@ -317,7 +317,7 @@ def init_combined_features_structure():
         "dtype": "<f4",
         "unit": "$m{^3}$",
         "transformation": {
-            "function": "log(x)",
+            "function": "log(x)**(-3)",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },
@@ -328,7 +328,7 @@ def init_combined_features_structure():
         "dtype": "<f4",
         "unit": "$m{^3}$",
         "transformation": {
-            "function": "log(x)",
+            "function": "log(x**(1/2))",
             "shift": fx_median,
             "scale": fx_containment_percentile_90,
         },

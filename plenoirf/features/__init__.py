@@ -1,4 +1,5 @@
 from . import combined_features
+from . import scaling
 from .. import event_table
 
 import warnings
