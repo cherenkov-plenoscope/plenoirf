@@ -75,24 +75,25 @@ for pk in res.PARTICLES:
         if np_exposure_bins[true_bin] > 0:
             np_bins_normalized[true_bin, :] /= np_exposure_bins[true_bin]
 
-    fig = sebplt.figure(style=sebplt.FIGURE_1_1)
-    ax = sebplt.add_axes(fig=fig, span=[0.15, 0.27, 0.65, 0.65])
-    ax_h = sebplt.add_axes(fig=fig, span=[0.15, 0.11, 0.65, 0.1])
-    ax_cb = sebplt.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
-    _pcm_confusion = ax.pcolormesh(
+    fig = sebplt.figure(irf.summary.figure.style(key="6:7")[0])
+    ax_c = sebplt.add_axes(fig=fig, span=[0.2, 0.2, 0.75, 0.75])
+    ax_h = sebplt.add_axes(fig=fig, span=[0.2, 0.13, 0.75, 0.10])
+    ax_cb = sebplt.add_axes(fig=fig, span=[0.25, 0.96, 0.65, 0.015])
+    _pcm_confusion = ax_c.pcolormesh(
         size_bin_edges,
         size_bin_edges,
         np.transpose(np_bins_normalized),
         cmap=res.PARTICLE_COLORMAPS[pk],
         norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
     )
-    sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
-    ax.set_aspect("equal")
-    # ax.set_title("normalized for each column")
-    ax.set_ylabel("reco. Cherenkov size / p.e.")
-    ax.loglog()
-    ax.set_xticklabels([])
-    sebplt.ax_add_grid(ax)
+    sebplt.plt.colorbar(
+        _pcm_confusion, cax=ax_cb, extend="max", orientation="horizontal"
+    )
+    ax_c.set_aspect("equal")
+    ax_c.set_ylabel("reco. Cherenkov size / p.e.")
+    ax_c.loglog()
+    ax_c.set_xticklabels([])
+    sebplt.ax_add_grid(ax_c)
     sebplt.ax_add_histogram(
         ax=ax_h,
         bin_edges=size_bin_edges,
@@ -103,7 +104,7 @@ for pk in res.PARTICLES:
     ax_h.semilogx()
     ax_h.set_xlim([np.min(size_bin_edges), np.max(size_bin_edges)])
     ax_h.set_xlabel("true Cherenkov size / p.e.")
-    ax_h.set_ylabel("num. events")
+    ax_h.set_ylabel("counts / 1")
     fig.savefig(opj(res.paths["out_dir"], pk + "_" + key + ".jpg"))
     sebplt.close(fig)
 
@@ -141,8 +142,7 @@ for pk in res.PARTICLES:
     _v = num_events > 0
     num_events_relunc[_v] = np.sqrt(num_events[_v]) / num_events[_v]
 
-    fstyle, axspan = irf.summary.figure.style("16:5")
-
+    fstyle, axspan = irf.summary.figure.style("16:9")
     fig = sebplt.figure(fstyle)
     ax = sebplt.add_axes(fig=fig, span=axspan)
     sebplt.ax_add_histogram(
@@ -232,7 +232,7 @@ for pk in res.PARTICLES:
     )
     ax.axhline(y=1, color="black", linestyle=":")
     ax.set_xlabel("energy / GeV")
-    ax.set_ylabel("Cherenkov size,\ntrue/extracted / 1")
+    ax.set_ylabel("Cherenkov size\ntrue over reco. / 1")
     ax.set_xlim(energy_bin["limits"])
     ax.semilogx()
     fig.savefig(opj(res.paths["out_dir"], pk + "_" + key + ".jpg"))
@@ -292,7 +292,7 @@ for pk in res.PARTICLES:
     )
     ax.axhline(y=1, color="k", linestyle=":")
     ax.set_xlabel("true Cherenkov size / p.e.")
-    ax.set_ylabel("true size /\nextracted size")
+    ax.set_ylabel("true over reco. / 1")
     ax.set_xlim([np.min(size_bin_edges), np.max(size_bin_edges)])
     ax.semilogx()
     fig.savefig(opj(res.paths["out_dir"], pk + "_" + key + ".jpg"))

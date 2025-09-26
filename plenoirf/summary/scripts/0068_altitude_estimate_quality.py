@@ -100,7 +100,11 @@ for pk in res.PARTICLES:
         )
         ax1.set_ylim([0.0, 0.2])
         ax1.set_xlabel("reco. altitude (above sea level) / km")
-        ax1.set_ylabel(r"altitude (above sea level) containment 68%" "\n" "(reco. - true) (true)$^{-1}$ / 1")
+        ax1.set_ylabel(
+            r"altitude (above sea level) containment 68%"
+            "\n"
+            "(reco. - true) (true)$^{-1}$ / 1"
+        )
         # ax1.legend(loc="best", fontsize=10)
 
         fig.savefig(opj(res.paths["out_dir"], f"{pk}_resolution.jpg"))

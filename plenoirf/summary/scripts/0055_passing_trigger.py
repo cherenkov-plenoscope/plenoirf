@@ -108,10 +108,10 @@ def explore_focus_ratios(
 
     for zd in range(zenith_bin["num"]):
         zk = f"zd{zd:d}"
-        fig = sebplt.figure(style=sebplt.FIGURE_1_1)
-        ax_c = sebplt.add_axes(fig=fig, span=[0.25, 0.27, 0.55, 0.65])
-        # ax_h = sebplt.add_axes(fig=fig, span=[0.25, 0.11, 0.55, 0.1])
-        ax_cb = sebplt.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
+        fig = sebplt.figure(irf.summary.figure.style(key="6:7")[0])
+        ax_c = sebplt.add_axes(fig=fig, span=[0.2, 0.2, 0.75, 0.75])
+        # ax_h = sebplt.add_axes(fig=fig, span=[0.2, 0.13, 0.75, 0.10])
+        ax_cb = sebplt.add_axes(fig=fig, span=[0.25, 0.96, 0.65, 0.015])
         sebplt.add_axes_zenith_range_indicator(
             fig=fig,
             span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
@@ -133,9 +133,11 @@ def explore_focus_ratios(
             alpha=0.25,
         )
         ax_c.loglog()
-        sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
-        ax_c.set_xlabel("accepting over rejecting  / 1")
-        ax_c.set_ylabel("rejecting focus / m")
+        sebplt.plt.colorbar(
+            _pcm_confusion, cax=ax_cb, extend="max", orientation="horizontal"
+        )
+        ax_c.set_xlabel("response ratio\naccepting over rejecting / 1")
+        ax_c.set_ylabel("rejecting focus depth / m")
         fig.savefig(
             opj(res.paths["out_dir"], f"{zk:s}_{pk:s}_focus_ratios.jpg")
         )

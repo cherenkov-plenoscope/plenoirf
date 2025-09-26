@@ -20,19 +20,23 @@ import sebastians_matplotlib_addons as sebplt
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-METHOD = "RandomForest"
-METHODS = {
-    "MultiLayerPerceptron": {"bias_GeV": -1.5, "power": 1.0, "factor": 1.0},
-    "RandomForest": {"bias_GeV": -1.0, "power": 1.09, "factor": 0.68},
-    "RandomForestTransformed": {"bias_GeV": 0.0, "power": 1.0, "factor": 1.0},
-    "MultiLayerPerceptronTransformed": {"bias_GeV": 0.0, "power": 1.0, "factor": 1.0},
+REGRESSOR = "RandomForest"
+REGRESSORS = {
+    "MultiLayerPerceptron": {"shift": -1.5, "power": 1.0, "factor": 1.0},
+    "RandomForest": {"shift": -1.0, "power": 1.09, "factor": 0.68},
+    "RandomForestTransformed": {"shift": 0.0, "power": 1.0, "factor": 1.0},
+    "MultiLayerPerceptronTransformed": {
+        "shift": 0.0,
+        "power": 1.0,
+        "factor": 1.0,
+    },
 }
 
 reconstructed_energy = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0065_learning_airshower_maximum_and_energy",
-        METHOD,
+        REGRESSOR,
     ),
 )
 
@@ -45,6 +49,8 @@ portal = irf.other_instruments.portal
 min_number_samples = 3
 mk = "energy_GeV"
 
+reconstructed_dir = opj(res.paths["out_dir"], "reconstructed")
+os.makedirs(reconstructed_dir, exist_ok=True)
 
 for pk in res.PARTICLES:
     with res.open_event_table(particle_key=pk) as arc:
@@ -60,9 +66,21 @@ for pk in res.PARTICLES:
         input_values=reconstructed_energy[pk][mk][mk],
         target_idxs=event_table["primary"]["uid"],
     )
-    reco_energy = reco_energy ** METHODS[METHOD]["power"]
-    reco_energy = reco_energy * METHODS[METHOD]["factor"]
-    reco_energy = reco_energy + METHODS[METHOD]["bias_GeV"]
+    reco_energy = reco_energy ** REGRESSORS[REGRESSOR]["power"]
+    reco_energy = reco_energy * REGRESSORS[REGRESSOR]["factor"]
+    reco_energy = reco_energy + REGRESSORS[REGRESSOR]["shift"]
+
+    json_utils.write(
+        opj(reconstructed_dir, f"{pk:s}.json"),
+        {
+            "uid": event_table["primary"]["uid"],
+            "energy_GeV": reco_energy,
+            "comment": {
+                "regressor": REGRESSOR,
+                "post_scaling": REGRESSORS[REGRESSOR],
+            },
+        },
+    )
 
     cm = confusion_matrix.init(
         ax0_key="true_energy",
@@ -134,16 +152,18 @@ for pk in res.PARTICLES:
         )
         ax1.set_ylim([0, 1])
         ax1.set_xlabel("reco. energy / GeV")
-        ax1.set_ylabel(r"energy containment 68%" "\n" "(reco. - true) (true)$^{-1}$ / 1")
+        ax1.set_ylabel(
+            r"energy containment 68%" "\n" "(reco. - true) (true)$^{-1}$ / 1"
+        )
         # ax1.legend(loc="best", fontsize=10)
 
         fig.savefig(opj(res.paths["out_dir"], f"{pk}_resolution.jpg"))
         sebplt.close(fig)
 
-    fig = sebplt.figure(sebplt.FIGURE_1_1)
-    ax_c = sebplt.add_axes(fig=fig, span=[0.15, 0.27, 0.65, 0.65])
-    ax_h = sebplt.add_axes(fig=fig, span=[0.15, 0.11, 0.65, 0.1])
-    ax_cb = sebplt.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
+    fig = sebplt.figure(irf.summary.figure.style(key="6:7")[0])
+    ax_c = sebplt.add_axes(fig=fig, span=[0.2, 0.2, 0.75, 0.75])
+    ax_h = sebplt.add_axes(fig=fig, span=[0.2, 0.13, 0.75, 0.10])
+    ax_cb = sebplt.add_axes(fig=fig, span=[0.25, 0.96, 0.65, 0.015])
     _pcm_confusion = ax_c.pcolormesh(
         cm["ax0_bin_edges"],
         cm["ax1_bin_edges"],
@@ -152,10 +172,10 @@ for pk in res.PARTICLES:
         norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
     )
     ax_c.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1)
-    sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
-    # irf.summary.figure.mark_ax_thrown_spectrum(ax=ax_c)
+    sebplt.plt.colorbar(
+        _pcm_confusion, cax=ax_cb, extend="max", orientation="horizontal"
+    )
     ax_c.set_aspect("equal")
-    # ax_c.set_title(r"$P$ $($ reco. energy $\vert$ true energy $)$")
     ax_c.set_ylabel("reco. energy / GeV")
     ax_c.loglog()
     ax_c.set_xticklabels([])
@@ -163,7 +183,6 @@ for pk in res.PARTICLES:
     ax_h.set_xlim([np.min(cm["ax0_bin_edges"]), np.max(cm["ax1_bin_edges"])])
     ax_h.set_xlabel("true energy / GeV")
     ax_h.set_ylabel("num. events / 1")
-    # irf.summary.figure.mark_ax_thrown_spectrum(ax_h)
     ax_h.axhline(min_number_samples, linestyle=":", color="k")
     sebplt.ax_add_histogram(
         ax=ax_h,
