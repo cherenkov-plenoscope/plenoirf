@@ -36,30 +36,6 @@ uid_reconstructable = snt.logic.intersection(
 )
 
 
-def make_bin_edges_and_cumsum_with_sliding_bin_width(sx, istep=None):
-    if istep is None:
-        istep = int(np.round(np.sqrt(len(sx))))
-
-    sx = np.sort(sx)
-    sx_x = [0]
-    sx_c = []
-    for i in range(0, len(sx), istep):
-        _count = int(istep)
-        _left = len(sx) - i
-        _count = min([_count, _left])
-        sx_c.append(_count)
-        i_stop = i + _count
-        sx_x.append(sx[i_stop - 1])
-    sx_x = np.array(sx_x)
-    sx_c = np.array(sx_c)
-    sx_d = sx_c / binning_utils.widths(sx_x)
-    sx_d /= np.sum(sx_d)
-    sx_x_cumsum = np.zeros(shape=sx_x.shape)
-    sx_x_cumsum[1:] = np.cumsum(sx_d)
-
-    return sx_x, sx_x_cumsum
-
-
 with res.open_event_table(particle_key="gamma") as arc:
     table = arc.query(
         levels_and_columns={"primary": ["uid", "energy_GeV"]},
@@ -75,11 +51,11 @@ sx = (lx - log10_shift) / log10_scale
 
 print(f"sx [{min(sx):f}, {max(sx):f}]")
 
-raw_sx_x, raw_sx_x_cumsum = make_bin_edges_and_cumsum_with_sliding_bin_width(
-    sx=sx
+raw_sx_x, raw_sx_x_cumsum = (
+    irf.features.scaling.make_bin_edges_and_cumsum_with_sliding_bin_width(x=sx)
 )
 num_points = raw_sx_x_cumsum.shape[0]
-weight = 0.33
+weight = 0.55
 
 sx_x_cumsum = np.zeros(shape=num_points)
 sx_x = np.zeros(shape=num_points)
