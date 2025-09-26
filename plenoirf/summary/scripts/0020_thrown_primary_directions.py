@@ -21,9 +21,11 @@ hh = spherical_histogram.HemisphereHistogram(
     max_zenith_distance_rad=np.deg2rad(90),
 )
 
-cmap = sebplt.plt.colormaps["magma_r"].resampled(256)
 
 for pk in res.PARTICLES:
+
+    cmap = res.PARTICLE_COLORMAPS[pk].resampled(256)
+
     with res.open_event_table(particle_key=pk) as arc:
         table = arc.query(
             levels_and_columns={
@@ -47,14 +49,9 @@ for pk in res.PARTICLES:
     ax = sebplt.add_axes(
         fig=fig, span=[0.0, 0.0, 0.8, 1], style=sebplt.AXES_BLANK
     )
-    ax_legend = sebplt.add_axes(
-        fig=fig, span=[0.8, 0.05, 0.2, 0.9], style=sebplt.AXES_BLANK
-    )
-    ax_legend.set_xlim([0, 1])
-    ax_legend.set_ylim([0, 1])
     ax_colorbar = sebplt.add_axes(
         fig=fig,
-        span=[0.8, 0.4, 0.02, 0.5],
+        span=[0.8, 0.1, 0.02, 0.8],
     )
 
     vx, vy, vz = hh.bin_geometry.vertices.T
@@ -84,40 +81,14 @@ for pk in res.PARTICLES:
         ax=ax,
         azimuths_rad=ptg_circ_az,
         zeniths_rad=ptg_circ_zd,
-        linewidth=1,
+        linewidth=2,
         color=pointing_range_color,
     )
     sebplt.hemisphere.ax_add_grid_stellarium_style(
         ax=ax, color="grey", linewidth=0.33
     )
     sebplt.hemisphere.ax_add_ticklabel_text(ax=ax, color="grey")
-    ax_legend.plot(
-        [0.0, 0.1],
-        [0.1, 0.1],
-        color=pointing_range_color,
-        linewidth=1,
-    )
-    ax_legend.text(
-        x=0.15,
-        y=0.1,
-        s="pointing\nrange",
-        fontsize=9,
-        verticalalignment="center",
-    )
-    ax_legend.text(
-        x=0.0,
-        y=0.2,
-        s=f"site: {res.SITE['name']:s}",
-        fontsize=9,
-        verticalalignment="center",
-    )
-    ax_legend.text(
-        x=0.0,
-        y=0.3,
-        s=f"particle: {pk:s}",
-        fontsize=9,
-        verticalalignment="center",
-    )
+
     _norm = sebplt.plt_colors.Normalize(
         vmin=0.0, vmax=faces_counts_per_solid_angle_p99, clip=False
     )
