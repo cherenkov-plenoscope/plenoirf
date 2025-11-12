@@ -35,8 +35,9 @@ for tt, trigger_threshold in enumerate(trigger_thresholds):
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
 
-    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-    ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+    sfig, sax = irf.summary.figure.style(key="4:3")
+    fig = sebplt.figure(sfig)
+    ax = sebplt.add_axes(fig=fig, span=sax)
     sebplt.add_axes_zenith_range_indicator(
         fig=fig,
         span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
@@ -87,7 +88,7 @@ for zd in range(zenith_bin["num"]):
     ax.set_ylabel("differential trigger-rate /\ns$^{-1}$ (GeV)$^{-1}$")
     ax.loglog()
     ax.set_xlim(fine_energy_bin["limits"])
-    ax.set_ylim([1e-3, 1e5])
+    ax.set_ylim([1e-3, 1e4])
     fig.savefig(
         opj(res.paths["out_dir"], f"differential_trigger_rate_{zk:s}.jpg")
     )

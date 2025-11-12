@@ -381,15 +381,15 @@ for pk in res.PARTICLES:
     )
 
     num_panels = energy_bin["num"] + 1
-    num_cols = 4
+    num_cols = 3
     num_rows = num_panels // num_cols
-    num_pixel_on_edge = 320
+    num_pixel_on_edge = 427
 
     fig = sebplt.figure(
         {
             "rows": (1 + num_rows) * num_pixel_on_edge,
             "cols": num_cols * num_pixel_on_edge,
-            "fontsize": 1,
+            "fontsize": 1.2,
         }
     )
     _colw = 1.0 / num_cols
@@ -401,13 +401,14 @@ for pk in res.PARTICLES:
         fov_radius_shrink_deg,
         num_c_bins,
     )
+    y_global_shift = 0.01
 
     for ene in range(num_panels):
         _xi = np.mod(ene, num_cols)
         _yi = ene // num_cols
 
         _xx = _xi * _colw
-        _yy = 1.0 - ((_yi + 1) * _colh)
+        _yy = 1.0 - ((_yi + 1) * _colh) + y_global_shift
 
         ax1 = sebplt.add_axes(
             fig=fig,
@@ -430,17 +431,17 @@ for pk in res.PARTICLES:
                     0,
                     0,
                 ],
-                "k-",
+                color="black",
+                linestyle="-",
             )
         else:
             ene_start = energy_bin["edges"][ene]
             ene_stop = energy_bin["edges"][ene + 1]
 
             fig.text(
-                s="{: 7.1f} GeV".format(ene_start),
+                s=f"[{ene_start:7.1f}, {ene_stop:7.1f})" + r"$\,$" + "GeV",
                 x=_xx,
-                y=_yy,
-                # family="monospace",
+                y=_yy - y_global_shift / 2,
             )
 
             ene_mask = np.logical_and(

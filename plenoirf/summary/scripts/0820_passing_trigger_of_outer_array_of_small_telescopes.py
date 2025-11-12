@@ -224,9 +224,13 @@ def histogram_ground_grid_intensity(
 # simulate telescope triggers
 # ---------------------------
 
+zenith_assignment_set = {}
 for zk in zenith_assignment:
+    zenith_assignment_set[zk] = {}
     for pk in zenith_assignment[zk]:
-        zenith_assignment[zk][pk] = set(zenith_assignment[zk][pk])
+        zenith_assignment_set[zk][pk] = set(zenith_assignment[zk][pk])
+zenith_assignment.clear_cache()
+
 
 out = {}
 for zd in range(zenith_bin["num"]):
@@ -272,8 +276,8 @@ for pk in res.PARTICLES:
                 grid_cherenkov_intensity / ground_grid_geometry["bin_area_m2"]
             )
 
-            for zk in zenith_assignment:
-                if shower_uid in zenith_assignment[zk]:
+            for zk in zenith_assignment_set:
+                if shower_uid in zenith_assignment_set[zk]:
                     break
 
             for ak in ARRAY_CONFIGS:

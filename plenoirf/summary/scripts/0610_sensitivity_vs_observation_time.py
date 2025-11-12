@@ -213,8 +213,10 @@ for pe in pivot_energies:
                 # figure
                 # ------
 
-                fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-                ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+                sfig, sax = irf.summary.figure.style("4:3")
+                fig = sebplt.figure(sfig)
+                ax = sebplt.add_axes(fig=fig, span=sax)
+
                 sebplt.add_axes_zenith_range_indicator(
                     fig=fig,
                     span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,

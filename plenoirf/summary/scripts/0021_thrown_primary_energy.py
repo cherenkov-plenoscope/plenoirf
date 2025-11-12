@@ -50,8 +50,10 @@ for pk in res.PARTICLES:
 # differential SED style histogram
 # --------------------------------
 linestyles = ["-", "--", ":"]
-fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+sfig, sax = irf.summary.figure.style("4:3")
+fig = sebplt.figure(sfig)
+ax = sebplt.add_axes(fig=fig, span=sax)
+
 for pk in res.PARTICLES:
     for zdbin in range(zenith_bin["num"]):
         ax.plot(
@@ -61,7 +63,7 @@ for pk in res.PARTICLES:
             linestyle=linestyles[zdbin],
             color=res.PARTICLE_COLORS[pk],
         )
-res.ax_add_site_marker(ax)
+# res.ax_add_site_marker(ax)
 ax.loglog()
 ax.set_xlim(energy_bin["limits"])
 ax.set_xlabel("energy / GeV")

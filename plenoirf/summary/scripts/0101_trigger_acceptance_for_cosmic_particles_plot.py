@@ -35,8 +35,9 @@ for zd in range(zenith_bin["num"]):
 
     for source_key in irf.summary.figure.SOURCES:
         for tt in range(len(trigger_thresholds)):
-            fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-
+            sfig, sax = irf.summary.figure.style(key="4:3")
+            fig = sebplt.figure(sfig)
+            ax = sebplt.add_axes(fig=fig, span=sax)
             sebplt.add_axes_zenith_range_indicator(
                 fig=fig,
                 span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
@@ -44,8 +45,6 @@ for zd in range(zenith_bin["num"]):
                 zenith_bin=zd,
                 fontsize=6,
             )
-
-            ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
             for pk in res.PARTICLES:
                 Q = np.array(cr[zk][pk][source_key]["mean"][tt])

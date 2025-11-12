@@ -30,7 +30,9 @@ for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
 
     for ok in ONREGION_TYPES:
-        fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
+        sfig, sax = irf.summary.figure.style("4:3")
+        fig = sebplt.figure(sfig)
+        ax = sebplt.add_axes(fig=fig, span=sax)
         sebplt.add_axes_zenith_range_indicator(
             fig=fig,
             span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
@@ -38,7 +40,6 @@ for zd in range(zenith_bin["num"]):
             zenith_bin=zd,
             fontsize=6,
         )
-        ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 
         text_y = 0.7
 

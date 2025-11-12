@@ -280,7 +280,7 @@ def make_roi_limits(
 
 
 cmapkey = "magma_r"  # "inferno"
-depths = np.geomspace(2.5e3, 25e3, 36)
+depths = np.geomspace(2.5e3, 25e3, 8)  # 36 for presentations #
 number_depths = len(depths)
 
 image_rays = pl.image.ImageRays(light_field_geometry=light_field_geometry)

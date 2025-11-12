@@ -22,8 +22,10 @@ nsb = res.config["merlict_plenoscope_propagator_config"][
     "night_sky_background_ligth"
 ]
 
-fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+sfig, sax = irf.summary.figure.style("4:3")
+
+fig = sebplt.figure(sfig)
+ax = sebplt.add_axes(fig=fig, span=sax)
 ax.plot(
     nsb["flux_vs_wavelength"][:, 0],
     nsb["flux_vs_wavelength"][:, 1],
@@ -40,8 +42,8 @@ pec = res.config["merlict_plenoscope_propagator_config"][
     "photo_electric_converter"
 ]
 
-fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+fig = sebplt.figure(sfig)
+ax = sebplt.add_axes(fig=fig, span=sax)
 ax.plot(
     pec["quantum_efficiency_vs_wavelength"][:, 0],
     pec["quantum_efficiency_vs_wavelength"][:, 1],
@@ -60,8 +62,8 @@ mir = get_function_by_name(
     name="mirror_reflectivity_vs_wavelength",
 )
 
-fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+fig = sebplt.figure(sfig)
+ax = sebplt.add_axes(fig=fig, span=sax)
 ax.plot(
     mir["argument_versus_value"][:, 0],
     mir["argument_versus_value"][:, 1],
@@ -80,8 +82,8 @@ lns = get_function_by_name(
     name="lens_refraction_vs_wavelength",
 )
 
-fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+fig = sebplt.figure(sfig)
+ax = sebplt.add_axes(fig=fig, span=sax)
 ax.plot(
     lns["argument_versus_value"][:, 0],
     lns["argument_versus_value"][:, 1],
@@ -95,8 +97,8 @@ fig.savefig(opj(res.paths["out_dir"], "lens_refractivity.jpg"))
 sebplt.close(fig)
 
 
-fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+fig = sebplt.figure(sfig)
+ax = sebplt.add_axes(fig=fig, span=sax)
 ax.plot(
     lns["argument_versus_value"][:, 0],
     lns["argument_versus_value"][:, 1],

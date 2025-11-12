@@ -228,8 +228,9 @@ json_utils.write(
     out,
 )
 
-fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+sfig, sax = irf.summary.figure.style("4:3")
+fig = sebplt.figure(sfig)
+ax = sebplt.add_axes(fig=fig, span=sax)
 
 con = 0
 tt_deg = np.rad2deg(out["theta68_rad"])
@@ -288,7 +289,7 @@ ax.set_ylim([1e-2, 1e1])
 ax.loglog()
 enelabels = {"true": "", "reco": "reco. "}
 ax.set_xlabel(enelabels[enekey] + r"energy$\,/\,$GeV")
-ax.set_ylabel(r"$\Theta{}$ 68%$\,/\,$1$^\circ{}$")
+ax.set_ylabel(r"direction containment 68%$\,/\,$1$^\circ{}$")
 
 fig.savefig(opj(res.paths["out_dir"], pk + ".jpg"))
 sebplt.close(fig)

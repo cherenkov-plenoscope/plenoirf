@@ -244,10 +244,9 @@ for obsk in observation_times:
                 for sedk in SED_STYLES:
                     sed_style = SED_STYLES[sedk]
 
-                    fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-                    ax = sebplt.add_axes(
-                        fig=fig, span=irf.summary.figure.AX_SPAN
-                    )
+                    sfig, sax = irf.summary.figure.style("4:3")
+                    fig = sebplt.figure(sfig)
+                    ax = sebplt.add_axes(fig=fig, span=sax)
                     sebplt.add_axes_zenith_range_indicator(
                         fig=fig,
                         span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
@@ -304,7 +303,7 @@ for obsk in observation_times:
                     ax.set_xlim(np.sort(_x_lim))
                     ax.set_ylim(np.sort(_y_lim))
                     ax.loglog()
-                    ax.legend(loc="best", fontsize=10)
+                    # ax.legend(loc="best", fontsize=10)
                     etype = flux_sensitivity.differential.SCENARIOS[dk][
                         "energy_axes_label"
                     ]

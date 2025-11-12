@@ -77,7 +77,7 @@ for pk in res.PARTICLES:
             containment_fraction=0.68,
         )
 
-        fstyle, aspan = irf.summary.figure.style(key="1:1")
+        fstyle, aspan = irf.summary.figure.style(key="4:3")
         fig = sebplt.figure(fstyle)
         ax1 = sebplt.add_axes(fig=fig, span=aspan)
 

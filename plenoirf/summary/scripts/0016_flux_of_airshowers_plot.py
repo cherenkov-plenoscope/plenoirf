@@ -28,12 +28,13 @@ def _lt(x, v):
 
 
 parts = {
-    "is_simulated": {"alpha": 1.0, "maskmaker": _ge, "label": True},
+    "is_simulated": {"alpha": 1.0, "maskmaker": _ge, "label": False},
     "not_simulated": {"alpha": 0.25, "maskmaker": _lt, "label": False},
 }
 
-fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+fstyle, aspan = irf.summary.figure.style(key="4:3")
+fig = sebplt.figure(fstyle)
+ax = sebplt.add_axes(fig=fig, span=aspan)
 
 for pk in res.COSMIC_RAYS:
 
@@ -75,7 +76,7 @@ ax.set_ylabel(
 )
 ax.loglog()
 ax.set_xlim(energy_bin["limits"])
-ax.legend()
+# ax.legend()
 fig.savefig(
     opj(
         res.paths["out_dir"],
