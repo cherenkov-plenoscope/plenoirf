@@ -8,7 +8,10 @@ import subprocess
 
 parser = argparse.ArgumentParser(
     prog="keep_queue_busy.py",
-    description=("Keep the queues on compute clusters busy."),
+    description=(
+        "Keep the queues on compute clusters busy populating the "
+        "instrument response function."
+    ),
 )
 parser.add_argument(
     "plenoirf_dir",
@@ -52,7 +55,6 @@ parser.add_argument(
     help="Submitt these many jobs in a block.",
 )
 parser.add_argument("--debug", action="store_true")
-parser.add_argument("--skip-to-plenoirf", action="store_true")
 
 
 def time_stamp():
@@ -134,9 +136,7 @@ def _make_pool_script(queue):
     return script
 
 
-def make_plenoirf_submission_script(
-    queue, plenoirf_dir, num_jobs, skip_to_plenoirf
-):
+def make_plenoirf_submission_script(queue, plenoirf_dir, num_jobs):
     script = ""
     script += "import plenoirf\n"
     script += "import pypoolparty\n"
@@ -147,10 +147,7 @@ def make_plenoirf_submission_script(
     script += "    plenoirf_dir='{:s}',\n".format(plenoirf_dir)
     script += "    pool=pool,\n"
     script += "    max_num_runs={:d},\n".format(num_jobs)
-    if skip_to_plenoirf:
-        script += "    skip_to_plenoirf=True,\n"
-    else:
-        script += "    skip_to_plenoirf=False,\n"
+    script += "    skip_to_plenoirf=True,\n"
     script += ")\n"
     return script
 
@@ -195,7 +192,6 @@ else:
         queue=queue,
         plenoirf_dir=plenoirf_dir,
         num_jobs=NUM_PER_SUBMISSION,
-        skip_to_plenoirf=args.skip_to_plenoirf,
     )
 
 script_filename = "submission_script.py"
