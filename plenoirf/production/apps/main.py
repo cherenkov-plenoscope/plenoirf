@@ -51,8 +51,8 @@ parser.add_argument(
     type=int,
     help="Submitt these many jobs in a block.",
 )
-
 parser.add_argument("--debug", action="store_true")
+parser.add_argument("--skip-to-plenoirf", action="store_true")
 
 
 def time_stamp():
@@ -134,7 +134,9 @@ def _make_pool_script(queue):
     return script
 
 
-def make_plenoirf_submission_script(queue, plenoirf_dir, num_jobs):
+def make_plenoirf_submission_script(
+    queue, plenoirf_dir, num_jobs, skip_to_plenoirf
+):
     script = ""
     script += "import plenoirf\n"
     script += "import pypoolparty\n"
@@ -145,6 +147,10 @@ def make_plenoirf_submission_script(queue, plenoirf_dir, num_jobs):
     script += "    plenoirf_dir='{:s}',\n".format(plenoirf_dir)
     script += "    pool=pool,\n"
     script += "    max_num_runs={:d},\n".format(num_jobs)
+    if skip_to_plenoirf:
+        script += "    skip_to_plenoirf=True,\n"
+    else:
+        script += "    skip_to_plenoirf=False,\n"
     script += ")\n"
     return script
 
@@ -186,7 +192,10 @@ if args.debug:
     )
 else:
     script = make_plenoirf_submission_script(
-        queue=queue, plenoirf_dir=plenoirf_dir, num_jobs=NUM_PER_SUBMISSION
+        queue=queue,
+        plenoirf_dir=plenoirf_dir,
+        num_jobs=NUM_PER_SUBMISSION,
+        skip_to_plenoirf=args.skip_to_plenoirf,
     )
 
 script_filename = "submission_script.py"
