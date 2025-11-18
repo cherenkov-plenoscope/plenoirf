@@ -1,6 +1,8 @@
 import os
 from os.path import join as opj
 import glob
+import datetime
+
 from sparse_numeric_table.files import (
     _split_into_chunks as _snt_split_into_chunks,
 )
@@ -232,3 +234,45 @@ def _by_topic_make_in_paths(temporary_run_reduction_dirs):
                 topic_paths[filename].append(topic_path)
 
     return topic_paths
+
+
+# ----
+
+
+def hide_existing_reduce_dirs(plenoirf_dir, suffix=None, dry_run=False):
+    """
+    Hides the the existing 'reduce' dirs to '.reduce.{suffix}'.
+    """
+    config = configuration.read_if_None(plenoirf_dir, config=None)
+
+    if suffix is None:
+        now = datetime.datetime.now()
+        suffix = now.isoformat().replace(":", "-")
+
+    for instrument_key in config["instruments"]:
+        for site_key in config["sites"]["instruemnt_response"]:
+            for particle_key in config["particles"]:
+                isp_dir = os.path.join(
+                    plenoirf_dir,
+                    "response",
+                    instrument_key,
+                    site_key,
+                    particle_key,
+                )
+                reduce_dir = map_and_reduce_dirs(
+                    plenoirf_dir=plenoirf_dir,
+                    instrument_key=instrument_key,
+                    site_key=site_key,
+                    particle_key=particle_key,
+                )
+                isp_dir, _ = os.path.split(reduce_dir)
+
+                if os.path.exists(reduce_dir):
+                    old_reduce_dir = os.path.join(
+                        isp_dir, f".reduce.{suffix:s}"
+                    )
+                    assert not os.path.exists(old_reduce_dir)
+
+                    print(f"rename '{reduce_dir:s}' to '{old_reduce_dir:s}'.")
+                    if not dry_run:
+                        os.rename(reduce_dir, old_reduce_dir)
