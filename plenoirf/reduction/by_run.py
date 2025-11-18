@@ -8,6 +8,7 @@ import json_utils
 import plenopy
 import dynamicsizerecarray
 import sequential_tar
+import json_line_logger
 
 from .. import event_table
 from .. import configuration
@@ -20,6 +21,13 @@ from ..utils import open_and_read_into_memory_when_small_enough
 from .zipfilebufferio import ZipFileBufferIO
 
 
+def _stdout_logger_if_logger_is_None(logger):
+    if logger is None:
+        return json_line_logger.LoggerStdout(fmt=json_line_logger.SMP)
+    else:
+        return logger
+
+
 def reduce(
     plenoirf_dir,
     instrument_key,
@@ -28,6 +36,7 @@ def reduce(
     run_ids,
     out_dir,
     memory_config=None,
+    logger=None,
 ):
     """
     Reduce the many runs and their checkpoints (prm2cer, cer2cls, cls2rec) into
@@ -60,6 +69,8 @@ def reduce(
         How to handle memory, /tmp/ and buffer sizes to make life easier on
         the slow HPC nfs systems.
     """
+    logger = _stdout_logger_if_logger_is_None(logger)
+    logger.info("Start reduce ...")
 
     instrument_site_particle_dir = opj(
         plenoirf_dir,
@@ -77,6 +88,7 @@ def reduce(
         run_ids=run_ids,
         out_dir=out_dir,
         memory_config=memory_config,
+        logger=logger,
     )
 
 
@@ -85,17 +97,22 @@ def _reduce_handle_output_tmp_dir(
     run_ids,
     out_dir,
     memory_config=None,
+    logger=None,
 ):
     memory_config = memory.make_config_if_None(memory_config)
+    logger = _stdout_logger_if_logger_is_None(logger)
 
     with rnw.Directory(
         path=out_dir, use_tmp_dir=memory_config["use_tmp_dir"]
     ) as tmp_dir:
+        logger.info(f"tmp_dir: '{tmp_dir:s}'.")
+        logger.info(f"out_dir: '{out_dir:s}'.")
         _reduce_handle_output_files(
             instrument_site_particle_dir=instrument_site_particle_dir,
             run_ids=run_ids,
             tmp_dir=tmp_dir,
             memory_config=memory_config,
+            logger=logger,
         )
 
 
@@ -104,11 +121,14 @@ def _reduce_handle_output_files(
     run_ids,
     tmp_dir,
     memory_config=None,
+    logger=None,
 ):
     memory_config = memory.make_config_if_None(memory_config)
+    logger = _stdout_logger_if_logger_is_None(logger)
 
     output_files = {}
 
+    logger.info(f"opening output files ...")
     with snt.open(
         opj(tmp_dir, "event_table.snt.zip"),
         mode="w",
@@ -131,6 +151,7 @@ def _reduce_handle_output_files(
         opj(tmp_dir, "event_uids_for_debugging.txt"),
         mode="wt",
     ) as event_uids_for_debugging_txt:
+        logger.info(f"opening output files ... done.")
 
         output_files["event_table.snt.zip"] = event_table_snt_zip
         output_files["reconstructed_cherenkov.loph.tar"] = (
@@ -150,6 +171,7 @@ def _reduce_handle_output_files(
             run_ids=run_ids,
             output_files=output_files,
             memory_config=memory_config,
+            logger=logger,
         )
 
 
@@ -158,15 +180,20 @@ def _reduce_loop_over_input_runs(
     run_ids,
     output_files,
     memory_config=None,
+    logger=None,
 ):
     memory_config = memory.make_config_if_None(memory_config)
+    logger = _stdout_logger_if_logger_is_None(logger)
 
-    for run_id in run_ids:
+    for i in range(len(run_ids)):
+        run_id = run_ids[i]
+        logger.info(f"run_id {run_id:06d} ({i+1:d} of {len(run_ids):d}) ...")
         _reduce_handle_single_run_files(
             instrument_site_particle_dir=instrument_site_particle_dir,
             run_id=run_id,
             output_files=output_files,
             memory_config=memory_config,
+            logger=logger,
         )
 
 
@@ -175,12 +202,17 @@ def _reduce_handle_single_run_files(
     run_id,
     output_files,
     memory_config=None,
+    logger=None,
 ):
     memory_config = memory.make_config_if_None(memory_config)
+    logger = _stdout_logger_if_logger_is_None(logger)
+
     open_mem = open_and_read_into_memory_when_small_enough
     map_dir = opj(instrument_site_particle_dir, "map")
 
     run_zip_buffers = {}
+
+    logger.info(f"opening and reading run zipfiles ...")
     with open_mem(
         opj(map_dir, "prm2cer", f"{run_id:06d}.prm2cer.zip"),
         size=memory_config["read_buffer_size"],
@@ -195,6 +227,8 @@ def _reduce_handle_single_run_files(
     ) as f_cls2rec, ZipFileBufferIO(
         file=f_cls2rec
     ) as z_cls2rec:
+        logger.info(f"opening and reading run zipfiles ... done.")
+
         run_zip_buffers["prm2cer"] = z_prm2cer
         run_zip_buffers["cer2cls"] = z_cer2cls
         run_zip_buffers["cls2rec"] = z_cls2rec
@@ -203,6 +237,7 @@ def _reduce_handle_single_run_files(
             run_id=run_id,
             run_zip_buffers=run_zip_buffers,
             output_files=output_files,
+            logger=logger,
         )
 
 
@@ -210,51 +245,63 @@ def _reduce_append_single_run(
     run_id,
     run_zip_buffers,
     output_files,
+    logger=None,
 ):
-    _reduce__event_table_snt_zip(
-        run_zip_buffers=run_zip_buffers,
-        event_table_snt_zip=output_files["event_table.snt.zip"],
-    )
+    logger = _stdout_logger_if_logger_is_None(logger)
+    dT = json_line_logger.TimeDelta
 
-    _reduce__reconstructed_cherenkov_loph_tar(
-        run_cer2cls_zip_buffer=run_zip_buffers["cer2cls"],
-        run_id=run_id,
-        reconstructed_cherenkov_loph_tar=output_files[
-            "reconstructed_cherenkov.loph.tar"
-        ],
-    )
+    with dT(logger, "event_table.snt.zip"):
+        _reduce__event_table_snt_zip(
+            run_zip_buffers=run_zip_buffers,
+            event_table_snt_zip=output_files["event_table.snt.zip"],
+        )
 
-    _reduce__ground_grid_intensity_zip(
-        run_prm2cer_zip_buffer=run_zip_buffers["prm2cer"],
-        run_cer2cls_zip_buffer=run_zip_buffers["cer2cls"],
-        run_id=run_id,
-        ground_grid_intensity_zip=output_files["ground_grid_intensity.zip"],
-        roi=False,
-    )
+    with dT(logger, "reconstructed_cherenkov.loph.tar"):
+        _reduce__reconstructed_cherenkov_loph_tar(
+            run_cer2cls_zip_buffer=run_zip_buffers["cer2cls"],
+            run_id=run_id,
+            reconstructed_cherenkov_loph_tar=output_files[
+                "reconstructed_cherenkov.loph.tar"
+            ],
+        )
 
-    _reduce__ground_grid_intensity_zip(
-        run_prm2cer_zip_buffer=run_zip_buffers["prm2cer"],
-        run_cer2cls_zip_buffer=run_zip_buffers["cer2cls"],
-        run_id=run_id,
-        ground_grid_intensity_zip=output_files[
-            "ground_grid_intensity_roi.zip"
-        ],
-        roi=True,
-    )
+    with dT(logger, "ground_grid_intensity.zip"):
+        _reduce__ground_grid_intensity_zip(
+            run_prm2cer_zip_buffer=run_zip_buffers["prm2cer"],
+            run_cer2cls_zip_buffer=run_zip_buffers["cer2cls"],
+            run_id=run_id,
+            ground_grid_intensity_zip=output_files[
+                "ground_grid_intensity.zip"
+            ],
+            roi=False,
+        )
 
-    _reduce__benchmark_snt_zip(
-        run_prm2cer_zip_buffer=run_zip_buffers["prm2cer"],
-        run_id=run_id,
-        benchmark_snt_zip=output_files["benchmark.snt.zip"],
-    )
+    with dT(logger, "ground_grid_intensity_roi.zip"):
+        _reduce__ground_grid_intensity_zip(
+            run_prm2cer_zip_buffer=run_zip_buffers["prm2cer"],
+            run_cer2cls_zip_buffer=run_zip_buffers["cer2cls"],
+            run_id=run_id,
+            ground_grid_intensity_zip=output_files[
+                "ground_grid_intensity_roi.zip"
+            ],
+            roi=True,
+        )
 
-    _reduce__event_uids_for_debugging_txt(
-        run_prm2cer_zip_buffer=run_zip_buffers["prm2cer"],
-        run_id=run_id,
-        event_uids_for_debugging_txt=output_files[
-            "event_uids_for_debugging.txt"
-        ],
-    )
+    with dT(logger, "benchmark.snt.zip"):
+        _reduce__benchmark_snt_zip(
+            run_prm2cer_zip_buffer=run_zip_buffers["prm2cer"],
+            run_id=run_id,
+            benchmark_snt_zip=output_files["benchmark.snt.zip"],
+        )
+
+    with dT(logger, "event_uids_for_debugging.txt"):
+        _reduce__event_uids_for_debugging_txt(
+            run_prm2cer_zip_buffer=run_zip_buffers["prm2cer"],
+            run_id=run_id,
+            event_uids_for_debugging_txt=output_files[
+                "event_uids_for_debugging.txt"
+            ],
+        )
 
 
 def _reduce__event_table_snt_zip(
