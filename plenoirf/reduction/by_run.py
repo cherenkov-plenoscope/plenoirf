@@ -21,7 +21,10 @@ from .zipfilebufferio import ZipFileBufferIO
 
 
 def reduce(
-    instrument_site_particle_dir,
+    plenoirf_dir,
+    instrument_key,
+    site_key,
+    particle_key,
     run_ids,
     out_dir,
     memory_config=None,
@@ -41,8 +44,14 @@ def reduce(
 
     Parameters
     ----------
-    instrument_site_particle_dir : str
-        Path to <plenoirf_dir>/response/<instrument>/<site>/<particle>.
+    plenoirf_dir : str
+        Path to plenoirf's main work dir.
+    instrument_key : str
+        Name of the instrument.
+    site_key : str
+        Name of the site. ('chile', 'namibia', ... )
+    particle_key : str
+        Name of the particle. ('gamma', 'proton', ... )
     run_ids : list of int
         Run ids to be reduced into output files.
     out_dir : str
@@ -51,6 +60,14 @@ def reduce(
         How to handle memory, /tmp/ and buffer sizes to make life easier on
         the slow HPC nfs systems.
     """
+
+    instrument_site_particle_dir = opj(
+        plenoirf_dir,
+        "response",
+        instrument_key,
+        site_key,
+        particle_key,
+    )
     return _reduce_handle_output_tmp_dir(
         instrument_site_particle_dir=instrument_site_particle_dir,
         run_ids=run_ids,
