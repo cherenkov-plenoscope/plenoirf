@@ -68,6 +68,10 @@ def reduce(
         site_key,
         particle_key,
     )
+
+    before_out_dir, _ = os.path.split(out_dir)
+    os.makedirs(before_out_dir, exist_ok=True)
+
     return _reduce_handle_output_tmp_dir(
         instrument_site_particle_dir=instrument_site_particle_dir,
         run_ids=run_ids,
@@ -226,7 +230,6 @@ def _reduce_append_single_run(
         run_id=run_id,
         ground_grid_intensity_zip=output_files["ground_grid_intensity.zip"],
         roi=False,
-        only_past_trigger=False,
     )
 
     _reduce__ground_grid_intensity_zip(
@@ -237,7 +240,6 @@ def _reduce_append_single_run(
             "ground_grid_intensity_roi.zip"
         ],
         roi=True,
-        only_past_trigger=False,
     )
 
     _reduce__benchmark_snt_zip(
@@ -297,7 +299,7 @@ def _reduce__ground_grid_intensity_zip(
     run_id,
     ground_grid_intensity_zip,
     roi=False,
-    only_past_trigger=False,
+    only_past_trigger=True,
 ):
     _suffix = "_roi" if roi else ""
     filename = opj(
