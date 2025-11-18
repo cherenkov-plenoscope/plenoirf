@@ -27,10 +27,11 @@ def reduce(
     memory_config=None,
 ):
     """
-    Reduce the many runs and their checkpoints (prm2cer, ...) into output files
-    which contain the statistics of many runs but only a narrow topic.
+    Reduce the many runs and their checkpoints (prm2cer, cer2cls, cls2rec) into
+    output files which contain the statistics of many runs but only a narrow
+    topic.
 
-    Output files:
+    Output topics and corresponding files:
         - 'event_table.snt.zip'
         - 'reconstructed_cherenkov.loph.tar'
         - 'ground_grid_intensity.zip'
