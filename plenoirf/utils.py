@@ -403,7 +403,7 @@ class open_and_read_into_memory_when_small_enough:
     This is often the case with bulk network storages on HPC clusters.
     """
 
-    def __init__(self, path, size="64M"):
+    def __init__(self, path, mode="rb", size="64M"):
         """
         Open a file for reading.
 
@@ -411,6 +411,8 @@ class open_and_read_into_memory_when_small_enough:
         ----------
         path : str
             Path to be opened for reading.
+        mode : str (default: rb)
+            Read in binary 'rb' or text 'rt' mode.
         size : None or int or str
             If the file is larger than size, it is not read into memory.
             None == 0 == "0" are the same.
@@ -426,16 +428,31 @@ class open_and_read_into_memory_when_small_enough:
         else:
             _size_in_bytes = parse_metric_prefix(size)
 
+        assert not "w" in mode, "Can only open in read mode='r'."
+
+        if mode == "rb":
+            self.mode = "b"
+        elif mode == "rt":
+            self.mode = "t"
+        else:
+            raise RuntimeError(f"mode='{mode:s} is not supported.'")
+
         self.in_memory = _filesize_bytes < _size_in_bytes
 
     def __enter__(self):
         if self.in_memory:
-            self.f = io.BytesIO()
-            with open(self.path, "rb") as fin:
-                self.f.write(fin.read())
-            self.f.seek(0)
+            if self.mode == "b":
+                self.f = io.BytesIO()
+                with open(self.path, "rb") as fin:
+                    self.f.write(fin.read())
+                self.f.seek(0)
+            elif mode == "t":
+                self.f = io.StringIO()
+                with open(self.path, "rt") as fin:
+                    self.f.write(fin.read())
+                self.f.seek(0)
         else:
-            self.f = open(self.path, "rb")
+            self.f = open(self.path, "r" + self.mode)
 
         return self.f
 
