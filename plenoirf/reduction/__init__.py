@@ -19,6 +19,9 @@ from .. import production
 from .. import utils
 
 from .zipfilebufferio import ZipFileBufferIO
+from . import memory
+from . import merge
+from . import append
 
 
 def list_items():
@@ -32,23 +35,12 @@ def list_items():
     ]
 
 
-def fallback_memory_config_if_None(memory_config=None):
-    if memory_config is None:
-        return {"use_tmp_dir": False, "read_buffer_size": 0}
-    else:
-        return memory_config
-
-
-def make_memory_config_for_hpc_nfs():
-    return {"use_tmp_dir": True, "read_buffer_size": "1G"}
-
-
 def reduce_item(
     instrument_site_particle_dir,
     item_key,
     memory_config=None,
 ):
-    memory_config = fallback_memory_config_if_None(memory_config=memory_config)
+    memory_config = memory.make_config_if_None(memory_config)
 
     run_ids = list_run_ids_ready_for_reduction(
         map_dir=opj(instrument_site_particle_dir, "map"),
@@ -134,10 +126,7 @@ def make_jobs(
     lazy=True,
     memory_scheme="hpc-nfs",
 ):
-    if memory_scheme == "hpc-nfs":
-        memory_config = make_memory_config_for_hpc_nfs()
-    else:
-        memory_config = fallback_memory_config_if_None(None)
+    memory_config = memory.make_config(scheme=memory_scheme)
 
     if config is None:
         config = configuration.read(plenoirf_dir)
@@ -216,7 +205,7 @@ def recude_event_table(
     run_ids,
     memory_config=None,
 ):
-    mem = fallback_memory_config_if_None(memory_config=memory_config)
+    mem = memory.make_config_if_None(memory_config)
     map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
     out_path = opj(reduce_dir, "event_table.snt.zip")
 
@@ -254,7 +243,7 @@ def reduce_reconstructed_cherenkov(
     run_ids,
     memory_config=None,
 ):
-    mem = fallback_memory_config_if_None(memory_config=memory_config)
+    mem = memory.make_config_if_None(memory_config)
     map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
     out_path = opj(reduce_dir, "reconstructed_cherenkov.loph.tar")
 
@@ -297,7 +286,7 @@ def reduce_ground_grid_intensity(
     only_past_trigger=False,
     memory_config=None,
 ):
-    mem = fallback_memory_config_if_None(memory_config=memory_config)
+    mem = memory.make_config_if_None(memory_config)
     map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
     _suff = "_roi" if roi else ""
     filename_without_ext = f"ground_grid_intensity{_suff:s}"
@@ -394,7 +383,7 @@ def reduce_benchmarks(
     run_ids,
     memory_config=None,
 ):
-    mem = fallback_memory_config_if_None(memory_config=memory_config)
+    mem = memory.make_config_if_None(memory_config)
     map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
     out_path = opj(reduce_dir, "benchmark.snt.zip")
 
@@ -505,7 +494,7 @@ def reduce_event_uids_for_debugging(
     run_ids,
     memory_config=None,
 ):
-    mem = fallback_memory_config_if_None(memory_config=memory_config)
+    mem = memory.make_config_if_None(memory_config)
     map_dir, reduce_dir = _map_reduce_dirs(instrument_site_particle_dir)
     out_path = opj(reduce_dir, "event_uids_for_debugging.txt")
 

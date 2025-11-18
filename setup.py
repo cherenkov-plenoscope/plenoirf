@@ -46,7 +46,7 @@ setuptools.setup(
         "scikit-image",
         "scikit-learn>=1.7.2",
         "un_bound_histogram>=0.0.1",
-        "sparse_numeric_table_sebastian-achim-mueller>=1.1.0",
+        "sparse_numeric_table_sebastian-achim-mueller>=1.2.13",
         "cosmic_fluxes_cherenkov-plenoscope-project>=0.0.3",
         "corsika_primary>=2.3.3",
         "atmospheric_cherenkov_response_cherenkov-plenoscope-project>=0.1.3",
