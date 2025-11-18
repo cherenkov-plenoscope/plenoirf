@@ -5,17 +5,8 @@ import sequential_tar
 from .. import utils
 from . import memory
 
-"""
-        "event_table.snt.zip",
-        "reconstructed_cherenkov.loph.tar",
-        "ground_grid_intensity.zip",
-        "ground_grid_intensity_roi.zip",
-        "benchmark.snt.zip",
-        "event_uids_for_debugging.txt",
-"""
 
-
-def list_items():
+def list_topic_filenames():
     return [
         "event_table.snt.zip",
         "reconstructed_cherenkov.loph.tar",
@@ -28,7 +19,7 @@ def list_items():
 
 def make_paths(reduction_dirs):
     item_paths = {}
-    for item in list_items():
+    for item in list_topic_filenames():
         item_paths[item] = []
 
     valid = {}
@@ -36,12 +27,12 @@ def make_paths(reduction_dirs):
         valid[reduction_dir] = True
 
     for reduction_dir in reduction_dirs:
-        for item in list_items():
+        for item in list_topic_filenames():
             item_path = os.path.join(reduction_dir, item)
             if not os.path.exists(item_path):
                 valid[reduction_dir] = False
 
-    for item in list_items():
+    for item in list_topic_filenames():
         for reduction_dir in reduction_dirs:
             if valid[reduction_dir]:
                 item_path = os.path.join(reduction_dir, item)
