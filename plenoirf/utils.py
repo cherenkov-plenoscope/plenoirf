@@ -360,6 +360,13 @@ def zipfile_write_dir_recursively(zipfile, filename, arcname):
             zipfile.write(filename=fname, arcname=aname)
 
 
+def SerialPool_if_None(pool):
+    if pool is None:
+        return SerialPool()
+    else:
+        return pool
+
+
 class SerialPool:
     def __init__(self):
         pass

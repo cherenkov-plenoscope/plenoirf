@@ -122,6 +122,7 @@ def by_run_make_jobs(
 ):
     memory_config = memory.make_config(scheme=memory_scheme)
     config = configuration.read_if_None(plenoirf_dir, config=config)
+    assert num_runs_per_job > 0
 
     jobs = []
     for instrument_key in config["instruments"]:

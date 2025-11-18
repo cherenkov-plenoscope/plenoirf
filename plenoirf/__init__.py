@@ -400,11 +400,42 @@ def benchmark(pool, out_path, num_runs):
             jlout.write(result)
 
 
-def reduce(plenoirf_dir, config=None, pool=None, lazy=True):
-    if pool is None:
-        pool = utils.SerialPool()
+def reduce(
+    plenoirf_dir, config=None, pool=None, num_runs_per_job=100, lazy=True
+):
+    """
+    Reduce the results of the instrument response function estimate.
+    This reduces the results created (mapped) in the 'plenoirf.run' step.
 
-    jobs = reduction.make_jobs(
-        plenoirf_dir=plenoirf_dir, config=config, lazy=lazy
+    You must 'reduce' to run the analysis of the instrument response function.
+
+    Parameters
+    ----------
+    plenoirf_dir : str
+        Path to the plenoirf_dir initialized with init(plenoirf_dir).
+    pool : e.g. multiprocessing.Pool
+        Parallel compute pool which must provide a map() function.
+    num_runs_per_job : int
+        At most this many runs will be reduced at once.
+    """
+    config = configuration.read_if_None(plenoirf_dir, config=config)
+    pool = utils.SerialPool_if_None(pool=pool)
+
+    jobs_runs_to_topics = reduction.by_run_make_jobs(
+        plenoirf_dir=plenoirf_dir,
+        config=config,
+        num_runs_per_job=num_runs_per_job,
+        lazy=lazy,
     )
-    _ = pool.map(reduction.run_job, jobs)
+    num = len(jobs_runs_to_topics)
+    print(f"Parts 1 of 2. Reducing runs into topics. {num:d} jobs.")
+    _ = pool.map(reduction.by_run_run_job, jobs_runs_to_topics)
+
+    jobs_reduce_topics = reduction.by_topic_make_jobs(
+        plenoirf_dir=plenoirf_dir,
+        config=config,
+        lazy=lazy,
+    )
+    num = len(jobs_reduce_topics)
+    print(f"Parts 2 of 2. Reducing topics. {num:d} jobs")
+    _ = pool.map(reduction.by_topic_run_job, jobs_reduce_topics)
