@@ -11,6 +11,6 @@ def make_config_for_hpc_nfs():
 
 def make_config(scheme):
     if scheme == "hpc-nfs":
-        memory_config = make_config_for_hpc_nfs()
+        return make_config_for_hpc_nfs()
     else:
-        memory_config = make_config_if_None(None)
+        return make_config_if_None(None)
