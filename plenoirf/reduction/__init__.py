@@ -259,7 +259,7 @@ def hide_existing_reduce_dirs(plenoirf_dir, suffix=None, dry_run=False):
                     site_key,
                     particle_key,
                 )
-                reduce_dir = map_and_reduce_dirs(
+                _, reduce_dir = map_and_reduce_dirs(
                     plenoirf_dir=plenoirf_dir,
                     instrument_key=instrument_key,
                     site_key=site_key,
