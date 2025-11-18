@@ -20,8 +20,8 @@ from .. import utils
 
 from .zipfilebufferio import ZipFileBufferIO
 from . import memory
-from . import run_wise
-from . import topic_wise
+from . import by_run
+from . import by_topic
 
 def list_items():
     return [
