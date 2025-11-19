@@ -2,6 +2,7 @@ import os
 from os.path import join as opj
 import glob
 import datetime
+import shutil
 
 from sparse_numeric_table.files import (
     _split_into_chunks as _snt_split_into_chunks,
@@ -239,9 +240,51 @@ def _by_topic_make_in_paths(temporary_run_reduction_dirs):
 # ----
 
 
+def remove_temporary_reduce_dirs(plenoirf_dir, config=None, dry_run=False):
+    config = configuration.read_if_None(plenoirf_dir, config=config)
+
+    for instrument_key in config["instruments"]:
+        for site_key in config["sites"]["instruemnt_response"]:
+            for particle_key in config["particles"]:
+                _, reduce_dir = map_and_reduce_dirs(
+                    plenoirf_dir=plenoirf_dir,
+                    instrument_key=instrument_key,
+                    site_key=site_key,
+                    particle_key=particle_key,
+                )
+                tmp_reduce_dir = os.path.join(
+                    reduce_dir, _by_run_temporary_dir()
+                )
+                if os.path.exists(tmp_reduce_dir):
+                    print(f"removing '{tmp_reduce_dir:s}'.")
+                    if not dry_run:
+                        shutil.rmtree(tmp_reduce_dir)
+
+
+def is_complete(plenoirf_dir, config=None):
+    config = configuration.read_if_None(plenoirf_dir, config=config)
+
+    flag = True
+    for instrument_key in config["instruments"]:
+        for site_key in config["sites"]["instruemnt_response"]:
+            for particle_key in config["particles"]:
+                _, reduce_dir = map_and_reduce_dirs(
+                    plenoirf_dir=plenoirf_dir,
+                    instrument_key=instrument_key,
+                    site_key=site_key,
+                    particle_key=particle_key,
+                )
+                for filename in by_topic.list_topic_filenames():
+                    topic_path = os.path.join(reduce_dir, filename)
+                    if not os.path.exists(topic_path):
+                        print(f"missing: '{topic_path:s}'.")
+                        flag = False
+    return flag
+
+
 def hide_existing_reduce_dirs(plenoirf_dir, suffix=None, dry_run=False):
     """
-    Hides the the existing 'reduce' dirs to '.reduce.{suffix}'.
+    Hides the existing 'reduce' dirs to '.reduce.{suffix}'.
     """
     config = configuration.read_if_None(plenoirf_dir, config=None)
 
@@ -252,13 +295,6 @@ def hide_existing_reduce_dirs(plenoirf_dir, suffix=None, dry_run=False):
     for instrument_key in config["instruments"]:
         for site_key in config["sites"]["instruemnt_response"]:
             for particle_key in config["particles"]:
-                isp_dir = os.path.join(
-                    plenoirf_dir,
-                    "response",
-                    instrument_key,
-                    site_key,
-                    particle_key,
-                )
                 _, reduce_dir = map_and_reduce_dirs(
                     plenoirf_dir=plenoirf_dir,
                     instrument_key=instrument_key,

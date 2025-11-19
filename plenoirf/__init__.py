@@ -401,7 +401,7 @@ def benchmark(pool, out_path, num_runs):
 
 
 def reduce(
-    plenoirf_dir, config=None, pool=None, num_runs_per_job=100, lazy=True
+    plenoirf_dir, config=None, pool=None, num_runs_per_job=200, lazy=True
 ):
     """
     Reduce the results of the instrument response function estimate.
@@ -428,7 +428,7 @@ def reduce(
         lazy=lazy,
     )
     num = len(jobs_runs_to_topics)
-    print(f"Parts 1 of 2. Reducing runs into topics. {num:d} jobs.")
+    print(f"Parts 1 of 4. Reducing runs into topics. {num:d} jobs.")
     _ = pool.map(reduction.by_run_run_job, jobs_runs_to_topics)
 
     jobs_reduce_topics = reduction.by_topic_make_jobs(
@@ -437,5 +437,22 @@ def reduce(
         lazy=lazy,
     )
     num = len(jobs_reduce_topics)
-    print(f"Parts 2 of 2. Reducing topics. {num:d} jobs")
+    print(f"Parts 2 of 4. Reducing topics. {num:d} jobs")
     _ = pool.map(reduction.by_topic_run_job, jobs_reduce_topics)
+
+    print(f"Parts 3 of 4. Check reduction is complete.")
+    is_complete = reduction.is_complete(
+        plenoirf_dir=plenoirf_dir, config=config
+    )
+
+    if is_complete:
+        print(f"Parts 4 of 4. Removing temporary directories.")
+        reduction.remove_temporary_reduce_dirs(
+            plenoirf_dir=plenoirf_dir,
+            config=config,
+        )
+    else:
+        print(
+            "Parts 4 of 4. "
+            "Keep temporary directories because reduction is incomplete."
+        )
