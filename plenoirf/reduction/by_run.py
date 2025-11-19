@@ -42,6 +42,7 @@ def reduce(
         - 'ground_grid_intensity.zip'
         - 'ground_grid_intensity_roi.zip'
         - 'benchmark.snt.zip'
+        - 'benchmark.snt.zip.hostname_hashes.json'
         - 'event_uids_for_debugging.txt'
 
     Parameters
@@ -155,6 +156,7 @@ def _reduce_handle_output_files(
             ground_grid_intensity_roi_zip
         )
         output_files["benchmark.snt.zip"] = benchmark_snt_zip
+        output_files["benchmark.snt.zip.hostname_hashes"] = dict()
         output_files["event_uids_for_debugging.txt"] = (
             event_uids_for_debugging_txt
         )
@@ -165,6 +167,14 @@ def _reduce_handle_output_files(
             output_files=output_files,
             memory_config=memory_config,
             logger=logger,
+        )
+
+    logger.info(f"dumping hostname hashes.")
+    with rnw.open(
+        opj(tmp_dir, "benchmark.snt.zip.hostname_hashes.json"), mode="wt"
+    ) as fout:
+        fout.write(
+            json_utils.dumps(output_files["benchmark.snt.zip.hostname_hashes"])
         )
 
 
@@ -284,6 +294,9 @@ def _reduce_append_single_run(
             run_prm2cer_zip_buffer=run_zip_buffers["prm2cer"],
             run_id=run_id,
             benchmark_snt_zip=output_files["benchmark.snt.zip"],
+            benchmark_snt_zip_hostname_hashes=output_files[
+                "benchmark.snt.zip.hostname_hashes"
+            ],
         )
 
     with logging.TimeDelta(logger, "event_uids_for_debugging.txt"):
@@ -384,6 +397,7 @@ def _reduce__benchmark_snt_zip(
     run_prm2cer_zip_buffer,
     run_id,
     benchmark_snt_zip,
+    benchmark_snt_zip_hostname_hashes,
 ):
     hostname, time_unix_s = (
         _reduce__benchmark_snt_zip__get_hostname_and_time_unix(
@@ -391,6 +405,8 @@ def _reduce__benchmark_snt_zip(
             run_id=run_id,
         )
     )
+    if hostname not in benchmark_snt_zip_hostname_hashes:
+        benchmark_snt_zip_hostname_hashes[hostname] = hash(hostname)
 
     benchmark_results = _reduce__benchmark_snt_zip__get_benchmark_results(
         run_prm2cer_zip_buffer=run_prm2cer_zip_buffer,
@@ -399,7 +415,7 @@ def _reduce__benchmark_snt_zip(
 
     benchmark_record = _reduce__benchmark_snt_zip__make_record(
         run_id=run_id,
-        hostname=hostname,
+        hostname_hash=benchmark_snt_zip_hostname_hashes[hostname],
         time_unix_s=time_unix_s,
         benchmark_results=benchmark_results,
     )
@@ -446,14 +462,14 @@ def _reduce__benchmark_snt_zip__get_benchmark_results(
 
 def _reduce__benchmark_snt_zip__make_record(
     run_id,
-    hostname,
+    hostname_hash,
     time_unix_s,
     benchmark_results,
 ):
     bench = benchmark_results
 
     rec = {}
-    rec["hostname_hash"] = hash(hostname)
+    rec["hostname_hash"] = hostname_hash
     rec["time_unix_s"] = time_unix_s
     rec["run_id"] = run_id
     ccc = bench["corsika"]

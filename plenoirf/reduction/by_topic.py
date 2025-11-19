@@ -4,6 +4,7 @@ import zipfile
 import rename_after_writing as rnw
 import sparse_numeric_table as snt
 import sequential_tar
+import json_utils
 
 from .. import utils
 from . import memory
@@ -17,6 +18,7 @@ def list_topic_filenames():
         "ground_grid_intensity.zip",
         "ground_grid_intensity_roi.zip",
         "benchmark.snt.zip",
+        "benchmark.snt.zip.hostname_hashes.json",
         "event_uids_for_debugging.txt",
     ]
 
@@ -48,6 +50,8 @@ def merge_topic(
         merge_ground_grid_intensity(**args)
     elif topic_key == "benchmark.snt.zip":
         merge_benchmark(**args)
+    elif topic_key == "benchmark.snt.zip.hostname_hashes.json":
+        merge_benchmark_hostname_hashes(**args)
     elif topic_key == "event_uids_for_debugging.txt":
         merge_event_uids_for_debugging(**args)
     else:
@@ -136,6 +140,28 @@ def merge_benchmark(out_path, in_paths, memory_config=None, logger=None):
             open_file_function=open_file_function,
             logger=logger,
         )
+
+
+def merge_benchmark_hostname_hashes(
+    out_path, in_paths, memory_config=None, logger=None
+):
+    mem = memory.make_config_if_None(memory_config)
+    logger = logging.stdout_logger_if_logger_is_None(logger)
+
+    logger.info(f"start")
+    hostname_hashes = dict()
+    for i in range(len(in_paths)):
+        in_path = in_paths[i]
+        logger.info(f"({i+1:d} of {len(in_paths):d}, {in_path:s}")
+        with open(in_path, "rt") as fin:
+            part = json_utils.loads(fin.read())
+        hostname_hashes.update(part)
+
+    with rnw.Path(out_path, use_tmp_dir=mem["use_tmp_dir"]) as tmp_path:
+        logger.info(f"tmp_path: '{tmp_path:s}'.")
+        with open(tmp_path, mode="wt") as fout:
+            fout.write(json_utils.dumps(hostname_hashes))
+    logger.info(f"done")
 
 
 def merge_event_uids_for_debugging(
