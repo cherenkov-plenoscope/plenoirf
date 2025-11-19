@@ -7,6 +7,7 @@ import sequential_tar
 
 from .. import utils
 from . import memory
+from . import logging
 
 
 def list_topic_filenames():
@@ -25,11 +26,16 @@ def merge_topic(
     out_path,
     in_paths,
     memory_config=None,
+    logger=None,
 ):
+    logger = logging.stdout_logger_if_logger_is_None(logger)
+    logger.info(f"Start merging {topic_key:s} ...")
+
     args = {
         "out_path": out_path,
         "in_paths": in_paths,
         "memory_config": memory.make_config_if_None(memory_config),
+        "logger": logger,
     }
 
     if topic_key == "event_table.snt.zip":
@@ -48,8 +54,9 @@ def merge_topic(
         raise KeyError(f"No such topic '{topic_key:s}'.")
 
 
-def merge_event_table(out_path, in_paths, memory_config=None):
+def merge_event_table(out_path, in_paths, memory_config=None, logger=None):
     mem = memory.make_config_if_None(memory_config)
+    logger = logging.stdout_logger_if_logger_is_None(logger)
 
     open_file_function = (
         lambda path, mode: utils.open_and_read_into_memory_when_small_enough(
@@ -64,15 +71,21 @@ def merge_event_table(out_path, in_paths, memory_config=None):
             out_path=tmp_path,
             in_paths=in_paths,
             open_file_function=open_file_function,
+            logger=logger,
         )
 
 
-def merge_reconstructed_cherenkov(out_path, in_paths, memory_config=None):
+def merge_reconstructed_cherenkov(
+    out_path, in_paths, memory_config=None, logger=None
+):
     mem = memory.make_config_if_None(memory_config)
+    logger = logging.stdout_logger_if_logger_is_None(logger)
 
     with rnw.Path(out_path, use_tmp_dir=mem["use_tmp_dir"]) as tmp_path:
         with sequential_tar.open(tmp_path, mode="w") as tarout:
-            for in_path in in_paths:
+            for i in range(len(in_paths)):
+                in_path = in_paths[i]
+                logger.info(f"({i+1:d} of {len(in_paths):d}, {in_path:s}")
                 with sequential_tar.open(in_path, mode="r") as tarin:
                     for item in tarin:
                         tarout.write(
@@ -82,13 +95,18 @@ def merge_reconstructed_cherenkov(out_path, in_paths, memory_config=None):
                         )
 
 
-def merge_ground_grid_intensity(out_path, in_paths, memory_config=None):
+def merge_ground_grid_intensity(
+    out_path, in_paths, memory_config=None, logger=None
+):
     mem = memory.make_config_if_None(memory_config)
+    logger = logging.stdout_logger_if_logger_is_None(logger)
     open_mem = utils.open_and_read_into_memory_when_small_enough
 
     with rnw.Path(out_path, use_tmp_dir=mem["use_tmp_dir"]) as tmp_path:
         with zipfile.ZipFile(file=tmp_path, mode="w") as zout:
-            for in_path in in_paths:
+            for i in range(len(in_paths)):
+                in_path = in_paths[i]
+                logger.info(f"({i+1:d} of {len(in_paths):d}, {in_path:s}")
                 with open_mem(
                     path=in_path, mode="rb", size=mem["read_buffer_size"]
                 ) as fin:
@@ -99,8 +117,9 @@ def merge_ground_grid_intensity(out_path, in_paths, memory_config=None):
                                     fo.write(fi.read())
 
 
-def merge_benchmark(out_path, in_paths, memory_config=None):
+def merge_benchmark(out_path, in_paths, memory_config=None, logger=None):
     mem = memory.make_config_if_None(memory_config)
+    logger = logging.stdout_logger_if_logger_is_None(logger)
 
     open_file_function = (
         lambda path, mode: utils.open_and_read_into_memory_when_small_enough(
@@ -115,14 +134,22 @@ def merge_benchmark(out_path, in_paths, memory_config=None):
             out_path=tmp_path,
             in_paths=in_paths,
             open_file_function=open_file_function,
+            logger=logger,
         )
 
 
-def merge_event_uids_for_debugging(out_path, in_paths, memory_config=None):
+def merge_event_uids_for_debugging(
+    out_path, in_paths, memory_config=None, logger=None
+):
     mem = memory.make_config_if_None(memory_config)
+    logger = logging.stdout_logger_if_logger_is_None(logger)
 
     with rnw.Path(out_path, use_tmp_dir=mem["use_tmp_dir"]) as tmp_path:
+        logger.info(f"tmp_path: '{tmp_path:s}'.")
+
         with open(tmp_path, "wt") as fout:
-            for in_path in in_paths:
+            for i in range(len(in_paths)):
+                in_path = in_paths[i]
+                logger.info(f"({i+1:d} of {len(in_paths):d}, {in_path:s}")
                 with open(in_path, "rt") as fin:
                     fout.write(fin.read())

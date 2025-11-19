@@ -8,7 +8,6 @@ import json_utils
 import plenopy
 import dynamicsizerecarray
 import sequential_tar
-import json_line_logger
 
 from .. import event_table
 from .. import configuration
@@ -17,15 +16,9 @@ from .. import production
 from .. import utils
 
 from . import memory
+from . import logging
 from ..utils import open_and_read_into_memory_when_small_enough
 from .zipfilebufferio import ZipFileBufferIO
-
-
-def _stdout_logger_if_logger_is_None(logger):
-    if logger is None:
-        return json_line_logger.LoggerStdout(fmt=json_line_logger.SMP)
-    else:
-        return logger
 
 
 def reduce(
@@ -69,7 +62,7 @@ def reduce(
         How to handle memory, /tmp/ and buffer sizes to make life easier on
         the slow HPC nfs systems.
     """
-    logger = _stdout_logger_if_logger_is_None(logger)
+    logger = logging.stdout_logger_if_logger_is_None(logger)
     logger.info("Start reduce ...")
 
     instrument_site_particle_dir = opj(
@@ -100,7 +93,7 @@ def _reduce_handle_output_tmp_dir(
     logger=None,
 ):
     memory_config = memory.make_config_if_None(memory_config)
-    logger = _stdout_logger_if_logger_is_None(logger)
+    logger = logging.stdout_logger_if_logger_is_None(logger)
 
     with rnw.Directory(
         path=out_dir, use_tmp_dir=memory_config["use_tmp_dir"]
@@ -124,7 +117,7 @@ def _reduce_handle_output_files(
     logger=None,
 ):
     memory_config = memory.make_config_if_None(memory_config)
-    logger = _stdout_logger_if_logger_is_None(logger)
+    logger = logging.stdout_logger_if_logger_is_None(logger)
 
     output_files = {}
 
@@ -183,7 +176,7 @@ def _reduce_loop_over_input_runs(
     logger=None,
 ):
     memory_config = memory.make_config_if_None(memory_config)
-    logger = _stdout_logger_if_logger_is_None(logger)
+    logger = logging.stdout_logger_if_logger_is_None(logger)
 
     for i in range(len(run_ids)):
         run_id = run_ids[i]
@@ -205,7 +198,7 @@ def _reduce_handle_single_run_files(
     logger=None,
 ):
     memory_config = memory.make_config_if_None(memory_config)
-    logger = _stdout_logger_if_logger_is_None(logger)
+    logger = logging.stdout_logger_if_logger_is_None(logger)
 
     open_mem = open_and_read_into_memory_when_small_enough
     map_dir = opj(instrument_site_particle_dir, "map")
@@ -247,16 +240,15 @@ def _reduce_append_single_run(
     output_files,
     logger=None,
 ):
-    logger = _stdout_logger_if_logger_is_None(logger)
-    dT = json_line_logger.TimeDelta
+    logger = logging.stdout_logger_if_logger_is_None(logger)
 
-    with dT(logger, "event_table.snt.zip"):
+    with logging.TimeDelta(logger, "event_table.snt.zip"):
         _reduce__event_table_snt_zip(
             run_zip_buffers=run_zip_buffers,
             event_table_snt_zip=output_files["event_table.snt.zip"],
         )
 
-    with dT(logger, "reconstructed_cherenkov.loph.tar"):
+    with logging.TimeDelta(logger, "reconstructed_cherenkov.loph.tar"):
         _reduce__reconstructed_cherenkov_loph_tar(
             run_cer2cls_zip_buffer=run_zip_buffers["cer2cls"],
             run_id=run_id,
@@ -265,7 +257,7 @@ def _reduce_append_single_run(
             ],
         )
 
-    with dT(logger, "ground_grid_intensity.zip"):
+    with logging.TimeDelta(logger, "ground_grid_intensity.zip"):
         _reduce__ground_grid_intensity_zip(
             run_prm2cer_zip_buffer=run_zip_buffers["prm2cer"],
             run_cer2cls_zip_buffer=run_zip_buffers["cer2cls"],
@@ -276,7 +268,7 @@ def _reduce_append_single_run(
             roi=False,
         )
 
-    with dT(logger, "ground_grid_intensity_roi.zip"):
+    with logging.TimeDelta(logger, "ground_grid_intensity_roi.zip"):
         _reduce__ground_grid_intensity_zip(
             run_prm2cer_zip_buffer=run_zip_buffers["prm2cer"],
             run_cer2cls_zip_buffer=run_zip_buffers["cer2cls"],
@@ -287,14 +279,14 @@ def _reduce_append_single_run(
             roi=True,
         )
 
-    with dT(logger, "benchmark.snt.zip"):
+    with logging.TimeDelta(logger, "benchmark.snt.zip"):
         _reduce__benchmark_snt_zip(
             run_prm2cer_zip_buffer=run_zip_buffers["prm2cer"],
             run_id=run_id,
             benchmark_snt_zip=output_files["benchmark.snt.zip"],
         )
 
-    with dT(logger, "event_uids_for_debugging.txt"):
+    with logging.TimeDelta(logger, "event_uids_for_debugging.txt"):
         _reduce__event_uids_for_debugging_txt(
             run_prm2cer_zip_buffer=run_zip_buffers["prm2cer"],
             run_id=run_id,
