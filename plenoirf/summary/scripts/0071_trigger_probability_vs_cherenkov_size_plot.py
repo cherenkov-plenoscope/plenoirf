@@ -77,7 +77,7 @@ for zd in range(zenith_bin["num"]):
     ax.semilogy()
     ax.set_xlim([1e1, np.max(size_bin_edges)])
     ax.set_ylim([1e-6, 1.5e-0])
-    ax.set_xlabel("true Cherenkov size / p.e.")
+    ax.set_xlabel("true Cherenkov size / photo electrons")
     ax.set_ylabel("trigger probability / 1")
     fig.savefig(
         opj(
