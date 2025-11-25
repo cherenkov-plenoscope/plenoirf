@@ -90,7 +90,7 @@ for pk in res.PARTICLES:
         _pcm_confusion, cax=ax_cb, extend="max", orientation="horizontal"
     )
     ax_c.set_aspect("equal")
-    ax_c.set_ylabel("reco. Cherenkov size / p.e.")
+    ax_c.set_ylabel("reco. Cherenkov size / photo electrons")
     ax_c.loglog()
     ax_c.set_xticklabels([])
     sebplt.ax_add_grid(ax_c)
@@ -103,7 +103,7 @@ for pk in res.PARTICLES:
     )
     ax_h.semilogx()
     ax_h.set_xlim([np.min(size_bin_edges), np.max(size_bin_edges)])
-    ax_h.set_xlabel("true Cherenkov size / p.e.")
+    ax_h.set_xlabel("true Cherenkov size / photo electrons")
     ax_h.set_ylabel("counts / 1")
     fig.savefig(opj(res.paths["out_dir"], pk + "_" + key + ".jpg"))
     sebplt.close(fig)
@@ -291,7 +291,7 @@ for pk in res.PARTICLES:
         face_alpha=0.1,
     )
     ax.axhline(y=1, color="k", linestyle=":")
-    ax.set_xlabel("true Cherenkov size / p.e.")
+    ax.set_xlabel("true Cherenkov size / photo electrons")
     ax.set_ylabel("true over reco. / 1")
     ax.set_xlim([np.min(size_bin_edges), np.max(size_bin_edges)])
     ax.semilogx()
