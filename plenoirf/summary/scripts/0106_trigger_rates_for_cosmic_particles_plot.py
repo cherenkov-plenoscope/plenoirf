@@ -79,7 +79,6 @@ for zd in range(zenith_bin["num"]):
             0.1 + text_y,
             r"{: 8.1f} $\pm${: 6.1f} s$^{{-1}}$".format(ir, ir_abs_unc),
             color="k",
-            #family="monospace",
             transform=ax.transAxes,
         )
         text_y += 0.06
