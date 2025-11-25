@@ -110,10 +110,10 @@ for pk in res.PARTICLES:
         fig.savefig(opj(res.paths["out_dir"], f"{pk}_resolution.jpg"))
         sebplt.close(fig)
 
-    fig = sebplt.figure(sebplt.FIGURE_1_1)
-    ax_c = sebplt.add_axes(fig=fig, span=[0.15, 0.27, 0.65, 0.65])
-    ax_h = sebplt.add_axes(fig=fig, span=[0.15, 0.11, 0.65, 0.1])
-    ax_cb = sebplt.add_axes(fig=fig, span=[0.85, 0.27, 0.02, 0.65])
+    fig = sebplt.figure(irf.summary.figure.style(key="6:7")[0])
+    ax_c = sebplt.add_axes(fig=fig, span=[0.2, 0.2, 0.75, 0.75])
+    ax_h = sebplt.add_axes(fig=fig, span=[0.2, 0.13, 0.75, 0.10])
+    ax_cb = sebplt.add_axes(fig=fig, span=[0.25, 0.96, 0.65, 0.015])
     _pcm_confusion = ax_c.pcolormesh(
         cm["ax0_bin_edges"] * M_TO_KM,
         cm["ax1_bin_edges"] * M_TO_KM,
@@ -122,18 +122,18 @@ for pk in res.PARTICLES:
         norm=sebplt.plt_colors.PowerNorm(gamma=0.5),
     )
     ax_c.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1)
-    sebplt.plt.colorbar(_pcm_confusion, cax=ax_cb, extend="max")
-    # irf.summary.figure.mark_ax_thrown_spectrum(ax=ax_c)
+    sebplt.plt.colorbar(
+        _pcm_confusion, cax=ax_cb, extend="max", orientation="horizontal"
+    )
     ax_c.set_aspect("equal")
-    # ax_c.set_title(r"$P$ $($ reco. energy $\vert$ true energy $)$")
     ax_c.set_ylabel("reco. altitude / km")
-    # ax_c.loglog()
+
     ax_c.set_xticklabels([])
-    # ax_h.semilogx()
+
     ax_h.set_xlim(altitude_bin["limits"] * M_TO_KM)
     ax_h.set_xlabel("true altitude / km")
-    ax_h.set_ylabel("num. events / 1")
-    # irf.summary.figure.mark_ax_thrown_spectrum(ax_h)
+    ax_h.set_ylabel("counts")
+
     ax_h.axhline(min_number_samples, linestyle=":", color="k")
     sebplt.ax_add_histogram(
         ax=ax_h,
