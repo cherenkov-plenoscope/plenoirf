@@ -23,6 +23,16 @@ rates = json_utils.tree.Tree(
     )
 )
 
+
+def fig_add_text_1msr_ins_square_deg(fig):
+    fig.text(
+        x=0.75,
+        y=0.046,
+        s=r"1msr $\approx$ 3.3(1$^\circ)^2$",
+        color="grey",
+    )
+
+
 MAX_SCATTER_SOLID_ANGLE_SR = 0.0
 scatter_bin = {}
 for pk in res.COSMIC_RAYS:
@@ -38,7 +48,7 @@ for zd in range(zenith_bin["num"]):
     ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
     sebplt.add_axes_zenith_range_indicator(
         fig=fig,
-        span=[0.0, 0.075, 0.175, 0.175],
+        span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
         zenith_bin_edges_rad=zenith_bin["edges"],
         zenith_bin=zd,
         fontsize=6,
@@ -58,12 +68,8 @@ for zd in range(zenith_bin["num"]):
             face_color=res.PARTICLE_COLORS[pk],
             face_alpha=0.2,
         )
-    fig.text(
-        x=0.8,
-        y=0.05,
-        s=r"1msr = 3.3(1$^\circ)^2$",
-        color="grey",
-    )
+
+    fig_add_text_1msr_ins_square_deg(fig=fig)
     ax.set_ylabel("trigger rate / 1k s$^{-1}$")
     ax.set_xlabel("scatter solid angle / msr")
     ax.set_xlim(1e3 * scatter_bin[pk]["limits"])
@@ -81,7 +87,7 @@ for zd in range(zenith_bin["num"]):
     ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
     sebplt.add_axes_zenith_range_indicator(
         fig=fig,
-        span=[0.0, 0.075, 0.175, 0.175],
+        span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
         zenith_bin_edges_rad=zenith_bin["edges"],
         zenith_bin=zd,
         fontsize=6,
@@ -120,21 +126,17 @@ for zd in range(zenith_bin["num"]):
             face_alpha=0.2,
         )
 
-    fig.text(
-        x=0.8,
-        y=0.05,
-        s=r"1msr = 3.3(1$^\circ)^2$",
-        color="grey",
-    )
+    fig_add_text_1msr_ins_square_deg(fig=fig)
     ax.set_ylabel(
         (
             "$R$: trigger rate / s$^{-1}$\n"
             "$S$: scatter solid angle / msr\n"
             "d$R$/d$S$ $R^{-1}$ / (msr)$^{-1}$"
-        )
+        ),
+        fontsize=9,
     )
     ax.set_xlabel("scatter solid angle / msr")
-    ax.set_xlim(1e3 * scatter_bin[pk]["limits"])
+    ax.set_xlim([0, 1e3 * MAX_SCATTER_SOLID_ANGLE_SR])
     ax.set_ylim([1e-4, 1e0])
     ax.semilogy()
     fig.savefig(
@@ -191,7 +193,7 @@ for zd in range(zenith_bin["num"]):
         )
         sebplt.add_axes_zenith_range_indicator(
             fig=fig,
-            span=[0.0, 0.075, 0.175, 0.175],
+            span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
             zenith_bin_edges_rad=zenith_bin["edges"],
             zenith_bin=zd,
             fontsize=6,
@@ -210,12 +212,7 @@ for zd in range(zenith_bin["num"]):
         ax.set_xlabel("energy / GeV")
         ax.set_ylabel("scatter solid angle / msr")
 
-        fig.text(
-            x=0.8,
-            y=0.05,
-            s=r"1msr = 3.3(1$^\circ)^2$",
-            color="grey",
-        )
+        fig_add_text_1msr_ins_square_deg(fig=fig)
         pcm_ratio = ax.pcolormesh(
             energy_bin["edges"],
             1e3 * scatter_bin[pk]["edges"][0:-1],
