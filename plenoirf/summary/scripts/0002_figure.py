@@ -90,6 +90,16 @@ def make_line_label(path, **kwargs):
     sebplt.close(fig)
 
 
+def make_square_label(path, **kwargs):
+    fig = sebplt.figure(style={"rows": 40, "cols": 40, "fontsize": 1})
+    ax = sebplt.add_axes(fig=fig, span=[0, 0, 1, 1], style=sebplt.AXES_BLANK)
+    ax.fill_between(x=[-1, 1], y1=[-1, -1], y2=[1, 1], **kwargs)
+    ax.set_xlim([-1, 1])
+    ax.set_ylim([-1, 1])
+    fig.savefig(path)
+    sebplt.close(fig)
+
+
 colors = [
     "grey",
     "lightgrey",
@@ -111,6 +121,10 @@ for color in colors:
             color=color,
             linestyle=linestyle,
             linewidth=2,
+        )
+        make_square_label(
+            path=opj(label_dir, f"{color:s}_square.jpg"),
+            color=color,
         )
 
 
