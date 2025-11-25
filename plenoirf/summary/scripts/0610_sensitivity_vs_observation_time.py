@@ -77,7 +77,19 @@ for pe in pivot_energies:
         max_rel_error=0.25,
     )
 
-    x_lim_s = np.array([1e0, 1e7])
+    x_lim_s_start_decade = 0
+    x_lim_s_stop_decade = 7
+
+    x_lim_s = np.array([10**x_lim_s_start_decade, 10**x_lim_s_stop_decade])
+    xticks_s = 10 ** np.arange(x_lim_s_start_decade, x_lim_s_stop_decade + 1)
+    _xticks_minor_s = [
+        [s * 10**i for s in range(1, 10)]
+        for i in range(x_lim_s_start_decade, x_lim_s_stop_decade)
+    ]
+    xticks_minor_s = []
+    for _ixtm in _xticks_minor_s:
+        xticks_minor_s += _ixtm
+
     e_lim_GeV = np.array([1e-1, 1e4])
     y_lim_per_m2_per_s_per_GeV = np.array(
         [1e0, 1e-6]
@@ -253,6 +265,8 @@ for pe in pivot_energies:
                 ax.set_xlim(x_lim_s)
                 ax.set_ylim(np.sort(_dFdE_lim))
                 ax.loglog()
+                ax.set_xticks(xticks_s)
+                ax.set_xticks(xticks_minor_s, minor=True)
                 # ax.legend(loc="best", fontsize=10)
                 ax.set_xlabel("observation time / s")
                 ax.set_ylabel(
