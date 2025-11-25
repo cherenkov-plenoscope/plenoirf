@@ -104,6 +104,7 @@ colors = [
     "grey",
     "lightgrey",
     "limegreen",
+    "yellowgreen",
     irf.other_instruments.fermi_lat.COLOR,
     irf.other_instruments.cherenkov_telescope_array_south.COLOR,
     irf.other_instruments.portal.COLOR,
