@@ -104,7 +104,7 @@ for zd in range(zenith_bin["num"]):
         )
 
     ax.semilogy()
-    ax.set_xlabel("trigger threshold / photo electrons (p.e.)")
+    ax.set_xlabel("trigger threshold / photo electrons")
     ax.set_ylabel("trigger rate / s$^{-1}$")
     ax.legend(loc="best", fontsize=8)
 
