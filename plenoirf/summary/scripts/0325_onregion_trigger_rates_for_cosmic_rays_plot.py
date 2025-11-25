@@ -69,11 +69,10 @@ for zd in range(zenith_bin["num"]):
             ir = onregion_rates[zk][ok][pk]["integral_rate"][mean_key]
             ir_abs_unc = onregion_rates[zk][ok][pk]["integral_rate"][unc_key]
             ax.text(
-                0.6,
+                0.65,
                 0.1 + text_y,
                 r"{: 8.1f} $\pm${: 6.1f} s$^{{-1}}$".format(ir, ir_abs_unc),
                 color="k",
-                family="monospace",
                 transform=ax.transAxes,
             )
             text_y += 0.06
