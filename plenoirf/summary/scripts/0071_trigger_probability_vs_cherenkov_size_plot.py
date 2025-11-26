@@ -65,14 +65,6 @@ for zd in range(zenith_bin["num"]):
             face_color=particle_colors[pk],
             face_alpha=0.25,
         )
-        ax.text(
-            0.85,
-            0.1 + text_y,
-            pk,
-            color=particle_colors[pk],
-            transform=ax.transAxes,
-        )
-        text_y += 0.06
     ax.semilogx()
     ax.semilogy()
     ax.set_xlim([1e1, np.max(size_bin_edges)])
