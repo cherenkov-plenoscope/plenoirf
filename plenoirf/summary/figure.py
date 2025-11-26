@@ -46,8 +46,8 @@ SOURCES = {
         "label": "area",
         "unit": "m$^{2}$",
         "limits": {
-            "passed_trigger": [1e1, 1e6],
-            "passed_all_cuts": [1e1, 1e6],
+            "passed_trigger": [1e0, 1e6],
+            "passed_all_cuts": [1e0, 1e6],
         },
     },
 }
