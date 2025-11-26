@@ -22,6 +22,10 @@ trigger_rates = json_utils.tree.Tree(
 
 num_trigger_thresholds = len(trigger["ratescan_thresholds_pe"])
 
+NSB_COLOR = "deepskyblue"
+SUM_COLOR = "olive"
+PLOT_LEGEND = False
+
 
 def ax_plot_au(ax, x, y, y_au, alpha_ratio=0.25, **kwargs):
     if "alpha" in kwargs:
@@ -79,7 +83,7 @@ for zd in range(zenith_bin["num"]):
         x=trigger["ratescan_thresholds_pe"],
         y=total_rate,
         y_au=total_rate_au,
-        color="black",
+        color=SUM_COLOR,
         label="night sky + cosmic rays",
     )
 
@@ -88,8 +92,8 @@ for zd in range(zenith_bin["num"]):
         x=trigger["ratescan_thresholds_pe"],
         y=tr[zk]["night_sky_background"]["rate"],
         y_au=tr[zk]["night_sky_background"]["rate_au"],
-        color="black",
-        linestyle=":",
+        color=NSB_COLOR,
+        linestyle="-",
         label="night sky",
     )
 
@@ -106,7 +110,8 @@ for zd in range(zenith_bin["num"]):
     ax.semilogy()
     ax.set_xlabel("trigger threshold / photo electrons")
     ax.set_ylabel("trigger rate / s$^{-1}$")
-    ax.legend(loc="best", fontsize=8)
+    if PLOT_LEGEND:
+        ax.legend(loc="best", fontsize=8)
 
     zenith_corrected_threshold_pe = irf.light_field_trigger.get_trigger_threshold_corrected_for_pointing_zenith(
         pointing_zenith_rad=zenith_bin["centers"][zd],

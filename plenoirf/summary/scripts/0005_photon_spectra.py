@@ -29,7 +29,7 @@ ax = sebplt.add_axes(fig=fig, span=sax)
 ax.plot(
     nsb["flux_vs_wavelength"][:, 0],
     nsb["flux_vs_wavelength"][:, 1],
-    color="black",
+    color="deepskyblue",
 )
 ax.set_xlabel("wavelength / m")
 ax.set_ylabel(
@@ -51,7 +51,7 @@ ax = sebplt.add_axes(fig=fig, span=sax)
 ax.plot(
     pec["quantum_efficiency_vs_wavelength"][:, 0],
     pec["quantum_efficiency_vs_wavelength"][:, 1],
-    color="black",
+    color="gray",
 )
 ax.set_xlabel("wavelength / m")
 ax.set_ylabel("photo electric\ndetection efficiency / 1")
@@ -71,7 +71,7 @@ ax = sebplt.add_axes(fig=fig, span=sax)
 ax.plot(
     mir["argument_versus_value"][:, 0],
     mir["argument_versus_value"][:, 1],
-    color="black",
+    color="gray",
 )
 ax.set_xlabel("wavelength / m")
 ax.set_ylabel("mirror reflectivity / 1")
@@ -91,7 +91,7 @@ ax = sebplt.add_axes(fig=fig, span=sax)
 ax.plot(
     lns["argument_versus_value"][:, 0],
     lns["argument_versus_value"][:, 1],
-    color="black",
+    color="gray",
 )
 ax.set_xlabel("wavelength / m")
 ax.set_ylabel("lens refractivity / 1")
