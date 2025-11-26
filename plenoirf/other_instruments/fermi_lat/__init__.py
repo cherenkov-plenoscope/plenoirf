@@ -485,6 +485,7 @@ def get_resources_dir():
 def flux_sensitivity_vs_observation_time_vs_energy():
     return json_utils.read(
         os.path.join(
-            get_resources_dir(), "dnde_vs_observation_time_vs_energy.json"
+            get_resources_dir(),
+            "dnde_vs_observation_time_vs_energy_2025-11-26.json",
         )
     )
