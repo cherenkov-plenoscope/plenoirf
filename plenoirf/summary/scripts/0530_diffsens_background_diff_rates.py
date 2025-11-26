@@ -165,13 +165,15 @@ for zd in range(zenith_bin["num"]):
                 },
             )
 
+sfig, sax = irf.summary.figure.style(key="4:3")
+
 # plot
 # ----
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
     for ok in ONREGION_TYPES:
-        fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
-        ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
+        fig = sebplt.figure(sfig)
+        ax = sebplt.add_axes(fig=fig, span=sax)
 
         sebplt.add_axes_zenith_range_indicator(
             fig=fig,
@@ -182,25 +184,36 @@ for zd in range(zenith_bin["num"]):
         )
 
         for pk in res.COSMIC_RAYS:
+
+            dReco_dE = Rreco[zk][ok][pk] / energy_bin["centers"]
+            dReco_dE_au = Rreco_au[zk][ok][pk] / energy_bin["centers"]
+            dRec0_dE_upper = dReco_dE + dReco_dE_au
+            dReco_dE_lower = dReco_dE - dReco_dE_au
+
             sebplt.ax_add_histogram(
                 ax=ax,
                 bin_edges=energy_bin["edges"],
-                bincounts=Rreco[zk][ok][pk],
-                bincounts_upper=Rreco[zk][ok][pk] - Rreco_au[zk][ok][pk],
-                bincounts_lower=Rreco[zk][ok][pk] + Rreco_au[zk][ok][pk],
+                bincounts=dReco_dE,
+                bincounts_upper=dRec0_dE_upper,
+                bincounts_lower=dReco_dE_lower,
                 linestyle="-",
                 linecolor=res.PARTICLE_COLORS[pk],
                 face_color=res.PARTICLE_COLORS[pk],
                 face_alpha=0.25,
             )
 
+            dRtrue_dE = Rtrue[zk][ok][pk] / energy_bin["centers"]
+            dRtrue_dE_au = Rtrue[zk][ok][pk] / energy_bin["centers"]
+            dRtrue_dE_upper = dRtrue_dE + dRtrue_dE_au
+            dRtrue_dE_lower = dRtrue_dE - dRtrue_dE_au
+
             alpha = 0.25
             sebplt.ax_add_histogram(
                 ax=ax,
                 bin_edges=energy_bin["edges"],
-                bincounts=Rtrue[zk][ok][pk],
-                bincounts_upper=Rtrue[zk][ok][pk] - Rtrue_au[zk][ok][pk],
-                bincounts_lower=Rtrue[zk][ok][pk] + Rtrue_au[zk][ok][pk],
+                bincounts=dRtrue_dE,
+                bincounts_upper=dRtrue_dE_upper,
+                bincounts_lower=dRtrue_dE_lower,
                 linecolor=res.PARTICLE_COLORS[pk],
                 linealpha=alpha,
                 linestyle=":",
@@ -208,9 +221,9 @@ for zd in range(zenith_bin["num"]):
                 face_alpha=alpha * 0.25,
             )
 
-        ax.set_ylabel(r"rate / s$^{-1}$")
+        ax.set_ylabel(r"differential rate / s$^{-1}$ (GeV)$^{-1}$")
         ax.set_xlabel(r"reco. energy / GeV")
-        ax.set_ylim([1e-6, 1e4])
+        ax.set_ylim([1e-5, 1e3])
         ax.loglog()
         fig.savefig(
             opj(
