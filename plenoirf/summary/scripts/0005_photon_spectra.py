@@ -32,7 +32,9 @@ ax.plot(
     color="black",
 )
 ax.set_xlabel("wavelength / m")
-ax.set_ylabel(r"differential flux / s$^{-1}$ m$^{-2}$ (sr)$^{-1}$ m$^{-1}$")
+ax.set_ylabel(
+    r"differential photon flux / s$^{-1}$ m$^{-2}$ (sr)$^{-1}$ m$^{-1}$"
+)
 ax.semilogy()
 ax.set_xlim([200e-9, 800e-9])
 fig.savefig(opj(res.paths["out_dir"], "night_sky_background.jpg"))
@@ -42,6 +44,8 @@ pec = res.config["merlict_plenoscope_propagator_config"][
     "photo_electric_converter"
 ]
 
+sfig, sax = irf.summary.figure.style("21:9")
+
 fig = sebplt.figure(sfig)
 ax = sebplt.add_axes(fig=fig, span=sax)
 ax.plot(
@@ -50,7 +54,7 @@ ax.plot(
     color="black",
 )
 ax.set_xlabel("wavelength / m")
-ax.set_ylabel("efficiency / 1")
+ax.set_ylabel("photo electric\ndetection efficiency / 1")
 ax.set_xlim([200e-9, 800e-9])
 ax.set_ylim([0, 0.5])
 fig.savefig(opj(res.paths["out_dir"], "photo_electric_converter.jpg"))
@@ -70,7 +74,7 @@ ax.plot(
     color="black",
 )
 ax.set_xlabel("wavelength / m")
-ax.set_ylabel("reflectivity / 1")
+ax.set_ylabel("mirror reflectivity / 1")
 ax.set_ylim([0.5, 1])
 ax.set_xlim([200e-9, 800e-9])
 fig.savefig(opj(res.paths["out_dir"], "mirror_reflectivity.jpg"))
@@ -90,41 +94,10 @@ ax.plot(
     color="black",
 )
 ax.set_xlabel("wavelength / m")
-ax.set_ylabel("refractivity / 1")
+ax.set_ylabel("lens refractivity / 1")
 ax.set_ylim([1.4, 1.6])
 ax.set_xlim([200e-9, 800e-9])
 fig.savefig(opj(res.paths["out_dir"], "lens_refractivity.jpg"))
-sebplt.close(fig)
-
-
-fig = sebplt.figure(sfig)
-ax = sebplt.add_axes(fig=fig, span=sax)
-ax.plot(
-    lns["argument_versus_value"][:, 0],
-    lns["argument_versus_value"][:, 1],
-    color="black",
-    linestyle=":",
-    label="lens refractivity",
-)
-ax.plot(
-    mir["argument_versus_value"][:, 0],
-    mir["argument_versus_value"][:, 1],
-    color="black",
-    linestyle="--",
-    label="mirror reflectivity",
-)
-ax.plot(
-    pec["quantum_efficiency_vs_wavelength"][:, 0],
-    pec["quantum_efficiency_vs_wavelength"][:, 1],
-    color="black",
-    linestyle="-",
-    label="photo electric efficiency",
-)
-ax.legend(bbox_to_anchor=(0.5, 0.5))
-ax.set_xlabel("wavelength / m")
-ax.set_ylim([0.0, 1.6])
-ax.set_xlim([200e-9, 800e-9])
-fig.savefig(opj(res.paths["out_dir"], "mirror_lens_photo.jpg"))
 sebplt.close(fig)
 
 res.stop()
