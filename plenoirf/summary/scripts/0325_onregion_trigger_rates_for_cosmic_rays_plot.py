@@ -81,7 +81,7 @@ for zd in range(zenith_bin["num"]):
         ax.set_ylim([1e-5, 1e3])
         ax.loglog()
         ax.set_xlabel("energy / GeV")
-        ax.set_ylabel("differential rate /\ns$^{-1}$ (GeV)$^{-1}$")
+        ax.set_ylabel(r"differential rate / s$^{-1}$ (GeV)$^{-1}$")
         fig.savefig(
             opj(
                 res.paths["out_dir"],
