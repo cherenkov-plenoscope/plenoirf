@@ -97,6 +97,44 @@ containment_fractions = np.linspace(0.0, 1.0, num_containment_fractions + 1)[
 ]
 
 
+def energy_range_string(start_GeV, stop_GeV):
+    start_GeV = float(start_GeV)
+    stop_GeV = float(stop_GeV)
+
+    if start_GeV < 1:
+        # MeV regime
+        scale = 1e3
+        unit = "MeV"
+    elif start_GeV < 1000:
+        # GeV regime
+        scale = 1
+        unit = "GeV"
+    else:
+        # TeV regime
+        scale = 1e-3
+        unit = "TeV"
+
+    start = start_GeV * scale
+    stop = stop_GeV * scale
+
+    if start < 10:
+        num_decimals = 3
+    elif start < 100:
+        num_decimals = 2
+    else:
+        num_decimals = 1
+
+    float_template = f"7.{num_decimals:d}f"
+
+    range_string_template = (
+        "[{:" + float_template + "}, {:" + float_template + "})"
+    )
+    range_string = range_string_template.format(start, stop)
+
+    out = range_string + r"$\,$" + unit
+    return out
+
+
 def empty_dim2(dim0, dim1):
     return [[None for ii in range(dim1)] for jj in range(dim0)]
 
@@ -439,7 +477,7 @@ for pk in res.PARTICLES:
             ene_stop = energy_bin["edges"][ene + 1]
 
             fig.text(
-                s=f"[{ene_start:7.1f}, {ene_stop:7.1f})" + r"$\,$" + "GeV",
+                s=energy_range_string(start_GeV=ene_start, stop_GeV=ene_stop),
                 x=_xx,
                 y=_yy - y_global_shift / 2,
             )
