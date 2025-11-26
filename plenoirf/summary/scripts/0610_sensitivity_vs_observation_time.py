@@ -21,6 +21,66 @@ portal = irf.other_instruments.portal
 
 ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
+# GAMMA RAY BURSTS
+# -----------------------
+#
+# GRB 190829A
+# GRB 090902B
+# GRB 190114C
+# GRB 130427A
+# GRB 221009A
+
+
+def estimate_max_photon_rate_vs_observation_time(grb_light_curve):
+    g_time_s = grb_light_curve["time_since_T0_s"]
+    g_energy_GeV = grb_light_curve["energy_GeV"]
+    g_mask = np.logical_and(g_energy_GeV >= 1.584, g_energy_GeV <= 3.981)
+    g_t = g_time_s[g_mask]
+    g_e = g_energy_GeV[g_mask]
+    g_min_samples = 5
+
+    g_min_t_window_s = 1.0
+    g_max_t_window_s = max(g_t) - min(g_t)
+    g_num_t_windows = 5 * len(g_t)
+    g_window_radii_s = np.geomspace(
+        g_min_t_window_s / 2, g_max_t_window_s / 2, g_num_t_windows
+    )
+    g_num_steps = 10 * len(g_t)
+    g_ts = np.geomspace(min(g_t), max(g_t), g_num_steps)
+
+    g_max_rate_per_s = []
+    for ttt in range(g_num_t_windows):
+        g_window_radius_s = g_window_radii_s[ttt]
+        g_window_duration_s = 2 * g_window_radius_s
+        samples = []
+        for www in range(g_num_steps):
+            g_t_pivot = g_ts[www]
+            g_t_delta_s = np.abs(g_t - g_t_pivot)
+            g_num_in_window = np.sum(g_t_delta_s <= g_window_radius_s)
+            if g_num_in_window >= g_min_samples:
+                g_rate_in_window_per_s = g_num_in_window / g_window_duration_s
+            else:
+                g_rate_in_window_per_s = np.nan
+            samples.append(g_rate_in_window_per_s)
+        g_max_rate_per_s.append(max(samples))
+    g_max_rate_per_s = np.array(g_max_rate_per_s)
+    g_window_durations_s = 2 * g_window_radii_s
+
+    return g_max_rate_per_s, g_window_durations_s
+
+
+grb_light_curve = (
+    irf.other_instruments.fermi_lat.gamma_ray_burst_light_curve_1GeV_regime(
+        grb_key="GRB090902B"
+    )
+)
+
+(grb_max_rate_per_s, grb_observation_time_s) = (
+    estimate_max_photon_rate_vs_observation_time(
+        grb_light_curve=grb_light_curve
+    )
+)
+
 # load
 # ----
 zenith_bin = res.zenith_binning("once")
@@ -254,6 +314,22 @@ for pe in pivot_energies:
                         linestyle=com["linestyle"],
                     )
 
+                if pe == "portal":
+                    ax.plot(
+                        grb_observation_time_s,
+                        grb_max_rate_per_s,
+                        color="black",
+                        linestyle="none",
+                        marker="o",
+                        markersize=25.0,
+                        alpha=0.02,
+                    )
+                    ax.text(
+                        s=r"GRB$\,$090902B",
+                        x=np.nanmedian(grb_observation_time_s),
+                        y=np.nanmin(grb_max_rate_per_s),
+                    )
+
                 _E_lim, _dFdE_lim = sed.convert_units_with_style(
                     x=e_lim_GeV,
                     y=y_lim_per_m2_per_s_per_GeV,
@@ -271,7 +347,7 @@ for pe in pivot_energies:
                 ax.set_xlabel("observation time / s")
                 ax.set_ylabel(
                     sed_styles.PLENOIRF_SED_STYLE["y_label"]
-                    + " /\n "
+                    + " / "
                     + sed_styles.PLENOIRF_SED_STYLE["y_unit"]
                 )
 
@@ -281,7 +357,7 @@ for pe in pivot_energies:
                         zk,
                         ok,
                         dk,
-                        "sensitivity_vs_obseravtion_time_{:d}MeV.jpg".format(
+                        "differential_flux_sensitivity_vs_obseravtion_time_{:d}MeV.jpg".format(
                             int(pivot_energies[pe] * 1e3)
                         ),
                     )

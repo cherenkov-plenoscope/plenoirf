@@ -315,7 +315,7 @@ for obsk in observation_times:
                         + sed_style["x_unit"]
                     )
                     ax.set_ylabel(
-                        sed_style["y_label"] + " /\n " + sed_style["y_unit"]
+                        sed_style["y_label"] + " / " + sed_style["y_unit"]
                     )
                     fig.savefig(
                         opj(

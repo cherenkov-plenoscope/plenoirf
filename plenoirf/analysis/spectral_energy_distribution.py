@@ -13,7 +13,7 @@ PLENOIRF_SED_STYLE = {
     "y_scale_energy_power": 0.0,
     "x_label": "energy",
     "x_unit": "GeV",
-    "y_label": "(differential flux)",
+    "y_label": "differential flux",
     "y_unit": "m$^{-2}$ s$^{-1}$ (GeV)$^{-1}$",
 }
 

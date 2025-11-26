@@ -489,3 +489,16 @@ def flux_sensitivity_vs_observation_time_vs_energy():
             "dnde_vs_observation_time_vs_energy_2025-11-26.json",
         )
     )
+
+
+def gamma_ray_burst_light_curve_1GeV_regime(grb_key="GRB090902B"):
+    raw = json_utils.read(
+        os.path.join(
+            get_resources_dir(),
+            f"light_curve_{grb_key:s}.json",
+        )
+    )
+    return {
+        "time_since_T0_s": raw["time_since_T0_s_vs_energy_GeV"][:, 0],
+        "energy_GeV": raw["time_since_T0_s_vs_energy_GeV"][:, 1],
+    }
