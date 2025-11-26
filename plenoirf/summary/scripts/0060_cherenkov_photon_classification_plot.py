@@ -104,7 +104,7 @@ for pk in res.PARTICLES:
     ax_h.semilogx()
     ax_h.set_xlim([np.min(size_bin_edges), np.max(size_bin_edges)])
     ax_h.set_xlabel("true Cherenkov size / photo electrons")
-    ax_h.set_ylabel("counts / 1")
+    ax_h.set_ylabel("population")
     fig.savefig(opj(res.paths["out_dir"], pk + "_" + key + ".jpg"))
     sebplt.close(fig)
 

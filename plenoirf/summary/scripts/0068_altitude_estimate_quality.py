@@ -132,7 +132,7 @@ for pk in res.PARTICLES:
 
     ax_h.set_xlim(altitude_bin["limits"] * M_TO_KM)
     ax_h.set_xlabel("true altitude / km")
-    ax_h.set_ylabel("counts")
+    ax_h.set_ylabel("population")
 
     ax_h.axhline(min_number_samples, linestyle=":", color="k")
     sebplt.ax_add_histogram(

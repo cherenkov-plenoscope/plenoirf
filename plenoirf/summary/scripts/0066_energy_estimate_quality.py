@@ -182,7 +182,7 @@ for pk in res.PARTICLES:
     ax_h.semilogx()
     ax_h.set_xlim([np.min(cm["ax0_bin_edges"]), np.max(cm["ax1_bin_edges"])])
     ax_h.set_xlabel("true energy / GeV")
-    ax_h.set_ylabel("counts")
+    ax_h.set_ylabel("population")
     ax_h.axhline(min_number_samples, linestyle=":", color="k")
     sebplt.ax_add_histogram(
         ax=ax_h,
