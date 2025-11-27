@@ -137,13 +137,13 @@ for pe in pivot_energies:
         max_rel_error=0.25,
     )
 
-    x_lim_s_start_decade = 0
+    x_lim_s_start_decade = -3
     x_lim_s_stop_decade = 7
 
-    x_lim_s = np.array([10**x_lim_s_start_decade, 10**x_lim_s_stop_decade])
-    xticks_s = 10 ** np.arange(x_lim_s_start_decade, x_lim_s_stop_decade + 1)
+    x_lim_s = np.array([10.0**x_lim_s_start_decade, 10.0**x_lim_s_stop_decade])
+    xticks_s = 10.0 ** np.arange(x_lim_s_start_decade, x_lim_s_stop_decade + 1)
     _xticks_minor_s = [
-        [s * 10**i for s in range(1, 10)]
+        [s * 10.0**i for s in range(1, 10)]
         for i in range(x_lim_s_start_decade, x_lim_s_stop_decade)
     ]
     xticks_minor_s = []
