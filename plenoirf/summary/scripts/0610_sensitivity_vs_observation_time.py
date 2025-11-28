@@ -22,8 +22,6 @@ portal = irf.other_instruments.portal
 
 ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
-energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
-
 
 # GAMMA RAY BURSTS
 # -----------------------
@@ -105,9 +103,6 @@ grb_light_curve = (
 zenith_bin = res.zenith_binning("once")
 ZENITH_ZD_ZK = [(zd, f"zd{zd:d}") for zd in range(zenith_bin["num"])]
 
-dS = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0540_diffsens_estimate")
-)
 
 diff_sens_scenario = res.analysis["differential_sensitivity"][
     "gamma_ray_effective_area_scenario"
@@ -145,10 +140,9 @@ for energy_range_key in energy_ranges:
 
 PLOT_FERMI_LAT_ESTIMATE_BY_HINTON_AND_FUNK = False
 
-systematic_uncertainties = res.analysis["on_off_measuremnent"][
+portal_systematic_uncertainties = res.analysis["on_off_measuremnent"][
     "systematic_uncertainties"
 ]
-num_systematic_uncertainties = len(systematic_uncertainties)
 
 xlim_s, xticks_s, xticks_minor_s = make_x_limits_ticks_mayor_ticks_minor(
     observation_time_start_decade=-3,
@@ -186,6 +180,26 @@ def load_Fermi_LAT_sensitivity_vs_observation_time(energy_range):
     return out
 
 
+def load_portal_sensitivity_vs_observation_time(
+    energy_range, zk, ok, dk, sysuncix
+):
+    energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+    enidx = find_bin_index_in_bin_edges(
+        bin_edges=energy_bin["edges"],
+        start=energy_range["start_GeV"],
+        stop=energy_range["stop_GeV"],
+    )
+    dS = json_utils.tree.Tree(
+        opj(res.paths["analysis_dir"], "0540_diffsens_estimate")
+    )
+    dFdE = dS[zk][ok][dk]["differential_flux"][:, :, sysuncix]
+
+    out = {}
+    out["differential_flux_per_m2_per_s_per_GeV"] = dFdE[enidx, :]
+    out["observation_times_s"] = dS[zk][ok][dk]["observation_times"]
+    return out
+
+
 for energy_range_key in energy_ranges:
     energy_range = energy_ranges[energy_range_key]
 
@@ -208,12 +222,6 @@ for energy_range_key in energy_ranges:
     # -----------------------------
     crab_flux = cosmic_fluxes.read_crab_nebula_flux_from_resources()
 
-    enidx = find_bin_index_in_bin_edges(
-        bin_edges=energy_bin["edges"],
-        start=energy_range["start_GeV"],
-        stop=energy_range["stop_GeV"],
-    )
-
     # work
     # ----
     for zd, zk in ZENITH_ZD_ZK:
@@ -222,8 +230,6 @@ for energy_range_key in energy_ranges:
                 os.makedirs(
                     opj(res.paths["out_dir"], zk, ok, dk), exist_ok=True
                 )
-
-                observation_times = dS[zk][ok][dk]["observation_times"]
 
                 components = []
 
@@ -237,9 +243,9 @@ for energy_range_key in energy_ranges:
                         fp=crab_flux["differential_flux"]["values"],
                     )
                     com = {}
-                    com["observation_time"] = observation_times
+                    com["observation_time"] = np.array(xlim_s)
                     com["differential_flux"] = _flux * np.ones(
-                        len(observation_times)
+                        len(com["observation_time"])
                     )
                     com["label"] = (
                         "{:1.1e} Crab".format(scale_factor) if i == 0 else None
@@ -316,10 +322,17 @@ for energy_range_key in energy_ranges:
                 # Plenoscope
                 # ----------
 
-                for sysuncix in range(num_systematic_uncertainties):
-                    portal_dFdE = dS[zk][ok][dk]["differential_flux"][
-                        :, :, sysuncix
-                    ]
+                for sysuncix in range(len(portal_systematic_uncertainties)):
+                    portal_dFdE_vs_t = (
+                        load_portal_sensitivity_vs_observation_time(
+                            energy_range=energy_range,
+                            zk=zk,
+                            ok=ok,
+                            dk=dk,
+                            sysuncix=sysuncix,
+                        )
+                    )
+
                     if sysuncix == 0:
                         _alpha = 0.5
                         _linestyle = ":"
@@ -328,10 +341,14 @@ for energy_range_key in energy_ranges:
                         _linestyle = "-"
 
                     com = {}
-                    com["observation_time"] = observation_times
-                    com["differential_flux"] = portal_dFdE[enidx, :]
+                    com["observation_time"] = portal_dFdE_vs_t[
+                        "observation_times_s"
+                    ]
+                    com["differential_flux"] = portal_dFdE_vs_t[
+                        "differential_flux_per_m2_per_s_per_GeV"
+                    ]
                     com["label"] = (
-                        f"{portal.LABEL:s} sys.: {systematic_uncertainties[sysuncix]:.1e}"
+                        f"{portal.LABEL:s} sys.: {portal_systematic_uncertainties[sysuncix]:.1e}"
                     )
                     com["color"] = portal.COLOR
                     com["alpha"] = _alpha
