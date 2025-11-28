@@ -275,18 +275,18 @@ for energy_range_key in energy_ranges:
                 # CTA South
                 # ---------
                 try:
-                    cta_s_vs_t = irf.other_instruments.cherenkov_telescope_array_south.sensitivity_vs_observation_time(
+                    cta_south_vs_t = irf.other_instruments.cherenkov_telescope_array_south.sensitivity_vs_observation_time(
                         energy_GeV=energy_range["pivot_GeV"]
                     )
                     com = {}
                     com["energy"] = energy_range["pivot_GeV"] * np.ones(
-                        len(cta_s_vs_t["observation_time"]["values"])
+                        len(cta_south_vs_t["observation_time"]["values"])
                     )
                     com["observation_time"] = np.array(
-                        cta_s_vs_t["observation_time"]["values"]
+                        cta_south_vs_t["observation_time"]["values"]
                     )
                     com["differential_flux"] = np.array(
-                        cta_s_vs_t["differential_flux"]["values"]
+                        cta_south_vs_t["differential_flux"]["values"]
                     )
                     com["label"] = cta.LABEL
                     com["color"] = cta.COLOR
@@ -295,7 +295,7 @@ for energy_range_key in energy_ranges:
                     components.append(com)
                 except AssertionError as asserr:
                     print(
-                        "CTA official",
+                        "CTA-south official",
                         energy_range_key,
                         energy_range["pivot_GeV"],
                         asserr,
