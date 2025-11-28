@@ -63,14 +63,11 @@ emin_MeV = energy_edges_MeV[0]
 emax_MeV = energy_edges_MeV[-1]
 NUM_ENERGY_BINS = len(energy_edges_MeV) - 1
 
-ONE_YEAR_S = 365 * 24 * 3_600
-ONE_MINUTE_S = 60
-
-NUM_OBSERVATION_TIMES = 32
+NUM_OBSERVATION_TIMES = 36
 
 observation_times_s = np.geomspace(
-    ONE_MINUTE_S,
-    ONE_YEAR_S,
+    1e0,
+    1e7,
     NUM_OBSERVATION_TIMES,
 )
 
