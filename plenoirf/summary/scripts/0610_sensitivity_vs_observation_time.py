@@ -231,7 +231,7 @@ for energy_range_key in energy_ranges:
                     opj(res.paths["out_dir"], zk, ok, dk), exist_ok=True
                 )
 
-                components = []
+                plot_components = []
 
                 # Crab nebula reference fluxes
                 # ----------------------------
@@ -253,7 +253,7 @@ for energy_range_key in energy_ranges:
                     com["color"] = "black"
                     com["alpha"] = 0.25 / (1.0 + i)
                     com["linestyle"] = "--"
-                    components.append(com.copy())
+                    plot_components.append(com.copy())
 
                 # Fermi-LAT
                 # ---------
@@ -273,7 +273,7 @@ for energy_range_key in energy_ranges:
                         com["color"] = fermi.COLOR
                         com["alpha"] = 1.0
                         com["linestyle"] = "-"
-                        components.append(com)
+                        plot_components.append(com)
                 except AssertionError as asserr:
                     print(
                         "Fermi-LAT official",
@@ -293,7 +293,7 @@ for energy_range_key in energy_ranges:
                 com["color"] = fermi.COLOR
                 com["alpha"] = 1.0
                 com["linestyle"] = "-"
-                components.append(com)
+                plot_components.append(com)
 
                 # CTA-south
                 # ---------
@@ -312,7 +312,7 @@ for energy_range_key in energy_ranges:
                     com["color"] = cta.COLOR
                     com["alpha"] = 1.0
                     com["linestyle"] = "-"
-                    components.append(com)
+                    plot_components.append(com)
                 except AssertionError as asserr:
                     print(
                         "CTA-south official",
@@ -354,7 +354,7 @@ for energy_range_key in energy_ranges:
                     com["color"] = portal.COLOR
                     com["alpha"] = _alpha
                     com["linestyle"] = _linestyle
-                    components.append(com)
+                    plot_components.append(com)
 
                 # figure
                 # ------
@@ -371,7 +371,7 @@ for energy_range_key in energy_ranges:
                     fontsize=6,
                 )
 
-                for com in components:
+                for com in plot_components:
                     ax.plot(
                         com["observation_time"],
                         com["differential_flux"],
