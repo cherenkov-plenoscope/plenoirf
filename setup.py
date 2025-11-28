@@ -53,7 +53,7 @@ setuptools.setup(
         "json_line_logger>=0.0.3",
         "propagate_uncertainties_sebastian-achim-mueller>=0.2.3",
         "shapely",
-        "binning_utils_sebastian-achim-mueller>=0.0.20",
+        "binning_utils_sebastian-achim-mueller>=0.0.22",
         "json_numpy_sebastian-achim-mueller>=0.1.8",
         "json_utils_sebastian-achim-mueller>=0.0.6",
         "confusion_matrix_sebastian-achim-mueller>=0.0.4",
