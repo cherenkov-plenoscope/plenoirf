@@ -75,7 +75,7 @@ def make_x_limits_ticks_mayor_ticks_minor(
     return xlim_s, xticks_s, xticks_minor_s
 
 
-def load_Fermi_LAT_sensitivity_vs_observation_time(energy_range):
+def load_fermi_lat_dFdE_vs_t(energy_range):
     fls = (
         irf.other_instruments.fermi_lat.flux_sensitivity_vs_observation_time_vs_energy()
     )
@@ -103,9 +103,7 @@ def load_Fermi_LAT_sensitivity_vs_observation_time(energy_range):
     return out
 
 
-def load_portal_sensitivity_vs_observation_time(
-    energy_range, zk, ok, dk, sysuncix
-):
+def load_portal_dFdE_vs_t(energy_range, zk, ok, dk, sysuncix):
     energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
     enidx = binning_utils.find_bin_with_start_stop_in_edges(
         bin_edges=energy_bin["edges"],
@@ -123,26 +121,90 @@ def load_portal_sensitivity_vs_observation_time(
     return out
 
 
+def load_crab_nebula_dFdE_vs_t(
+    energy_range,
+    observation_time_limits,
+):
+    crab_nebula = cosmic_fluxes.read_crab_nebula_flux_from_resources()
+    dFdE = np.interp(
+        x=energy_range["pivot_GeV"],
+        xp=crab_nebula["energy"]["values"],
+        fp=crab_nebula["differential_flux"]["values"],
+    )
+    out = {}
+    out["observation_times_s"] = np.array(observation_time_limits)
+    out["differential_flux_per_m2_per_s_per_GeV"] = dFdE * np.ones(
+        len(out["observation_times_s"])
+    )
+    return out
+
+
 def add_plot_component_crab_nebula_reference_flux(
-    plot_components, crab_nebula, energy_range, observation_time_limits
+    plot_components, crab_nebula_dFdE_vs_t
 ):
     for i in range(4):
         scale_factor = np.power(10.0, (-1) * i)
-        _flux = scale_factor * np.interp(
-            x=energy_range["pivot_GeV"],
-            xp=crab_nebula["energy"]["values"],
-            fp=crab_nebula["differential_flux"]["values"],
-        )
         com = {}
-        com["observation_time"] = np.array(observation_time_limits)
-        com["differential_flux"] = _flux * np.ones(
-            len(com["observation_time"])
+        com["observation_time"] = crab_nebula_dFdE_vs_t["observation_times_s"]
+        com["differential_flux"] = (
+            scale_factor
+            * crab_nebula_dFdE_vs_t["differential_flux_per_m2_per_s_per_GeV"]
         )
         com["label"] = "{:1.1e} Crab".format(scale_factor) if i == 0 else None
         com["color"] = "black"
         com["alpha"] = 0.25 / (1.0 + i)
         com["linestyle"] = "--"
         plot_components.append(com.copy())
+
+
+def add_plot_component_fermi_lat_from_funk2013comparison(
+    plot_components,
+    energy_range,
+):
+    if energy_range["start_GeV"] <= 25.0 < energy_range["stop_GeV"]:
+        _fermi_lat = fermi.sensitivity_vs_observation_time(energy_GeV=25.0)
+        com = {}
+        com["observation_time"] = _fermi_lat["observation_time"]["values"]
+        com["differential_flux"] = _fermi_lat["differential_flux"]["values"]
+        com["label"] = fermi.LABEL + "-funk2013comparison"
+        com["color"] = fermi.COLOR
+        com["alpha"] = 1.0
+        com["linestyle"] = "--"
+        plot_components.append(com)
+
+
+def add_plot_component_fermi_lat(
+    plot_components,
+    fermi_lat_dFdE_vs_t,
+):
+    com = {}
+    com["observation_time"] = fermi_lat_dFdE_vs_t["observation_times_s"]
+    com["differential_flux"] = fermi_lat_dFdE_vs_t[
+        "differential_flux_per_m2_per_s_per_GeV"
+    ]
+    com["label"] = fermi.LABEL + "-mueller"
+    com["color"] = fermi.COLOR
+    com["alpha"] = 1.0
+    com["linestyle"] = "-"
+    plot_components.append(com)
+
+
+def add_plot_component_cta_south_from_funk2013comparison(
+    plot_components,
+    energy_range,
+):
+    if energy_range["start_GeV"] <= 25.0 < energy_range["stop_GeV"]:
+        _cta_south = irf.other_instruments.cherenkov_telescope_array_south.sensitivity_vs_observation_time(
+            energy_GeV=25.0
+        )
+        com = {}
+        com["observation_time"] = _cta_south["observation_time"]["values"]
+        com["differential_flux"] = _cta_south["differential_flux"]["values"]
+        com["label"] = cta.LABEL + "-funk2013comparison"
+        com["color"] = cta.COLOR
+        com["alpha"] = 1.0
+        com["linestyle"] = "--"
+        plot_components.append(com)
 
 
 grb_light_curve = (
@@ -160,16 +222,7 @@ ZENITH_ZD_ZK = [(zd, f"zd{zd:d}") for zd in range(zenith_bin["num"])]
 diff_sens_scenario = res.analysis["differential_sensitivity"][
     "gamma_ray_effective_area_scenario"
 ]
-"""
-    "cta": {
-        "start_GeV": binning_utils.power10.lower_bin_edge(
-            decade=1, bin=2, num_bins_per_decade=5
-        ),
-        "stop_GeV": binning_utils.power10.lower_bin_edge(
-            decade=1, bin=3, num_bins_per_decade=5
-        ),
-    },
-"""
+
 energy_ranges = {
     "portal": {
         "start_GeV": binning_utils.power10.lower_bin_edge(
@@ -177,6 +230,14 @@ energy_ranges = {
         ),
         "stop_GeV": binning_utils.power10.lower_bin_edge(
             decade=0, bin=3, num_bins_per_decade=5
+        ),
+    },
+    "cta": {
+        "start_GeV": binning_utils.power10.lower_bin_edge(
+            decade=1, bin=1, num_bins_per_decade=5
+        ),
+        "stop_GeV": binning_utils.power10.lower_bin_edge(
+            decade=1, bin=2, num_bins_per_decade=5
         ),
     },
 }
@@ -191,10 +252,6 @@ for energy_range_key in energy_ranges:
         - energy_ranges[energy_range_key]["start_GeV"]
     )
 
-PLOT_FERMI_LAT_ESTIMATE_BY_HINTON_AND_FUNK = False
-
-crab_nebula = cosmic_fluxes.read_crab_nebula_flux_from_resources()
-
 portal_systematic_uncertainties = res.analysis["on_off_measuremnent"][
     "systematic_uncertainties"
 ]
@@ -206,11 +263,13 @@ xlim_s, xticks_s, xticks_minor_s = make_x_limits_ticks_mayor_ticks_minor(
 
 y_lim_per_m2_per_s_per_GeV = np.array([1e-6, 1e0])
 
+plot_funk2013comparison = True
 
 for energy_range_key in energy_ranges:
     energy_range = energy_ranges[energy_range_key]
 
     # GRB light curve max photon rate
+
     (grb_max_rate_per_s, grb_observation_time_s) = (
         estimate_max_photon_rate_vs_observation_time(
             grb_light_curve=grb_light_curve,
@@ -219,14 +278,12 @@ for energy_range_key in energy_ranges:
         )
     )
 
-    # FERMI-LAT
-    # ---------
-    fermi_lat_dFdE_vs_t = load_Fermi_LAT_sensitivity_vs_observation_time(
-        energy_range=energy_range
+    fermi_lat_dFdE_vs_t = load_fermi_lat_dFdE_vs_t(energy_range=energy_range)
+    crab_nebula_dFdE_vs_t = load_crab_nebula_dFdE_vs_t(
+        energy_range=energy_range,
+        observation_time_limits=xlim_s,
     )
 
-    # work
-    # ----
     for zd, zk in ZENITH_ZD_ZK:
         for ok in ONREGION_TYPES:
             for dk in flux_sensitivity.differential.SCENARIOS:
@@ -234,92 +291,40 @@ for energy_range_key in energy_ranges:
                     opj(res.paths["out_dir"], zk, ok, dk), exist_ok=True
                 )
 
+                print(energy_range_key, zk, ok, dk)
+
                 plot_components = []
 
                 add_plot_component_crab_nebula_reference_flux(
                     plot_components=plot_components,
-                    crab_nebula=crab_nebula,
-                    energy_range=energy_range,
-                    observation_time_limits=xlim_s,
+                    crab_nebula_dFdE_vs_t=crab_nebula_dFdE_vs_t,
                 )
 
-                # Fermi-LAT
-                # ---------
-                try:
-                    if PLOT_FERMI_LAT_ESTIMATE_BY_HINTON_AND_FUNK:
-                        fermi_s_vs_t = fermi.sensitivity_vs_observation_time(
-                            energy_GeV=energy_range["pivot_GeV"]
-                        )
-                        com = {}
-                        com["observation_time"] = np.array(
-                            fermi_s_vs_t["observation_time"]["values"]
-                        )
-                        com["differential_flux"] = np.array(
-                            fermi_s_vs_t["differential_flux"]["values"]
-                        )
-                        com["label"] = fermi.LABEL
-                        com["color"] = fermi.COLOR
-                        com["alpha"] = 1.0
-                        com["linestyle"] = "-"
-                        plot_components.append(com)
-                except AssertionError as asserr:
-                    print(
-                        "Fermi-LAT official",
-                        energy_range_key,
-                        energy_range["pivot_GeV"],
-                        asserr,
+                add_plot_component_fermi_lat(
+                    plot_components=plot_components,
+                    fermi_lat_dFdE_vs_t=fermi_lat_dFdE_vs_t,
+                )
+
+                if plot_funk2013comparison:
+                    add_plot_component_fermi_lat_from_funk2013comparison(
+                        plot_components=plot_components,
+                        energy_range=energy_range,
                     )
 
-                com = {}
-                com["observation_time"] = fermi_lat_dFdE_vs_t[
-                    "observation_times_s"
-                ]
-                com["differential_flux"] = fermi_lat_dFdE_vs_t[
-                    "differential_flux_per_m2_per_s_per_GeV"
-                ]
-                com["label"] = fermi.LABEL + "sebplt."
-                com["color"] = fermi.COLOR
-                com["alpha"] = 1.0
-                com["linestyle"] = "-"
-                plot_components.append(com)
-
-                # CTA-south
-                # ---------
-                try:
-                    cta_south_vs_t = irf.other_instruments.cherenkov_telescope_array_south.sensitivity_vs_observation_time(
-                        energy_GeV=energy_range["pivot_GeV"]
-                    )
-                    com = {}
-                    com["observation_time"] = np.array(
-                        cta_south_vs_t["observation_time"]["values"]
-                    )
-                    com["differential_flux"] = np.array(
-                        cta_south_vs_t["differential_flux"]["values"]
-                    )
-                    com["label"] = cta.LABEL
-                    com["color"] = cta.COLOR
-                    com["alpha"] = 1.0
-                    com["linestyle"] = "-"
-                    plot_components.append(com)
-                except AssertionError as asserr:
-                    print(
-                        "CTA-south official",
-                        energy_range_key,
-                        energy_range["pivot_GeV"],
-                        asserr,
+                    add_plot_component_cta_south_from_funk2013comparison(
+                        plot_components=plot_components,
+                        energy_range=energy_range,
                     )
 
                 # Portal Cherenkov plenoscope
                 # ---------------------------
                 for sysuncix in range(len(portal_systematic_uncertainties)):
-                    portal_dFdE_vs_t = (
-                        load_portal_sensitivity_vs_observation_time(
-                            energy_range=energy_range,
-                            zk=zk,
-                            ok=ok,
-                            dk=dk,
-                            sysuncix=sysuncix,
-                        )
+                    portal_dFdE_vs_t = load_portal_dFdE_vs_t(
+                        energy_range=energy_range,
+                        zk=zk,
+                        ok=ok,
+                        dk=dk,
+                        sysuncix=sysuncix,
                     )
 
                     if sysuncix == 0:
@@ -369,6 +374,7 @@ for energy_range_key in energy_ranges:
                         linestyle=com["linestyle"],
                     )
 
+                """
                 if energy_range_key == "portal":
                     ax.plot(
                         grb_observation_time_s,
@@ -384,6 +390,7 @@ for energy_range_key in energy_ranges:
                         x=np.nanmedian(grb_observation_time_s),
                         y=np.nanmin(grb_max_rate_per_s),
                     )
+                """
 
                 ax.set_xlim(xlim_s)
                 ax.set_ylim(y_lim_per_m2_per_s_per_GeV)
