@@ -123,6 +123,28 @@ def load_portal_sensitivity_vs_observation_time(
     return out
 
 
+def add_plot_component_crab_nebula_reference_flux(
+    plot_components, crab_nebula, energy_range, observation_time_limits
+):
+    for i in range(4):
+        scale_factor = np.power(10.0, (-1) * i)
+        _flux = scale_factor * np.interp(
+            x=energy_range["pivot_GeV"],
+            xp=crab_nebula["energy"]["values"],
+            fp=crab_nebula["differential_flux"]["values"],
+        )
+        com = {}
+        com["observation_time"] = np.array(observation_time_limits)
+        com["differential_flux"] = _flux * np.ones(
+            len(com["observation_time"])
+        )
+        com["label"] = "{:1.1e} Crab".format(scale_factor) if i == 0 else None
+        com["color"] = "black"
+        com["alpha"] = 0.25 / (1.0 + i)
+        com["linestyle"] = "--"
+        plot_components.append(com.copy())
+
+
 grb_light_curve = (
     irf.other_instruments.fermi_lat.gamma_ray_burst_light_curve_1GeV_regime(
         grb_key="GRB090902B"
@@ -171,6 +193,8 @@ for energy_range_key in energy_ranges:
 
 PLOT_FERMI_LAT_ESTIMATE_BY_HINTON_AND_FUNK = False
 
+crab_nebula = cosmic_fluxes.read_crab_nebula_flux_from_resources()
+
 portal_systematic_uncertainties = res.analysis["on_off_measuremnent"][
     "systematic_uncertainties"
 ]
@@ -201,10 +225,6 @@ for energy_range_key in energy_ranges:
         energy_range=energy_range
     )
 
-    # gamma-ray-flux of crab-nebula
-    # -----------------------------
-    crab_flux = cosmic_fluxes.read_crab_nebula_flux_from_resources()
-
     # work
     # ----
     for zd, zk in ZENITH_ZD_ZK:
@@ -216,27 +236,12 @@ for energy_range_key in energy_ranges:
 
                 plot_components = []
 
-                # Crab nebula reference fluxes
-                # ----------------------------
-                for i in range(4):
-                    scale_factor = np.power(10.0, (-1) * i)
-                    _flux = scale_factor * np.interp(
-                        x=energy_range["pivot_GeV"],
-                        xp=crab_flux["energy"]["values"],
-                        fp=crab_flux["differential_flux"]["values"],
-                    )
-                    com = {}
-                    com["observation_time"] = np.array(xlim_s)
-                    com["differential_flux"] = _flux * np.ones(
-                        len(com["observation_time"])
-                    )
-                    com["label"] = (
-                        "{:1.1e} Crab".format(scale_factor) if i == 0 else None
-                    )
-                    com["color"] = "black"
-                    com["alpha"] = 0.25 / (1.0 + i)
-                    com["linestyle"] = "--"
-                    plot_components.append(com.copy())
+                add_plot_component_crab_nebula_reference_flux(
+                    plot_components=plot_components,
+                    crab_nebula=crab_nebula,
+                    energy_range=energy_range,
+                    observation_time_limits=xlim_s,
+                )
 
                 # Fermi-LAT
                 # ---------
