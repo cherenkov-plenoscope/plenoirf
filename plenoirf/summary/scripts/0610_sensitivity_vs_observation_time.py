@@ -11,6 +11,7 @@ import os
 from os.path import join as opj
 import sebastians_matplotlib_addons as sebplt
 import json_utils
+import scipy.spatial
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
@@ -139,6 +140,43 @@ def load_crab_nebula_dFdE_vs_t(
     return out
 
 
+def load_grb_F_vs_t(grb_key, energy_range, min_observation_time_s):
+    assert min_observation_time_s > 0
+
+    grb_light_curve = irf.other_instruments.fermi_lat.gamma_ray_burst_light_curve_1GeV_regime(
+        grb_key=grb_key
+    )
+
+    (grb_max_rate_per_s, grb_observation_time_s) = (
+        estimate_max_photon_rate_vs_observation_time(
+            grb_light_curve=grb_light_curve,
+            energy_start_GeV=energy_range["start_GeV"],
+            energy_stop_GeV=energy_range["stop_GeV"],
+        )
+    )
+
+    ttt = grb_observation_time_s.tolist()
+    rrr = grb_max_rate_per_s.tolist()
+
+    ttt += [min_observation_time_s, min_observation_time_s]
+    rrr += [min(rrr), max(rrr)]
+
+    points = np.array([ttt, rrr]).T
+
+    hull = scipy.spatial.ConvexHull(points)
+    outer_points = hull.points[hull.vertices]
+    return {
+        "hull": {
+            "observation_times_s": outer_points[:, 0],
+            "flux_per_m2_per_s": outer_points[:, 1],
+        },
+        "edge": {
+            "observation_times_s": grb_observation_time_s,
+            "flux_per_m2_per_s": grb_max_rate_per_s,
+        },
+    }
+
+
 def add_plot_component_crab_nebula_reference_flux(
     plot_components, crab_nebula_dFdE_vs_t
 ):
@@ -207,11 +245,9 @@ def add_plot_component_cta_south_from_funk2013comparison(
         plot_components.append(com)
 
 
-grb_light_curve = (
-    irf.other_instruments.fermi_lat.gamma_ray_burst_light_curve_1GeV_regime(
-        grb_key="GRB090902B"
-    )
-)
+def powerquantile(x, q=1.5):
+    return binning_utils.power.space(min(x), max(x), size=3, power_slope=-q)[1]
+
 
 # load
 # ----
@@ -267,16 +303,6 @@ plot_funk2013comparison = True
 
 for energy_range_key in energy_ranges:
     energy_range = energy_ranges[energy_range_key]
-
-    # GRB light curve max photon rate
-
-    (grb_max_rate_per_s, grb_observation_time_s) = (
-        estimate_max_photon_rate_vs_observation_time(
-            grb_light_curve=grb_light_curve,
-            energy_start_GeV=energy_range["start_GeV"],
-            energy_stop_GeV=energy_range["stop_GeV"],
-        )
-    )
 
     fermi_lat_dFdE_vs_t = load_fermi_lat_dFdE_vs_t(energy_range=energy_range)
     crab_nebula_dFdE_vs_t = load_crab_nebula_dFdE_vs_t(
@@ -374,23 +400,40 @@ for energy_range_key in energy_ranges:
                         linestyle=com["linestyle"],
                     )
 
-                """
-                if energy_range_key == "portal":
+                if energy_range["stop_GeV"] < 10.0:
+                    # GRB light curve max photon rate
+                    grb_key = "GRB090902B"
+                    grb_color = "black"
+                    grb_F_vs_t = load_grb_F_vs_t(
+                        grb_key=grb_key,
+                        energy_range=energy_range,
+                        min_observation_time_s=xlim_s[0],
+                    )
+                    ax.fill(
+                        grb_F_vs_t["hull"]["observation_times_s"],
+                        grb_F_vs_t["hull"]["flux_per_m2_per_s"]
+                        / energy_range["width_GeV"],
+                        alpha=0.25,
+                        color=grb_color,
+                    )
                     ax.plot(
-                        grb_observation_time_s,
-                        grb_max_rate_per_s,
-                        color="black",
-                        linestyle="none",
-                        marker="o",
-                        markersize=25.0,
-                        alpha=0.02,
+                        grb_F_vs_t["edge"]["observation_times_s"],
+                        grb_F_vs_t["edge"]["flux_per_m2_per_s"]
+                        / energy_range["width_GeV"],
+                        alpha=1,
+                        color=grb_color,
                     )
                     ax.text(
-                        s=r"GRB$\,$090902B",
-                        x=np.nanmedian(grb_observation_time_s),
-                        y=np.nanmin(grb_max_rate_per_s),
+                        s=grb_key,
+                        x=powerquantile(
+                            grb_F_vs_t["hull"]["observation_times_s"], q=1.5
+                        ),
+                        y=powerquantile(
+                            grb_F_vs_t["hull"]["flux_per_m2_per_s"]
+                            / energy_range["width_GeV"],
+                            q=3.5,
+                        ),
                     )
-                """
 
                 ax.set_xlim(xlim_s)
                 ax.set_ylim(y_lim_per_m2_per_s_per_GeV)
