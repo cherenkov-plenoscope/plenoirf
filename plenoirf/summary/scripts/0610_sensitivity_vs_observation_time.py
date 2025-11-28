@@ -22,6 +22,9 @@ portal = irf.other_instruments.portal
 
 ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
+energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+
+
 # GAMMA RAY BURSTS
 # -----------------------
 #
@@ -41,41 +44,17 @@ def estimate_max_photon_rate_vs_observation_time(
     assert energy_stop_GeV > 0
     assert energy_stop_GeV > energy_start_GeV
 
-    g_time_s = grb_light_curve["time_since_T0_s"]
-    g_energy_GeV = grb_light_curve["energy_GeV"]
-    g_mask = np.logical_and(g_energy_GeV >= 1.584, g_energy_GeV <= 3.981)
-    g_t = g_time_s[g_mask]
-    g_e = g_energy_GeV[g_mask]
-    g_min_samples = 5
-
-    g_min_t_window_s = 1.0
-    g_max_t_window_s = max(g_t) - min(g_t)
-    g_num_t_windows = 5 * len(g_t)
-    g_window_radii_s = np.geomspace(
-        g_min_t_window_s / 2, g_max_t_window_s / 2, g_num_t_windows
+    _time_s = grb_light_curve["time_since_T0_s"]
+    _energy_GeV = grb_light_curve["energy_GeV"]
+    mask = np.logical_and(
+        _energy_GeV >= energy_start_GeV,
+        _energy_GeV <= energy_stop_GeV,
     )
-    g_num_steps = 10 * len(g_t)
-    g_ts = np.geomspace(min(g_t), max(g_t), g_num_steps)
+    time_s = _time_s[mask]
 
-    g_max_rate_per_s = []
-    for ttt in range(g_num_t_windows):
-        g_window_radius_s = g_window_radii_s[ttt]
-        g_window_duration_s = 2 * g_window_radius_s
-        samples = []
-        for www in range(g_num_steps):
-            g_t_pivot = g_ts[www]
-            g_t_delta_s = np.abs(g_t - g_t_pivot)
-            g_num_in_window = np.sum(g_t_delta_s <= g_window_radius_s)
-            if g_num_in_window >= g_min_samples:
-                g_rate_in_window_per_s = g_num_in_window / g_window_duration_s
-            else:
-                g_rate_in_window_per_s = np.nan
-            samples.append(g_rate_in_window_per_s)
-        g_max_rate_per_s.append(max(samples))
-    g_max_rate_per_s = np.array(g_max_rate_per_s)
-    g_window_durations_s = 2 * g_window_radii_s
-
-    return g_max_rate_per_s, g_window_durations_s
+    return irf.analysis.light_curve.estimate_max_rate_vs_observation_time(
+        t=time_s
+    )
 
 
 def find_bin_index_in_bin_edges(bin_edges, start, stop, relative_margin=0.05):
@@ -113,8 +92,7 @@ dS = json_utils.tree.Tree(
 diff_sens_scenario = res.analysis["differential_sensitivity"][
     "gamma_ray_effective_area_scenario"
 ]
-
-bin_energy = {
+"""
     "cta": {
         "start_GeV": bu.power10.lower_bin_edge(
             decade=1, bin=2, num_bins_per_decade=5
@@ -123,6 +101,9 @@ bin_energy = {
             decade=1, bin=3, num_bins_per_decade=5
         ),
     },
+"""
+bin_energy = {
+
     "portal": {
         "start_GeV": bu.power10.lower_bin_edge(
             decade=0, bin=2, num_bins_per_decade=5
@@ -151,7 +132,7 @@ num_systematic_uncertainties = len(systematic_uncertainties)
 
 for pe in bin_energy:
 
-    # GRB
+    # GRB light curve max photon rate
     (grb_max_rate_per_s, grb_observation_time_s) = (
         estimate_max_photon_rate_vs_observation_time(
             grb_light_curve=grb_light_curve,
@@ -180,7 +161,6 @@ for pe in bin_energy:
         stop=bin_energy[pe]["stop_GeV"],
     )
 
-    energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 
     # gamma-ray-flux of crab-nebula
     # -----------------------------
@@ -231,8 +211,8 @@ for pe in bin_energy:
                     scale_factor = np.power(10.0, (-1) * i)
                     _flux = scale_factor * np.interp(
                         x=bin_energy[pe]["pivot_GeV"],
-                        xp=np.array(crab_flux["energy"]["values"]),
-                        fp=np.array(crab_flux["differential_flux"]["values"]),
+                        xp=crab_flux["energy"]["values"],
+                        fp=crab_flux["differential_flux"]["values"],
                     )
                     com = {}
                     com["observation_time"] = observation_times
