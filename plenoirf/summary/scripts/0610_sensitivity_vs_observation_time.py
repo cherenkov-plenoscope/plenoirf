@@ -155,19 +155,8 @@ xlim_s, xticks_s, xticks_minor_s = make_x_limits_ticks_mayor_ticks_minor(
     observation_time_stop_decade=7,
 )
 
-for energy_range_key in energy_ranges:
-    energy_range = energy_ranges[energy_range_key]
 
-    # GRB light curve max photon rate
-    (grb_max_rate_per_s, grb_observation_time_s) = (
-        estimate_max_photon_rate_vs_observation_time(
-            grb_light_curve=grb_light_curve,
-            energy_start_GeV=energy_range["start_GeV"],
-            energy_stop_GeV=energy_range["stop_GeV"],
-        )
-    )
-
-    # FERMI-LAT
+def load_Fermi_LAT_sensitivity_vs_observation_time(energy_range):
     fls = (
         irf.other_instruments.fermi_lat.flux_sensitivity_vs_observation_time_vs_energy()
     )
@@ -185,6 +174,32 @@ for energy_range_key in energy_ranges:
         bin_edges=odnde["energy_bin_edges"]["value"],
         start=energy_range["start_GeV"],
         stop=energy_range["stop_GeV"],
+    )
+
+    out = {}
+    out["differential_flux_per_m2_per_s_per_GeV"] = odnde["dnde"]["value"][
+        :, lo_ebin
+    ]
+    out["observation_times_s"] = odnde["observation_times"]["value"]
+    return out
+
+
+for energy_range_key in energy_ranges:
+    energy_range = energy_ranges[energy_range_key]
+
+    # GRB light curve max photon rate
+    (grb_max_rate_per_s, grb_observation_time_s) = (
+        estimate_max_photon_rate_vs_observation_time(
+            grb_light_curve=grb_light_curve,
+            energy_start_GeV=energy_range["start_GeV"],
+            energy_stop_GeV=energy_range["stop_GeV"],
+        )
+    )
+
+    # FERMI-LAT
+    # ---------
+    fermi_lat = load_Fermi_LAT_sensitivity_vs_observation_time(
+        energy_range=energy_range
     )
 
     # gamma-ray-flux of crab-nebula
@@ -274,10 +289,12 @@ for energy_range_key in energy_ranges:
 
                 com = {}
                 com["energy"] = energy_range["pivot_GeV"] * np.ones(
-                    len(odnde["observation_times"]["value"])
+                    len(fermi_lat["observation_times_s"])
                 )
-                com["observation_time"] = odnde["observation_times"]["value"]
-                com["differential_flux"] = odnde["dnde"]["value"][:, lo_ebin]
+                com["observation_time"] = fermi_lat["observation_times_s"]
+                com["differential_flux"] = fermi_lat[
+                    "differential_flux_per_m2_per_s_per_GeV"
+                ]
                 com["label"] = fermi.LABEL + "sebplt."
                 com["color"] = fermi.COLOR
                 com["alpha"] = 1.0
