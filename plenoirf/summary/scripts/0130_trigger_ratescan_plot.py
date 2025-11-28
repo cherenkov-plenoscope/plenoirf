@@ -22,7 +22,7 @@ trigger_rates = json_utils.tree.Tree(
 
 num_trigger_thresholds = len(trigger["ratescan_thresholds_pe"])
 
-NSB_COLOR = "darkolivegreen"
+NSB_COLOR = "peru"
 SUM_COLOR = "olive"
 PLOT_LEGEND = False
 
@@ -54,6 +54,8 @@ def ax_plot_au(ax, x, y, y_au, alpha_ratio=0.25, **kwargs):
 
 tr = trigger_rates
 
+RATE_CONTRIBUTIONS = [ck for ck in res.COSMIC_RAYS] + ["night_sky_background"]
+
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
 
@@ -73,7 +75,7 @@ for zd in range(zenith_bin["num"]):
     for tt in range(num_trigger_thresholds):
         _xsum = []
         _xsum_au = []
-        for ck in tr[zk]:
+        for ck in RATE_CONTRIBUTIONS:
             _xsum.append(tr[zk][ck]["rate"][tt])
             _xsum_au.append(tr[zk][ck]["rate_au"][tt])
         total_rate[tt], total_rate_au[tt] = pru.sum(x=_xsum, x_au=_xsum_au)
@@ -94,6 +96,18 @@ for zd in range(zenith_bin["num"]):
         y_au=tr[zk]["night_sky_background"]["rate_au"],
         color=NSB_COLOR,
         linestyle="-",
+        label="night sky",
+    )
+
+    ax_plot_au(
+        ax=ax,
+        x=trigger["ratescan_thresholds_pe"],
+        y=tr[zk]["night_sky_background_only_accepting_not_rejecting"]["rate"],
+        y_au=tr[zk]["night_sky_background_only_accepting_not_rejecting"][
+            "rate_au"
+        ],
+        color=NSB_COLOR,
+        linestyle=":",
         label="night sky",
     )
 

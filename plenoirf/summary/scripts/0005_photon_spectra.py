@@ -29,7 +29,7 @@ ax = sebplt.add_axes(fig=fig, span=sax)
 ax.plot(
     nsb["flux_vs_wavelength"][:, 0],
     nsb["flux_vs_wavelength"][:, 1],
-    color="darkolivegreen",
+    color="peru",
 )
 ax.set_xlabel("wavelength / m")
 ax.set_ylabel(

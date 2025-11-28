@@ -23,7 +23,7 @@ nsb = json_utils.tree.Tree(
         res.paths["analysis_dir"],
         "0120_trigger_rates_for_night_sky_background",
     )
-)["night_sky_background_rates"]
+)
 zenith_bin = res.zenith_binning("once")
 
 trigger_rates = {}
@@ -32,10 +32,21 @@ num_trigger_thresholds = len(trigger["ratescan_thresholds_pe"])
 
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
+
+    trigger_modi = {
+        "only_accepting_not_rejecting": "_only_accepting_not_rejecting",
+        "applying_rejection_refocussing": "",
+    }
     trigger_rates[zk] = {}
-    trigger_rates[zk]["night_sky_background"] = {}
-    trigger_rates[zk]["night_sky_background"]["rate"] = nsb[zk]["rate"]
-    trigger_rates[zk]["night_sky_background"]["rate_au"] = nsb[zk]["rate_au"]
+
+    for trigger_modus in trigger_modi:
+        nsb_key = f"night_sky_background{trigger_modi[trigger_modus]:s}"
+        nsb_filename = f"night_sky_background_rates_{trigger_modus:s}"
+        trigger_rates[zk][nsb_key] = {}
+        trigger_rates[zk][nsb_key]["rate"] = nsb[nsb_filename][zk]["rate"]
+        trigger_rates[zk][nsb_key]["rate_au"] = nsb[nsb_filename][zk][
+            "rate_au"
+        ]
 
     for pk in res.PARTICLES:
         trigger_rates[zk][pk] = {}
