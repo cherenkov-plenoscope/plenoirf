@@ -102,8 +102,7 @@ diff_sens_scenario = res.analysis["differential_sensitivity"][
         ),
     },
 """
-bin_energy = {
-
+energy_ranges = {
     "portal": {
         "start_GeV": bu.power10.lower_bin_edge(
             decade=0, bin=2, num_bins_per_decade=5
@@ -113,14 +112,15 @@ bin_energy = {
         ),
     },
 }
-for pe in bin_energy:
-    bin_energy[pe]["pivot_GeV"] = np.geomspace(
-        bin_energy[pe]["start_GeV"],
-        bin_energy[pe]["stop_GeV"],
+for energy_range_key in energy_ranges:
+    energy_ranges[energy_range_key]["pivot_GeV"] = np.geomspace(
+        energy_ranges[energy_range_key]["start_GeV"],
+        energy_ranges[energy_range_key]["stop_GeV"],
         3,
     )[1]
-    bin_energy[pe]["width_GeV"] = (
-        bin_energy[pe]["stop_GeV"] - bin_energy[pe]["start_GeV"]
+    energy_ranges[energy_range_key]["width_GeV"] = (
+        energy_ranges[energy_range_key]["stop_GeV"]
+        - energy_ranges[energy_range_key]["start_GeV"]
     )
 
 PLOT_FERMI_LAT_ESTIMATE_BY_HINTON_AND_FUNK = False
@@ -130,14 +130,15 @@ systematic_uncertainties = res.analysis["on_off_measuremnent"][
 ]
 num_systematic_uncertainties = len(systematic_uncertainties)
 
-for pe in bin_energy:
+for energy_range_key in energy_ranges:
+    energy_range = energy_ranges[energy_range_key]
 
     # GRB light curve max photon rate
     (grb_max_rate_per_s, grb_observation_time_s) = (
         estimate_max_photon_rate_vs_observation_time(
             grb_light_curve=grb_light_curve,
-            energy_start_GeV=bin_energy[pe]["start_GeV"],
-            energy_stop_GeV=bin_energy[pe]["stop_GeV"],
+            energy_start_GeV=energy_range["start_GeV"],
+            energy_stop_GeV=energy_range["stop_GeV"],
         )
     )
 
@@ -157,10 +158,9 @@ for pe in bin_energy:
     odnde["observation_times"] = fls["observation_times"]
     lo_ebin = find_bin_index_in_bin_edges(
         bin_edges=odnde["energy_bin_edges"]["value"],
-        start=bin_energy[pe]["start_GeV"],
-        stop=bin_energy[pe]["stop_GeV"],
+        start=energy_range["start_GeV"],
+        stop=energy_range["stop_GeV"],
     )
-
 
     # gamma-ray-flux of crab-nebula
     # -----------------------------
@@ -170,8 +170,8 @@ for pe in bin_energy:
 
     enidx = find_bin_index_in_bin_edges(
         bin_edges=energy_bin["edges"],
-        start=bin_energy[pe]["start_GeV"],
-        stop=bin_energy[pe]["stop_GeV"],
+        start=energy_range["start_GeV"],
+        stop=energy_range["stop_GeV"],
     )
 
     x_lim_s_start_decade = -3
@@ -210,13 +210,13 @@ for pe in bin_energy:
                 for i in range(4):
                     scale_factor = np.power(10.0, (-1) * i)
                     _flux = scale_factor * np.interp(
-                        x=bin_energy[pe]["pivot_GeV"],
+                        x=energy_range["pivot_GeV"],
                         xp=crab_flux["energy"]["values"],
                         fp=crab_flux["differential_flux"]["values"],
                     )
                     com = {}
                     com["observation_time"] = observation_times
-                    com["energy"] = bin_energy[pe]["pivot_GeV"] * np.ones(
+                    com["energy"] = energy_range["pivot_GeV"] * np.ones(
                         len(observation_times)
                     )
                     com["differential_flux"] = _flux * np.ones(
@@ -235,10 +235,10 @@ for pe in bin_energy:
                 try:
                     if PLOT_FERMI_LAT_ESTIMATE_BY_HINTON_AND_FUNK:
                         fermi_s_vs_t = fermi.sensitivity_vs_observation_time(
-                            energy_GeV=bin_energy[pe]["pivot_GeV"]
+                            energy_GeV=energy_range["pivot_GeV"]
                         )
                         com = {}
-                        com["energy"] = bin_energy[pe]["pivot_GeV"] * np.ones(
+                        com["energy"] = energy_range["pivot_GeV"] * np.ones(
                             len(fermi_s_vs_t["observation_time"]["values"])
                         )
                         com["observation_time"] = np.array(
@@ -255,13 +255,13 @@ for pe in bin_energy:
                 except AssertionError as asserr:
                     print(
                         "Fermi-LAT official",
-                        pe,
-                        bin_energy[pe]["pivot_GeV"],
+                        energy_range_key,
+                        energy_range["pivot_GeV"],
                         asserr,
                     )
 
                 com = {}
-                com["energy"] = bin_energy[pe]["pivot_GeV"] * np.ones(
+                com["energy"] = energy_range["pivot_GeV"] * np.ones(
                     len(odnde["observation_times"]["value"])
                 )
                 com["observation_time"] = odnde["observation_times"]["value"]
@@ -276,10 +276,10 @@ for pe in bin_energy:
                 # ---------
                 try:
                     cta_s_vs_t = irf.other_instruments.cherenkov_telescope_array_south.sensitivity_vs_observation_time(
-                        energy_GeV=bin_energy[pe]["pivot_GeV"]
+                        energy_GeV=energy_range["pivot_GeV"]
                     )
                     com = {}
-                    com["energy"] = bin_energy[pe]["pivot_GeV"] * np.ones(
+                    com["energy"] = energy_range["pivot_GeV"] * np.ones(
                         len(cta_s_vs_t["observation_time"]["values"])
                     )
                     com["observation_time"] = np.array(
@@ -295,7 +295,10 @@ for pe in bin_energy:
                     components.append(com)
                 except AssertionError as asserr:
                     print(
-                        "CTA official", pe, bin_energy[pe]["pivot_GeV"], asserr
+                        "CTA official",
+                        energy_range_key,
+                        energy_range["pivot_GeV"],
+                        asserr,
                     )
 
                 # Plenoscope
@@ -314,7 +317,7 @@ for pe in bin_energy:
 
                     com = {}
                     com["observation_time"] = observation_times
-                    com["energy"] = bin_energy[pe]["pivot_GeV"] * np.ones(
+                    com["energy"] = energy_range["pivot_GeV"] * np.ones(
                         len(observation_times)
                     )
                     com["differential_flux"] = portal_dFdE[enidx, :]
@@ -358,7 +361,7 @@ for pe in bin_energy:
                         linestyle=com["linestyle"],
                     )
 
-                if pe == "portal":
+                if energy_range_key == "portal":
                     ax.plot(
                         grb_observation_time_s,
                         grb_max_rate_per_s,
@@ -402,7 +405,7 @@ for pe in bin_energy:
                         ok,
                         dk,
                         "differential_flux_sensitivity_vs_obseravtion_time_{:d}MeV.jpg".format(
-                            int(bin_energy[pe]["pivot_GeV"] * 1e3)
+                            int(energy_range["pivot_GeV"] * 1e3)
                         ),
                     )
                 )
