@@ -22,7 +22,7 @@ trigger_rates = json_utils.tree.Tree(
 
 num_trigger_thresholds = len(trigger["ratescan_thresholds_pe"])
 
-NSB_COLOR = "deepskyblue"
+NSB_COLOR = "darkolivegreen"
 SUM_COLOR = "olive"
 PLOT_LEGEND = False
 
