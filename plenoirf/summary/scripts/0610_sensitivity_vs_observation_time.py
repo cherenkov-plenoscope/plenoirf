@@ -2,7 +2,7 @@
 import sys
 import numpy as np
 import plenoirf as irf
-import binning_utils as bu
+import binning_utils
 import flux_sensitivity
 import spectral_energy_distribution_units as sed
 from plenoirf.analysis import spectral_energy_distribution as sed_styles
@@ -55,23 +55,6 @@ def estimate_max_photon_rate_vs_observation_time(
     )
 
 
-def find_bin_index_in_bin_edges(bin_edges, start, stop, relative_margin=0.05):
-    num_bins = len(bin_edges) - 1
-
-    def _in_relative_margin(x, y):
-        a, b = sorted([x, y])
-        return np.abs(1.0 - a / b)
-
-    for i in range(num_bins):
-        bin_start = bin_edges[i]
-        bin_stop = bin_edges[i + 1]
-        if _in_relative_margin(bin_start, start) < relative_margin:
-            if _in_relative_margin(bin_stop, stop) < relative_margin:
-                return i
-
-    assert False, "Did not find a matching bin"
-
-
 def make_x_limits_ticks_mayor_ticks_minor(
     observation_time_start_decade,
     observation_time_stop_decade,
@@ -92,6 +75,54 @@ def make_x_limits_ticks_mayor_ticks_minor(
     return xlim_s, xticks_s, xticks_minor_s
 
 
+def load_Fermi_LAT_sensitivity_vs_observation_time(energy_range):
+    fls = (
+        irf.other_instruments.fermi_lat.flux_sensitivity_vs_observation_time_vs_energy()
+    )
+    assert fls["dnde"]["unit"] == "cm-2 MeV-1 ph s-1"
+    odnde = {"dnde": {}}
+    odnde["dnde"]["value"] = fls["dnde"]["value"] * 1e4 * 1e3
+    odnde["dnde"]["unit"] = "m-2 GeV ph s-1"
+    odnde["energy_bin_edges"] = {}
+    odnde["energy_bin_edges"]["value"] = (
+        fls["energy_bin_edges"]["value"] * 1e-3
+    )
+    odnde["energy_bin_edges"]["unit"] = "GeV"
+    odnde["observation_times"] = fls["observation_times"]
+    lo_ebin = binning_utils.find_bin_with_start_stop_in_edges(
+        bin_edges=odnde["energy_bin_edges"]["value"],
+        start=energy_range["start_GeV"],
+        stop=energy_range["stop_GeV"],
+    )
+
+    out = {}
+    out["differential_flux_per_m2_per_s_per_GeV"] = odnde["dnde"]["value"][
+        :, lo_ebin
+    ]
+    out["observation_times_s"] = odnde["observation_times"]["value"]
+    return out
+
+
+def load_portal_sensitivity_vs_observation_time(
+    energy_range, zk, ok, dk, sysuncix
+):
+    energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+    enidx = binning_utils.find_bin_with_start_stop_in_edges(
+        bin_edges=energy_bin["edges"],
+        start=energy_range["start_GeV"],
+        stop=energy_range["stop_GeV"],
+    )
+    dS = json_utils.tree.Tree(
+        opj(res.paths["analysis_dir"], "0540_diffsens_estimate")
+    )
+    dFdE = dS[zk][ok][dk]["differential_flux"][:, :, sysuncix]
+
+    out = {}
+    out["differential_flux_per_m2_per_s_per_GeV"] = dFdE[enidx, :]
+    out["observation_times_s"] = dS[zk][ok][dk]["observation_times"]
+    return out
+
+
 grb_light_curve = (
     irf.other_instruments.fermi_lat.gamma_ray_burst_light_curve_1GeV_regime(
         grb_key="GRB090902B"
@@ -109,20 +140,20 @@ diff_sens_scenario = res.analysis["differential_sensitivity"][
 ]
 """
     "cta": {
-        "start_GeV": bu.power10.lower_bin_edge(
+        "start_GeV": binning_utils.power10.lower_bin_edge(
             decade=1, bin=2, num_bins_per_decade=5
         ),
-        "stop_GeV": bu.power10.lower_bin_edge(
+        "stop_GeV": binning_utils.power10.lower_bin_edge(
             decade=1, bin=3, num_bins_per_decade=5
         ),
     },
 """
 energy_ranges = {
     "portal": {
-        "start_GeV": bu.power10.lower_bin_edge(
+        "start_GeV": binning_utils.power10.lower_bin_edge(
             decade=0, bin=2, num_bins_per_decade=5
         ),
-        "stop_GeV": bu.power10.lower_bin_edge(
+        "stop_GeV": binning_utils.power10.lower_bin_edge(
             decade=0, bin=3, num_bins_per_decade=5
         ),
     },
@@ -150,54 +181,6 @@ xlim_s, xticks_s, xticks_minor_s = make_x_limits_ticks_mayor_ticks_minor(
 )
 
 y_lim_per_m2_per_s_per_GeV = np.array([1e-6, 1e0])
-
-
-def load_Fermi_LAT_sensitivity_vs_observation_time(energy_range):
-    fls = (
-        irf.other_instruments.fermi_lat.flux_sensitivity_vs_observation_time_vs_energy()
-    )
-    assert fls["dnde"]["unit"] == "cm-2 MeV-1 ph s-1"
-    odnde = {"dnde": {}}
-    odnde["dnde"]["value"] = fls["dnde"]["value"] * 1e4 * 1e3
-    odnde["dnde"]["unit"] = "m-2 GeV ph s-1"
-    odnde["energy_bin_edges"] = {}
-    odnde["energy_bin_edges"]["value"] = (
-        fls["energy_bin_edges"]["value"] * 1e-3
-    )
-    odnde["energy_bin_edges"]["unit"] = "GeV"
-    odnde["observation_times"] = fls["observation_times"]
-    lo_ebin = find_bin_index_in_bin_edges(
-        bin_edges=odnde["energy_bin_edges"]["value"],
-        start=energy_range["start_GeV"],
-        stop=energy_range["stop_GeV"],
-    )
-
-    out = {}
-    out["differential_flux_per_m2_per_s_per_GeV"] = odnde["dnde"]["value"][
-        :, lo_ebin
-    ]
-    out["observation_times_s"] = odnde["observation_times"]["value"]
-    return out
-
-
-def load_portal_sensitivity_vs_observation_time(
-    energy_range, zk, ok, dk, sysuncix
-):
-    energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
-    enidx = find_bin_index_in_bin_edges(
-        bin_edges=energy_bin["edges"],
-        start=energy_range["start_GeV"],
-        stop=energy_range["stop_GeV"],
-    )
-    dS = json_utils.tree.Tree(
-        opj(res.paths["analysis_dir"], "0540_diffsens_estimate")
-    )
-    dFdE = dS[zk][ok][dk]["differential_flux"][:, :, sysuncix]
-
-    out = {}
-    out["differential_flux_per_m2_per_s_per_GeV"] = dFdE[enidx, :]
-    out["observation_times_s"] = dS[zk][ok][dk]["observation_times"]
-    return out
 
 
 for energy_range_key in energy_ranges:
