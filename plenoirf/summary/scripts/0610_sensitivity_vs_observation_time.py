@@ -155,6 +155,8 @@ xlim_s, xticks_s, xticks_minor_s = make_x_limits_ticks_mayor_ticks_minor(
     observation_time_stop_decade=7,
 )
 
+y_lim_per_m2_per_s_per_GeV = np.array([1e-6, 1e0])
+
 
 def load_Fermi_LAT_sensitivity_vs_observation_time(energy_range):
     fls = (
@@ -206,18 +208,11 @@ for energy_range_key in energy_ranges:
     # -----------------------------
     crab_flux = cosmic_fluxes.read_crab_nebula_flux_from_resources()
 
-    internal_sed_style = sed_styles.PLENOIRF_SED_STYLE
-
     enidx = find_bin_index_in_bin_edges(
         bin_edges=energy_bin["edges"],
         start=energy_range["start_GeV"],
         stop=energy_range["stop_GeV"],
     )
-
-    e_lim_GeV = np.array([1e-1, 1e4])
-    y_lim_per_m2_per_s_per_GeV = np.array(
-        [1e0, 1e-6]
-    )  # np.array([1e3, 1e-16])
 
     # work
     # ----
@@ -243,9 +238,6 @@ for energy_range_key in energy_ranges:
                     )
                     com = {}
                     com["observation_time"] = observation_times
-                    com["energy"] = energy_range["pivot_GeV"] * np.ones(
-                        len(observation_times)
-                    )
                     com["differential_flux"] = _flux * np.ones(
                         len(observation_times)
                     )
@@ -265,9 +257,6 @@ for energy_range_key in energy_ranges:
                             energy_GeV=energy_range["pivot_GeV"]
                         )
                         com = {}
-                        com["energy"] = energy_range["pivot_GeV"] * np.ones(
-                            len(fermi_s_vs_t["observation_time"]["values"])
-                        )
                         com["observation_time"] = np.array(
                             fermi_s_vs_t["observation_time"]["values"]
                         )
@@ -288,9 +277,6 @@ for energy_range_key in energy_ranges:
                     )
 
                 com = {}
-                com["energy"] = energy_range["pivot_GeV"] * np.ones(
-                    len(fermi_lat["observation_times_s"])
-                )
                 com["observation_time"] = fermi_lat["observation_times_s"]
                 com["differential_flux"] = fermi_lat[
                     "differential_flux_per_m2_per_s_per_GeV"
@@ -308,9 +294,6 @@ for energy_range_key in energy_ranges:
                         energy_GeV=energy_range["pivot_GeV"]
                     )
                     com = {}
-                    com["energy"] = energy_range["pivot_GeV"] * np.ones(
-                        len(cta_south_vs_t["observation_time"]["values"])
-                    )
                     com["observation_time"] = np.array(
                         cta_south_vs_t["observation_time"]["values"]
                     )
@@ -346,9 +329,6 @@ for energy_range_key in energy_ranges:
 
                     com = {}
                     com["observation_time"] = observation_times
-                    com["energy"] = energy_range["pivot_GeV"] * np.ones(
-                        len(observation_times)
-                    )
                     com["differential_flux"] = portal_dFdE[enidx, :]
                     com["label"] = (
                         f"{portal.LABEL:s} sys.: {systematic_uncertainties[sysuncix]:.1e}"
@@ -374,16 +354,9 @@ for energy_range_key in energy_ranges:
                 )
 
                 for com in components:
-                    _energy, _dFdE = sed.convert_units_with_style(
-                        x=com["energy"],
-                        y=com["differential_flux"],
-                        input_style=internal_sed_style,
-                        target_style=sed_styles.PLENOIRF_SED_STYLE,
-                    )
-                    _ = _energy
                     ax.plot(
                         com["observation_time"],
-                        _dFdE,
+                        com["differential_flux"],
                         label=com["label"],
                         color=com["color"],
                         alpha=com["alpha"],
@@ -406,16 +379,8 @@ for energy_range_key in energy_ranges:
                         y=np.nanmin(grb_max_rate_per_s),
                     )
 
-                _E_lim, _dFdE_lim = sed.convert_units_with_style(
-                    x=e_lim_GeV,
-                    y=y_lim_per_m2_per_s_per_GeV,
-                    input_style=internal_sed_style,
-                    target_style=sed_styles.PLENOIRF_SED_STYLE,
-                )
-                _ = _E_lim
-
                 ax.set_xlim(xlim_s)
-                ax.set_ylim(np.sort(_dFdE_lim))
+                ax.set_ylim(y_lim_per_m2_per_s_per_GeV)
                 ax.loglog()
                 ax.set_xticks(xticks_s)
                 ax.set_xticks(xticks_minor_s, minor=True)
