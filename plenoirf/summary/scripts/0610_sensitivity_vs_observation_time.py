@@ -74,6 +74,26 @@ def find_bin_index_in_bin_edges(bin_edges, start, stop, relative_margin=0.05):
     assert False, "Did not find a matching bin"
 
 
+def make_x_limits_ticks_mayor_ticks_minor(
+    observation_time_start_decade,
+    observation_time_stop_decade,
+):
+    x_start_decade = observation_time_start_decade
+    x_stop_decade = observation_time_stop_decade
+
+    xlim_s = np.array([10.0**x_start_decade, 10.0**x_stop_decade])
+    xticks_s = 10.0 ** np.arange(x_start_decade, x_stop_decade + 1)
+    _xticks_minor_s = [
+        [s * 10.0**i for s in range(1, 10)]
+        for i in range(x_start_decade, x_stop_decade)
+    ]
+    xticks_minor_s = []
+    for _ixtm in _xticks_minor_s:
+        xticks_minor_s += _ixtm
+
+    return xlim_s, xticks_s, xticks_minor_s
+
+
 grb_light_curve = (
     irf.other_instruments.fermi_lat.gamma_ray_burst_light_curve_1GeV_regime(
         grb_key="GRB090902B"
@@ -130,6 +150,11 @@ systematic_uncertainties = res.analysis["on_off_measuremnent"][
 ]
 num_systematic_uncertainties = len(systematic_uncertainties)
 
+xlim_s, xticks_s, xticks_minor_s = make_x_limits_ticks_mayor_ticks_minor(
+    observation_time_start_decade=-3,
+    observation_time_stop_decade=7,
+)
+
 for energy_range_key in energy_ranges:
     energy_range = energy_ranges[energy_range_key]
 
@@ -173,19 +198,6 @@ for energy_range_key in energy_ranges:
         start=energy_range["start_GeV"],
         stop=energy_range["stop_GeV"],
     )
-
-    x_lim_s_start_decade = -3
-    x_lim_s_stop_decade = 7
-
-    x_lim_s = np.array([10.0**x_lim_s_start_decade, 10.0**x_lim_s_stop_decade])
-    xticks_s = 10.0 ** np.arange(x_lim_s_start_decade, x_lim_s_stop_decade + 1)
-    _xticks_minor_s = [
-        [s * 10.0**i for s in range(1, 10)]
-        for i in range(x_lim_s_start_decade, x_lim_s_stop_decade)
-    ]
-    xticks_minor_s = []
-    for _ixtm in _xticks_minor_s:
-        xticks_minor_s += _ixtm
 
     e_lim_GeV = np.array([1e-1, 1e4])
     y_lim_per_m2_per_s_per_GeV = np.array(
@@ -385,7 +397,7 @@ for energy_range_key in energy_ranges:
                 )
                 _ = _E_lim
 
-                ax.set_xlim(x_lim_s)
+                ax.set_xlim(xlim_s)
                 ax.set_ylim(np.sort(_dFdE_lim))
                 ax.loglog()
                 ax.set_xticks(xticks_s)
