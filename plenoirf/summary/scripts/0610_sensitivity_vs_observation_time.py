@@ -214,7 +214,7 @@ for energy_range_key in energy_ranges:
 
     # FERMI-LAT
     # ---------
-    fermi_lat = load_Fermi_LAT_sensitivity_vs_observation_time(
+    fermi_lat_dFdE_vs_t = load_Fermi_LAT_sensitivity_vs_observation_time(
         energy_range=energy_range
     )
 
@@ -233,8 +233,8 @@ for energy_range_key in energy_ranges:
 
                 components = []
 
-                # Crab reference fluxes
-                # ---------------------
+                # Crab nebula reference fluxes
+                # ----------------------------
                 for i in range(4):
                     scale_factor = np.power(10.0, (-1) * i)
                     _flux = scale_factor * np.interp(
@@ -283,8 +283,10 @@ for energy_range_key in energy_ranges:
                     )
 
                 com = {}
-                com["observation_time"] = fermi_lat["observation_times_s"]
-                com["differential_flux"] = fermi_lat[
+                com["observation_time"] = fermi_lat_dFdE_vs_t[
+                    "observation_times_s"
+                ]
+                com["differential_flux"] = fermi_lat_dFdE_vs_t[
                     "differential_flux_per_m2_per_s_per_GeV"
                 ]
                 com["label"] = fermi.LABEL + "sebplt."
@@ -293,7 +295,7 @@ for energy_range_key in energy_ranges:
                 com["linestyle"] = "-"
                 components.append(com)
 
-                # CTA South
+                # CTA-south
                 # ---------
                 try:
                     cta_south_vs_t = irf.other_instruments.cherenkov_telescope_array_south.sensitivity_vs_observation_time(
@@ -319,9 +321,8 @@ for energy_range_key in energy_ranges:
                         asserr,
                     )
 
-                # Plenoscope
-                # ----------
-
+                # Portal Cherenkov plenoscope
+                # ---------------------------
                 for sysuncix in range(len(portal_systematic_uncertainties)):
                     portal_dFdE_vs_t = (
                         load_portal_sensitivity_vs_observation_time(
