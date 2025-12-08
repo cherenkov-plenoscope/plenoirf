@@ -6,11 +6,11 @@ import json_utils
 import tempfile
 import rename_after_writing
 
-from .. import utils as plenoirf_utils
-from . import structure
+from ... import utils as plenoirf_utils
+from .. import structure
 
 
-class EventTableByPointingZenithAndPrimaryEnergy:
+class EventTable:
     def __init__(self, path):
         self.path = path
         self.config = read_config_if_None(work_dir=path, config=None)
