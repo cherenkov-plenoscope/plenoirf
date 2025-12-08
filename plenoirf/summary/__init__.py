@@ -382,24 +382,22 @@ def init(plenoirf_dir, instrument_key, site_key, config=None):
     )
 
     for particle_key in ["electron"]:  # config["particles"]:
-        _particle_dir = os.path.join(_event_tables_dir, particle_key)
-        event_table.binned_by_pointing_zenith_and_primary_energy.init(
-            work_dir=_particle_dir,
+        event_table_path = os.path.join(
+            plenoirf_dir,
+            "response",
+            instrument_key,
+            site_key,
+            particle_key,
+            "reduce",
+            "event_table.snt.zip",
+        )
+        search_index_path = os.path.join(_event_tables_dir, particle_key)
+
+        event_table.search_index.init(
+            path=search_index_path,
+            event_table_path=event_table_path,
             zenith_bin_edges=zenith_bin["edges"],
             energy_bin_edges=energy_bin["edges"],
-        )
-
-        event_table.binned_by_pointing_zenith_and_primary_energy.populate(
-            work_dir=_particle_dir,
-            event_table_path=os.path.join(
-                plenoirf_dir,
-                "response",
-                instrument_key,
-                site_key,
-                particle_key,
-                "reduce",
-                "event_table.snt.zip",
-            ),
         )
 
 
