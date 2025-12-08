@@ -222,7 +222,7 @@ def _make_list_of_zenith_energy_bins_to_be_read(
                 }
             task["energy"] = {}
             task["energy"]["bin_index"] = energy_bins[eee]
-            if energy_fully[zzz]:
+            if energy_fully[eee]:
                 task["energy"]["cut"] = None
             else:
                 task["energy"]["cut"] = {
