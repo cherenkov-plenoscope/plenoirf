@@ -1,4 +1,5 @@
 from . import structure
+from . import binned_by_pointing_zenith_and_primary_energy
 
 import sparse_numeric_table as snt
 import dynamicsizerecarray
