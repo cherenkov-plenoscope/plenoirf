@@ -318,19 +318,6 @@ def _init_PARTICLES(config):
     return PARTICLES
 
 
-def read_analysis_config(plenoirf_dir, instrument_key):
-    out = {}
-    out["response"] = configuration.read(plenoirf_dir)
-    out["instrument"] = read_instrument_config(
-        plenoirf_dir=plenoirf_dir,
-        instrument_key=instrument_key,
-    )
-    out["analysis"] = read_summary_config(
-        summary_dir=os.path.join(plenoirf_dir, "analysis", instrument_key)
-    )
-    return out
-
-
 def get_PARTICLES(analysis_config):
     particles = {}
     for particle_key in analysis_config["response"]["particles"]:
@@ -374,6 +361,10 @@ def init(plenoirf_dir, config=None):
             dirtree={},
             indent=4,
         )
+
+        # make binned event table
+        # -----------------------
+        for site_key in 
 
 
 def production_name_from_run_dir(path):
