@@ -21,6 +21,7 @@ from .. import utils
 from .. import provenance
 from .. import outer_telescope_array
 from .. import configuration
+from .. import event_table
 from . import figure
 from . import report
 from . import scripts
@@ -203,14 +204,10 @@ class ScriptResources:
         )
 
     def zenith_binning(self, key):
-        zb_cfg = self.analysis["pointing_binning"]["zenith_binning"]
-        num_bins = zb_cfg["num_bins"] * zb_cfg["fine"][key]
-        bin_edges = solid_angle_utils.cone.half_angle_space(
-            start_half_angle_rad=zb_cfg["start_half_angle_rad"],
-            stop_half_angle_rad=zb_cfg["stop_half_angle_rad"],
-            num=num_bins + 1,
+        return init_zenith_binning_from_analysis_config(
+            analysis_config=self.analysis,
+            key=key,
         )
-        return init_zenith_binning(bin_edges=bin_edges)
 
     def ax_add_site_marker(self, ax, x=0.1, y=0.1):
         ax.text(
@@ -235,14 +232,10 @@ class ScriptResources:
         return self._PARTICLE_COLORMAPS
 
     def energy_binning(self, key):
-        edges = utils.power10space_bin_edges(
-            binning=self.analysis["energy_binning"],
-            fine=self.analysis["energy_binning"]["fine"][key],
+        return init_energy_binning_from_analysis_config(
+            analysis_config=self.analysis,
+            key=key,
         )
-        assert len(edges) >= 2
-        assert np.all(edges > 0.0)
-        assert np.all(np.gradient(edges) > 0.0)
-        return binning_utils.Binning(bin_edges=edges)
 
     def scatter_binning(self, particle_key):
         num_scatter_bins = 20
@@ -336,35 +329,78 @@ def get_SITES(analysis_config):
     return sites
 
 
-def init(plenoirf_dir, config=None):
+def init(plenoirf_dir, instrument_key, site_key, config=None):
+    """
+    Initialize the summary
+    ======================
+
+    """
     config = configuration.read_if_None(plenoirf_dir, config=config)
 
-    analysis_dir = os.path.join(plenoirf_dir, "analysis")
-    os.makedirs(analysis_dir, exist_ok=True)
+    assert instrument_key in config["instruments"]
+    assert site_key in config["sites"]["instruemnt_response"]
 
-    for instrument_key in config["instruments"]:
-        instrument_dir = os.path.join(analysis_dir, instrument_key)
-        os.makedirs(instrument_dir, exist_ok=True)
+    analysis_instrument_site_dir = os.path.join(
+        plenoirf_dir,
+        "analysis",
+        instrument_key,
+        site_key,
+    )
+    os.makedirs(analysis_instrument_site_dir, exist_ok=True)
 
+    _config_dir = os.path.join(analysis_instrument_site_dir, "config")
+    if not os.path.exists(_config_dir):
+        os.makedirs(_config_dir, exist_ok=True)
         analysis_config = _guess_analysis_config_for_instrument(
             plenoirf_dir=plenoirf_dir,
             instrument_key=instrument_key,
+            site_key=site_key,
             config=config,
         )
-
-        analysis_config_dir = os.path.join(
-            analysis_dir, instrument_key, "config"
-        )
         json_utils.tree.write(
-            path=analysis_config_dir,
+            path=_config_dir,
             tree=analysis_config,
             dirtree={},
             indent=4,
         )
+    analysis_config = json_utils.tree.read(_config_dir)
 
-        # make binned event table
-        # -----------------------
-        for site_key in 
+    _event_tables_dir = os.path.join(
+        analysis_instrument_site_dir,
+        "event_tables_binned_by_pointing_zenith_and_primary_energy",
+    )
+    # if not os.path.exists(_event_tables_dir):
+    os.makedirs(_event_tables_dir, exist_ok=True)
+
+    zenith_bin = init_zenith_binning_from_analysis_config(
+        analysis_config=analysis_config,
+        key="once",
+    )
+    energy_bin = init_energy_binning_from_analysis_config(
+        analysis_config=analysis_config,
+        key="trigger_acceptance",
+    )
+
+    for particle_key in ["electron"]:  # config["particles"]:
+        _particle_dir = os.path.join(_event_tables_dir, particle_key)
+        event_table.binned_by_pointing_zenith_and_primary_energy.init(
+            work_dir=_particle_dir,
+            zenith_bin_edges=zenith_bin["edges"],
+            energy_bin_edges=energy_bin["edges"],
+        )
+
+        event_table.binned_by_pointing_zenith_and_primary_energy.populate(
+            work_dir=_particle_dir,
+            event_table_path=os.path.join(
+                plenoirf_dir,
+                "response",
+                instrument_key,
+                site_key,
+                particle_key,
+                "reduce",
+                "event_table.snt.zip",
+            ),
+        )
 
 
 def production_name_from_run_dir(path):
@@ -452,27 +488,26 @@ def _make_script_abspaths():
 
 
 def _estimate_num_events_past_trigger_for_instrument(
-    plenoirf_dir, instrument_key, config=None
+    plenoirf_dir, instrument_key, site_key, config=None
 ):
     config = configuration.read_if_None(plenoirf_dir, config=config)
 
     num = float("inf")
-    for sk in config["sites"]["instruemnt_response"]:
-        for pk in config["particles"]:
-            path = os.path.join(
-                plenoirf_dir,
-                "response",
-                instrument_key,
-                sk,
-                pk,
-                "reduce",
-                "event_table.snt.zip",
-            )
+    for particle_key in config["particles"]:
+        path = os.path.join(
+            plenoirf_dir,
+            "response",
+            instrument_key,
+            site_key,
+            particle_key,
+            "reduce",
+            "event_table.snt.zip",
+        )
 
-            with snt.open(path, mode="r") as arc:
-                tab = arc.query(levels_and_columns={"pasttrigger": ("uid",)})
-                if tab["pasttrigger"]["uid"].shape[0] < num:
-                    num = tab["pasttrigger"]["uid"].shape[0]
+        with snt.open(path, mode="r") as arc:
+            tab = arc.query(levels_and_columns={"pasttrigger": ("uid",)})
+            if tab["pasttrigger"]["uid"].shape[0] < num:
+                num = tab["pasttrigger"]["uid"].shape[0]
     return num
 
 
@@ -615,7 +650,7 @@ def guess_num_offregions(
 
 
 def _guess_analysis_config_for_instrument(
-    plenoirf_dir, instrument_key, config=None
+    plenoirf_dir, instrument_key, site_key, config=None
 ):
     config = configuration.read_if_None(plenoirf_dir, config=config)
 
@@ -628,6 +663,7 @@ def _guess_analysis_config_for_instrument(
         _estimate_num_events_past_trigger_for_instrument(
             plenoirf_dir=plenoirf_dir,
             instrument_key=instrument_key,
+            site_key=site_key,
             config=config,
         )
     )
@@ -778,13 +814,10 @@ def _guess_analysis_config_for_instrument(
     cfg["plot"]["matplotlib"] = figure.MATPLOTLIB_RCPARAMS_LATEX
     cfg["plot"]["particle_colors"] = figure.PARTICLE_COLORS
 
-    cfg["trigger"] = {}
-    SITES = _init_SITES(config=config)
-    for sk in SITES:
-        cfg["trigger"][sk] = _guess_trigger(
-            collection_trigger_threshold_pe=collection_trigger_threshold_pe,
-            analysis_trigger_threshold_pe=analysis_trigger_threshold_pe,
-        )
+    cfg["trigger"] = _guess_trigger(
+        collection_trigger_threshold_pe=collection_trigger_threshold_pe,
+        analysis_trigger_threshold_pe=analysis_trigger_threshold_pe,
+    )
     return cfg
 
 
@@ -857,7 +890,30 @@ def read_train_test_frame(
     return out
 
 
-def init_zenith_binning(bin_edges):
+def init_energy_binning_from_analysis_config(analysis_config, key):
+    edges = utils.power10space_bin_edges(
+        binning=analysis_config["energy_binning"],
+        fine=analysis_config["energy_binning"]["fine"][key],
+    )
+    assert len(edges) >= 2
+    assert np.all(edges > 0.0)
+    assert np.all(np.gradient(edges) > 0.0)
+    return binning_utils.Binning(bin_edges=edges)
+
+
+def init_zenith_binning_from_analysis_config(analysis_config, key):
+    zb_cfg = analysis_config["pointing_binning"]["zenith_binning"]
+
+    num_bins = zb_cfg["num_bins"] * zb_cfg["fine"][key]
+    bin_edges = solid_angle_utils.cone.half_angle_space(
+        start_half_angle_rad=zb_cfg["start_half_angle_rad"],
+        stop_half_angle_rad=zb_cfg["stop_half_angle_rad"],
+        num=num_bins + 1,
+    )
+    return init_zenith_binning_from_bin_edges(bin_edges=bin_edges)
+
+
+def init_zenith_binning_from_bin_edges(bin_edges):
     z = binning_utils.Binning(bin_edges=bin_edges)
 
     # apply spacing to centers

@@ -3,6 +3,7 @@ import os
 import sparse_numeric_table as snt
 import binning_utils
 import json_utils
+import tempfile
 import rename_after_writing
 
 from .. import utils as plenoirf_utils
@@ -12,19 +13,7 @@ from . import structure
 class EventTableByPointingZenithAndPrimaryEnergy:
     def __init__(self, path):
         self.path = path
-
-        with open(
-            os.path.join(self.path, "primary_energy_bin_edges_GeV.json"), "rt"
-        ) as fin:
-            self.energy_bin_edges_GeV = json_utils.loads(fin.read())
-
-        with open(
-            os.path.join(
-                self.path, "instrument_pointing_zenith_bin_edges_rad.json"
-            ),
-            "rt",
-        ) as fin:
-            self.zenith_bin_edges_rad = json_utils.loads(fin.read())
+        self.config = read_config_if_None(work_dir=path, config=None)
 
     def query(
         self,
@@ -37,10 +26,11 @@ class EventTableByPointingZenithAndPrimaryEnergy:
         indices=None,
         levels_and_columns=None,
         sort=False,
+        return_tasks=False,
     ):
         tasks = _make_list_of_zenith_energy_bins_to_be_read(
-            energy_bin_edges_GeV=self.energy_bin_edges_GeV,
-            zenith_bin_edges_rad=self.zenith_bin_edges_rad,
+            energy_bin_edges_GeV=self.config["energy_bin"]["edges"],
+            zenith_bin_edges_rad=self.config["zenith_bin"]["edges"],
             energy_bin_indices=energy_bin_indices,
             energy_start_GeV=energy_start_GeV,
             energy_stop_GeV=energy_stop_GeV,
@@ -55,7 +45,7 @@ class EventTableByPointingZenithAndPrimaryEnergy:
             zd = task["zenith"]["bin_index"]
             en = task["energy"]["bin_index"]
             bin_path = os.path.join(
-                self.path, f"zd{zd:06d}_en{en:06d}.snt.zip"
+                self.path, "bins", f"zd{zd:06d}_en{en:06d}.snt.zip"
             )
             with snt.open(bin_path, "r") as reader:
                 event_table_zd_en_bin = reader.query(
@@ -99,10 +89,66 @@ class EventTableByPointingZenithAndPrimaryEnergy:
                 inplace=True,
             )
 
-        return out
+        if return_tasks:
+            return out, tasks
+        else:
+            return out
 
     def __repr__(self):
         return f"{self.__class__.__name__:s}()"
+
+    def assert_valid(self):
+        num_en = self.config["energy_bin"]["num"]
+        num_zd = self.config["zenith_bin"]["num"]
+
+        for en in range(num_en):
+            energy_start_GeV = self.config["energy_bin"]["edges"][en]
+            energy_stop_GeV = self.config["energy_bin"]["edges"][en + 1]
+
+            for zd in range(num_zd):
+                zenith_start_GeV = self.config["zenith_bin"]["edges"][zd]
+                zenith_stop_GeV = self.config["zenith_bin"]["edges"][zd + 1]
+
+                print(f"zd: {zd:d}/{num_zd:d}, en: {en:d}/{num_en:d}")
+                part = self.query(
+                    energy_bin_indices=en,
+                    zenith_bin_indices=zd,
+                    levels_and_columns={
+                        "primary": ("uid", "energy_GeV"),
+                        "instrument_pointing": ("uid", "zenith_rad"),
+                    },
+                )
+
+                assert np.all(
+                    np.logical_and(
+                        energy_start_GeV <= part["primary"]["energy_GeV"],
+                        part["primary"]["energy_GeV"] < energy_stop_GeV,
+                    )
+                )
+                assert np.all(
+                    np.logical_and(
+                        zenith_start_GeV
+                        <= part["instrument_pointing"]["zenith_rad"],
+                        part["instrument_pointing"]["zenith_rad"]
+                        < zenith_stop_GeV,
+                    )
+                )
+                for level_key in structure.dtypes():
+                    other = self.query(
+                        energy_bin_indices=en,
+                        zenith_bin_indices=zd,
+                        levels_and_columns={level_key: "__all__"},
+                    )
+                    assert np.all(
+                        np.isin(
+                            element=other[level_key]["uid"],
+                            test_elements=part["primary"]["uid"],
+                            assume_unique=True,
+                        )
+                    ), (
+                        f"Expected all uid from level '{level_key:s}' "
+                        "are also in level 'primary'."
+                    )
 
 
 def _get_uid_common(uid_zenith, uid_energy):
@@ -118,21 +164,23 @@ def _get_uid_common(uid_zenith, uid_energy):
 
 
 def _get_uid_in_energy_range(reader, energy_start_GeV, energy_stop_GeV):
-    tab = arcin.query(level_and_columns={"primary": ("uid", "energy_GeV")})
-    mask = energy_start_GeV <= tab["primary"]["energy_GeV"] < energy_stop_GeV
-    return tab["primary"]["uid"][mask]
+    tab = reader.query(levels_and_columns={"primary": ("uid", "energy_GeV")})
+    level = tab["primary"]
+    greater_equal_start = energy_start_GeV <= level["energy_GeV"]
+    less_stop = level["energy_GeV"] < energy_stop_GeV
+    mask = np.logical_and(greater_equal_start, less_stop)
+    return level["uid"][mask]
 
 
 def _get_uid_in_zenith_range(reader, zenith_start_rad, zenith_stop_rad):
-    tab = arcin.query(
-        level_and_columns={"instrument_pointing": ("uid", "zenith_rad")}
+    tab = reader.query(
+        levels_and_columns={"instrument_pointing": ("uid", "zenith_rad")}
     )
-    mask = (
-        zenith_start_rad
-        <= tab["instrument_pointing"]["zenith_rad"]
-        < zenith_stop_rad
-    )
-    return tab["instrument_pointing"]["uid"][mask]
+    level = tab["instrument_pointing"]
+    greater_equal_start = zenith_start_rad <= level["zenith_rad"]
+    less_stop = level["zenith_rad"] < zenith_stop_rad
+    mask = np.logical_and(greater_equal_start, less_stop)
+    return level["uid"][mask]
 
 
 def _make_list_of_zenith_energy_bins_to_be_read(
@@ -173,7 +221,7 @@ def _make_list_of_zenith_energy_bins_to_be_read(
                     "stop": zenith_stop_rad,
                 }
             task["energy"] = {}
-            task["energy"]["bin_index"] = energy_bins[zzz]
+            task["energy"]["bin_index"] = energy_bins[eee]
             if energy_fully[zzz]:
                 task["energy"]["cut"] = None
             else:
@@ -233,37 +281,184 @@ def get_bin_assignment_dtype():
     ]
 
 
-def make_bin_assignment(
-    zenith_assignment, zenith_bin, energy_assignment, energy_bin
+def init(
+    work_dir,
+    zenith_bin_edges,
+    energy_bin_edges,
 ):
-    assert zenith_bin["num"] < np.iinfo("u1").max
-    assert energy_bin["num"] < np.iinfo("u1").max
+    zenith_bin_edges = np.asarray(zenith_bin_edges, dtype=np.float64)
+    energy_bin_edges = np.asarray(energy_bin_edges, dtype=np.float64)
 
-    bin_assignment = dynamicsizerecarray.DynamicSizeRecarray(
-        dtype=BIN_ASSIGNMENT_DTYPE
+    assert binning_utils.is_strictly_monotonic_increasing(zenith_bin_edges)
+    assert np.all(zenith_bin_edges >= 0)
+
+    assert binning_utils.is_strictly_monotonic_increasing(energy_bin_edges)
+    assert np.all(energy_bin_edges > 0)
+
+    os.makedirs(work_dir, exist_ok=True)
+    config_dir = os.path.join(work_dir, "config")
+    os.makedirs(config_dir, exist_ok=True)
+
+    with rename_after_writing.open(
+        os.path.join(config_dir, "zenith_bin_edges.numpy"), "wb"
+    ) as f:
+        np.save(f, zenith_bin_edges)
+
+    with rename_after_writing.open(
+        os.path.join(config_dir, "energy_bin_edges.numpy"), "wb"
+    ) as f:
+        np.save(f, energy_bin_edges)
+
+
+def read_config_if_None(work_dir, config):
+    if config is None:
+        config_dir = os.path.join(work_dir, "config")
+        out = {}
+        out["energy_bin"] = {}
+        out["zenith_bin"] = {}
+        with open(
+            os.path.join(config_dir, "energy_bin_edges.numpy"), "rb"
+        ) as f:
+            out["energy_bin"]["edges"] = np.load(f)
+        with open(
+            os.path.join(config_dir, "zenith_bin_edges.numpy"), "rb"
+        ) as f:
+            out["zenith_bin"]["edges"] = np.load(f)
+
+        for key in out:
+            out[key]["num"] = len(out[key]["edges"]) - 1
+        return out
+    else:
+        return config
+
+
+def populate(work_dir, event_table_path, config=None):
+    config = read_config_if_None(work_dir=work_dir, config=config)
+    bins_path = os.path.join(work_dir, "bins")
+
+    with tempfile.TemporaryDirectory(prefix="plenoirf_") as tmp_dir:
+        bin_assignment_path = os.path.join(
+            tmp_dir, "uid_zenith_energy_bin.uid-u8.zd-u1.en-u1"
+        )
+        make_bin_assignment(
+            event_table_path=event_table_path,
+            zenith_bin_edges=config["zenith_bin"]["edges"],
+            energy_bin_edges=config["energy_bin"]["edges"],
+            bin_assignment_path=bin_assignment_path,
+        )
+
+        tmp_stage_path = os.path.join(tmp_dir, "stage")
+        _populated_bins_step_one(
+            event_table_path=event_table_path,
+            bin_assignment_path=bin_assignment_path,
+            out_path=tmp_stage_path,
+            num_zenith_bins=config["zenith_bin"]["num"],
+            num_energy_bins=config["energy_bin"]["num"],
+        )
+
+        _populated_bins_step_two(
+            out_path=bins_path,
+            stage_path=tmp_stage_path,
+            num_zenith_bins=config["zenith_bin"]["num"],
+            num_energy_bins=config["energy_bin"]["num"],
+        )
+
+
+def _assign_event_table_to_bins(
+    event_table_path,
+    level_key,
+    column_key,
+    bin_edges,
+    bin_assignment_path,
+):
+    num_bins = len(bin_edges) - 1
+    assert num_bins < np.iinfo("u1").max
+
+    lvlcol_key = level_key + "/" + column_key
+
+    with rename_after_writing.open(
+        bin_assignment_path, mode="wb"
+    ) as fout, snt.open(event_table_path, mode="r") as reader:
+        for block in snt._file_io.LevelBlockLooper(
+            reader=reader, level_key=level_key
+        ):
+            tmp = np.recarray(
+                shape=block.shape[0],
+                dtype=[("uid", "u8"), (lvlcol_key, "u1")],
+            )
+            tmp["uid"] = block["uid"]
+            tmp[lvlcol_key] = binning_utils.assign_to_bins(
+                bin_edges=bin_edges,
+                x=block[column_key],
+            )
+            assert np.all(
+                tmp[lvlcol_key] >= 0
+            ), "Did not expect under- or overflow."
+            fout.write(tmp.tobytes())
+
+
+def _merge_bin_assignments(
+    zenith_bin_assignment_path,
+    energy_bin_assignment_path,
+    out_path,
+):
+    with open(zenith_bin_assignment_path, "rb") as f:
+        uid_zd = np.frombuffer(f.read(), dtype=[("uid", "u8"), ("zd", "u1")])
+        _sort = np.argsort(uid_zd["uid"])
+        uid_zd = uid_zd[_sort]
+        del _sort
+
+    with open(energy_bin_assignment_path, "rb") as f:
+        uid_en = np.frombuffer(f.read(), dtype=[("uid", "u8"), ("en", "u1")])
+        _sort = np.argsort(uid_en["uid"])
+        uid_en = uid_en[_sort]
+        del _sort
+
+    np.testing.assert_array_equal(uid_zd["uid"], uid_en["uid"])
+    uid_zd_en = np.recarray(
+        shape=uid_zd.shape[0],
+        dtype=[("uid", "u8"), ("zd", "u1"), ("en", "u1")],
     )
+    uid_zd_en["uid"] = uid_zd["uid"]
+    uid_zd_en["zd"] = uid_zd["zd"]
+    uid_zd_en["en"] = uid_en["en"]
 
-    for zd in range(zenith_bin["num"]):
-        zk = f"zd{zd:d}"
-        for en in range(energy_bin["num"]):
-            ek = f"{en:d}"
+    with rename_after_writing.open(out_path, "wb") as f:
+        f.write(uid_zd_en.tobytes())
 
-            uid_zenith_energy = snt.logic.intersection(
-                zenith_assignment[zk][pk],
-                energy_assignment[pk][ek],
-            )
-            _blk = np.recarray(
-                shape=uid_zenith_energy.shape[0],
-                dtype=bin_assignment.dtype,
-            )
-            _blk["uid"] = uid_zenith_energy
-            _blk["instrument_pointing/zenith_rad"] = zd
-            _blk["primary/energy_GeV"] = en
-            bin_assignment.append(_blk)
 
-    argsort = np.argsort(bin_assignment["uid"])
-    bin_assignment = bin_assignment[argsort]
-    return bin_assignment
+def make_bin_assignment(
+    event_table_path,
+    zenith_bin_edges,
+    energy_bin_edges,
+    bin_assignment_path,
+):
+    with tempfile.TemporaryDirectory(prefix="plenoirf_") as tmp_dir:
+        zenith_bin_assignment_path = os.path.join(
+            tmp_dir, "uid_zenith_bin.recarray"
+        )
+        _assign_event_table_to_bins(
+            event_table_path=event_table_path,
+            level_key="instrument_pointing",
+            column_key="zenith_rad",
+            bin_edges=zenith_bin_edges,
+            bin_assignment_path=zenith_bin_assignment_path,
+        )
+        energy_bin_assignment_path = os.path.join(
+            tmp_dir, "uid_energy_bin.recarray"
+        )
+        _assign_event_table_to_bins(
+            event_table_path=event_table_path,
+            level_key="primary",
+            column_key="energy_GeV",
+            bin_edges=energy_bin_edges,
+            bin_assignment_path=energy_bin_assignment_path,
+        )
+        _merge_bin_assignments(
+            zenith_bin_assignment_path=zenith_bin_assignment_path,
+            energy_bin_assignment_path=energy_bin_assignment_path,
+            out_path=bin_assignment_path,
+        )
 
 
 class FileBins:
@@ -299,49 +494,41 @@ class FileBins:
         return f"{self.__class__.__name__:s}()"
 
 
-def _populated_bins_step_zero(
-    zden_dir, zenith_binning_key, energy_binning_key
-):
-    os.makedirs(zden_dir, exist_ok=True)
-
-    binning_dir = os.path.join(zden_dir, "binning")
-    os.makedirs(binning_dir, exist_ok=True)
-
-    _write_json(
-        os.path.join(
-            binning_dir, "instrument_pointing_zenith_bin_edges_rad.json"
-        ),
-        zenith_bin["edges"],
-    )
-    _write_json(
-        os.path.join(binning_dir, "primary_energy_bin_edges_GeV.json"),
-        energy_bin["edges"],
-    )
-
-
 def _write_json(path, obj):
     with rename_after_writing.open(path, mode="wt") as f:
         f.write(json_utils.dumps(obj))
 
 
 def _populated_bins_step_one(
-    event_table_path, bin_assignment, tmp_path, zenith_bin, energy_bin
+    event_table_path,
+    bin_assignment_path,
+    out_path,
+    num_zenith_bins,
+    num_energy_bins,
 ):
-    os.makedirs(tmp_path, exist_ok=True)
+    assert num_energy_bins > 0
+    assert num_zenith_bins > 0
+
+    os.makedirs(out_path, exist_ok=True)
+
+    with open(bin_assignment_path, "rb") as f:
+        bin_assignment = np.frombuffer(
+            f.read(), dtype=[("uid", "u8"), ("zd", "u1"), ("en", "u1")]
+        )
 
     with snt.open(event_table_path, mode="r") as event_table_reader:
         level_keys = list(event_table_reader.dtypes.keys())
 
     for level_key in level_keys:
-        level_dir = opj(tmp_path, level_key)
+        level_dir = os.path.join(out_path, level_key)
 
         if os.path.exists(level_dir):
             continue
 
         with FileBins(
             path=level_dir,
-            num_zenith_bins=zenith_bin["num"],
-            num_energy_bins=energy_bin["num"],
+            num_zenith_bins=num_zenith_bins,
+            num_energy_bins=num_energy_bins,
         ) as fbins:
             with snt.open(event_table_path, mode="r") as event_table_reader:
                 for level_block in snt._file_io.LevelBlockLooper(
@@ -352,10 +539,10 @@ def _populated_bins_step_one(
                     )
                     addr = bin_assignment[iii]
 
-                    for zd in range(zenith_bin["num"]):
-                        zd_mask = addr["instrument_pointing/zenith_rad"] == zd
-                        for en in range(energy_bin["num"]):
-                            ene_mask = addr["primary/energy_GeV"] == en
+                    for zd in range(num_zenith_bins):
+                        zd_mask = addr["zd"] == zd
+                        for en in range(num_energy_bins):
+                            ene_mask = addr["en"] == en
                             bin_mask = np.logical_and(zd_mask, ene_mask)
                             bin_part = level_block[bin_mask]
                             fbins[zd][en].write(bin_part.tobytes())
@@ -363,13 +550,18 @@ def _populated_bins_step_one(
 
 def _populated_bins_step_two(
     out_path,
-    zenith_bin,
-    energy_bin,
+    stage_path,
+    num_zenith_bins,
+    num_energy_bins,
 ):
+    assert num_energy_bins > 0
+    assert num_zenith_bins > 0
+    os.makedirs(out_path, exist_ok=True)
+
     EVENT_TABLE_DTYPES = structure.dtypes()
 
-    for zd in range(zenith_bin["num"]):
-        for en in range(energy_bin["num"]):
+    for zd in range(num_zenith_bins):
+        for en in range(num_energy_bins):
 
             binname = f"zd{zd:06d}_en{en:06d}"
             bin_outpath = os.path.join(out_path, binname + ".snt.zip")
@@ -384,10 +576,10 @@ def _populated_bins_step_two(
                     index_key="uid",
                     compress=False,
                 ) as event_table_writer:
-                    for level_key in level_keys:
+                    for level_key in EVENT_TABLE_DTYPES:
 
                         bin_level_inpath = os.path.join(
-                            pk_binned_cache_dir,
+                            stage_path,
                             level_key,
                             binname + ".recarray",
                         )
