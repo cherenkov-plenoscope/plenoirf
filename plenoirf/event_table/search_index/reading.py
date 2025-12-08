@@ -10,6 +10,13 @@ from .. import structure
 
 
 class EventTable:
+    """
+    Open an Event Table with search index for reading.
+    The index is build in:
+        - primary/energy_GeV
+        - instrument_pointing/zenith_rad
+    """
+
     def __init__(self, path):
         self.path = path
         self.config = search_index_utils.read_config_if_None(

@@ -54,7 +54,11 @@ class ScriptResources:
         self.paths = {}
         self.paths["plenoirf_dir"] = plenoirf_dir
         self.paths["analysis_dir"] = os.path.join(
-            plenoirf_dir, "analysis", instrument_key, site_key
+            plenoirf_dir,
+            "analysis",
+            instrument_key,
+            site_key,
+            "results",
         )
         self.paths["out_dir"] = os.path.join(
             self.paths["analysis_dir"], script_name
@@ -367,9 +371,9 @@ def init(plenoirf_dir, instrument_key, site_key, config=None):
 
     _event_tables_dir = os.path.join(
         analysis_instrument_site_dir,
-        "event_tables_binned_by_pointing_zenith_and_primary_energy",
+        "event_tables_with_search_index",
     )
-    # if not os.path.exists(_event_tables_dir):
+
     os.makedirs(_event_tables_dir, exist_ok=True)
 
     zenith_bin = init_zenith_binning_from_analysis_config(
@@ -381,7 +385,7 @@ def init(plenoirf_dir, instrument_key, site_key, config=None):
         key="trigger_acceptance",
     )
 
-    for particle_key in ["electron"]:  # config["particles"]:
+    for particle_key in config["particles"]:
         event_table_path = os.path.join(
             plenoirf_dir,
             "response",
