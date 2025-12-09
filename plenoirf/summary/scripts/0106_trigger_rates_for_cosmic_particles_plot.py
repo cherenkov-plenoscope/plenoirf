@@ -10,7 +10,7 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-fine_energy_bin = res.energy_binning(key="interpolation")
+fine_energy_bin = res.energy_binning(key="60_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 cosmic_rates = json_utils.tree.Tree(

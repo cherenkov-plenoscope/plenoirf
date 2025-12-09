@@ -20,7 +20,7 @@ onregion_rates = json_utils.tree.Tree(
     )
 )
 
-fine_energy_bin = res.energy_binning(key="interpolation")
+fine_energy_bin = res.energy_binning(key="60_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 mean_key = "mean"

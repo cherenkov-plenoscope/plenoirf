@@ -15,7 +15,7 @@ res.start()
 
 energy_bin = res.energy_binning(key="10_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
-fine_energy_bin = res.energy_binning(key="interpolation")
+fine_energy_bin = res.energy_binning(key="60_bins_per_decade")
 
 acceptance = json_utils.tree.Tree(
     opj(

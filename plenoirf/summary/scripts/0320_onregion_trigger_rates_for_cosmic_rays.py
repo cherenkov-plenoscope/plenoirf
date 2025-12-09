@@ -16,7 +16,7 @@ onregion_acceptance = json_utils.tree.Tree(
 )
 
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
-fenergy_bin = res.energy_binning(key="interpolation")
+fenergy_bin = res.energy_binning(key="60_bins_per_decade")
 
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 

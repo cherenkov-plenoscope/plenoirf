@@ -12,7 +12,7 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 energy_bin = res.energy_binning(key="10_bins_per_decade")
-fine_energy_bin = res.energy_binning(key="interpolation")
+fine_energy_bin = res.energy_binning(key="60_bins_per_decade")
 
 # AIRSHOWER RATES
 # ===============
