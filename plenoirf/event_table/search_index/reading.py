@@ -273,7 +273,7 @@ def _make_list_of_bins_to_be_read(
         else:
             raise AttributeError(f"Can not interpret '{key:s}_bin_index'.")
 
-    else:
+    elif bin_indices is None and (start is not None or stop is not None):
         assert start is not None and stop is not None
 
         return binning_utils.find_bin_indices_in_start_stop_range(
@@ -282,3 +282,12 @@ def _make_list_of_bins_to_be_read(
             stop=stop,
             return_if_bin_is_fully_contained=True,
         )
+    else:
+        assert bin_indices is None
+        assert start is None
+        assert stop is None
+        num_bins = len(bin_edges) - 1
+
+        out = np.arange(num_bins)
+        fully_contained = [True for b in range(num_bins)]
+        return out, fully_contained

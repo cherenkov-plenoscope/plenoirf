@@ -26,16 +26,15 @@ for pk in res.PARTICLES:
 
     cmap = res.PARTICLE_COLORMAPS[pk].resampled(256)
 
-    with res.open_event_table(particle_key=pk) as arc:
-        table = arc.query(
-            levels_and_columns={
-                "primary": [
-                    "uid",
-                    "azimuth_rad",
-                    "zenith_rad",
-                ]
-            }
-        )
+    table = res.event_table(particle_key=pk).query(
+        levels_and_columns={
+            "primary": [
+                "uid",
+                "azimuth_rad",
+                "zenith_rad",
+            ]
+        }
+    )
 
     hh.reset()
     hh.assign_azimuth_zenith(
