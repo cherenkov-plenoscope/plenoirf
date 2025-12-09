@@ -29,6 +29,7 @@ setuptools.setup(
         "plenoirf.event_table.search_index",
         "plenoirf.ground_grid",
         "plenoirf.analysis",
+        "plenoirf.binning",
         "plenoirf.other_instruments",
         "plenoirf.other_instruments.fermi_lat",
         "plenoirf.reconstruction",

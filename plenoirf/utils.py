@@ -70,18 +70,6 @@ def contains_same_bytes(path_a, path_b):
         return a_bytes == b_bytes
 
 
-def power10space_bin_edges(binning, fine):
-    assert fine > 0
-    space = binning_utils.power10.space(
-        start_decade=binning["start"]["decade"],
-        start_bin=binning["start"]["bin"] * fine,
-        stop_decade=binning["stop"]["decade"],
-        stop_bin=binning["stop"]["bin"] * fine,
-        num_bins_per_decade=binning["num_bins_per_decade"] * fine,
-    )
-    return space
-
-
 def _divide_silent(numerator, denominator, default):
     valid = denominator != 0
     division = np.ones(shape=numerator.shape) * default

@@ -28,6 +28,7 @@ from . import benchmarking
 from . import reduction
 from . import bootstripping
 from . import light_field_trigger
+from . import binning
 
 import os
 import numpy as np

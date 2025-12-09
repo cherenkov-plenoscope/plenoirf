@@ -22,6 +22,7 @@ from .. import provenance
 from .. import outer_telescope_array
 from .. import configuration
 from .. import event_table
+from .. import binning
 from . import figure
 from . import report
 from . import scripts
@@ -208,7 +209,7 @@ class ScriptResources:
         )
 
     def zenith_binning(self, key):
-        return init_zenith_binning_from_analysis_config(
+        return binning.zenith.init_from_analysis_config(
             analysis_config=self.analysis,
             key=key,
         )
@@ -236,7 +237,7 @@ class ScriptResources:
         return self._PARTICLE_COLORMAPS
 
     def energy_binning(self, key):
-        return init_energy_binning_from_analysis_config(
+        return binning.energy.init_from_analysis_config(
             analysis_config=self.analysis,
             key=key,
         )
@@ -376,11 +377,11 @@ def init(plenoirf_dir, instrument_key, site_key, config=None):
 
     os.makedirs(_event_tables_dir, exist_ok=True)
 
-    zenith_bin = init_zenith_binning_from_analysis_config(
+    zenith_bin = binning.zenith.init_from_analysis_config(
         analysis_config=analysis_config,
         key="once",
     )
-    energy_bin = init_energy_binning_from_analysis_config(
+    energy_bin = binning.energy.init_from_analysis_config(
         analysis_config=analysis_config,
         key="trigger_acceptance",
     )
@@ -890,50 +891,6 @@ def read_train_test_frame(
         out[kk] = snt.logic.make_rectangular_DataFrame(table_kk)
 
     return out
-
-
-def init_energy_binning_from_analysis_config(analysis_config, key):
-    edges = utils.power10space_bin_edges(
-        binning=analysis_config["energy_binning"],
-        fine=analysis_config["energy_binning"]["fine"][key],
-    )
-    assert len(edges) >= 2
-    assert np.all(edges > 0.0)
-    assert np.all(np.gradient(edges) > 0.0)
-    return binning_utils.Binning(bin_edges=edges)
-
-
-def init_zenith_binning_from_analysis_config(analysis_config, key):
-    zb_cfg = analysis_config["pointing_binning"]["zenith_binning"]
-
-    num_bins = zb_cfg["num_bins"] * zb_cfg["fine"][key]
-    bin_edges = solid_angle_utils.cone.half_angle_space(
-        start_half_angle_rad=zb_cfg["start_half_angle_rad"],
-        stop_half_angle_rad=zb_cfg["stop_half_angle_rad"],
-        num=num_bins + 1,
-    )
-    return init_zenith_binning_from_bin_edges(bin_edges=bin_edges)
-
-
-def init_zenith_binning_from_bin_edges(bin_edges):
-    z = binning_utils.Binning(bin_edges=bin_edges)
-
-    # apply spacing to centers
-    for i in range(z["num"]):
-        z["centers"][i] = solid_angle_utils.cone.half_angle_space(
-            start_half_angle_rad=z["edges"][i],
-            stop_half_angle_rad=z["edges"][i + 1],
-            num=3,
-        )[1]
-
-    # add solid angles
-    z["solid_angles"] = np.zeros(z["num"])
-    for i in range(z["num"]):
-        outer = solid_angle_utils.cone.solid_angle(z["edges"][i + 1])
-        inner = solid_angle_utils.cone.solid_angle(z["edges"][i])
-        z["solid_angles"][i] = outer - inner
-
-    return z
 
 
 def make_angle_range_str(start_rad, stop_rad):
