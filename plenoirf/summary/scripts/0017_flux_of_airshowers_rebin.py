@@ -23,9 +23,9 @@ airshower_fluxes = json_utils.tree.Tree(
 
 # prepare
 # -------
-energy_binning_key = "trigger_acceptance_onregion"
-energy_bin = res.energy_binning(key=energy_binning_key)
-fine_energy_bin = res.energy_binning(key="interpolation")
+energy_bin_key = "10_bins_per_decade"
+energy_bin = res.energy_binning(key=energy_bin_key)
+fine_energy_bin = res.energy_binning(key="60_bins_per_decade")
 
 fine_energy_bin_matches = []
 for E in energy_bin["edges"]:
@@ -57,7 +57,7 @@ for pk in res.COSMIC_RAYS:
     json_utils.write(
         opj(res.paths["out_dir"], pk + ".json"),
         {
-            "energy_binning_key": energy_binning_key,
+            "energy_bin_key": energy_bin_key,
             "differential_flux": dFdE,
             "absolute_uncertainty": dFdE_au,
             "unit": "m$^{-2}$ sr$^{-1}$ s$^{-1}$ (GeV)$^{-1}$",

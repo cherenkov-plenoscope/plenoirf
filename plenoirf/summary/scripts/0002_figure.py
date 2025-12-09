@@ -10,8 +10,8 @@ import sebastians_matplotlib_addons as sebplt
 
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt)
-energy_bin = res.energy_binning("trigger_acceptance_onregion")
-zenith_bin = res.zenith_binning(key="once")
+energy_bin = res.energy_binning(key="10_bins_per_decade")
+zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
 
 for key in ["16:9", "1:1", "16:6", "4:3"]:
 

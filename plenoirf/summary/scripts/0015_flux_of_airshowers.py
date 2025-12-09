@@ -14,7 +14,7 @@ raw_cosmic_ray_fluxes = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0010_flux_of_cosmic_rays")
 )
 
-energy_bin = res.energy_binning(key="interpolation")
+energy_bin = res.energy_binning(key="60_bins_per_decade")
 
 fraction_of_flux_below_geomagnetic_cutoff = res.analysis["airshower_flux"][
     "fraction_of_flux_below_geomagnetic_cutoff"

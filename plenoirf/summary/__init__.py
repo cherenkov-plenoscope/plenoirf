@@ -181,6 +181,7 @@ class ScriptResources:
                 self.paths["plenoirf_dir"],
                 "analysis",
                 self.instrument_key,
+                self.site_key,
                 "config",
             )
             self._analysis = json_utils.tree.read(path)

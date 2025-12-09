@@ -9,7 +9,8 @@ import cosmic_fluxes
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
-energy_bin = res.energy_binning(key="interpolation")
+energy_bin_key = "60_bins_per_decade"
+energy_bin = res.energy_binning(key=energy_bin_key)
 
 fermi_3fgl = cosmic_fluxes.fermi_3fgl_catalog()
 
@@ -38,7 +39,7 @@ json_utils.write(
             "values": energy_bin["centers"],
             "unit": "GeV",
         },
-        "energy_implicit": {"fine": "interpolation", "supports": "centers"},
+        "energy_implicit": {"key": energy_bin_key, "supports": "centers"},
     },
 )
 

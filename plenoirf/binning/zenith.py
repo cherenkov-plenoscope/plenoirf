@@ -22,7 +22,7 @@ def init_from_start_stop_num(
         stop_half_angle_rad=stop_half_angle_rad,
         num=num_bins + 1,
     )
-    return init_zenith_binning_from_bin_edges(bin_edges=bin_edges)
+    return init_from_bin_edges(bin_edges=bin_edges)
 
 
 def init_from_bin_edges(bin_edges):

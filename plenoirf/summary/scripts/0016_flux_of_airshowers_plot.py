@@ -16,7 +16,7 @@ airshower_fluxes = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0015_flux_of_airshowers")
 )
 
-energy_bin = res.energy_binning(key="interpolation")
+energy_bin = res.energy_binning(key="60_bins_per_decade")
 
 
 def _ge(x, v):
