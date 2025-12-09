@@ -436,60 +436,6 @@ def read_instrument_config(plenoirf_dir, instrument_key):
     return bundle
 
 
-def _run_instrument_site(plenoirf_dir, instrument_key, site_key):
-    result_dir = os.path.join(
-        plenoirf_dir, "analysis", instrument_key, site_key
-    )
-    os.makedirs(result_dir, exist_ok=True)
-
-    json_utils.write(
-        os.path.join(result_dir, "provenance.json"),
-        provenance.make_provenance(),
-    )
-
-    script_abspaths = _make_script_abspaths()
-
-    for script_abspath in script_abspaths:
-        script_basename = os.path.basename(script_abspath)
-        script_id = int(script_basename[0:4])
-        if script_id > 131:
-            print(f"Skipping scipt {script_id:d}.")
-            continue
-        script_name = str.split(script_basename, ".")[0]
-        result_path = os.path.join(result_dir, script_name)
-        if os.path.exists(result_path):
-            print("[skip] ", script_name)
-        else:
-            print("[run ] ", script_name)
-            subprocess.call(
-                [
-                    "python",
-                    script_abspath,
-                    plenoirf_dir,
-                    instrument_key,
-                    site_key,
-                ]
-            )
-
-
-def _make_script_abspaths():
-    script_absdir = os.path.join(
-        importlib_resources.files("plenoirf"), "summary", "scripts"
-    )
-    _paths = glob.glob(os.path.join(script_absdir, "*"))
-    out = []
-    order = []
-    for _path in _paths:
-        basename = os.path.basename(_path)
-        if str.isdigit(basename[0:4]):
-            order.append(int(basename[0:4]))
-            out.append(_path)
-    order = np.array(order)
-    argorder = np.argsort(order)
-    out_order = [out[arg] for arg in argorder]
-    return out_order
-
-
 def _estimate_num_events_past_trigger_for_instrument(
     plenoirf_dir, instrument_key, site_key, config=None
 ):
