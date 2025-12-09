@@ -19,9 +19,12 @@ class EventTable:
 
     def __init__(self, path):
         self.path = path
-        self.config = search_index_utils.read_config_if_None(
-            work_dir=path, config=None
-        )
+
+    @property
+    def config(self):
+        if not hasattr(self, "_config"):
+            self._config = search_index_utils.read_config_if_None(self.path)
+        return self._config
 
     def query(
         self,

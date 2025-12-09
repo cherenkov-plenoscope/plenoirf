@@ -54,11 +54,11 @@ class ScriptResources:
 
         self.paths = {}
         self.paths["plenoirf_dir"] = plenoirf_dir
+        self.paths["analysis_instrument_site_dir"] = os.path.join(
+            plenoirf_dir, "analysis", instrument_key, site_key
+        )
         self.paths["analysis_dir"] = os.path.join(
-            plenoirf_dir,
-            "analysis",
-            instrument_key,
-            site_key,
+            self.paths["analysis_instrument_site_dir"],
             "results",
         )
         self.paths["out_dir"] = os.path.join(
@@ -196,17 +196,22 @@ class ScriptResources:
             "reduce",
         )
 
-    def event_table_path(self, particle_key):
-        return os.path.join(
+    """
+    def open_event_table(self, particle_key):
+        path = os.path.join(
             self.response_path(particle_key=particle_key),
             "event_table.snt.zip",
         )
+        return snt.open(path, mode="r")
+    """
 
-    def open_event_table(self, particle_key):
-        return snt.open(
-            self.event_table_path(particle_key=particle_key),
-            mode="r",
+    def event_table(self, particle_key):
+        path = os.path.join(
+            self.paths["analysis_instrument_site_dir"],
+            "event_tables_with_search_index",
+            particle_key,
         )
+        return event_table.search_index.EventTable(path=path)
 
     def zenith_binning(self, key):
         return binning.zenith.init_from_analysis_config(
