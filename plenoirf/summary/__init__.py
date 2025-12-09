@@ -643,10 +643,9 @@ def _guess_analysis_config_for_instrument(
             "stop": {"decade": 3, "bin": 3},
             "num_bins_per_decade": 5,
             "fine": {
-                "trigger_acceptance": 2,
-                "trigger_acceptance_onregion": 1,
-                "interpolation": 12,
-                "point_spread_function": 1,
+                "5_bins_per_decade": 1,
+                "10_bins_per_decade": 2,
+                "60_bins_per_decade": 12,
             },
         },
         "direction_binning": {
@@ -753,8 +752,8 @@ def _guess_analysis_config_for_instrument(
             "stop_half_angle_rad": np.deg2rad(45),
             "num_bins": 3,
             "fine": {
-                "once": 1,
-                "twice": 2,
+                "3_bins_per_45deg": 1,
+                "6_bins_per_45deg": 2,
             },
         }
     }
