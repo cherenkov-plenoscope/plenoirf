@@ -379,11 +379,11 @@ def init(plenoirf_dir, instrument_key, site_key, config=None):
 
     zenith_bin = binning.zenith.init_from_analysis_config(
         analysis_config=analysis_config,
-        key="once",
+        key="3_bins_per_45deg",
     )
     energy_bin = binning.energy.init_from_analysis_config(
         analysis_config=analysis_config,
-        key="trigger_acceptance",
+        key="10_bins_per_decade",
     )
 
     for particle_key in config["particles"]:
