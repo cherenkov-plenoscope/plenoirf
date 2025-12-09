@@ -822,16 +822,3 @@ def _guess_analysis_config_for_instrument(
         analysis_trigger_threshold_pe=analysis_trigger_threshold_pe,
     )
     return cfg
-
-
-def make_angle_range_str(start_rad, stop_rad):
-    circ_str = r"$^\circ{}$"
-    zenith_range_str = (
-        f"[{np.rad2deg(start_rad):0.1f}"
-        + circ_str
-        + ", "
-        + f"{np.rad2deg(stop_rad):0.1f}"
-        + circ_str
-        + ")"
-    )
-    return zenith_range_str
