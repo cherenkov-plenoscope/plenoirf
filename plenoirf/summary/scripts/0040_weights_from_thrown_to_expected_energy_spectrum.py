@@ -11,7 +11,7 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-energy_bin = res.energy_binning(key="trigger_acceptance")
+energy_bin = res.energy_binning(key="10_bins_per_decade")
 fine_energy_bin = res.energy_binning(key="interpolation")
 
 # AIRSHOWER RATES

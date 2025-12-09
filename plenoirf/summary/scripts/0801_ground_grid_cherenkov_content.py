@@ -17,7 +17,7 @@ res.start(sebplt=sebplt)
 
 size_bin = binning_utils.Binning(bin_edges=np.geomspace(1, 1e6, 13))
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
-zenith_bin = res.zenith_binning(key="once")
+zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
 
 cache_dir = opj(res.paths["out_dir"], "__cache__")
 hist_cache_path = opj(cache_dir, "hist.pkl")

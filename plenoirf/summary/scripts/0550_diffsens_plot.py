@@ -21,7 +21,7 @@ dS = json_utils.tree.Tree(
 )
 
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
-zenith_bin = res.zenith_binning("once")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 ZENITH_D_K = [(zd, f"zd{zd:d}") for zd in range(zenith_bin["num"])]
 
 fermi = irf.other_instruments.fermi_lat

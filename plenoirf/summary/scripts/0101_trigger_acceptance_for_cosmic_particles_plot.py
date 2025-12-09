@@ -17,8 +17,8 @@ cr = json_utils.tree.Tree(
     )
 )
 
-energy_bin = res.energy_binning(key="trigger_acceptance")
-zenith_bin = res.zenith_binning("once")
+energy_bin = res.energy_binning(key="10_bins_per_decade")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 trigger_thresholds = np.array(
     res.analysis["trigger"][res.site_key]["ratescan_thresholds_pe"]

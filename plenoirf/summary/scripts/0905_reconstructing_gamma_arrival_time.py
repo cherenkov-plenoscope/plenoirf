@@ -29,7 +29,7 @@ zenith_assignment = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
 )
 energy_bin = res.energy_binning(key="point_spread_function")
-zenith_bin = res.zenith_binning("once")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 SPEED_OF_LIGHT_IN_VACUUM = 299792458
 SPEED_OF_GAMMA_RAY_IN_ATMOSPHERE = SPEED_OF_LIGHT_IN_VACUUM  # good enough

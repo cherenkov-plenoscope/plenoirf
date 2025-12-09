@@ -19,7 +19,7 @@ ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 # load
 # ----
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
-zenith_bin = res.zenith_binning("once")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 energy_bin_width_au = np.zeros(energy_bin["num"])
 

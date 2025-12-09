@@ -18,8 +18,8 @@ import confusion_matrix
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-energy_bin = res.energy_binning(key="trigger_acceptance")
-zenith_bin = res.zenith_binning("once")
+energy_bin = res.energy_binning(key="10_bins_per_decade")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 nat_bin = binning_utils.Binning(
     bin_edges=np.geomspace(10, 100_000, energy_bin["num"])
 )

@@ -10,7 +10,7 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-zenith_bin = res.zenith_binning("once")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 trigger_vs_size = json_utils.tree.Tree(
     opj(

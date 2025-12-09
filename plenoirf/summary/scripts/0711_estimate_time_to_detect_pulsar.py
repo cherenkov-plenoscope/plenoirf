@@ -30,7 +30,7 @@ onregion_acceptance = json_utils.tree.Tree(
 
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
 energy_fine_bin = res.energy_binning(key="interpolation")
-zenith_bin = res.zenith_binning("once")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 prng = np.random.Generator(np.random.PCG64(res.analysis["random_seed"]))
 

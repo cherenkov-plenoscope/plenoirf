@@ -17,7 +17,7 @@ res.start(sebplt=sebplt)
 # load
 # ----
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
-zenith_bin = res.zenith_binning("once")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 energy_migration = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0066_energy_estimate_quality")

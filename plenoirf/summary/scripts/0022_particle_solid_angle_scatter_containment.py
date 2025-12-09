@@ -16,8 +16,8 @@ import sebastians_matplotlib_addons as sebplt
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-energy_bin = res.energy_binning(key="trigger_acceptance")
-zenith_bin = res.zenith_binning(key="once")
+energy_bin = res.energy_binning(key="10_bins_per_decade")
+zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
 
 max_energy_in_magnetic_delfection_tables_GeV = (
     binning_utils.power10.lower_bin_edge(

@@ -20,7 +20,7 @@ passing_trigger = json_utils.tree.Tree(
 )
 
 energy_bin = res.energy_binning(key="point_spread_function")
-zenith_bin = res.zenith_binning("once")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 cmap = sebplt.plt.colormaps["inferno"].resampled(256)
 

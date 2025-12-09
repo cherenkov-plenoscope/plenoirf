@@ -251,7 +251,7 @@ def powerquantile(x, q=1.5):
 
 # load
 # ----
-zenith_bin = res.zenith_binning("once")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 ZENITH_ZD_ZK = [(zd, f"zd{zd:d}") for zd in range(zenith_bin["num"])]
 
 

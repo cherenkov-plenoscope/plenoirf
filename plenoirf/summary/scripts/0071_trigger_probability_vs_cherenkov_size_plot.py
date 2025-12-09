@@ -10,7 +10,7 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-zenith_bin = res.zenith_binning(key="once")
+zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
 trigger_vs_size = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"], "0070_trigger_probability_vs_cherenkov_size"

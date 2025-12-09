@@ -14,7 +14,7 @@ import atmospheric_cherenkov_response
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-zenith_bin = res.zenith_binning("once")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 plenoscope_trigger_vs_cherenkov_density = json_utils.tree.Tree(
     opj(

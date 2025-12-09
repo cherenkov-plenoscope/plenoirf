@@ -16,7 +16,7 @@ passing_trigger = json_utils.tree.Tree(
 zenith_assignment = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
 )
-zenith_bin = res.zenith_binning("once")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 trigger_modi = {}
 trigger_modi["passing_trigger"] = {}

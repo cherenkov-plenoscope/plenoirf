@@ -17,8 +17,8 @@ import sebastians_matplotlib_addons as sebplt
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
-zenith_bin = res.zenith_binning(key="once")
+energy_bin = res.energy_binning(key="10_bins_per_decade")
+zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
 
 population_statistics = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0003_population_statistics")

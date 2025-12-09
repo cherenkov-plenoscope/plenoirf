@@ -40,7 +40,7 @@ POSSIBLE_ONREGION_POLYGON = irf.reconstruction.onregion.make_circular_polygon(
 )
 
 energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
-zenith_bin = res.zenith_binning("once")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 
 def cut_candidates_for_detection(

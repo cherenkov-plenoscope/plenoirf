@@ -26,7 +26,7 @@ lfg = pl.LightFieldGeometry(
     )
 )
 
-energy_bin = res.energy_binning(key="trigger_acceptance")
+energy_bin = res.energy_binning(key="10_bins_per_decade")
 
 NUM_PLOT = 25
 NUM_SHOWER = 100

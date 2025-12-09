@@ -16,7 +16,7 @@ import sebastians_matplotlib_addons as sebplt
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-energy_bin = res.energy_binning(key="trigger_acceptance")
+energy_bin = res.energy_binning(key="10_bins_per_decade")
 
 hh = spherical_histogram.HemisphereHistogram(
     num_vertices=4_000,

@@ -22,7 +22,7 @@ passing_quality = json_utils.tree.Tree(
 zenith_assignment = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
 )
-zenith_bin = res.zenith_binning("once")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 fuzzy_config = gamrec.trajectory.v2020nov12fuzzy0.config.compile_user_config(
     user_config=res.config["reconstruction"]["trajectory"]["fuzzy_method"]

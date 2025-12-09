@@ -14,7 +14,7 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 trigger = res.trigger
-zenith_bin = res.zenith_binning("once")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 trigger_rates = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0128_trigger_rates_total")

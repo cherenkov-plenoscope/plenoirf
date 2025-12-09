@@ -24,7 +24,7 @@ nsb = json_utils.tree.Tree(
         "0120_trigger_rates_for_night_sky_background",
     )
 )
-zenith_bin = res.zenith_binning("once")
+zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 trigger_rates = {}
 

@@ -36,7 +36,7 @@ ok = ["small", "medium", "large"][1]
 dk = "black"
 
 energy_bin = res.energy_binning(key="point_spread_function")
-zenith_bin = res.zenith_binning(key="once")
+zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
 
 ZENITHS = [f"zd{zd:d}" for zd in range(zenith_bin["num"])]
 
