@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import plenoirf as irf
 import sparse_numeric_table as snt
+import rename_after_writing as rnw
 import os
 from os.path import join as opj
 import json_utils
@@ -17,7 +18,6 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 energy_bin = res.energy_binning(key="10_bins_per_decade")
-zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
 
 max_energy_in_magnetic_delfection_tables_GeV = (
     binning_utils.power10.lower_bin_edge(
@@ -44,47 +44,56 @@ def init_hist(energy_bin):
     }
 
 
-thrown = {}
-containment = {}
-for pk in res.PARTICLES:
-    with res.open_event_table(particle_key=pk) as arc:
-        primary = arc.query(
-            levels_and_columns={
-                "primary": [
-                    "uid",
-                    "energy_GeV",
-                    "azimuth_rad",
-                    "zenith_rad",
-                    "containment_quantile_in_solid_angle_thrown",
-                    "solid_angle_thrown_sr",
-                ]
-            }
-        )["primary"]
+thrown_cache_path = os.path.join(res.paths["cache_dir"], "thrown.json")
+containment_cache_path = os.path.join(
+    res.paths["cache_dir"], "containment.json"
+)
 
-    thrown[pk] = init_hist(energy_bin=energy_bin)
-    containment[pk] = init_hist(energy_bin=energy_bin)
-    for eee in range(energy_bin["num"]):
-        energy_start_GeV = energy_bin["edges"][eee]
-        energy_stop_GeV = energy_bin["edges"][eee + 1]
-        energy_mask = np.logical_and(
-            primary["energy_GeV"] >= energy_start_GeV,
-            primary["energy_GeV"] < energy_stop_GeV,
-        )
+if not os.path.exists(thrown_cache_path) or not os.path.exists(
+    containment_cache_path
+):
+    thrown = {}
+    containment = {}
+    for pk in res.PARTICLES:
+        thrown[pk] = init_hist(energy_bin=energy_bin)
+        containment[pk] = init_hist(energy_bin=energy_bin)
+        for ebin in range(energy_bin["num"]):
+            energy_start_GeV = energy_bin["edges"][ebin]
+            energy_stop_GeV = energy_bin["edges"][ebin + 1]
 
-        (
-            containment[pk]["p16"][eee],
-            containment[pk]["p50"][eee],
-            containment[pk]["p84"][eee],
-        ) = p16_p50_p84(
-            primary["containment_quantile_in_solid_angle_thrown"][energy_mask]
-        )
+            primary = res.event_table(particle_key=pk).query(
+                energy_start_GeV=energy_start_GeV,
+                energy_stop_GeV=energy_stop_GeV,
+                levels_and_columns={
+                    "primary": [
+                        "uid",
+                        "containment_quantile_in_solid_angle_thrown",
+                        "solid_angle_thrown_sr",
+                    ]
+                },
+            )["primary"]
 
-        (
-            thrown[pk]["p16"][eee],
-            thrown[pk]["p50"][eee],
-            thrown[pk]["p84"][eee],
-        ) = p16_p50_p84(primary["solid_angle_thrown_sr"][energy_mask])
+            (
+                containment[pk]["p16"][ebin],
+                containment[pk]["p50"][ebin],
+                containment[pk]["p84"][ebin],
+            ) = p16_p50_p84(
+                primary["containment_quantile_in_solid_angle_thrown"]
+            )
 
+            (
+                thrown[pk]["p16"][ebin],
+                thrown[pk]["p50"][ebin],
+                thrown[pk]["p84"][ebin],
+            ) = p16_p50_p84(primary["solid_angle_thrown_sr"])
+
+    with rnw.open(thrown_cache_path, "wt") as f:
+        f.write(json_utils.dumps(thrown))
+    with rnw.open(containment_cache_path, "wt") as f:
+        f.write(json_utils.dumps(containment))
+
+thrown = json_utils.read(thrown_cache_path)
+containment = json_utils.read(containment_cache_path)
 
 PLOTS = {
     "containment_quantile_in_solid_angle_thrown": {
