@@ -33,6 +33,6 @@ def init_from_analysis_config(analysis_config, key):
         start_decade=enebin["start"]["decade"],
         start_bin=enebin["start"]["bin"] * multi,
         stop_decade=enebin["stop"]["decade"],
-        stop_bin=enebin["stop"]["bin"] * multi,
+        stop_bin=(enebin["stop"]["bin"] * multi) - multi + 1,
         num_bins_per_decade=enebin["num_bins_per_decade"] * multi,
     )
