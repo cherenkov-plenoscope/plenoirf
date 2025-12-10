@@ -285,7 +285,7 @@ class ScriptResources:
 
     @property
     def trigger(self):
-        trg = copy.copy(self.analysis["trigger"][self.site_key])
+        trg = copy.copy(self.analysis["trigger"])
         trg["foci_bin"] = self.trigger_image_object_distance_binning()
         return trg
 
