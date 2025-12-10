@@ -26,21 +26,24 @@ for pk in res.PARTICLES:
 
     cmap = res.PARTICLE_COLORMAPS[pk].resampled(256)
 
-    table = res.event_table(particle_key=pk).query(
+    table_bin_by_bin = res.event_table(particle_key=pk).query(
         levels_and_columns={
             "primary": [
                 "uid",
                 "azimuth_rad",
                 "zenith_rad",
             ]
-        }
+        },
+        bin_by_bin=True,
     )
 
     hh.reset()
-    hh.assign_azimuth_zenith(
-        azimuth_rad=table["primary"]["azimuth_rad"],
-        zenith_rad=table["primary"]["zenith_rad"],
-    )
+    for table in table_bin_by_bin:
+        print(table)
+        hh.assign_azimuth_zenith(
+            azimuth_rad=table["primary"]["azimuth_rad"],
+            zenith_rad=table["primary"]["zenith_rad"],
+        )
 
     pointing_range_color = "yellowgreen"
     fstyle, _ = irf.summary.figure.style("4:3")

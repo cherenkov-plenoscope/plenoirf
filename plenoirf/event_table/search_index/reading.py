@@ -37,7 +37,7 @@ class EventTable:
         indices=None,
         levels_and_columns=None,
         sort=False,
-        return_tasks=False,
+        bin_by_bin=False,
     ):
         tasks = _make_list_of_zenith_energy_bins_to_be_read(
             energy_bin_edges_GeV=self.config["energy_bin"]["edges"],
@@ -50,63 +50,36 @@ class EventTable:
             zenith_stop_rad=zenith_stop_rad,
         )
 
-        out = snt.SparseNumericTable(index_key="uid")
+        task_looper = EventTableTaskLooper(
+            event_table=self,
+            tasks=tasks,
+            indices=indices,
+            levels_and_columns=levels_and_columns,
+        )
 
-        for task in tasks:
-            zd = task["zenith"]["bin_index"]
-            en = task["energy"]["bin_index"]
-            bin_path = os.path.join(
-                self.path, "bins", f"zd{zd:06d}_en{en:06d}.snt.zip"
-            )
-            with snt.open(bin_path, "r") as reader:
-                event_table_zd_en_bin = reader.query(
-                    levels_and_columns=levels_and_columns,
-                )
-                if task["energy"]["cut"] is not None:
-                    uid_energy = _get_uid_in_energy_range(
-                        reader=reader,
-                        energy_start_GeV=task["energy"]["cut"]["start"],
-                        energy_stop_GeV=task["energy"]["cut"]["stop"],
-                    )
-                else:
-                    uid_energy = None
+        if bin_by_bin:
+            return task_looper
+        else:
+            out = snt.SparseNumericTable(index_key="uid")
+            for event_table_zd_en_bin in task_looper:
+                out.append(event_table_zd_en_bin)
 
-                if task["zenith"]["cut"] is not None:
-                    uid_zenith = _get_uid_in_zenith_range(
-                        reader=reader,
-                        zenith_start_rad=zenith_start_rad,
-                        zenith_stop_rad=zenith_stop_rad,
-                    )
-                else:
-                    uid_zenith = None
-
-            uid_common = _get_uid_common(
-                uid_zenith=uid_zenith, uid_energy=uid_energy
-            )
-
-            if uid_common is not None:
-                event_table_zd_en_bin = snt.logic.cut_table_on_indices(
-                    table=event_table_zd_en_bin,
-                    common_indices=uid_common,
+            if sort:
+                out = snt.logic.cut_and_sort_table_on_indices(
+                    table=out,
+                    common_indices=indices,
                     inplace=True,
                 )
 
-            out.append(event_table_zd_en_bin)
-
-        if sort:
-            out = snt.logic.cut_and_sort_table_on_indices(
-                table=out,
-                common_indices=indices,
-                inplace=True,
-            )
-
-        if return_tasks:
-            return out, tasks
-        else:
             return out
 
     def __repr__(self):
         return f"{self.__class__.__name__:s}(path={self.path:s})"
+
+    def bin_path(self, zd, en):
+        return os.path.join(
+            self.path, "bins", f"zd{zd:06d}_en{en:06d}.snt.zip"
+        )
 
     def assert_valid(self):
         num_en = self.config["energy_bin"]["num"]
@@ -162,16 +135,75 @@ class EventTable:
                     )
 
 
-def _get_uid_common(uid_zenith, uid_energy):
-    if uid_energy is None and uid_zenith is None:
-        uid_common = None
-    elif uid_zenith is not None:
-        uid_common = uid_zenith
-    elif uid_energy is not None:
-        uid_common = uid_energy
+class EventTableTaskLooper:
+    def __init__(
+        self, event_table, tasks, indices=None, levels_and_columns=None
+    ):
+        self.event_table = event_table
+        self.indices = indices
+        self.levels_and_columns = levels_and_columns
+        self.tasks = tasks
+        self.itask = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.itask == len(self.tasks):
+            raise StopIteration
+        task = self.tasks[self.itask]
+        self.itask += 1
+
+        zd = task["zenith"]["bin_index"]
+        en = task["energy"]["bin_index"]
+        with snt.open(self.event_table.bin_path(zd=zd, en=en), "r") as reader:
+            event_table_zd_en_bin = reader.query(
+                indices=self.indices,
+                levels_and_columns=self.levels_and_columns,
+            )
+            if task["energy"]["cut"] is not None:
+                uid_energy = _get_uid_in_energy_range(
+                    reader=reader,
+                    energy_start_GeV=task["energy"]["cut"]["start"],
+                    energy_stop_GeV=task["energy"]["cut"]["stop"],
+                )
+            else:
+                uid_energy = None
+
+            if task["zenith"]["cut"] is not None:
+                uid_zenith = _get_uid_in_zenith_range(
+                    reader=reader,
+                    zenith_start_rad=zenith_start_rad,
+                    zenith_stop_rad=zenith_stop_rad,
+                )
+            else:
+                uid_zenith = None
+
+        uid_common = _intersection_or_None(uid_zenith, uid_energy)
+
+        if uid_common is not None:
+            event_table_zd_en_bin = snt.logic.cut_table_on_indices(
+                table=event_table_zd_en_bin,
+                common_indices=uid_common,
+                inplace=True,
+            )
+
+        return event_table_zd_en_bin
+
+    def __repr__(self):
+        return f"{self.__class__.__name__:s}(path={self.reader.path:s})"
+
+
+def _intersection_or_None(a, b):
+    if b is None and a is None:
+        c = None
+    elif a is not None:
+        c = a
+    elif uid_b is not None:
+        c = b
     else:
-        uid_common = snt.logic.intersection(uid_zenith, uid_energy)
-    return uid_common
+        c = snt.logic.intersection(a, b)
+    return c
 
 
 def _get_uid_in_energy_range(reader, energy_start_GeV, energy_stop_GeV):
