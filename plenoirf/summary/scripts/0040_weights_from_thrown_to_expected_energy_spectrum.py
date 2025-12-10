@@ -11,7 +11,7 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-energy_bin = res.energy_binning(key="10_bins_per_decade")
+energy_bin = res.energy_binning(key="5_bins_per_decade")
 fine_energy_bin = res.energy_binning(key="60_bins_per_decade")
 
 # AIRSHOWER RATES
@@ -65,20 +65,28 @@ tables = {}
 thrown_spectrum["rates"] = {}
 energy_ranges = {}
 for pk in res.PARTICLES:
-    thrown_spectrum["rates"][pk] = {}
-    energy_ranges[pk] = {}
-
-    with res.open_event_table(particle_key=pk) as arc:
-        _table = arc.query(
-            levels_and_columns={"primary": ["uid", "energy_GeV"]}
+    energy_ranges[pk] = {
+        "min": np.nan * np.ones(energy_bin["num"]),
+        "max": np.nan * np.ones(energy_bin["num"]),
+    }
+    thrown_spectrum["rates"][pk] = np.zeros(shape=energy_bin["num"], dtype=int)
+    for ebin in range(energy_bin["num"]):
+        _table = res.event_table(particle_key=pk).query(
+            energy_start_GeV=energy_bin["edges"][ebin],
+            energy_stop_GeV=energy_bin["edges"][ebin + 1],
+            levels_and_columns={"primary": ["uid", "energy_GeV"]},
         )
+        thrown_spectrum["rates"][pk][ebin] = _table["primary"].shape[0]
+        if thrown_spectrum["rates"][pk][ebin] > 0:
+            energy_ranges[pk]["min"][ebin] = np.min(
+                _table["primary"]["energy_GeV"]
+            )
+            energy_ranges[pk]["max"][ebin] = np.max(
+                _table["primary"]["energy_GeV"]
+            )
 
-    thrown_spectrum["rates"][pk] = np.histogram(
-        _table["primary"]["energy_GeV"],
-        bins=thrown_spectrum["energy_bin_edges"],
-    )[0]
-    energy_ranges[pk]["min"] = np.min(_table["primary"]["energy_GeV"])
-    energy_ranges[pk]["max"] = np.max(_table["primary"]["energy_GeV"])
+    energy_ranges[pk]["min"] = np.nanmin(energy_ranges[pk]["min"])
+    energy_ranges[pk]["max"] = np.nanmax(energy_ranges[pk]["max"])
 
 for pk in res.PARTICLES:
     particle_dir = opj(res.paths["out_dir"], pk)
