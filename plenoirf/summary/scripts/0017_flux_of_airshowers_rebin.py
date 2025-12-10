@@ -23,7 +23,7 @@ airshower_fluxes = json_utils.tree.Tree(
 
 # prepare
 # -------
-energy_bin_key = "10_bins_per_decade"
+energy_bin_key = "5_bins_per_decade"
 energy_bin = res.energy_binning(key=energy_bin_key)
 fine_energy_bin = res.energy_binning(key="60_bins_per_decade")
 

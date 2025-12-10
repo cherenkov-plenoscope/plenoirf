@@ -39,7 +39,6 @@ for pk in res.PARTICLES:
 
     hh.reset()
     for table in table_bin_by_bin:
-        print(table)
         hh.assign_azimuth_zenith(
             azimuth_rad=table["primary"]["azimuth_rad"],
             zenith_rad=table["primary"]["zenith_rad"],
