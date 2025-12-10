@@ -16,26 +16,23 @@ import sebastians_matplotlib_addons as sebplt
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-energy_bin = res.energy_binning(key="10_bins_per_decade")
-
 hh = spherical_histogram.HemisphereHistogram(
     num_vertices=4_000,
     max_zenith_distance_rad=np.deg2rad(90),
 )
-
 cmap = sebplt.plt.colormaps["magma_r"].resampled(256)
 
 for pk in res.PARTICLES:
-    with res.open_event_table(particle_key=pk) as arc:
-        table = arc.query(
-            levels_and_columns={"instrument_pointing": "__all__"}
-        )
-
-    hh.reset()
-    hh.assign_azimuth_zenith(
-        azimuth_rad=table["instrument_pointing"]["azimuth_rad"],
-        zenith_rad=table["instrument_pointing"]["zenith_rad"],
+    table_bin_by_bin = res.event_table(particle_key=pk).query(
+        levels_and_columns={"instrument_pointing": "__all__"},
+        bin_by_bin=True,
     )
+    hh.reset()
+    for table in table_bin_by_bin:
+        hh.assign_azimuth_zenith(
+            azimuth_rad=table["instrument_pointing"]["azimuth_rad"],
+            zenith_rad=table["instrument_pointing"]["zenith_rad"],
+        )
 
     pointing_range_color = "yellowgreen"
 
