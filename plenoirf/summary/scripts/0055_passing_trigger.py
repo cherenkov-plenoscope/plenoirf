@@ -14,9 +14,6 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
-zenith_assignment = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
-)
 
 trigger = res.trigger
 
@@ -27,6 +24,10 @@ accepting_height_above_observation_level_m = (
 rejecting_height_above_observation_level_m = (
     trigger["modus"]["rejecting_altitude_asl_m"]
     - res.SITE["observation_level_asl_m"]
+)
+
+SIZE_BIN_EDGES = np.array(
+    sorted(list(set(np.round(np.geomspace(80, 8_000, 100)))))
 )
 
 
@@ -53,10 +54,10 @@ fig.savefig(
 )
 sebplt.close(fig)
 
-
-SIZE_BIN_EDGES = np.array(
-    sorted(list(set(np.round(np.geomspace(80, 8_000, 100)))))
-)
+TRIGGER_MODES = [
+    "far_accepting_focus_and_near_rejecting_focus",
+    "far_accepting_focus",
+]
 
 
 def explore_focus_ratios(
@@ -196,163 +197,188 @@ def explore_focus_ratios(
     return zdfocrat, ratio_bin
 
 
-for pk in res.PARTICLES:
+for pk in ["electron"]:  # res.PARTICLES:
     print(pk)
+
+    # make out dirs
+    # -------------
     pk_dir = opj(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
+    for mode_key in TRIGGER_MODES:
+        pk_mode_dir = opj(pk_dir, mode_key)
+        os.makedirs(pk_mode_dir, exist_ok=True)
+        pk_mode_ratescan_dir = opj(pk_mode_dir, "ratescan")
+        os.makedirs(pk_mode_ratescan_dir, exist_ok=True)
 
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(
-            levels_and_columns={
-                "trigger": "__all__",
-                "instrument_pointing": ("uid", "zenith_rad"),
-            }
+    event_table_bin_by_bin = res.event_table(particle_key=pk).query(
+        levels_and_columns={
+            "trigger": "__all__",
+            "instrument_pointing": ("uid", "zenith_rad"),
+        },
+        bin_by_bin=True,
+    )
+    for event_table in event_table_bin_by_bin:
+        ibin = event_table_bin_by_bin.itask
+        print(ibin)
+
+        uid_common = snt.logic.intersection(
+            event_table["trigger"]["uid"],
+            event_table["instrument_pointing"]["uid"],
         )
-    common_indices = snt.logic.intersection(
-        event_table["trigger"]["uid"],
-        event_table["instrument_pointing"]["uid"],
-    )
-    event_table = snt.logic.cut_and_sort_table_on_indices(
-        table=event_table,
-        common_indices=common_indices,
-        inplace=True,
-    )
-
-    num_events = event_table["trigger"].shape[0]
-
-    (accepting_focus, rejecting_focus) = (
-        irf.light_field_trigger.assign_accepting_and_rejecting_focus_based_on_pointing_zenith(
-            pointing_zenith_rad=event_table["instrument_pointing"][
-                "zenith_rad"
-            ],
-            accepting_height_above_observation_level_m=accepting_height_above_observation_level_m,
-            rejecting_height_above_observation_level_m=rejecting_height_above_observation_level_m,
-            trigger_foci_bin_edges_m=trigger["foci_bin"]["edges"],
+        event_table = snt.logic.cut_and_sort_table_on_indices(
+            table=event_table,
+            common_indices=uid_common,
+            inplace=True,
         )
-    )
-    # rejecting_focus = accepting_focus - 1  # one focus layer below
 
-    assert accepting_focus.shape[0] == num_events
-    assert rejecting_focus.shape[0] == num_events
+        num_events = event_table["trigger"].shape[0]
 
-    focus_response_pe = (
-        irf.light_field_trigger.copy_focus_response_into_matrix(
-            trigger_table=event_table["trigger"]
+        (accepting_focus, rejecting_focus) = (
+            irf.light_field_trigger.assign_accepting_and_rejecting_focus_based_on_pointing_zenith(
+                pointing_zenith_rad=event_table["instrument_pointing"][
+                    "zenith_rad"
+                ],
+                accepting_height_above_observation_level_m=accepting_height_above_observation_level_m,
+                rejecting_height_above_observation_level_m=rejecting_height_above_observation_level_m,
+                trigger_foci_bin_edges_m=trigger["foci_bin"]["edges"],
+            )
         )
-    )
-    assert focus_response_pe.shape[0] == num_events
-    assert focus_response_pe.shape[1] == trigger["foci_bin"]["num"]
+        # rejecting_focus = accepting_focus - 1  # one focus layer below
 
-    (accepting_response_pe, rejecting_response_pe) = (
-        irf.light_field_trigger.find_accepting_and_rejecting_response(
-            accepting_focus=accepting_focus,
-            rejecting_focus=rejecting_focus,
-            focus_response_pe=focus_response_pe,
+        assert accepting_focus.shape[0] == num_events
+        assert rejecting_focus.shape[0] == num_events
+
+        focus_response_pe = (
+            irf.light_field_trigger.copy_focus_response_into_matrix(
+                trigger_table=event_table["trigger"]
+            )
         )
-    )
-    assert accepting_response_pe.shape[0] == num_events
-    assert rejecting_response_pe.shape[0] == num_events
+        assert focus_response_pe.shape[0] == num_events
+        assert focus_response_pe.shape[1] == trigger["foci_bin"]["num"]
 
-    threshold_accepting_over_rejecting = (
-        irf.light_field_trigger.get_accepting_over_rejecting(
-            pointing_zenith_rad=event_table["instrument_pointing"][
-                "zenith_rad"
-            ],
-            trigger=trigger,
-            accepting_response_pe=accepting_response_pe,
+        (accepting_response_pe, rejecting_response_pe) = (
+            irf.light_field_trigger.find_accepting_and_rejecting_response(
+                accepting_focus=accepting_focus,
+                rejecting_focus=rejecting_focus,
+                focus_response_pe=focus_response_pe,
+            )
         )
-    )
+        assert accepting_response_pe.shape[0] == num_events
+        assert rejecting_response_pe.shape[0] == num_events
 
-    accepting_over_rejecting = accepting_response_pe / rejecting_response_pe
-    is_ratio_over_threshold = (
-        accepting_over_rejecting >= threshold_accepting_over_rejecting
-    )
+        threshold_accepting_over_rejecting = (
+            irf.light_field_trigger.get_accepting_over_rejecting(
+                pointing_zenith_rad=event_table["instrument_pointing"][
+                    "zenith_rad"
+                ],
+                trigger=trigger,
+                accepting_response_pe=accepting_response_pe,
+            )
+        )
 
-    zenith_corrected_threshold_pe = irf.light_field_trigger.get_trigger_threshold_corrected_for_pointing_zenith(
-        pointing_zenith_rad=event_table["instrument_pointing"]["zenith_rad"],
-        trigger=trigger,
-        nominal_threshold_pe=trigger["threshold_pe"],
-    )
-
-    _small_size_pe = [150]
-    _pointing_to_zenith_rad = [0]
-    _small_size_ratio_threschold = (
-        irf.light_field_trigger.get_accepting_over_rejecting(
-            pointing_zenith_rad=_pointing_to_zenith_rad,
-            trigger=trigger,
-            accepting_response_pe=_small_size_pe,
-        )[0]
-    )
-
-    zdfocrat, ratio_bin = explore_focus_ratios(
-        uids=event_table["trigger"]["uid"],
-        focus_response_pe=focus_response_pe,
-        accepting_response_pe=accepting_response_pe,
-        zenith_corrected_threshold_pe=zenith_corrected_threshold_pe,
-        trigger_focus_bin_edges=trigger["foci_bin"]["edges"],
-        pk=pk,
-        small_size_ratio_threschold=_small_size_ratio_threschold,
-    )
-
-    # export
-    # ------
-    pk_ratescan_dir = opj(pk_dir, "ratescan")
-    os.makedirs(pk_ratescan_dir, exist_ok=True)
-    pk_only_accepting_dir = opj(pk_dir, "only_accepting_not_rejecting")
-    os.makedirs(pk_only_accepting_dir, exist_ok=True)
-    pk_only_accepting_ratescan_dir = opj(pk_only_accepting_dir, "ratescan")
-    os.makedirs(pk_only_accepting_ratescan_dir, exist_ok=True)
-
-    for irs in range(len(trigger["ratescan_thresholds_pe"])):
-        nominal_threshold_pe = trigger["ratescan_thresholds_pe"][irs]
+        accepting_over_rejecting = (
+            accepting_response_pe / rejecting_response_pe
+        )
+        is_ratio_over_threshold = (
+            accepting_over_rejecting >= threshold_accepting_over_rejecting
+        )
 
         zenith_corrected_threshold_pe = irf.light_field_trigger.get_trigger_threshold_corrected_for_pointing_zenith(
             pointing_zenith_rad=event_table["instrument_pointing"][
                 "zenith_rad"
             ],
             trigger=trigger,
-            nominal_threshold_pe=nominal_threshold_pe,
+            nominal_threshold_pe=trigger["threshold_pe"],
         )
 
-        is_size_over_threshold = (
-            accepting_response_pe >= zenith_corrected_threshold_pe
-        )
-        is_pasttrigger = np.logical_and(
-            is_size_over_threshold, is_ratio_over_threshold
-        )
-
-        _num_is_size = sum(is_size_over_threshold)
-        _num_past = sum(is_pasttrigger)
-        _loss = (_num_is_size - _num_past) / _num_is_size
-
-        print(f"{pk:s}, num size: {_num_is_size:d}, loss: {_loss*1e2:.2f}%")
-
-        filename = f"{trigger['ratescan_thresholds_pe'][irs]:d}pe.json"
-        uids_pasttrigger = event_table["trigger"]["uid"][is_pasttrigger]
-
-        json_utils.write(
-            opj(pk_ratescan_dir, filename),
-            {"uid": uids_pasttrigger},
+        """
+        _small_size_pe = [150]
+        _pointing_to_zenith_rad = [0]
+        _small_size_ratio_threschold = (
+            irf.light_field_trigger.get_accepting_over_rejecting(
+                pointing_zenith_rad=_pointing_to_zenith_rad,
+                trigger=trigger,
+                accepting_response_pe=_small_size_pe,
+            )[0]
         )
 
-        uids_past_excepting_trigger = event_table["trigger"]["uid"][
-            is_size_over_threshold
-        ]
-
-        json_utils.write(
-            opj(pk_only_accepting_ratescan_dir, filename),
-            {"uid": uids_past_excepting_trigger},
+        zdfocrat, ratio_bin = explore_focus_ratios(
+            uids=event_table["trigger"]["uid"],
+            focus_response_pe=focus_response_pe,
+            accepting_response_pe=accepting_response_pe,
+            zenith_corrected_threshold_pe=zenith_corrected_threshold_pe,
+            trigger_focus_bin_edges=trigger["foci_bin"]["edges"],
+            pk=pk,
+            small_size_ratio_threschold=_small_size_ratio_threschold,
         )
+        """
 
-        if nominal_threshold_pe == trigger["threshold_pe"]:
-            json_utils.write(
-                opj(pk_dir, "uid.json"),
-                uids_pasttrigger,
+        # export
+        # ------
+
+        for irs in range(len(trigger["ratescan_thresholds_pe"])):
+            nominal_threshold_pe = trigger["ratescan_thresholds_pe"][irs]
+
+            zenith_corrected_threshold_pe = irf.light_field_trigger.get_trigger_threshold_corrected_for_pointing_zenith(
+                pointing_zenith_rad=event_table["instrument_pointing"][
+                    "zenith_rad"
+                ],
+                trigger=trigger,
+                nominal_threshold_pe=nominal_threshold_pe,
             )
 
-            json_utils.write(
-                opj(pk_only_accepting_dir, "uid.json"),
-                uids_past_excepting_trigger,
+            is_size_over_threshold = (
+                accepting_response_pe >= zenith_corrected_threshold_pe
             )
+            is_pasttrigger = np.logical_and(
+                is_size_over_threshold, is_ratio_over_threshold
+            )
+
+            _num_is_size = sum(is_size_over_threshold)
+            _num_past = sum(is_pasttrigger)
+            _loss = (_num_is_size - _num_past) / _num_is_size
+
+            print(
+                f"{pk:s}, num size: {_num_is_size:d}, loss: {_loss*1e2:.2f}%"
+            )
+
+            filename = (
+                f"{ibin:03d}_{trigger['ratescan_thresholds_pe'][irs]:d}pe.json"
+            )
+            uids_pasttrigger = event_table["trigger"]["uid"][is_pasttrigger]
+
+            json_utils.write(
+                opj(
+                    pk_dir,
+                    "far_accepting_focus_and_near_rejecting_focus",
+                    "ratescan",
+                    filename,
+                ),
+                {"uid": uids_pasttrigger},
+            )
+
+            uids_past_excepting_trigger = event_table["trigger"]["uid"][
+                is_size_over_threshold
+            ]
+
+            json_utils.write(
+                opj(pk_dir, "far_accepting_focus", "ratescan", filename),
+                {"uid": uids_past_excepting_trigger},
+            )
+
+            if nominal_threshold_pe == trigger["threshold_pe"]:
+                json_utils.write(
+                    opj(
+                        pk_dir,
+                        "far_accepting_focus_and_near_rejecting_focus",
+                        f"{ibin:03d}_uid.json",
+                    ),
+                    uids_pasttrigger,
+                )
+
+                json_utils.write(
+                    opj(pk_dir, "far_accepting_focus", f"{ibin:03d}_uid.json"),
+                    uids_past_excepting_trigger,
+                )
 
 res.stop()
