@@ -74,23 +74,6 @@ for pk in res.PARTICLES:
     bbb[pk] = {"avg": [], "au": []}
     huh[pk] = {}
 
-    with res.open_event_table(particle_key=pk) as arc:
-        table = arc.query(
-            levels_and_columns={
-                "primary": [
-                    "uid",
-                    "energy_GeV",
-                ],
-                "instrument_pointing": ["uid", "zenith_rad"],
-                "groundgrid": ["uid", "num_bins_above_threshold"],
-            }
-        )
-
-    table = snt.logic.sort_table_on_common_indices(
-        table=table,
-        common_indices=table["primary"]["uid"],
-    )
-
     huh[pk]["bin_edges"] = np.geomspace(
         1e0,
         1e6,
@@ -104,30 +87,36 @@ for pk in res.PARTICLES:
 
     min_number_samples = 10
     for zd in range(zenith_bin["num"]):
-        zd_start = zenith_bin["edges"][zd]
-        zd_stop = zenith_bin["edges"][zd + 1]
-
-        mask = np.logical_and(
-            table["instrument_pointing"]["zenith_rad"] >= zd_start,
-            table["instrument_pointing"]["zenith_rad"] < zd_stop,
+        table = res.event_table(particle_key=pk).query(
+            levels_and_columns={
+                "primary": [
+                    "uid",
+                    "energy_GeV",
+                ],
+                "groundgrid": ["uid", "num_bins_above_threshold"],
+            },
+            zenith_bin_indices=[zd],
+        )
+        table = snt.logic.sort_table_on_common_indices(
+            table=table, common_indices=table["primary"]["uid"], inplace=True
         )
 
         huh[pk]["bin_counts"][zd], huh[pk]["bin_indices"][zd] = histogram(
-            x=table["groundgrid"]["num_bins_above_threshold"][mask],
-            uid=table["groundgrid"]["uid"][mask],
+            x=table["groundgrid"]["num_bins_above_threshold"],
+            uid=table["groundgrid"]["uid"],
             bin_edges=huh[pk]["bin_edges"],
         )
 
         # 1D VS energy
         # ------------
         hh_exposure = np.histogram(
-            table["primary"]["energy_GeV"][mask],
+            table["primary"]["energy_GeV"],
             bins=energy_bin["edges"],
         )[0]
         hh_num_bins = np.histogram(
-            table["primary"]["energy_GeV"][mask],
+            table["primary"]["energy_GeV"],
             bins=energy_bin["edges"],
-            weights=table["groundgrid"]["num_bins_above_threshold"][mask],
+            weights=table["groundgrid"]["num_bins_above_threshold"],
         )[0]
 
         avg_num_bins = irf.utils._divide_silent(
@@ -145,10 +134,10 @@ for pk in res.PARTICLES:
         # ------------
         cm = confusion_matrix.init(
             ax0_key="primary/energy_GeV",
-            ax0_values=table["primary"]["energy_GeV"][mask],
+            ax0_values=table["primary"]["energy_GeV"],
             ax0_bin_edges=energy_bin["edges"],
             ax1_key="groundgrid/num_bins_above_threshold",
-            ax1_values=table["groundgrid"]["num_bins_above_threshold"][mask],
+            ax1_values=table["groundgrid"]["num_bins_above_threshold"],
             ax1_bin_edges=nat_bin["edges"],
             weights=None,
             min_exposure_ax0=min_number_samples,
