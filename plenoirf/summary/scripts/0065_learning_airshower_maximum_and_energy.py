@@ -42,7 +42,7 @@ energy_population_function = json_utils.read(
         "energy_population_function.json",
     )
 )
-energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+energy_bin = res.energy_binning(key="5_bins_per_decade")
 random_seed = res.analysis["random_seed"]
 
 
@@ -125,14 +125,13 @@ def read_event_frame(
         train_test[pk]["test"],
     )
 
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(
-            levels_and_columns={
-                "primary": ["uid", "energy_GeV"],
-                "cherenkovpool": ["uid", "z_emission_p50_m"],
-            },
-            indices=uid_train_and_test,
-        )
+    event_table = res.event_table(particle_key=pk).query(
+        levels_and_columns={
+            "primary": ["uid", "energy_GeV"],
+            "cherenkovpool": ["uid", "z_emission_p50_m"],
+        },
+        indices=uid_train_and_test,
+    )
 
     transformed_features_path = opj(
         transformed_features_dir,
@@ -420,13 +419,11 @@ for mk in results:
 
 
 def read_true_energy(uid):
-    with res.open_event_table(particle_key="gamma") as arc:
-        table = arc.query(
-            levels_and_columns={"primary": ["uid", "energy_GeV"]},
-            indices=uid,
-            sort=True,
-        )
-
+    table = res.event_table(particle_key="gamma").query(
+        levels_and_columns={"primary": ["uid", "energy_GeV"]},
+        indices=uid,
+        sort=True,
+    )
     np.testing.assert_array_equal(uid, table["primary"]["uid"])
     return table["primary"]["energy_GeV"]
 
