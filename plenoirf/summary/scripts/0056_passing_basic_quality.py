@@ -107,18 +107,16 @@ for pk in res.PARTICLES:
     pk_dir = opj(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
-    with res.open_event_table(particle_key=pk) as arc:
-        _event_table = arc.query(
-            levels_and_columns={
-                "features": [
-                    "uid",
-                    "num_photons",
-                    "image_smallest_ellipse_num_photons_on_edge_field_of_view",
-                    "paxel_intensity_peakness_std_over_mean",
-                ]
-            }
-        )
-        features = _event_table["features"]
+    features = res.event_table(particle_key=pk).query(
+        levels_and_columns={
+            "features": [
+                "uid",
+                "num_photons",
+                "image_smallest_ellipse_num_photons_on_edge_field_of_view",
+                "paxel_intensity_peakness_std_over_mean",
+            ]
+        }
+    )["features"]
 
     for cut_key in CUTS:
         scans[pk][cut_key] = analyse_cut_scan(
