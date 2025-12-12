@@ -28,7 +28,7 @@ for pk in res.PARTICLES:
         bin_by_bin=True,
     )
     hh.reset()
-    for table in table_bin_by_bin:
+    for table, _ in table_bin_by_bin:
         hh.assign_azimuth_zenith(
             azimuth_rad=table["instrument_pointing"]["azimuth_rad"],
             zenith_rad=table["instrument_pointing"]["zenith_rad"],

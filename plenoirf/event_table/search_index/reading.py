@@ -188,7 +188,7 @@ class EventTableTaskLooper:
                 inplace=True,
             )
 
-        return event_table_zd_en_bin
+        return event_table_zd_en_bin, (zd, en)
 
     def __repr__(self):
         return f"{self.__class__.__name__:s}(path={self.reader.path:s})"
