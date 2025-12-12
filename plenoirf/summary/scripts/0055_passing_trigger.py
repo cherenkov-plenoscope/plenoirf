@@ -298,9 +298,6 @@ for pk in res.PARTICLES:
 
         threshold_accepting_over_rejecting = (
             irf.light_field_trigger.get_accepting_over_rejecting(
-                pointing_zenith_rad=table_bin["instrument_pointing"][
-                    "zenith_rad"
-                ],
                 trigger=trigger,
                 accepting_response_pe=accepting_response_pe,
             )
