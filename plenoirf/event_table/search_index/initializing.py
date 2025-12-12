@@ -67,6 +67,7 @@ def _populate(work_dir, event_table_path, config=None):
             stage_path=tmp_stage_path,
             num_zenith_bins=config["zenith_bin"]["num"],
             num_energy_bins=config["energy_bin"]["num"],
+            dtypes=structure.dtypes(),
         )
 
 
@@ -255,12 +256,11 @@ def _populated_bins_step_two(
     stage_path,
     num_zenith_bins,
     num_energy_bins,
+    dtypes,
 ):
     assert num_energy_bins > 0
     assert num_zenith_bins > 0
     os.makedirs(out_path, exist_ok=True)
-
-    EVENT_TABLE_DTYPES = structure.dtypes()
 
     for zd in range(num_zenith_bins):
         for en in range(num_energy_bins):
@@ -274,11 +274,11 @@ def _populated_bins_step_two(
                 ) as tmp_bin_outpath, snt.open(
                     tmp_bin_outpath,
                     mode="w",
-                    dtypes=EVENT_TABLE_DTYPES,
+                    dtypes=dtypes,
                     index_key="uid",
                     compress=False,
                 ) as event_table_writer:
-                    for level_key in EVENT_TABLE_DTYPES:
+                    for level_key in dtypes:
 
                         bin_level_inpath = os.path.join(
                             stage_path,
@@ -289,10 +289,10 @@ def _populated_bins_step_two(
                         with open(bin_level_inpath, mode="rb") as fin:
                             level_recarray = np.frombuffer(
                                 fin.read(),
-                                dtype=EVENT_TABLE_DTYPES[level_key],
+                                dtype=dtypes[level_key],
                             )
                         _table = snt.SparseNumericTable(
-                            dtypes=EVENT_TABLE_DTYPES,
+                            dtypes=dtypes,
                             index_key="uid",
                         )
                         _table[level_key].append(level_recarray)
