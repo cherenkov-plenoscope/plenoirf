@@ -25,7 +25,7 @@ passing_quality = json_utils.tree.Tree(
 passing_trajectory_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
-energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+energy_bin = res.energy_binning(key="5_bins_per_decade")
 
 log10_scale = np.log10(energy_bin["stop"]) - np.log10(energy_bin["start"])
 log10_shift = np.log10(energy_bin["start"])
@@ -36,13 +36,11 @@ uid_reconstructable = snt.logic.intersection(
     passing_trajectory_quality["gamma"]["uid"],
 )
 
-
-with res.open_event_table(particle_key="gamma") as arc:
-    table = arc.query(
-        levels_and_columns={"primary": ["uid", "energy_GeV"]},
-        indices=uid_reconstructable,
-        sort=True,
-    )
+table = res.event_table(particle_key="gamma").query(
+    levels_and_columns={"primary": ["uid", "energy_GeV"]},
+    indices=uid_reconstructable,
+    sort=True,
+)
 np.testing.assert_array_equal(uid_reconstructable, table["primary"]["uid"])
 energy_GeV = table["primary"]["energy_GeV"]
 

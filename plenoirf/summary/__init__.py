@@ -799,6 +799,10 @@ class PassedTriggerRatescanReader(event_table.search_index.EventTable):
         self.analysis_threshold_pe = analysis_threshold_pe
         assert self.analysis_threshold_pe > 0
 
+    def __getitem__(self, key):
+        assert key == "uid"
+        return self.uid()
+
     def uid(self, energy_bin_indices=None, zenith_bin_indices=None):
         return self.ratescan(
             threshold_pe=self.analysis_threshold_pe,
