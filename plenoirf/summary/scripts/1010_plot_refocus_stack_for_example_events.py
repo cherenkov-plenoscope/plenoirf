@@ -291,7 +291,7 @@ for pk in res.PARTICLES:
     os.makedirs(pk_dir, exist_ok=True)
 
     uid_trigger_and_quality = snt.logic.intersection(
-        passing_trigger[pk].uid(),
+        passing_trigger[pk]["uid"],
         passing_quality[pk]["uid"],
     )
 

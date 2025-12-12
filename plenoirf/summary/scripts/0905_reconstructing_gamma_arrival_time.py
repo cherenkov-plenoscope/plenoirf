@@ -53,7 +53,7 @@ for zd in range(zenith_bin["num"]):
 
         uid_common = snt.logic.intersection(
             zenith_assignment[zk][pk],
-            passing_trigger[pk].uid(),
+            passing_trigger[pk]["uid"],
             passing_quality[pk]["uid"],
             passing_trajectory_quality[pk]["uid"],
         )

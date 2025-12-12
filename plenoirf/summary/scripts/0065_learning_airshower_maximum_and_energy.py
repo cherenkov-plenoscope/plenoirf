@@ -199,7 +199,7 @@ NUM_BOOTSTRIPS = 10
 passing = {}
 for pk in res.PARTICLES:
     passing[pk] = snt.logic.intersection(
-        passing_trigger[pk].uid(),
+        passing_trigger[pk]["uid"],
         passing_quality[pk]["uid"],
         passing_trajectory_quality[pk]["uid"],
     )

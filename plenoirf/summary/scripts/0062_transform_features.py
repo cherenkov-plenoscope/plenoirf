@@ -42,7 +42,7 @@ def open_feature_frame(pk, return_spectral_weight=False):
         }
     )
     common_indices = snt.logic.intersection(
-        passing_trigger[pk].uid(),
+        passing_trigger[pk]["uid"],
         passing_quality[pk]["uid"],
         event_table["features"]["uid"],
         event_table["reconstructed_trajectory"]["uid"],

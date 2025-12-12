@@ -40,7 +40,7 @@ for pk in res.PARTICLES:
     # ---------
     mask_triggered = snt.logic.make_mask_of_right_in_left(
         left_indices=event_table["primary"]["uid"],
-        right_indices=passing_trigger[pk].uid(),
+        right_indices=passing_trigger[pk]["uid"],
     )
 
     intensity_cube = []

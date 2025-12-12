@@ -243,7 +243,7 @@ for pk in ["helium"]:
     print("===", pk, "===")
 
     uid_trigger_and_quality = snt.logic.intersection(
-        passing_trigger[pk].uid(),
+        passing_trigger[pk]["uid"],
         passing_quality[pk]["uid"],
     )
 

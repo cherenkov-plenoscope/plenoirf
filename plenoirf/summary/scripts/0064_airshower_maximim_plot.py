@@ -44,7 +44,7 @@ STRUCTURE = irf.event_table.structure.init_event_table_structure()
 for pk in PARTICLES:
 
     uid_common = snt.logic.intersection(
-        passing_trigger[pk].uid(),
+        passing_trigger[pk]["uid"],
         passing_quality[pk]["uid"],
     )
 

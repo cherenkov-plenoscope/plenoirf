@@ -95,7 +95,7 @@ for zd in range(zenith_bin["num"]):
             "num_bins_above_threshold"
         ]
         total_num_grid_cells = shower_table["grid"]["num_bins_thrown"]
-        idx_detected = passing_trigger[pk].uid()
+        idx_detected = passing_trigger[pk]["uid"]
 
         mask_shower_passed_trigger = snt.logic.make_mask_of_right_in_left(
             left_indices=shower_table["primary"]["uid"],
@@ -156,7 +156,7 @@ for zd in range(zenith_bin["num"]):
 
             S_mask_shower_detected = snt.logic.make_mask_of_right_in_left(
                 left_indices=S_shower_table["primary"]["uid"],
-                right_indices=passing_trigger[pk].uid(),
+                right_indices=passing_trigger[pk]["uid"],
             )
 
             S_quantity_scatter = (

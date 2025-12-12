@@ -95,7 +95,7 @@ if not os.path.exists(counts_cache_path):
                     stop=float("inf"),
                 )
 
-                uid_passed_trigger = passing_trigger[pk].uid()
+                uid_passed_trigger = passing_trigger[pk]["uid"]
 
                 uid_cherenkovclassification = event_table["features"]["uid"]
 
