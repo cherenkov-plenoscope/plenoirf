@@ -29,7 +29,7 @@ passing_trajectory_quality = json_utils.tree.Tree(
 zenith_assignment = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
 )
-energy_bin = res.energy_binning(key="point_spread_function")
+energy_bin = res.energy_binning(key="10_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 SPEED_OF_LIGHT_IN_VACUUM = 299792458

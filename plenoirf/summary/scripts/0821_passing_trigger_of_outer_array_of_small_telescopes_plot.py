@@ -14,7 +14,7 @@ import propagate_uncertainties as pu
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-energy_bin = res.energy_binning(key="point_spread_function")
+energy_bin = res.energy_binning(key="10_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 passing_array_trigger = json_utils.tree.Tree(

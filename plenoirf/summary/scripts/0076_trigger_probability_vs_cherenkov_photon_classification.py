@@ -22,7 +22,7 @@ passing_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
 
-energy_bin = res.energy_binning(key="point_spread_function")
+energy_bin = res.energy_binning(key="10_bins_per_decade")
 zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
 
 CHCL = "cherenkovclassification"

@@ -52,7 +52,7 @@ passing_trajectory_quality = json_utils.tree.Tree(
 
 # energy
 # ------
-energy_bin = res.energy_binning(key="point_spread_function")
+energy_bin = res.energy_binning(key="10_bins_per_decade")
 
 # core-radius bins
 # ----------------

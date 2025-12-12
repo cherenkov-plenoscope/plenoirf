@@ -16,7 +16,7 @@ passing_trigger = res.read_passed_trigger(
     trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
 )
 
-energy_bin = res.energy_binning(key="point_spread_function")
+energy_bin = res.energy_binning(key="10_bins_per_decade")
 num_grid_bins_on_edge = res.config["ground_grid"]["geometry"][
     "num_bins_each_axis"
 ]
