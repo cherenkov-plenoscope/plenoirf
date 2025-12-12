@@ -307,6 +307,24 @@ class ScriptResources:
             )
         return self._plenoirf_dir_provenance
 
+    def read_passed_trigger(
+        self,
+        passed_trigger_path,
+        trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
+    ):
+        out = {}
+        for particle_key in self.PARTICLES:
+            out[particle_key] = PassedTriggerRatescanReader(
+                path=os.path.join(
+                    passed_trigger_path,
+                    particle_key,
+                    trigger_mode_key,
+                    "ratescan",
+                ),
+                analysis_threshold_pe=self.analysis["trigger"]["threshold_pe"],
+            )
+        return out
+
 
 def _init_SITES(config):
     SITES = {}
@@ -773,3 +791,32 @@ def _guess_analysis_config_for_instrument(
         analysis_trigger_threshold_pe=analysis_trigger_threshold_pe,
     )
     return cfg
+
+
+class PassedTriggerRatescanReader(event_table.search_index.EventTable):
+    def __init__(self, path, analysis_threshold_pe):
+        super(PassedTriggerRatescanReader, self).__init__(path)
+        self.analysis_threshold_pe = analysis_threshold_pe
+        assert self.analysis_threshold_pe > 0
+
+    def uid(self, energy_bin_indices=None, zenith_bin_indices=None):
+        return self.ratescan(
+            threshold_pe=self.analysis_threshold_pe,
+            energy_bin_indices=energy_bin_indices,
+            zenith_bin_indices=zenith_bin_indices,
+        )
+
+    def ratescan(
+        self,
+        threshold_pe,
+        energy_bin_indices=None,
+        zenith_bin_indices=None,
+    ):
+        level_key = f"{threshold_pe:d}pe"
+        table = self.query(
+            levels_and_columns={level_key: ["uid"]},
+            energy_bin_indices=energy_bin_indices,
+            zenith_bin_indices=zenith_bin_indices,
+        )
+        uid_sorted = np.sort(table[level_key]["uid"])
+        return uid_sorted

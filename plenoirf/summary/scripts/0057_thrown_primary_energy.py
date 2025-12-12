@@ -20,32 +20,41 @@ res.start(sebplt=sebplt)
 energy_bin = res.energy_binning(key="10_bins_per_decade")
 zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
 
-population_statistics = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0003_population_statistics")
+passing_trigger = res.read_passed_trigger(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger"),
+    trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
 )
-passing_trigger = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0055_passing_trigger")
-)
-energy_assignment = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0018_energy_bin_assignment")
-)
+
+MIN_COUNT = 1  # float32 vs. float64 uncertainty???
+
+
+def zero_if_less_equal(x, value):
+    mask = x <= value
+    x[mask] = 0
+    return x
+
 
 intensity_passing_trigger = {}
 for pk in res.PARTICLES:
     intensity_passing_trigger[pk] = np.zeros(energy_bin["num"], dtype=int)
-
-    for ebin in range(energy_bin["num"]):
-        ol = snt.logic.intersection(
-            passing_trigger[pk]["uid"],
-            energy_assignment["trigger_acceptance_onregion"][pk][f"{ebin:d}"],
+    for enbin in range(energy_bin["num"]):
+        uid_passed_trigger = passing_trigger[pk].uid(
+            energy_bin_indices=[enbin]
         )
-        intensity_passing_trigger[pk][ebin] = len(ol)
-
+        intensity_passing_trigger[pk][enbin] = uid_passed_trigger.shape[0]
+    intensity_passing_trigger[pk] = zero_if_less_equal(
+        intensity_passing_trigger[pk], MIN_COUNT
+    )
 
 intensity_thrown = {}
 for pk in res.PARTICLES:
-    _eee = population_statistics[pk]["num_thrown_energy_vs_zenith"]["counts"]
-    intensity_thrown[pk] = np.sum(_eee, axis=1)
+    intensity_thrown[pk] = np.zeros(energy_bin["num"], dtype=int)
+    for enbin in range(energy_bin["num"]):
+        intensity_thrown[pk][enbin] = res.event_table(
+            particle_key=pk
+        ).population(energy_bin_indices=[enbin])
+    intensity_thrown[pk] = zero_if_less_equal(intensity_thrown[pk], MIN_COUNT)
+
 
 intensity_ratio = {}
 for pk in res.PARTICLES:

@@ -61,7 +61,8 @@ class EventTable:
             return task_looper
         else:
             out = snt.SparseNumericTable(index_key="uid")
-            for event_table_zd_en_bin in task_looper:
+            for event_table_zd_en_bin, _zd_en_bin in task_looper:
+                _ = _zd_en_bin
                 out.append(event_table_zd_en_bin)
 
             if sort:
@@ -72,6 +73,33 @@ class EventTable:
                 )
 
             return out
+
+    def population(
+        self,
+        energy_bin_indices=None,
+        energy_start_GeV=None,
+        energy_stop_GeV=None,
+        zenith_bin_indices=None,
+        zenith_start_rad=None,
+        zenith_stop_rad=None,
+        level_key="primary",
+        column_key="uid",
+    ):
+        looper = self.query(
+            energy_bin_indices=energy_bin_indices,
+            energy_start_GeV=energy_start_GeV,
+            energy_stop_GeV=energy_stop_GeV,
+            zenith_bin_indices=zenith_bin_indices,
+            zenith_start_rad=zenith_start_rad,
+            zenith_stop_rad=zenith_stop_rad,
+            levels_and_columns={level_key: [column_key]},
+            bin_by_bin=True,
+        )
+        population_count = 0
+        for tmp, _zd_en_bin in looper:
+            _ = _zd_en_bin
+            population_count += tmp[level_key][column_key].shape[0]
+        return population_count
 
     def __repr__(self):
         return f"{self.__class__.__name__:s}(path={self.path:s})"
