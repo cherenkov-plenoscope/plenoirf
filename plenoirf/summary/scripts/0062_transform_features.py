@@ -27,34 +27,34 @@ ALL_FEATURES = irf.features.init_all_features_structure()
 
 
 def open_feature_frame(pk, return_spectral_weight=False):
-    passing_trigger = json_utils.tree.Tree(
-        opj(res.paths["analysis_dir"], "0055_passing_trigger")
+    passing_trigger = res.read_passed_trigger(
+        opj(res.paths["analysis_dir"], "0055_passing_trigger"),
+        trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
     )
     passing_quality = json_utils.tree.Tree(
         opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
     )
 
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(
-            levels_and_columns={
-                "features": ["uid"],
-                "reconstructed_trajectory": ["uid"],
-            }
-        )
-        common_indices = snt.logic.intersection(
-            passing_trigger[pk]["uid"],
-            passing_quality[pk]["uid"],
-            event_table["features"]["uid"],
-            event_table["reconstructed_trajectory"]["uid"],
-        )
-        event_table = arc.query(
-            levels_and_columns={
-                "features": "__all__",
-                "reconstructed_trajectory": "__all__",
-            },
-            indices=common_indices,
-            sort=True,
-        )
+    event_table = res.event_table(particle_key=pk).query(
+        levels_and_columns={
+            "features": ["uid"],
+            "reconstructed_trajectory": ["uid"],
+        }
+    )
+    common_indices = snt.logic.intersection(
+        passing_trigger[pk].uid(),
+        passing_quality[pk]["uid"],
+        event_table["features"]["uid"],
+        event_table["reconstructed_trajectory"]["uid"],
+    )
+    event_table = res.event_table(particle_key=pk).query(
+        levels_and_columns={
+            "features": "__all__",
+            "reconstructed_trajectory": "__all__",
+        },
+        indices=common_indices,
+        sort=True,
+    )
 
     df = snt.logic.make_rectangular_DataFrame(event_table)
 
@@ -65,14 +65,13 @@ def open_feature_frame(pk, return_spectral_weight=False):
                 "0040_weights_from_thrown_to_expected_energy_spectrum",
             )
         )
-        with res.open_event_table(particle_key=pk) as arc:
-            energy_GeV = arc.query(
-                levels_and_columns={
-                    "primary": ["uid", "energy_GeV"],
-                },
-                indices=common_indices,
-                sort=True,
-            )["primary"]["energy_GeV"]
+        energy_GeV = res.event_table(particle_key=pk).query(
+            levels_and_columns={
+                "primary": ["uid", "energy_GeV"],
+            },
+            indices=common_indices,
+            sort=True,
+        )["primary"]["energy_GeV"]
 
         spectral_weight = np.interp(
             x=energy_GeV,

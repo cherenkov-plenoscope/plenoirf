@@ -19,8 +19,9 @@ weights_thrown2expected = json_utils.tree.Tree(
         "0040_weights_from_thrown_to_expected_energy_spectrum",
     )
 )
-passing_trigger = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0055_passing_trigger")
+passing_trigger = res.read_passed_trigger(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger"),
+    trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
 )
 passing_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
@@ -37,19 +38,18 @@ tables = {}
 
 for pk in PARTICLES:
     uid_common = snt.logic.intersection(
-        passing_trigger[pk]["uid"],
+        passing_trigger[pk].uid(),
         passing_quality[pk]["uid"],
     )
 
-    with res.open_event_table(particle_key=pk) as arc:
-        tables[pk] = arc.query(
-            levels_and_columns={
-                "primary": ["uid", "energy_GeV"],
-                "features": "__all__",
-            },
-            indices=uid_common,
-            sort=True,
-        )
+    tables[pk] = res.event_table(particle_key=pk).query(
+        levels_and_columns={
+            "primary": ["uid", "energy_GeV"],
+            "features": "__all__",
+        },
+        indices=uid_common,
+        sort=True,
+    )
 
 
 # guess bin edges

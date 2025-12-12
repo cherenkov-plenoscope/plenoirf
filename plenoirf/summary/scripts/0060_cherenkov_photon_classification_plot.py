@@ -12,14 +12,15 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-passing_trigger = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0055_passing_trigger")
+passing_trigger = res.read_passed_trigger(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger"),
+    trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
 )
 passing_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
 
-energy_bin = res.energy_binning(key="point_spread_function")
+energy_bin = res.energy_binning(key="5_bins_per_decade")
 
 span_hist_1_1 = [0.2, 0.15, 0.75, 0.8]
 
@@ -35,18 +36,17 @@ for pk in res.PARTICLES:
     pk_dir = opj(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(
-            levels_and_columns={
-                "primary": ["uid", "energy_GeV"],
-                "trigger": ["uid", "num_cherenkov_pe"],
-                CHCL: "__all__",
-                "features": ["uid", "num_photons"],
-            }
-        )
+    event_table = res.event_table(pk).query(
+        levels_and_columns={
+            "primary": ["uid", "energy_GeV"],
+            "trigger": ["uid", "num_cherenkov_pe"],
+            CHCL: "__all__",
+            "features": ["uid", "num_photons"],
+        }
+    )
 
     uid_common = snt.logic.intersection(
-        passing_trigger[pk]["uid"],
+        passing_trigger[pk].uid(),
         passing_quality[pk]["uid"],
     )
 

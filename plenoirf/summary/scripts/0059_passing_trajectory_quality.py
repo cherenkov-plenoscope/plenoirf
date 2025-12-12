@@ -14,31 +14,26 @@ for pk in res.PARTICLES:
     pk_dir = opj(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
 
-    with res.open_event_table(particle_key=pk) as arc:
-        _table = arc.query(
-            levels_and_columns={
-                "features": [
-                    "uid",
-                ]
-            }
-        )
-        event_table = arc.query(
-            levels_and_columns={
-                "primary": ["uid", "azimuth_rad", "zenith_rad"],
-                "groundgrid_choice": ["uid", "core_x_m", "core_y_m"],
-                "instrument_pointing": ["uid", "azimuth_rad", "zenith_rad"],
-                "reconstructed_trajectory": "__all__",
-                "features": [
-                    "uid",
-                    "num_photons",
-                    "image_half_depth_shift_cx",
-                    "image_half_depth_shift_cy",
-                    "image_smallest_ellipse_solid_angle",
-                ],
-            },
-            indices=_table["features"]["uid"],
-        )
-        del _table
+    uid_features = res.event_table(particle_key=pk).query(
+        levels_and_columns={"features": ["uid"]}
+    )["features"]["uid"]
+
+    event_table = res.event_table(particle_key=pk).query(
+        levels_and_columns={
+            "primary": ["uid", "azimuth_rad", "zenith_rad"],
+            "groundgrid_choice": ["uid", "core_x_m", "core_y_m"],
+            "instrument_pointing": ["uid", "azimuth_rad", "zenith_rad"],
+            "reconstructed_trajectory": "__all__",
+            "features": [
+                "uid",
+                "num_photons",
+                "image_half_depth_shift_cx",
+                "image_half_depth_shift_cy",
+                "image_smallest_ellipse_solid_angle",
+            ],
+        },
+        indices=uid_features,
+    )
 
     event_frame = irf.reconstruction.trajectory_quality.make_rectangular_table(
         event_table=event_table,
