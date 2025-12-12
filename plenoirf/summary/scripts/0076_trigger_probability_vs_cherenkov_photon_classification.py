@@ -25,8 +25,6 @@ passing_quality = json_utils.tree.Tree(
 energy_bin = res.energy_binning(key="10_bins_per_decade")
 zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
 
-CHCL = "cherenkovclassification"
-
 
 def get_uid_in_range(event_table, level, column, start, stop):
     mask = np.logical_and(
@@ -36,7 +34,7 @@ def get_uid_in_range(event_table, level, column, start, stop):
     return event_table[level][event_table.index_key][mask]
 
 
-counts_cache_path = os.path.join(res.paths["out_dir"], "counts.json")
+counts_cache_path = os.path.join(res.paths["cache_dir"], "counts.json")
 
 if not os.path.exists(counts_cache_path):
     categories = [
@@ -54,38 +52,18 @@ if not os.path.exists(counts_cache_path):
             )
 
     for pk in res.PARTICLES:
-        pk_dir = opj(res.paths["out_dir"], pk)
-        os.makedirs(pk_dir, exist_ok=True)
-
-        with res.open_event_table(particle_key=pk) as arc:
-            event_table = arc.query(
-                levels_and_columns={
-                    "primary": ["uid", "energy_GeV"],
-                    "trigger": ["uid", "num_cherenkov_pe", "response_pe"],
-                    CHCL: "__all__",
-                    "instrument_pointing": ["uid", "zenith_rad"],
-                    "features": ["uid", "num_photons"],
-                }
-            )
-
         for zbin in range(zenith_bin["num"]):
-            uid_zd = get_uid_in_range(
-                event_table=event_table,
-                level="instrument_pointing",
-                column="zenith_rad",
-                start=zenith_bin["edges"][zbin],
-                stop=zenith_bin["edges"][zbin + 1],
-            )
             for ebin in range(energy_bin["num"]):
-                uid_en = get_uid_in_range(
-                    event_table=event_table,
-                    level="primary",
-                    column="energy_GeV",
-                    start=energy_bin["edges"][ebin],
-                    stop=energy_bin["edges"][ebin + 1],
+                event_table = res.event_table(particle_key=pk).query(
+                    levels_and_columns={
+                        "primary": ["uid"],
+                        "trigger": ["uid", "response_pe"],
+                        "features": ["uid"],
+                    },
+                    zenith_bin_indices=[zbin],
+                    energy_bin_indices=[ebin],
                 )
-
-                uid_zd_en = snt.logic.intersection(uid_zd, uid_en)
+                uid_thrown = event_table["primary"]["uid"]
 
                 uid_passed_loose_trigger = get_uid_in_range(
                     event_table=event_table,
@@ -95,27 +73,27 @@ if not os.path.exists(counts_cache_path):
                     stop=float("inf"),
                 )
 
-                uid_passed_trigger = passing_trigger[pk]["uid"]
+                uid_passed_trigger = passing_trigger[pk].uid(
+                    zenith_bin_indices=[zbin],
+                    energy_bin_indices=[ebin],
+                )
 
                 uid_cherenkovclassification = event_table["features"]["uid"]
 
-                counts[pk]["thrown"][zbin, ebin] = len(uid_zd_en)
+                counts[pk]["thrown"][zbin, ebin] = len(
+                    event_table["primary"]["uid"]
+                )
                 counts[pk]["loose_trigger"][zbin, ebin] = len(
-                    snt.logic.intersection(
-                        uid_zd_en,
-                        uid_passed_loose_trigger,
-                    )
+                    uid_passed_loose_trigger
                 )
                 counts[pk]["trigger"][zbin, ebin] = len(
                     snt.logic.intersection(
-                        uid_zd_en,
                         uid_passed_loose_trigger,
                         uid_passed_trigger,
                     )
                 )
                 counts[pk]["cherenkovclassification"][zbin, ebin] = len(
                     snt.logic.intersection(
-                        uid_zd_en,
                         uid_passed_loose_trigger,
                         uid_passed_trigger,
                         uid_cherenkovclassification,
@@ -158,7 +136,7 @@ for pk in res.PARTICLES:
     for zbin in range(zenith_bin["num"]):
         axs[zbin] = sebplt.add_axes(
             fig=fig,
-            span=[0.15, 0.95 - (1 + zbin) * (0.8 / 3), 0.7, 0.25],
+            span=[0.15, 0.95 - (1 + zbin) * (0.8 / 3), 0.7, 0.23],
             style={"spines": ["left", "bottom"], "axes": ["y"], "grid": True},
         )
         sebplt.ax_add_histogram(
