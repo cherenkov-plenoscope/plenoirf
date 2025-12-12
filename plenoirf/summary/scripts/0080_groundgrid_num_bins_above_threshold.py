@@ -87,6 +87,8 @@ for pk in res.PARTICLES:
 
     min_number_samples = 10
     for zd in range(zenith_bin["num"]):
+        print(pk, f"zd: {zd:d}")
+
         table = res.event_table(particle_key=pk).query(
             levels_and_columns={
                 "primary": [
@@ -107,6 +109,7 @@ for pk in res.PARTICLES:
             bin_edges=huh[pk]["bin_edges"],
         )
 
+        assert np.all(table["groundgrid"]["num_bins_above_threshold"] >= 0)
         # 1D VS energy
         # ------------
         hh_exposure = np.histogram(
@@ -116,12 +119,18 @@ for pk in res.PARTICLES:
         hh_num_bins = np.histogram(
             table["primary"]["energy_GeV"],
             bins=energy_bin["edges"],
-            weights=table["groundgrid"]["num_bins_above_threshold"],
+            weights=table["groundgrid"]["num_bins_above_threshold"].astype(
+                int
+            ),
         )[0]
+
+        assert np.all(hh_exposure >= 0)
+        assert np.all(hh_num_bins >= 0)
 
         avg_num_bins = irf.utils._divide_silent(
             hh_num_bins, hh_exposure, default=float("nan")
         )
+
         avg_num_bins_ru = irf.utils._divide_silent(
             np.sqrt(hh_exposure), hh_exposure, default=float("nan")
         )
