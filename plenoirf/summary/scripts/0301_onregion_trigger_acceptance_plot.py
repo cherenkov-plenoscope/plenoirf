@@ -28,7 +28,7 @@ G = json_utils.tree.Tree(
 )
 
 A_energy_bin = res.energy_binning(key="10_bins_per_decade")
-G_energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+G_energy_bin = res.energy_binning(key="5_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 

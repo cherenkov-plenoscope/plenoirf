@@ -105,7 +105,7 @@ def load_fermi_lat_dFdE_vs_t(energy_range):
 
 
 def load_portal_dFdE_vs_t(energy_range, zk, ok, dk, sysuncix):
-    energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+    energy_bin = res.energy_binning(key="5_bins_per_decade")
     enidx = binning_utils.find_bin_with_start_stop_in_edges(
         bin_edges=energy_bin["edges"],
         start=energy_range["start_GeV"],

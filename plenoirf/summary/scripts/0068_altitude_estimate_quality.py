@@ -33,12 +33,11 @@ mk = "z_emission_p50_m"
 M_TO_KM = 1e-3
 
 for pk in res.PARTICLES:
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(
-            levels_and_columns={"cherenkovpool": ("uid", "z_emission_p50_m")},
-            indices=reconstructed[pk][mk]["uid"],
-            sort=True,
-        )
+    event_table = res.event_table(particle_key=pk).query(
+        levels_and_columns={"cherenkovpool": ("uid", "z_emission_p50_m")},
+        indices=reconstructed[pk][mk]["uid"],
+        sort=True,
+    )
 
     true_altitude = event_table["cherenkovpool"]["z_emission_p50_m"]
     reco_altitude = irf.analysis.energy.align_on_idx(

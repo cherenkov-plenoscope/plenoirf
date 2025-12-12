@@ -15,7 +15,7 @@ ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
 # load
 # ----
-energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+energy_bin = res.energy_binning(key="5_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 acceptance = json_utils.tree.Tree(

@@ -40,7 +40,7 @@ reconstructed_energy = json_utils.tree.Tree(
     ),
 )
 
-energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+energy_bin = res.energy_binning(key="5_bins_per_decade")
 
 cta = irf.other_instruments.cherenkov_telescope_array_south
 fermi_lat = irf.other_instruments.fermi_lat
@@ -53,12 +53,11 @@ reconstructed_dir = opj(res.paths["out_dir"], "reconstructed")
 os.makedirs(reconstructed_dir, exist_ok=True)
 
 for pk in res.PARTICLES:
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(
-            levels_and_columns={"primary": ["uid", "energy_GeV"]},
-            indices=reconstructed_energy[pk][mk]["uid"],
-            sort=True,
-        )
+    event_table = res.event_table(particle_key=pk).query(
+        levels_and_columns={"primary": ["uid", "energy_GeV"]},
+        indices=reconstructed_energy[pk][mk]["uid"],
+        sort=True,
+    )
 
     true_energy = event_table["primary"]["energy_GeV"]
     reco_energy = irf.analysis.energy.align_on_idx(

@@ -16,7 +16,7 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 size_bin = binning_utils.Binning(bin_edges=np.geomspace(1, 1e6, 13))
-energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+energy_bin = res.energy_binning(key="5_bins_per_decade")
 zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
 
 cache_dir = opj(res.paths["out_dir"], "__cache__")

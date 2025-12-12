@@ -132,7 +132,7 @@ OTHERS = {
 
 # energy
 # ------
-energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+energy_bin = res.energy_binning(key="5_bins_per_decade")
 
 containment_percents = [68, 95]
 num_containment_fractions = len(containment_percents)

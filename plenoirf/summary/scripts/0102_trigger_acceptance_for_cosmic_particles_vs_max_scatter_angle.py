@@ -18,7 +18,7 @@ MAX_SOURCE_ANGLE_DEG = res.analysis["gamma_ray_source_direction"][
     "max_angle_relative_to_pointing_deg"
 ]
 
-energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+energy_bin = res.energy_binning(key="5_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 zenith_assignment = json_utils.tree.Tree(

@@ -19,7 +19,7 @@ def make_binning(script_resources):
     res = script_resources
     zenith_bin = res.zenith_binning("twice")
 
-    _energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+    _energy_bin = res.energy_binning(key="5_bins_per_decade")
     energy_bin = binning_utils.Binning(
         bin_edges=np.geomspace(
             _energy_bin["start"], _energy_bin["stop"], zenith_bin["num"] + 1

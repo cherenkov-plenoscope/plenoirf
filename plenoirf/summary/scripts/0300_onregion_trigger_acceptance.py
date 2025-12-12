@@ -40,7 +40,7 @@ POSSIBLE_ONREGION_POLYGON = irf.reconstruction.onregion.make_circular_polygon(
     radius=MAX_SOURCE_ANGLE_RAD, num_steps=37
 )
 
-energy_bin = res.energy_binning(key="trigger_acceptance_onregion")
+energy_bin = res.energy_binning(key="5_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 
