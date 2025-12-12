@@ -204,7 +204,7 @@ for pk in res.PARTICLES:
         )
 
     uid_common = snt.logic.intersection(
-        passing_trigger[pk]["uid"],
+        passing_trigger[pk].uid(),
         passing_quality[pk]["uid"],
         passing_trajectory_quality[pk]["trajectory_quality"]["uid"],
     )

@@ -23,7 +23,7 @@ trigger_modi = {}
 trigger_modi["passing_trigger"] = {}
 trigger_modi["passing_trigger_if_only_accepting_not_rejecting"] = {}
 for pk in res.PARTICLES:
-    trigger_modi["passing_trigger"][pk] = {"uid": passing_trigger[pk]["uid"]}
+    trigger_modi["passing_trigger"][pk] = {"uid": passing_trigger[pk].uid()}
     trigger_modi["passing_trigger_if_only_accepting_not_rejecting"][pk] = {
         "uid": passing_trigger[pk]["only_accepting_not_rejecting"]["uid"]
     }

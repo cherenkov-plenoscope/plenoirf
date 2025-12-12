@@ -149,7 +149,7 @@ for zd in range(zenith_bin["num"]):
         point_candidate = cut_candidates_for_detection(
             event_table=point_thrown,
             uid_trajectory_quality=passing_trajectory_quality[pk]["uid"],
-            uid_trigger=passing_trigger[pk]["uid"],
+            uid_trigger=passing_trigger[pk].uid(),
             uid_quality=passing_quality[pk]["uid"],
         )
 
@@ -236,7 +236,7 @@ for zd in range(zenith_bin["num"]):
         diffuse_candidate = cut_candidates_for_detection(
             event_table=diffuse_thrown,
             uid_trajectory_quality=passing_trajectory_quality[pk]["uid"],
-            uid_trigger=passing_trigger[pk]["uid"],
+            uid_trigger=passing_trigger[pk].uid(),
             uid_quality=passing_quality[pk]["uid"],
         )
 

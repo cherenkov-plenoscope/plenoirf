@@ -44,24 +44,23 @@ STRUCTURE = irf.event_table.structure.init_event_table_structure()
 for pk in PARTICLES:
 
     uid_common = snt.logic.intersection(
-        passing_trigger[pk]["uid"],
+        passing_trigger[pk].uid(),
         passing_quality[pk]["uid"],
     )
 
-    with res.open_event_table(particle_key=pk) as arc:
-        table = arc.query(
-            levels_and_columns={
-                "primary": ["uid", "energy_GeV"],
-                "instrument_pointing": ["uid", "zenith_rad"],
-                "cherenkovpool": ["uid", "z_emission_p50_m"],
-                "features": [
-                    "uid",
-                    "image_smallest_ellipse_object_distance",
-                ],
-            },
-            indices=uid_common,
-            sort=True,
-        )
+    table = res.event_table(particle_key=pk).query(
+        levels_and_columns={
+            "primary": ["uid", "energy_GeV"],
+            "instrument_pointing": ["uid", "zenith_rad"],
+            "cherenkovpool": ["uid", "z_emission_p50_m"],
+            "features": [
+                "uid",
+                "image_smallest_ellipse_object_distance",
+            ],
+        },
+        indices=uid_common,
+        sort=True,
+    )
 
     true_airshower_maximum_altitude = table["cherenkovpool"][
         "z_emission_p50_m"

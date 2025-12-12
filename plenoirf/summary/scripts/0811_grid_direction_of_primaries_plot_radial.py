@@ -82,7 +82,7 @@ else:
 
         mask_trigger = snt.logic.make_mask_of_right_in_left(
             left_indices=evttab["primary"]["uid"],
-            right_indices=passing_trigger[pk]["uid"],
+            right_indices=passing_trigger[pk].uid(),
         )
 
         o[pk]["thrown"] = []

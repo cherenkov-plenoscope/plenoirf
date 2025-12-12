@@ -68,7 +68,7 @@ for pk in res.PARTICLES:
         uid_ggi.append(uid)
 
     uid_trigger_ggi = list(
-        set.intersection(set(uid_ggi), set(passing_trigger[pk]["uid"]))
+        set.intersection(set(uid_ggi), set(passing_trigger[pk].uid()))
     )
 
     with res.open_event_table(particle_key=pk) as arc:

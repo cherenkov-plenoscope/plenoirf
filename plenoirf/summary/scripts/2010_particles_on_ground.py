@@ -31,7 +31,7 @@ RRR = {}
 for pk in ["proton"]:  # PARTICLES:
 
     uid_common = snt.logic.intersection(
-        passing_trigger[pk]["uid"],
+        passing_trigger[pk].uid(),
         passing_quality[pk]["uid"],
     )
 
@@ -52,7 +52,7 @@ for pk in ["proton"]:  # PARTICLES:
         np.median(particlepool["num_water_cherenkov"]),
     )
 
-    passing_trigger_set = set(passing_trigger[pk]["uid"])
+    passing_trigger_set = set(passing_trigger[pk].uid())
 
     RRR[pk] = {}
     path_template = opj(

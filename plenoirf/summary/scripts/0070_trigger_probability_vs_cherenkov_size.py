@@ -43,7 +43,7 @@ for zd in range(zenith_bin["num"]):
 
         mask_pasttrigger = snt.logic.make_mask_of_right_in_left(
             left_indices=event_table["trigger"]["uid"],
-            right_indices=passing_trigger[pk]["uid"],
+            right_indices=passing_trigger[pk].uid(),
         ).astype(float)
 
         num_thrown = np.histogram(

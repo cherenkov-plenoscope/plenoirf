@@ -53,7 +53,7 @@ def make_passing_cuts(script_resources, particles):
 
         for pk in particles:
             passing_cuts_pk = snt.logic.intersection(
-                passing_trigger[pk]["uid"],
+                passing_trigger[pk].uid(),
                 passing_quality[pk]["uid"],
             )
             with rnw.open(opj(cache_dir, pk + ".json"), "wt") as f:
