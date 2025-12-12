@@ -10,56 +10,54 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
-passing_trigger = res.read_passed_trigger(
-    opj(res.paths["analysis_dir"], "0055_passing_trigger"),
-    trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
-)
-zenith_assignment = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
-)
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
+energy_bin = res.zenith_binning("10_bins_per_decade")
 
-trigger_modi = {}
-trigger_modi["passing_trigger"] = {}
-trigger_modi["passing_trigger_if_only_accepting_not_rejecting"] = {}
-for pk in res.PARTICLES:
-    trigger_modi["passing_trigger"][pk] = {"uid": passing_trigger[pk]["uid"]}
-    trigger_modi["passing_trigger_if_only_accepting_not_rejecting"][pk] = {
-        "uid": passing_trigger[pk]["only_accepting_not_rejecting"]["uid"]
-    }
+TRIGGER_MODI = [
+    "far_accepting_focus_and_near_rejecting_focus",
+    "far_accepting_focus",
+]
+passing_trigger_modi = {}
+for tm in TRIGGER_MODI:
+    passing_trigger_modi[tm] = {}
+    for pk in res.PARTICLES:
+        _passing_trigger = res.read_passed_trigger(
+            opj(res.paths["analysis_dir"], "0055_passing_trigger"),
+            trigger_mode_key=tm,
+        )
+        passing_trigger_modi[tm][pk] = {"uid": _passing_trigger[pk]["uid"]}
+
 
 grid_bin_area_m2 = res.config["ground_grid"]["geometry"]["bin_width_m"] ** 2.0
 density_bin_edges_per_m2 = np.geomspace(1e-3, 1e4, 7 * 5 + 1)
 
-for zd in range(zenith_bin["num"]):
-    zk = f"zd{zd:d}"
+for zdbin in range(zenith_bin["num"]):
+    zk = f"zd{zdbin:d}"
 
     for pk in res.PARTICLES:
         os.makedirs(opj(res.paths["out_dir"], zk, pk), exist_ok=True)
 
-        with res.open_event_table(particle_key=pk) as arc:
-            event_table = arc.query(
-                levels_and_columns={
-                    "cherenkovsizepart": ["uid", "num_photons"],
-                    "instrument_pointing": "__all__",
-                    "trigger": ["uid"],
-                }
-            )
-        common_indices = snt.logic.intersection(
-            event_table["trigger"]["uid"],
-            zenith_assignment[zk][pk],
+        event_table = res.event_table(particle_key=pk).query(
+            levels_and_columns={
+                "cherenkovsizepart": ["uid", "num_photons"],
+                "instrument_pointing": "__all__",
+                "trigger": ["uid"],
+            },
+            zenith_start_rad=zenith_bin["edges"][zdbin],
+            zenith_stop_rad=zenith_bin["edges"][zdbin + 1],
         )
-
         event_table = snt.logic.cut_and_sort_table_on_indices(
             table=event_table,
             common_indices=event_table["trigger"]["uid"],
+            inplace=True,
         )
+
         df = snt.logic.make_rectangular_DataFrame(table=event_table)
 
-        for tm in trigger_modi:
+        for tm in passing_trigger_modi:
             mask_pasttrigger = snt.logic.make_mask_of_right_in_left(
                 left_indices=df["uid"].values,
-                right_indices=trigger_modi[tm][pk]["uid"],
+                right_indices=passing_trigger_modi[tm][pk]["uid"],
             ).astype(float)
 
             projected_area_m2 = (

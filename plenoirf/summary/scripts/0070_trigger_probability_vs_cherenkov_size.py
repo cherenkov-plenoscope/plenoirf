@@ -11,9 +11,6 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
 zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
-zenith_assignment = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
-)
 
 num_size_bins = 12
 size_bin_edges = np.geomspace(1, 2**num_size_bins, (3 * num_size_bins) + 1)
@@ -23,23 +20,18 @@ passing_trigger = res.read_passed_trigger(
     trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
 )
 
-for zd in range(zenith_bin["num"]):
-    zk = f"zd{zd:d}"
+for zdbin in range(zenith_bin["num"]):
+    zk = f"zd{zdbin:d}"
 
     for pk in res.PARTICLES:
         pk_dir = opj(res.paths["out_dir"], zk, pk)
         os.makedirs(pk_dir, exist_ok=True)
 
-        with res.open_event_table(particle_key=pk) as arc:
-            event_table = arc.query(
-                levels_and_columns={"trigger": ("uid", "num_cherenkov_pe")}
-            )
-        event_table = snt.logic.cut_table_on_indices(
-            table=event_table,
-            common_indices=zenith_assignment[zk][pk],
+        event_table = res.event_table(particle_key=pk).query(
+            levels_and_columns={"trigger": ("uid", "num_cherenkov_pe")},
+            zenith_start_rad=zenith_bin["edges"][zdbin],
+            zenith_stop_rad=zenith_bin["edges"][zdbin + 1],
         )
-
-        key = "trigger_probability_vs_cherenkov_size"
 
         mask_pasttrigger = snt.logic.make_mask_of_right_in_left(
             left_indices=event_table["trigger"]["uid"],
@@ -67,7 +59,7 @@ for zd in range(zenith_bin["num"]):
         )
 
         json_utils.write(
-            opj(pk_dir, f"{key}.json"),
+            opj(pk_dir, "trigger_probability_vs_cherenkov_size.json"),
             {
                 "true_Cherenkov_size_bin_edges_pe": size_bin_edges,
                 "unit": "1",

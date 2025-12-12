@@ -20,8 +20,8 @@ trigger_vs_size = json_utils.tree.Tree(
 )
 
 trigger_modi = {
-    "passing_trigger": "trigger probability",
-    "passing_trigger_if_only_accepting_not_rejecting": "trigger probability\nif only accepting not rejecting",
+    "far_accepting_focus_and_near_rejecting_focus": "trigger probability",
+    "far_accepting_focus": "trigger probability\nif only accepting",
 }
 
 particle_colors = res.analysis["plot"]["particle_colors"]

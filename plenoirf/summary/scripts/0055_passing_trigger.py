@@ -28,7 +28,7 @@ rejecting_height_above_observation_level_m = (
     - res.SITE["observation_level_asl_m"]
 )
 
-TRIGGER_MODES = [
+TRIGGER_MODI = [
     "far_accepting_focus_and_near_rejecting_focus",
     "far_accepting_focus",
 ]
@@ -237,7 +237,7 @@ for pk in res.PARTICLES:
     # -------------
     pk_dir = opj(res.paths["out_dir"], pk)
     os.makedirs(pk_dir, exist_ok=True)
-    for mode_key in TRIGGER_MODES:
+    for mode_key in TRIGGER_MODI:
         pk_mode_dir = opj(pk_dir, mode_key)
         os.makedirs(pk_mode_dir, exist_ok=True)
 
@@ -400,7 +400,7 @@ for pk in res.PARTICLES:
             with rnw.open(tele_thr_bin_path, "wb") as fout:
                 fout.write(uid_pasttrigger_tele.astype("u8").tobytes())
 
-    for mode_key in TRIGGER_MODES:
+    for mode_key in TRIGGER_MODI:
         make_event_table_with_search_index(
             out_path=opj(pk_dir, mode_key, "ratescan"),
             out_dtypes=rtsc_dtypes,
