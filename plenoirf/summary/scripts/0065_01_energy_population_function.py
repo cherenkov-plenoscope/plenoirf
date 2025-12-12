@@ -15,8 +15,9 @@ res.start(sebplt=sebplt)
 transformed_features_dir = opj(
     res.paths["analysis_dir"], "0062_transform_features"
 )
-passing_trigger = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0055_passing_trigger")
+passing_trigger = res.read_passed_trigger(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger"),
+    trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
 )
 passing_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0056_passing_basic_quality")

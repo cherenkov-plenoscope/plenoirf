@@ -20,8 +20,9 @@ MAX_SOURCE_ANGLE_RAD = np.deg2rad(
 energy_bin = res.energy_binning(key="10_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
-passing_trigger = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0055_passing_trigger")
+passing_trigger = res.read_passed_trigger(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger"),
+    trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
 )
 zenith_assignment = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")

@@ -18,8 +18,9 @@ zenith_assignment = json_utils.tree.Tree(
 num_size_bins = 12
 size_bin_edges = np.geomspace(1, 2**num_size_bins, (3 * num_size_bins) + 1)
 
-passing_trigger = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0055_passing_trigger")
+passing_trigger = res.read_passed_trigger(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger"),
+    trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
 )
 
 for zd in range(zenith_bin["num"]):

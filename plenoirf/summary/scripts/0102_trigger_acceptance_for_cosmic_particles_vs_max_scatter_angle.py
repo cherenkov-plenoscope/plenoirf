@@ -24,8 +24,9 @@ zenith_bin = res.zenith_binning("3_bins_per_45deg")
 zenith_assignment = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
 )
-passing_trigger = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0055_passing_trigger")
+passing_trigger = res.read_passed_trigger(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger"),
+    trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
 )
 
 for zd in range(zenith_bin["num"]):

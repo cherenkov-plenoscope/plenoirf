@@ -11,8 +11,9 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
-passing_trigger = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0055_passing_trigger")
+passing_trigger = res.read_passed_trigger(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger"),
+    trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
 )
 energy_bin = res.energy_binning(key="point_spread_function")
 
