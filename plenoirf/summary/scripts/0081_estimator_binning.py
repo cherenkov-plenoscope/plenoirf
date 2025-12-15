@@ -17,7 +17,7 @@ res.start(sebplt=sebplt)
 
 def make_binning(script_resources):
     res = script_resources
-    zenith_bin = res.zenith_binning("twice")
+    zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
     _energy_bin = res.energy_binning(key="5_bins_per_decade")
     energy_bin = binning_utils.Binning(
@@ -25,8 +25,9 @@ def make_binning(script_resources):
             _energy_bin["start"], _energy_bin["stop"], zenith_bin["num"] + 1
         )
     )
+    num_altitude_bins = np.max([1, (energy_bin["num"] // 3)])
     altitude_bin = binning_utils.Binning(
-        bin_edges=np.geomspace(10e3, 20e3, energy_bin["num"] + 1)
+        bin_edges=np.geomspace(10e3, 20e3, num_altitude_bins)
     )
     bins = irf.summary.estimator.binning.Bins(
         zenith_rad=zenith_bin["edges"],
@@ -45,7 +46,8 @@ def make_passing_cuts(script_resources, particles):
         os.makedirs(cache_dir)
 
         passing_trigger = json_utils.tree.Tree(
-            opj(res.paths["analysis_dir"], "0055_passing_trigger")
+            opj(res.paths["analysis_dir"], "0055_passing_trigger"),
+            trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
         )
         passing_quality = json_utils.tree.Tree(
             opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
