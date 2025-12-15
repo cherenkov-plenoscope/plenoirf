@@ -51,7 +51,7 @@ setuptools.setup(
         "sparse_numeric_table_sebastian-achim-mueller>=1.2.17",
         "cosmic_fluxes_cherenkov-plenoscope-project>=0.0.3",
         "corsika_primary>=2.3.3",
-        "atmospheric_cherenkov_response_cherenkov-plenoscope-project>=0.1.3",
+        "atmospheric_cherenkov_response_cherenkov-plenoscope-project>=0.1.7",
         "json_line_logger>=0.0.3",
         "propagate_uncertainties_sebastian-achim-mueller>=0.2.3",
         "shapely",

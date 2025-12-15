@@ -21,11 +21,9 @@ energy_bin = res.energy_binning(key="10_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 trigger_thresholds = np.array(
-    res.analysis["trigger"][res.site_key]["ratescan_thresholds_pe"]
+    res.analysis["trigger"]["ratescan_thresholds_pe"]
 )
-analysis_trigger_threshold = res.analysis["trigger"][res.site_key][
-    "threshold_pe"
-]
+analysis_trigger_threshold = res.analysis["trigger"]["threshold_pe"]
 
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"

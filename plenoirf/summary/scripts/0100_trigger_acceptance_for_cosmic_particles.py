@@ -18,31 +18,64 @@ MAX_SOURCE_ANGLE_RAD = np.deg2rad(
 )
 
 energy_bin = res.energy_binning(key="10_bins_per_decade")
-zenith_bin = res.zenith_binning("3_bins_per_45deg")
+zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
 
 passing_trigger = res.read_passed_trigger(
     opj(res.paths["analysis_dir"], "0055_passing_trigger"),
     trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
 )
-zenith_assignment = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
-)
 trigger = res.trigger
 
+SHAPE_THRESHOLDS_ENERGIES = (
+    len(trigger["ratescan_thresholds_pe"]),
+    energy_bin["num"],
+)
+
+# make out dirs
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
-
-    zd_dir = opj(res.paths["out_dir"], zk)
-    os.makedirs(zd_dir, exist_ok=True)
-
     for pk in res.PARTICLES:
-        print(f"{zk:s}, {pk:s} [", end="")
+        os.makedirs(opj(res.paths["out_dir"], zk, pk), exist_ok=True)
 
-        pk_dir = opj(zd_dir, pk)
-        os.makedirs(pk_dir, exist_ok=True)
 
-        with res.open_event_table(particle_key=pk) as arc:
-            diffuse_particle_table = arc.query(
+for pk in res.PARTICLES:
+    for zdbin in range(zenith_bin["num"]):
+        zk = f"zd{zdbin:d}"
+
+        effective_area_point = {
+            "Aeff": np.zeros(SHAPE_THRESHOLDS_ENERGIES),
+            "Aeff_au": np.zeros(SHAPE_THRESHOLDS_ENERGIES),
+        }
+
+        effective_etendue_diffuse = {
+            "Qeff": np.zeros(SHAPE_THRESHOLDS_ENERGIES),
+            "Qeff_au": np.zeros(SHAPE_THRESHOLDS_ENERGIES),
+        }
+
+        for enbin in range(energy_bin["num"]):
+            print(
+                pk,
+                f"zd: {zdbin:d}/{zenith_bin['num']:d}, en: {enbin:d}/{energy_bin['num']:d}",
+            )
+            _uid = res.event_table(particle_key=pk).query(
+                levels_and_columns={
+                    "primary": ("uid",),
+                    "instrument_pointing": ("uid",),
+                    "groundgrid": ("uid",),
+                    "trigger": ("uid",),
+                },
+                energy_bin_indices=[enbin],
+                zenith_bin_indices=[zdbin],
+            )
+
+            uid_common = snt.logic.intersection(
+                _uid["primary"]["uid"],
+                _uid["groundgrid"]["uid"],
+                _uid["trigger"]["uid"],
+            )
+            del _uid
+
+            diffuse_particle_table = res.event_table(particle_key=pk).query(
                 levels_and_columns={
                     "primary": (
                         "uid",
@@ -64,75 +97,97 @@ for zd in range(zenith_bin["num"]):
                     ),
                     "trigger": ("uid",),
                 },
-                indices=zenith_assignment[zk][pk],
+                indices=uid_common,
+                energy_bin_indices=[enbin],
+                zenith_bin_indices=[zdbin],
+                sort=True,
+            )
+            del uid_common
+
+            # point source
+            # ------------
+            uid_possible_onregion = irf.analysis.cuts.cut_primary_direction_within_angle(
+                event_table=diffuse_particle_table,
+                max_angle_between_primary_and_pointing_rad=MAX_SOURCE_ANGLE_RAD,
             )
 
-        uid_common = snt.logic.intersection(
-            diffuse_particle_table["primary"]["uid"],
-            zenith_assignment[zk][pk],
-            diffuse_particle_table["groundgrid"]["uid"],
-            diffuse_particle_table["trigger"]["uid"],
-        )
+            point_particle_table = snt.logic.cut_table_on_indices(
+                table=diffuse_particle_table,
+                common_indices=uid_possible_onregion,
+            )
 
-        diffuse_particle_table = snt.logic.cut_and_sort_table_on_indices(
-            table=diffuse_particle_table,
-            common_indices=uid_common,
-            inplace=True,
-        )
+            point_quantity_scatter = point_particle_table["groundgrid"][
+                "area_thrown_m2"
+            ] * np.cos(point_particle_table["primary"]["zenith_rad"])
 
-        # point source
-        # ------------
-        uid_possible_onregion = irf.analysis.cuts.cut_primary_direction_within_angle(
-            event_table=diffuse_particle_table,
-            max_angle_between_primary_and_pointing_rad=MAX_SOURCE_ANGLE_RAD,
-        )
+            point_num_grid_cells_above_lose_threshold = point_particle_table[
+                "groundgrid"
+            ]["num_bins_above_threshold"]
 
-        point_particle_table = snt.logic.cut_table_on_indices(
-            table=diffuse_particle_table,
-            common_indices=uid_possible_onregion,
-        )
-
-        energy_GeV = point_particle_table["primary"]["energy_GeV"]
-        quantity_scatter = point_particle_table["groundgrid"][
-            "area_thrown_m2"
-        ] * np.cos(point_particle_table["primary"]["zenith_rad"])
-        num_grid_cells_above_lose_threshold = point_particle_table[
-            "groundgrid"
-        ]["num_bins_above_threshold"]
-        total_num_grid_cells = point_particle_table["groundgrid"][
-            "num_bins_thrown"
-        ]
-
-        value = []
-        absolute_uncertainty = []
-        for threshold in trigger["ratescan_thresholds_pe"]:
-            print(f"{threshold:d},", end="", flush=True)
-
-            uid_detected = passing_trigger[pk]["ratescan"][f"{threshold:d}pe"][
-                "uid"
+            point_total_num_grid_cells = point_particle_table["groundgrid"][
+                "num_bins_thrown"
             ]
-            mask_detected = snt.logic.make_mask_of_right_in_left(
-                left_indices=point_particle_table["primary"]["uid"],
-                right_indices=uid_detected,
+
+            # diffuse source
+            # --------------
+            diffuse_quantity_scatter = (
+                diffuse_particle_table["groundgrid"]["area_thrown_m2"]
+                * np.cos(diffuse_particle_table["primary"]["zenith_rad"])
+                * diffuse_particle_table["primary"]["solid_angle_thrown_sr"]
             )
-            (
-                _q_eff,
-                _q_eff_au,
-            ) = atmospheric_cherenkov_response.analysis.effective_quantity_for_grid(
-                energy_bin_edges_GeV=energy_bin["edges"],
-                energy_GeV=energy_GeV,
-                mask_detected=mask_detected,
-                quantity_scatter=quantity_scatter,
-                num_grid_cells_above_lose_threshold=(
-                    num_grid_cells_above_lose_threshold
-                ),
-                total_num_grid_cells=total_num_grid_cells,
+            diffuse_num_grid_cells_above_lose_threshold = (
+                diffuse_particle_table["groundgrid"][
+                    "num_bins_above_threshold"
+                ]
             )
-            value.append(_q_eff)
-            absolute_uncertainty.append(_q_eff_au)
+
+            diffuse_total_num_grid_cells = diffuse_particle_table[
+                "groundgrid"
+            ]["num_bins_thrown"]
+
+            for ithresh in range(SHAPE_THRESHOLDS_ENERGIES[0]):
+                threshold_pe = trigger["ratescan_thresholds_pe"][ithresh]
+
+                uid_detected = passing_trigger[pk].ratescan(
+                    threshold_pe=threshold_pe,
+                    zenith_bin_indices=[zdbin],
+                    energy_bin_indices=[enbin],
+                )
+
+                # point
+                # -----
+                point_mask_detected = snt.logic.make_mask_of_right_in_left(
+                    left_indices=point_particle_table["primary"]["uid"],
+                    right_indices=uid_detected,
+                )
+                (
+                    effective_area_point["Aeff"][ithresh][enbin],
+                    effective_area_point["Aeff_au"][ithresh][enbin],
+                ) = atmospheric_cherenkov_response.analysis.effective_quantity_for_grid(
+                    mask_detected=point_mask_detected,
+                    quantity_scatter=point_quantity_scatter,
+                    num_grid_cells_above_lose_threshold=point_num_grid_cells_above_lose_threshold,
+                    total_num_grid_cells=point_total_num_grid_cells,
+                )
+
+                # diffuse
+                # -------
+                diffuse_mask_detected = snt.logic.make_mask_of_right_in_left(
+                    left_indices=diffuse_particle_table["primary"]["uid"],
+                    right_indices=uid_detected,
+                )
+                (
+                    effective_etendue_diffuse["Qeff"][ithresh][enbin],
+                    effective_etendue_diffuse["Qeff_au"][ithresh][enbin],
+                ) = atmospheric_cherenkov_response.analysis.effective_quantity_for_grid(
+                    mask_detected=diffuse_mask_detected,
+                    quantity_scatter=diffuse_quantity_scatter,
+                    num_grid_cells_above_lose_threshold=diffuse_num_grid_cells_above_lose_threshold,
+                    total_num_grid_cells=diffuse_total_num_grid_cells,
+                )
 
         json_utils.write(
-            opj(pk_dir, "point.json"),
+            opj(res.paths["out_dir"], zk, pk, "point.json"),
             {
                 "comment": (
                     "Effective area for a point source. "
@@ -141,55 +196,13 @@ for zd in range(zenith_bin["num"]):
                 "zenith_key": zk,
                 "energy_bin_edges_GeV": energy_bin["edges"],
                 "unit": "m$^{2}$",
-                "mean": value,
-                "absolute_uncertainty": absolute_uncertainty,
+                "mean": effective_area_point["Aeff"],
+                "absolute_uncertainty": effective_area_point["Aeff_au"],
             },
         )
-        print(f"] p.e.", end="\n")
-
-        # diffuse source
-        # --------------
-        energy_GeV = diffuse_particle_table["primary"]["energy_GeV"]
-        quantity_scatter = (
-            diffuse_particle_table["groundgrid"]["area_thrown_m2"]
-            * np.cos(diffuse_particle_table["primary"]["zenith_rad"])
-            * diffuse_particle_table["primary"]["solid_angle_thrown_sr"]
-        )
-        num_grid_cells_above_lose_threshold = diffuse_particle_table[
-            "groundgrid"
-        ]["num_bins_above_threshold"]
-        total_num_grid_cells = diffuse_particle_table["groundgrid"][
-            "num_bins_thrown"
-        ]
-
-        value = []
-        absolute_uncertainty = []
-        for threshold in trigger["ratescan_thresholds_pe"]:
-            uid_detected = passing_trigger[pk]["ratescan"][f"{threshold:d}pe"][
-                "uid"
-            ]
-            mask_detected = snt.logic.make_mask_of_right_in_left(
-                left_indices=diffuse_particle_table["primary"]["uid"],
-                right_indices=uid_detected,
-            )
-            (
-                _q_eff,
-                _q_eff_au,
-            ) = atmospheric_cherenkov_response.analysis.effective_quantity_for_grid(
-                energy_bin_edges_GeV=energy_bin["edges"],
-                energy_GeV=energy_GeV,
-                mask_detected=mask_detected,
-                quantity_scatter=quantity_scatter,
-                num_grid_cells_above_lose_threshold=(
-                    num_grid_cells_above_lose_threshold
-                ),
-                total_num_grid_cells=total_num_grid_cells,
-            )
-            value.append(_q_eff)
-            absolute_uncertainty.append(_q_eff_au)
 
         json_utils.write(
-            opj(pk_dir, "diffuse.json"),
+            opj(res.paths["out_dir"], zk, pk, "diffuse.json"),
             {
                 "comment": (
                     "Effective acceptance (area x solid angle) "
@@ -198,8 +211,8 @@ for zd in range(zenith_bin["num"]):
                 ),
                 "zenith_key": zk,
                 "unit": "m$^{2}$ sr",
-                "mean": value,
-                "absolute_uncertainty": absolute_uncertainty,
+                "mean": effective_etendue_diffuse["Qeff"],
+                "absolute_uncertainty": effective_etendue_diffuse["Qeff_au"],
             },
         )
 

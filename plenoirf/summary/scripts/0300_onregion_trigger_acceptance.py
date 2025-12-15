@@ -196,7 +196,7 @@ for zd in range(zenith_bin["num"]):
             (
                 Qeff,
                 Qeff_au,
-            ) = atmospheric_cherenkov_response.analysis.effective_quantity_for_grid(
+            ) = atmospheric_cherenkov_response.analysis.effective_quantity_for_grid_vs_energy(
                 energy_bin_edges_GeV=energy_bin["edges"],
                 energy_GeV=point_thrown["primary"]["energy_GeV"],
                 mask_detected=mask_detected,
@@ -294,7 +294,7 @@ for zd in range(zenith_bin["num"]):
             (
                 Qeff,
                 Qeff_au,
-            ) = atmospheric_cherenkov_response.analysis.effective_quantity_for_grid(
+            ) = atmospheric_cherenkov_response.analysis.effective_quantity_for_grid_vs_energy(
                 energy_bin_edges_GeV=energy_bin["edges"],
                 energy_GeV=diffuse_thrown["primary"]["energy_GeV"],
                 mask_detected=mask_probability_for_source_in_onregion,

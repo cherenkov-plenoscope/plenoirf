@@ -18,7 +18,7 @@ MAX_SOURCE_ANGLE_DEG = res.analysis["gamma_ray_source_direction"][
     "max_angle_relative_to_pointing_deg"
 ]
 
-energy_bin = res.energy_binning(key="5_bins_per_decade")
+energy_bin = res.energy_binning(key="10_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 zenith_assignment = json_utils.tree.Tree(
@@ -175,7 +175,7 @@ for zd in range(zenith_bin["num"]):
             (
                 S_Q,
                 S_Q_au,
-            ) = atmospheric_cherenkov_response.analysis.effective_quantity_for_grid(
+            ) = atmospheric_cherenkov_response.analysis.effective_quantity_for_grid_vs_energy(
                 energy_bin_edges_GeV=energy_bin["edges"],
                 energy_GeV=S_shower_table["primary"]["energy_GeV"],
                 mask_detected=S_mask_shower_detected,
