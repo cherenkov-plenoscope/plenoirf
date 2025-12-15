@@ -67,7 +67,6 @@ for pk in res.PARTICLES:
                 energy_bin_indices=[enbin],
                 zenith_bin_indices=[zdbin],
             )
-
             uid_common = snt.logic.intersection(
                 _uid["primary"]["uid"],
                 _uid["groundgrid"]["uid"],
