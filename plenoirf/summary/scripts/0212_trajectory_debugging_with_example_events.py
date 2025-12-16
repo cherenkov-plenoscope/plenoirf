@@ -20,9 +20,6 @@ passing_trigger = res.read_passed_trigger(
 passing_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0056_passing_basic_quality")
 )
-zenith_assignment = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
-)
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 fuzzy_config = gamrec.trajectory.v2020nov12fuzzy0.config.compile_user_config(
@@ -105,50 +102,49 @@ for zd in range(zenith_bin["num"]):
 
         uid_common = snt.logic.intersection(
             passing_trigger[pk]["uid"],
-            zenith_assignment[zk][pk],
             passing_quality[pk]["uid"],
         )
 
-        with res.open_event_table(particle_key=pk) as arc:
-            event_table = arc.query(
-                levels_and_columns={
-                    "primary": (
-                        "uid",
-                        "azimuth_rad",
-                        "zenith_rad",
-                        "energy_GeV",
-                    ),
-                    "instrument_pointing": (
-                        "uid",
-                        "azimuth_rad",
-                        "zenith_rad",
-                    ),
-                    "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
-                    "reconstructed_trajectory": (
-                        "uid",
-                        "cx_rad",
-                        "cy_rad",
-                        "x_m",
-                        "y_m",
-                    ),
-                    "features": (
-                        "uid",
-                        "image_smallest_ellipse_object_distance",
-                        "image_half_depth_shift_cx",
-                        "image_half_depth_shift_cy",
-                    ),
-                }
-            )
-            uid_common = snt.logic.intersection(
-                *(
-                    [uid_common]
-                    + [event_table[tab]["uid"] for tab in event_table]
-                )
-            )
-            event_table = snt.logic.cut_and_sort_table_on_indices(
-                table=event_table,
-                common_indices=uid_common,
-            )
+        event_table = res.event_table(particle_key=pk).query(
+            levels_and_columns={
+                "primary": (
+                    "uid",
+                    "azimuth_rad",
+                    "zenith_rad",
+                    "energy_GeV",
+                ),
+                "instrument_pointing": (
+                    "uid",
+                    "azimuth_rad",
+                    "zenith_rad",
+                ),
+                "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
+                "reconstructed_trajectory": (
+                    "uid",
+                    "cx_rad",
+                    "cy_rad",
+                    "x_m",
+                    "y_m",
+                ),
+                "features": (
+                    "uid",
+                    "image_smallest_ellipse_object_distance",
+                    "image_half_depth_shift_cx",
+                    "image_half_depth_shift_cy",
+                ),
+            },
+            indices=uid_common,
+            zenith_start_rad=zenith_bin["edges"][zd],
+            zenith_stop_rad=zenith_bin["edges"][zd + 1],
+        )
+        uid_common = snt.logic.intersection(
+            *([uid_common] + [event_table[tab]["uid"] for tab in event_table])
+        )
+        event_table = snt.logic.cut_and_sort_table_on_indices(
+            table=event_table,
+            common_indices=uid_common,
+            inplace=True,
+        )
 
         uid_common = set(uid_common)
 
@@ -287,14 +283,10 @@ for zd in range(zenith_bin["num"]):
                     ax.plot(fit_cx_deg, fit_cy_deg, "oc")
                     ax.plot(
                         np.rad2deg(
-                            event_truth_entry[
-                                "reconstructed_trajectory/cx_rad"
-                            ][0]
+                            event_truth_entry["true_trajectory/cx_rad"][0]
                         ),
                         np.rad2deg(
-                            event_truth_entry[
-                                "reconstructed_trajectory/cy_rad"
-                            ][0]
+                            event_truth_entry["true_trajectory/cy_rad"][0]
                         ),
                         "xk",
                     )
