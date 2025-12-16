@@ -803,9 +803,21 @@ class PassedTriggerRatescanReader(event_table.search_index.EventTable):
         assert key == "uid"
         return self.uid()
 
-    def uid(self, energy_bin_indices=None, zenith_bin_indices=None):
+    def uid(
+        self,
+        energy_start_GeV=None,
+        energy_stop_GeV=None,
+        zenith_start_rad=None,
+        zenith_stop_rad=None,
+        energy_bin_indices=None,
+        zenith_bin_indices=None,
+    ):
         return self.ratescan(
             threshold_pe=self.analysis_threshold_pe,
+            energy_start_GeV=energy_start_GeV,
+            energy_stop_GeV=energy_stop_GeV,
+            zenith_start_rad=zenith_start_rad,
+            zenith_stop_rad=zenith_stop_rad,
             energy_bin_indices=energy_bin_indices,
             zenith_bin_indices=zenith_bin_indices,
         )
@@ -813,12 +825,20 @@ class PassedTriggerRatescanReader(event_table.search_index.EventTable):
     def ratescan(
         self,
         threshold_pe,
+        energy_start_GeV=None,
+        energy_stop_GeV=None,
+        zenith_start_rad=None,
+        zenith_stop_rad=None,
         energy_bin_indices=None,
         zenith_bin_indices=None,
     ):
         level_key = f"{threshold_pe:d}pe"
         table = self.query(
             levels_and_columns={level_key: ["uid"]},
+            energy_start_GeV=energy_start_GeV,
+            energy_stop_GeV=energy_stop_GeV,
+            zenith_start_rad=zenith_start_rad,
+            zenith_stop_rad=zenith_stop_rad,
             energy_bin_indices=energy_bin_indices,
             zenith_bin_indices=zenith_bin_indices,
         )

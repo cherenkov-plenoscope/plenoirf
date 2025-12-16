@@ -39,7 +39,8 @@ for pk in res.PARTICLES:
     intensity_passing_trigger[pk] = np.zeros(energy_bin["num"], dtype=int)
     for enbin in range(energy_bin["num"]):
         uid_passed_trigger = passing_trigger[pk].uid(
-            energy_bin_indices=[enbin]
+            energy_start_GeV=energy_bin["edges"][enbin],
+            energy_stop_GeV=energy_bin["edges"][enbin + 1],
         )
         intensity_passing_trigger[pk][enbin] = uid_passed_trigger.shape[0]
     intensity_passing_trigger[pk] = zero_if_less_equal(
@@ -52,7 +53,10 @@ for pk in res.PARTICLES:
     for enbin in range(energy_bin["num"]):
         intensity_thrown[pk][enbin] = res.event_table(
             particle_key=pk
-        ).population(energy_bin_indices=[enbin])
+        ).population(
+            energy_start_GeV=energy_bin["edges"][enbin],
+            energy_stop_GeV=energy_bin["edges"][enbin + 1],
+        )
     intensity_thrown[pk] = zero_if_less_equal(intensity_thrown[pk], MIN_COUNT)
 
 

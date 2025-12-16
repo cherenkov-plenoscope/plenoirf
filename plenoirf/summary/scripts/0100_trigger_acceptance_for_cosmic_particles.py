@@ -154,8 +154,10 @@ for pk in res.PARTICLES:
 
                 uid_detected = passing_trigger[pk].ratescan(
                     threshold_pe=threshold_pe,
-                    zenith_bin_indices=[zdbin],
-                    energy_bin_indices=[enbin],
+                    energy_start_GeV=energy_bin["edges"][enbin],
+                    energy_stop_GeV=energy_bin["edges"][enbin + 1],
+                    zenith_start_rad=zenith_bin["edges"][zdbin],
+                    zenith_stop_rad=zenith_bin["edges"][zdbin + 1],
                 )
 
                 # point

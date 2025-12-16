@@ -97,8 +97,10 @@ for pk in res.PARTICLES:
             del uid_common
 
             passing_trigger_uid = passing_trigger[pk].uid(
-                energy_bin_indices=[enbin],
-                zenith_bin_indices=[zdbin],
+                energy_start_GeV=energy_bin["edges"][enbin],
+                energy_stop_GeV=energy_bin["edges"][enbin + 1],
+                zenith_start_rad=zenith_bin["edges"][zdbin],
+                zenith_stop_rad=zenith_bin["edges"][zdbin + 1],
             )
 
             shower_table_scatter_angle_deg = np.rad2deg(

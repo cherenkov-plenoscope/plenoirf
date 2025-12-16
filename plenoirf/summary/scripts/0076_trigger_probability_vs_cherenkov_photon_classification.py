@@ -52,16 +52,18 @@ if not os.path.exists(counts_cache_path):
             )
 
     for pk in res.PARTICLES:
-        for zbin in range(zenith_bin["num"]):
-            for ebin in range(energy_bin["num"]):
+        for zdbin in range(zenith_bin["num"]):
+            for enbin in range(energy_bin["num"]):
                 event_table = res.event_table(particle_key=pk).query(
                     levels_and_columns={
                         "primary": ["uid"],
                         "trigger": ["uid", "response_pe"],
                         "features": ["uid"],
                     },
-                    zenith_bin_indices=[zbin],
-                    energy_bin_indices=[ebin],
+                    energy_start_GeV=energy_bin["edges"][enbin],
+                    energy_stop_GeV=energy_bin["edges"][enbin + 1],
+                    zenith_start_rad=zenith_bin["edges"][zdbin],
+                    zenith_stop_rad=zenith_bin["edges"][zdbin + 1],
                 )
                 uid_thrown = event_table["primary"]["uid"]
 
@@ -74,25 +76,27 @@ if not os.path.exists(counts_cache_path):
                 )
 
                 uid_passed_trigger = passing_trigger[pk].uid(
-                    zenith_bin_indices=[zbin],
-                    energy_bin_indices=[ebin],
+                    energy_start_GeV=energy_bin["edges"][enbin],
+                    energy_stop_GeV=energy_bin["edges"][enbin + 1],
+                    zenith_start_rad=zenith_bin["edges"][zdbin],
+                    zenith_stop_rad=zenith_bin["edges"][zdbin + 1],
                 )
 
                 uid_cherenkovclassification = event_table["features"]["uid"]
 
-                counts[pk]["thrown"][zbin, ebin] = len(
+                counts[pk]["thrown"][zdbin, enbin] = len(
                     event_table["primary"]["uid"]
                 )
-                counts[pk]["loose_trigger"][zbin, ebin] = len(
+                counts[pk]["loose_trigger"][zdbin, enbin] = len(
                     uid_passed_loose_trigger
                 )
-                counts[pk]["trigger"][zbin, ebin] = len(
+                counts[pk]["trigger"][zdbin, enbin] = len(
                     snt.logic.intersection(
                         uid_passed_loose_trigger,
                         uid_passed_trigger,
                     )
                 )
-                counts[pk]["cherenkovclassification"][zbin, ebin] = len(
+                counts[pk]["cherenkovclassification"][zdbin, enbin] = len(
                     snt.logic.intersection(
                         uid_passed_loose_trigger,
                         uid_passed_trigger,
@@ -133,36 +137,36 @@ for pk in res.PARTICLES:
     )
     ax.set_yticks([])
     axs = {}
-    for zbin in range(zenith_bin["num"]):
-        axs[zbin] = sebplt.add_axes(
+    for zdbin in range(zenith_bin["num"]):
+        axs[zdbin] = sebplt.add_axes(
             fig=fig,
-            span=[0.15, 0.95 - (1 + zbin) * (0.8 / 3), 0.7, 0.23],
+            span=[0.15, 0.95 - (1 + zdbin) * (0.8 / 3), 0.7, 0.23],
             style={"spines": ["left", "bottom"], "axes": ["y"], "grid": True},
         )
         sebplt.ax_add_histogram(
-            ax=axs[zbin],
+            ax=axs[zdbin],
             bin_edges=energy_bin["edges"],
-            bincounts=ratio[zbin],
-            bincounts_upper=ratio[zbin] + ratio_au[zbin] / 2,
-            bincounts_lower=ratio[zbin] - ratio_au[zbin] / 2,
+            bincounts=ratio[zdbin],
+            bincounts_upper=ratio[zdbin] + ratio_au[zdbin] / 2,
+            bincounts_lower=ratio[zdbin] - ratio_au[zdbin] / 2,
             linestyle="-",
             linecolor=res.PARTICLE_COLORS[pk],
             face_color=res.PARTICLE_COLORS[pk],
             face_alpha=0.2,
         )
-        axs[zbin].semilogx()
-        axs[zbin].set_xlim(energy_bin["limits"])
-        axs[zbin].set_ylim([-0.05, 1.05])
+        axs[zdbin].semilogx()
+        axs[zdbin].set_xlim(energy_bin["limits"])
+        axs[zdbin].set_ylim([-0.05, 1.05])
         sebplt.ax_add_grid_with_explicit_ticks(
-            ax=axs[zbin],
+            ax=axs[zdbin],
             xticks=np.geomspace(1e0, 1e3, 4),
             yticks=np.linspace(0, 1, 6),
         )
         sebplt.add_axes_zenith_range_indicator(
             fig=fig,
             zenith_bin_edges_rad=zenith_bin["edges"],
-            zenith_bin=zbin,
-            span=[0.85, 1 - (1 + zbin) * (0.8 / 3), 0.15, 0.15],
+            zenith_bin=zdbin,
+            span=[0.85, 1 - (1 + zdbin) * (0.8 / 3), 0.15, 0.15],
             fontsize=7,
         )
 
