@@ -156,18 +156,17 @@ uid_common = snt.logic.intersection(
     reconstructed_energy[pk][mk]["uid"],
 )
 
-with res.open_event_table(particle_key=pk) as arc:
-    event_table = arc.query(
-        levels_and_columns={
-            "primary": "__all__",
-            "instrument_pointing": "__all__",
-            "groundgrid_choice": "__all__",
-            "reconstructed_trajectory": "__all__",
-            "features": "__all__",
-        },
-        indices=uid_common,
-        sort=True,
-    )
+event_table = res.event_table(particle_key=pk).query(
+    levels_and_columns={
+        "primary": "__all__",
+        "instrument_pointing": "__all__",
+        "groundgrid_choice": "__all__",
+        "reconstructed_trajectory": "__all__",
+        "features": "__all__",
+    },
+    indices=uid_common,
+    sort=True,
+)
 
 rectab = irf.reconstruction.trajectory_quality.make_rectangular_table(
     event_table=event_table,

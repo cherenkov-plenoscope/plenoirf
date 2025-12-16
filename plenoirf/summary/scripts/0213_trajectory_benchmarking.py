@@ -52,7 +52,7 @@ passing_trajectory_quality = json_utils.tree.Tree(
 
 # energy
 # ------
-energy_bin = res.energy_binning(key="10_bins_per_decade")
+energy_bin = res.energy_binning(key="5_bins_per_decade")
 
 # core-radius bins
 # ----------------
@@ -233,18 +233,17 @@ for pk in res.PARTICLES:
         passing_trajectory_quality[pk]["trajectory_quality"]["uid"],
     )
 
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(
-            levels_and_columns={
-                "primary": "__all__",
-                "instrument_pointing": "__all__",
-                "groundgrid_choice": "__all__",
-                "reconstructed_trajectory": "__all__",
-                "features": "__all__",
-            },
-            indices=uid_common,
-            sort=True,
-        )
+    event_table = res.event_table(particle_key=pk).query(
+        levels_and_columns={
+            "primary": "__all__",
+            "instrument_pointing": "__all__",
+            "groundgrid_choice": "__all__",
+            "reconstructed_trajectory": "__all__",
+            "features": "__all__",
+        },
+        indices=uid_common,
+        sort=True,
+    )
 
     reconstructed_event_table = (
         irf.reconstruction.trajectory_quality.make_rectangular_table(
