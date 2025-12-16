@@ -71,7 +71,7 @@ for zd in range(zenith_bin["num"]):
 
         ax_cb = sebplt.add_axes(
             fig=fig,
-            span=[0.8, AXSPAN[1], 0.02, 0.7],
+            span=[0.76, AXSPAN[1], 0.02, 0.7],
             # style=sebplt.AXES_BLANK,
         )
 
