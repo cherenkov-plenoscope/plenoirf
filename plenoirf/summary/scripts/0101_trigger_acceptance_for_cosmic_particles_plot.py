@@ -81,10 +81,16 @@ for zd in range(zenith_bin["num"]):
                 fig.savefig(
                     opj(res.paths["out_dir"], f"{source_key:s}_zd{zd:d}.jpg")
                 )
-            ax.set_title(
+
+            ax.text(
+                0.1,
+                0.9,
                 "trigger threshold: {:d} p.e.".format(trigger_thresholds[tt]),
-                fontsize=5,
+                horizontalalignment="left",
+                verticalalignment="center",
+                transform=ax.transAxes,
             )
+
             fig.savefig(opj(zd_dir, f"{source_key:s}_{tt:06d}.jpg"))
             sebplt.close(fig)
 
