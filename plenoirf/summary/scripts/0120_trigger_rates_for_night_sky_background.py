@@ -28,39 +28,22 @@ NUM_TIME_SLICES_PER_EVENT = (
 EXPOSURE_TIME_PER_EVENT = NUM_TIME_SLICES_PER_EVENT * TIME_SLICE_DURATION
 EXPOSURE_TIME_PER_EVENT_AU = 0.0
 
-passing_trigger = res.read_passed_trigger(
-    opj(res.paths["analysis_dir"], "0055_passing_trigger"),
-    trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
-)
 trigger = res.trigger
+TRIGGER_MODI = [
+    "far_accepting_focus_and_near_rejecting_focus",
+    "far_accepting_focus",
+]
+passing_trigger = {}
+for trigger_modus in TRIGGER_MODI:
+    passing_trigger[trigger_modus] = res.read_passed_trigger(
+        opj(res.paths["analysis_dir"], "0055_passing_trigger"),
+        trigger_mode_key=trigger_modus,
+    )
 
 num_thresholds = len(trigger["ratescan_thresholds_pe"])
 
-trigger_ratescan = {
-    "only_accepting_not_rejecting": lambda particle_key, threshold_pe: passing_trigger[
-        particle_key
-    ][
-        "only_accepting_not_rejecting"
-    ][
-        "ratescan"
-    ][
-        f"{threshold_pe:d}pe"
-    ][
-        "uid"
-    ],
-    "applying_rejection_refocussing": lambda particle_key, threshold_pe: passing_trigger[
-        particle_key
-    ][
-        "ratescan"
-    ][
-        f"{threshold_pe:d}pe"
-    ][
-        "uid"
-    ],
-}
 
-
-for trigger_modus in trigger_ratescan:
+for trigger_modus in passing_trigger:
 
     nsb = {}
     for zd in range(zenith_bin["num"]):
@@ -78,37 +61,45 @@ for trigger_modus in trigger_ratescan:
         }
 
     for pk in res.PARTICLES:
-        with res.open_event_table(particle_key=pk) as arc:
-            trigger_table = arc.query(
-                levels_and_columns={"trigger": ["uid", "num_cherenkov_pe"]}
-            )["trigger"]
-
-        # The true num of Cherenkov photons in the light field sequence must be
-        # below a critical threshold.
-        mask_nsb = trigger_table["num_cherenkov_pe"] <= MAX_CHERENKOV_IN_NSB_PE
-        uid_nsb = trigger_table["uid"][mask_nsb]
-        uid_nsb = set(uid_nsb)
-
         for zd in range(zenith_bin["num"]):
             zk = f"zd{zd:d}"
 
-            uid_nsb_zd = set.intersection(uid_nsb, zenith_assignment[zk][pk])
+            trigger_table = res.event_table(particle_key=pk).query(
+                levels_and_columns={"trigger": ["uid", "num_cherenkov_pe"]},
+                zenith_start_rad=zenith_bin["edges"][zd],
+                zenith_stop_rad=zenith_bin["edges"][zd + 1],
+            )["trigger"]
 
-            nsb[zk]["num_exposures"] += len(uid_nsb_zd)
+            # The true num of Cherenkov photons in the light field sequence
+            # must be below a critical threshold.
+            mask_nsb = (
+                trigger_table["num_cherenkov_pe"] <= MAX_CHERENKOV_IN_NSB_PE
+            )
+            uid_nsb = trigger_table["uid"][mask_nsb]
+            uid_nsb = np.sort(uid_nsb)
+            del trigger_table
+            del mask_nsb
+
+            nsb[zk]["num_exposures"] += len(uid_nsb)
 
             for tt in range(num_thresholds):
+                threshold_pe = trigger["ratescan_thresholds_pe"][tt]
+
                 print(trigger_modus, pk, zd, tt)
 
-                threshold_pe = trigger["ratescan_thresholds_pe"][tt]
-                uid_trigger_zd = set.intersection(
-                    set(
-                        trigger_ratescan[trigger_modus](
-                            particle_key=pk, threshold_pe=threshold_pe
-                        )
-                    ),
-                    set(uid_nsb_zd),
+                uid_passing_trigger = passing_trigger[trigger_modus][
+                    pk
+                ].ratescan(
+                    threshold_pe=threshold_pe,
+                    zenith_start_rad=zenith_bin["edges"][zd],
+                    zenith_stop_rad=zenith_bin["edges"][zd + 1],
                 )
-                nsb[zk]["num_trigger"][tt] += len(uid_trigger_zd)
+                trigger_on_nsb_overlap = np.isin(
+                    element=uid_passing_trigger,
+                    test_elements=uid_nsb,
+                )
+
+                nsb[zk]["num_trigger"][tt] += sum(trigger_on_nsb_overlap)
 
     for zd in range(zenith_bin["num"]):
         zk = f"zd{zd:d}"
