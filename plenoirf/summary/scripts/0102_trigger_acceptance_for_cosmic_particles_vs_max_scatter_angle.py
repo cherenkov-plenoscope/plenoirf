@@ -44,8 +44,8 @@ for pk in res.PARTICLES:
         for enbin in range(energy_bin["num"]):
             print(
                 pk,
-                f"zd: {zdbin:d}/{zenith_bin['num']:d}, "
-                f"en: {enbin:d}/{energy_bin['num']:d}",
+                f"zd: {zdbin + 1:d}/{zenith_bin['num']:d}, "
+                f"en: {enbin + 1:d}/{energy_bin['num']:d}",
             )
 
             _uid = res.event_table(particle_key=pk).query(
