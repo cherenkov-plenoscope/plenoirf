@@ -21,11 +21,9 @@ mean_key = "mean"
 unc_key = "absolute_uncertainty"
 
 trigger_thresholds = np.array(
-    res.analysis["trigger"][res.site_key]["ratescan_thresholds_pe"]
+    res.analysis["trigger"]["ratescan_thresholds_pe"]
 )
-analysis_trigger_threshold = res.analysis["trigger"][res.site_key][
-    "threshold_pe"
-]
+analysis_trigger_threshold = res.analysis["trigger"]["threshold_pe"]
 
 tt = 0
 for tt, trigger_threshold in enumerate(trigger_thresholds):

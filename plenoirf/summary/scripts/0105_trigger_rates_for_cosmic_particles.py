@@ -66,11 +66,9 @@ dKdE / s^{-1} m^{-2} (GeV)^{-1}
 """
 
 trigger_thresholds = np.array(
-    res.analysis["trigger"][res.site_key]["ratescan_thresholds_pe"]
+    res.analysis["trigger"]["ratescan_thresholds_pe"]
 )
-analysis_trigger_threshold = res.analysis["trigger"][res.site_key][
-    "threshold_pe"
-]
+analysis_trigger_threshold = res.analysis["trigger"]["threshold_pe"]
 num_trigger_thresholds = len(trigger_thresholds)
 
 for zd in range(zenith_bin["num"]):
@@ -202,10 +200,7 @@ def find_index_of_analysis_trigger_threshold(
     res = script_resources
     _index = -1
     for i in range(len(trigger_thresholds)):
-        if (
-            trigger_thresholds[i]
-            == res.analysis["trigger"][res.site_key]["threshold_pe"]
-        ):
+        if trigger_thresholds[i] == res.analysis["trigger"]["threshold_pe"]:
             _index = i
     return _index
 

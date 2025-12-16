@@ -14,7 +14,7 @@ import solid_angle_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
-energy_bin = res.energy_binning(key="10_bins_per_decade")
+energy_bin = res.energy_binning(key="5_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 passing_trigger = res.read_passed_trigger(
@@ -44,7 +44,8 @@ for pk in res.PARTICLES:
         for enbin in range(energy_bin["num"]):
             print(
                 pk,
-                f"zd: {zdbin:d}/{zenith_bin['num']:d}, en: {enbin:d}/{energy_bin['num']:d}",
+                f"zd: {zdbin:d}/{zenith_bin['num']:d}, "
+                f"en: {enbin:d}/{energy_bin['num']:d}",
             )
 
             _uid = res.event_table(particle_key=pk).query(
@@ -54,8 +55,10 @@ for pk in res.PARTICLES:
                     "groundgrid": ("uid",),
                     "trigger": ("uid",),
                 },
-                energy_bin_indices=[enbin],
-                zenith_bin_indices=[zdbin],
+                energy_start_GeV=energy_bin["edges"][enbin],
+                energy_stop_GeV=energy_bin["edges"][enbin + 1],
+                zenith_start_rad=zenith_bin["edges"][zdbin],
+                zenith_stop_rad=zenith_bin["edges"][zdbin + 1],
             )
             uid_common = snt.logic.intersection(
                 _uid["primary"]["uid"],
@@ -85,8 +88,10 @@ for pk in res.PARTICLES:
                     ],
                 },
                 indices=uid_common,
-                energy_bin_indices=[enbin],
-                zenith_bin_indices=[zdbin],
+                energy_start_GeV=energy_bin["edges"][enbin],
+                energy_stop_GeV=energy_bin["edges"][enbin + 1],
+                zenith_start_rad=zenith_bin["edges"][zdbin],
+                zenith_stop_rad=zenith_bin["edges"][zdbin + 1],
                 sort=True,
             )
             del uid_common
