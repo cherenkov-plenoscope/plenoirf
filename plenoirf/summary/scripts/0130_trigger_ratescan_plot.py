@@ -102,10 +102,8 @@ for zd in range(zenith_bin["num"]):
     ax_plot_au(
         ax=ax,
         x=trigger["ratescan_thresholds_pe"],
-        y=tr[zk]["night_sky_background_only_accepting_not_rejecting"]["rate"],
-        y_au=tr[zk]["night_sky_background_only_accepting_not_rejecting"][
-            "rate_au"
-        ],
+        y=tr[zk]["night_sky_background_far_accepting_focus"]["rate"],
+        y_au=tr[zk]["night_sky_background_far_accepting_focus"]["rate_au"],
         color=NSB_COLOR,
         linestyle=":",
         label="night sky",

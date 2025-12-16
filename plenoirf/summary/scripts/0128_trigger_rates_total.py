@@ -14,6 +14,10 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 trigger = res.trigger
+TRIGGER_MODI = [
+    "far_accepting_focus_and_near_rejecting_focus",
+    "far_accepting_focus",
+]
 
 cosmic_rates = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles")
@@ -34,12 +38,12 @@ for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
 
     trigger_modi = {
-        "only_accepting_not_rejecting": "_only_accepting_not_rejecting",
-        "applying_rejection_refocussing": "",
+        "far_accepting_focus": "_far_accepting_focus",
+        "far_accepting_focus_and_near_rejecting_focus": "",
     }
     trigger_rates[zk] = {}
 
-    for trigger_modus in trigger_modi:
+    for trigger_modus in TRIGGER_MODI:
         nsb_key = f"night_sky_background{trigger_modi[trigger_modus]:s}"
         nsb_filename = f"night_sky_background_rates_{trigger_modus:s}"
         trigger_rates[zk][nsb_key] = {}
