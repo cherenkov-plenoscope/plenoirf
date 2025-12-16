@@ -97,7 +97,8 @@ for pk in res.PARTICLES:
                 ],
                 "groundgrid": ["uid", "num_bins_above_threshold"],
             },
-            zenith_bin_indices=[zd],
+            zenith_start_rad=zenith_bin["edges"][zd],
+            zenith_stop_rad=zenith_bin["edges"][zd + 1],
         )
         table = snt.logic.sort_table_on_common_indices(
             table=table, common_indices=table["primary"]["uid"], inplace=True

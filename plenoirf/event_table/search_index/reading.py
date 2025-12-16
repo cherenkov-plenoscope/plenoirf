@@ -28,10 +28,8 @@ class EventTable:
 
     def query(
         self,
-        energy_bin_indices=None,
         energy_start_GeV=None,
         energy_stop_GeV=None,
-        zenith_bin_indices=None,
         zenith_start_rad=None,
         zenith_stop_rad=None,
         indices=None,
@@ -42,10 +40,8 @@ class EventTable:
         tasks = _make_list_of_zenith_energy_bins_to_be_read(
             energy_bin_edges_GeV=self.config["energy_bin"]["edges"],
             zenith_bin_edges_rad=self.config["zenith_bin"]["edges"],
-            energy_bin_indices=energy_bin_indices,
             energy_start_GeV=energy_start_GeV,
             energy_stop_GeV=energy_stop_GeV,
-            zenith_bin_indices=zenith_bin_indices,
             zenith_start_rad=zenith_start_rad,
             zenith_stop_rad=zenith_stop_rad,
         )
@@ -76,20 +72,16 @@ class EventTable:
 
     def population(
         self,
-        energy_bin_indices=None,
         energy_start_GeV=None,
         energy_stop_GeV=None,
-        zenith_bin_indices=None,
         zenith_start_rad=None,
         zenith_stop_rad=None,
         level_key="primary",
         column_key="uid",
     ):
         looper = self.query(
-            energy_bin_indices=energy_bin_indices,
             energy_start_GeV=energy_start_GeV,
             energy_stop_GeV=energy_stop_GeV,
-            zenith_bin_indices=zenith_bin_indices,
             zenith_start_rad=zenith_start_rad,
             zenith_stop_rad=zenith_stop_rad,
             levels_and_columns={level_key: [column_key]},
@@ -123,8 +115,10 @@ class EventTable:
 
                 print(f"zd: {zd:d}/{num_zd:d}, en: {en:d}/{num_en:d}")
                 part = self.query(
-                    energy_bin_indices=en,
-                    zenith_bin_indices=zd,
+                    energy_start_GeV=energy_bin["edges"][en],
+                    energy_stop_GeV=energy_bin["edges"][en + 1],
+                    zenith_start_rad=zenith_bin["edges"][zd],
+                    zenith_stop_rad=zenith_bin["edges"][zd + 1],
                     levels_and_columns={
                         "primary": ("uid", "energy_GeV"),
                         "instrument_pointing": ("uid", "zenith_rad"),
@@ -147,8 +141,10 @@ class EventTable:
                 )
                 for level_key in structure.dtypes():
                     other = self.query(
-                        energy_bin_indices=en,
-                        zenith_bin_indices=zd,
+                        energy_start_GeV=energy_bin["edges"][en],
+                        energy_stop_GeV=energy_bin["edges"][en + 1],
+                        zenith_start_rad=zenith_bin["edges"][zd],
+                        zenith_stop_rad=zenith_bin["edges"][zd + 1],
                         levels_and_columns={level_key: "__all__"},
                     )
                     assert np.all(
@@ -257,23 +253,19 @@ def _get_uid_in_zenith_range(reader, zenith_start_rad, zenith_stop_rad):
 def _make_list_of_zenith_energy_bins_to_be_read(
     energy_bin_edges_GeV,
     zenith_bin_edges_rad,
-    energy_bin_indices=None,
     energy_start_GeV=None,
     energy_stop_GeV=None,
-    zenith_bin_indices=None,
     zenith_start_rad=None,
     zenith_stop_rad=None,
 ):
     zenith_bins, zenith_fully = _make_list_of_bins_to_be_read(
         bin_edges=zenith_bin_edges_rad,
-        bin_indices=zenith_bin_indices,
         start=zenith_start_rad,
         stop=zenith_stop_rad,
     )
 
     energy_bins, energy_fully = _make_list_of_bins_to_be_read(
         bin_edges=energy_bin_edges_GeV,
-        bin_indices=energy_bin_indices,
         start=energy_start_GeV,
         stop=energy_stop_GeV,
     )
@@ -307,33 +299,10 @@ def _make_list_of_zenith_energy_bins_to_be_read(
 
 def _make_list_of_bins_to_be_read(
     bin_edges,
-    bin_indices=None,
     start=None,
     stop=None,
 ):
-    if bin_indices is not None:
-        assert start is None and stop is None, (
-            f"When 'bin_indices' is given, "
-            f"there must be no 'start' or 'stop'."
-        )
-        num_bins = len(bin_edges) - 1
-
-        if hasattr(bin_indices, "__len__"):
-            out = []
-            fully_contained = []
-            for bin_index in bin_indices:
-                assert plenoirf_utils.can_be_interpreted_as_int(bin_index)
-                assert 0 <= bin_index < num_bins
-                out.append(bin_index)
-                fully_contained.append(True)
-            return out, fully_contained
-        elif plenoirf_utils.can_be_interpreted_as_int(bin_indices):
-            assert 0 <= bin_indices < num_bins
-            return [bin_indices], [True]
-        else:
-            raise AttributeError(f"Can not interpret '{key:s}_bin_index'.")
-
-    elif bin_indices is None and (start is not None or stop is not None):
+    if (start is not None or stop is not None):
         assert start is not None and stop is not None
 
         return binning_utils.find_bin_indices_in_start_stop_range(
@@ -343,7 +312,6 @@ def _make_list_of_bins_to_be_read(
             return_if_bin_is_fully_contained=True,
         )
     else:
-        assert bin_indices is None
         assert start is None
         assert stop is None
         num_bins = len(bin_edges) - 1
