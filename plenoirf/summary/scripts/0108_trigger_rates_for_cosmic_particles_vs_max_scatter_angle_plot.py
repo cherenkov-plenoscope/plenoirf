@@ -73,7 +73,7 @@ for zd in range(zenith_bin["num"]):
     ax.set_ylabel("trigger rate / 1k s$^{-1}$")
     ax.set_xlabel("scatter solid angle / msr")
     ax.set_xlim(1e3 * scatter_bin[pk]["limits"])
-    # ax.set_ylim([0, 1e2])
+    ax.set_ylim([0, 1e2])
     fig.savefig(
         opj(res.paths["out_dir"], f"{zk:s}_trigger_rate_vs_scatter.jpg")
     )
