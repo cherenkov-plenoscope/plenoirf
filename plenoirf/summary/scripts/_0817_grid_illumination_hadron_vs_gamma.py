@@ -62,10 +62,8 @@ for pk in res.PARTICLES:
         res.response_path(particle_key=pk), "ground_grid_intensity.zip"
     )
 
-    uid_ggi = []
-    ggi = irf.ground_grid.histogram2d.Reader(ggi_path)
-    for uid in ggi:
-        uid_ggi.append(uid)
+    with irf.ground_grid.histogram2d.Reader(ggi_path) as ggi:
+        uid_ggi = np.asarray(ggi.uids)
 
     uid_trigger_ggi = list(
         set.intersection(set(uid_ggi), set(passing_trigger[pk]["uid"]))
