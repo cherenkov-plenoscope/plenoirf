@@ -247,16 +247,13 @@ for pk in ["helium"]:
         passing_quality[pk]["uid"],
     )
 
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(
-            levels_and_columns={
-                "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
-            }
-        )
-        event_table = snt.logic.cut_and_sort_table_on_indices(
-            event_table,
-            common_indices=uid_trigger_and_quality,
-        )
+    event_table = res.event_table(particle_key=pk).query(
+        levels_and_columns={
+            "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
+        },
+        indices=uid_trigger_and_quality,
+        sort=True,
+    )
 
     run = pl.photon_stream.loph.LopfTarReader(
         opj(
