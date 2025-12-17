@@ -42,16 +42,19 @@ else:
         )
         expo[pk] = np.zeros(shape=(zenith_bin["num"], energy_bin["num"]))
 
-        with res.open_event_table(particle_key=pk) as arc:
-            event_table = arc.query(
-                levels_and_columns={
-                    "primary": (
-                        "uid",
-                        "energy_GeV",
-                        "zenith_rad",
-                    ),
-                }
-            )
+        with irf.ground_grid.histogram2d.Reader(gpath) as rrr:
+            uid_having_histogram = np.asarray(rrr.uids)
+
+        event_table = res.event_table(particle_key=pk).query(
+            levels_and_columns={
+                "primary": (
+                    "uid",
+                    "energy_GeV",
+                    "zenith_rad",
+                ),
+            },
+            indices=uid_having_histogram,
+        )
         primary_by_uid = {}
         for entry in event_table["primary"]:
             primary_by_uid[entry["uid"]] = (
