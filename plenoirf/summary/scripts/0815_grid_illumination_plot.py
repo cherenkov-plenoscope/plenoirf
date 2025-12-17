@@ -41,61 +41,55 @@ for pk in res.PARTICLES:
         res.response_path(particle_key=pk), "ground_grid_intensity.zip"
     )
 
-    uid_ggi = []
-    ggi = irf.ground_grid.histogram2d.Reader(ggi_path)
-    for uid in ggi:
-        uid_ggi.append(uid)
+    with irf.ground_grid.histogram2d.Reader(ggi_path) as ggi:
+        uid_ggi = np.asarray(ggi.uids)
 
-    uid_trigger_ggi = list(
-        set.intersection(set(uid_ggi), set(passing_trigger[pk]["uid"]))
-    )
+        grid_intensities = []
+        num_airshowers = []
+        for enbin in range(energy_bin["num"]):
+            print(
+                pk,
+                f"en: {enbin + 1:d}/{energy_bin['num']:d}",
+            )
 
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(levels_and_columns={"primary": "__all__"})
+            uid_trigger_and_ggi = list(
+                set.intersection(
+                    set(uid_ggi),
+                    set(
+                        passing_trigger[pk].uid(
+                            energy_start_GeV=energy_bin["edges"][enbin],
+                            energy_stop_GeV=energy_bin["edges"][enbin + 1],
+                        )
+                    ),
+                )
+            )
 
-    detected_events = snt.logic.cut_table_on_indices(
-        table=event_table,
-        common_indices=uid_trigger_ggi,
-    )
+            grid_intensity = np.zeros(
+                (num_grid_bins_on_edge, num_grid_bins_on_edge)
+            )
+            num_airshower = 0
 
-    # summarize
-    # ---------
-    grid_intensities = []
-    num_airshowers = []
-    for ebin in range(energy_bin["num"]):
-        energy_GeV_start = energy_bin["edges"][ebin]
-        energy_GeV_stop = energy_bin["edges"][ebin + 1]
+            for uid in uid_trigger_and_ggi:
+                ground_grid_cell_intensity = ggi[uid]
+                for cell in ground_grid_cell_intensity:
+                    grid_intensity[cell["x_bin"], cell["y_bin"]] += cell[
+                        "weight_photons"
+                    ]
+                num_airshower += 1
+                if num_airshower == MAX_AIRSHOWER_PER_ENERGY_BIN:
+                    break
 
-        mask_energy = np.logical_and(
-            detected_events["primary"]["energy_GeV"] > energy_GeV_start,
-            detected_events["primary"]["energy_GeV"] <= energy_GeV_stop,
-        )
-        uid_energy_range = detected_events["primary"]["uid"][mask_energy]
-        grid_intensity = np.zeros(
-            (num_grid_bins_on_edge, num_grid_bins_on_edge)
-        )
-        num_airshower = 0
-        for uid in uid_energy_range:
-            ground_grid_cell_intensity = ggi[uid]
-            for cell in ground_grid_cell_intensity:
-                grid_intensity[cell["x_bin"], cell["y_bin"]] += cell[
-                    "weight_photons"
-                ]
-            num_airshower += 1
-            if num_airshower == MAX_AIRSHOWER_PER_ENERGY_BIN:
-                break
-
-        grid_intensities.append(grid_intensity)
-        num_airshowers.append(num_airshower)
+            grid_intensities.append(grid_intensity)
+            num_airshowers.append(num_airshower)
 
     grid_intensities = np.array(grid_intensities)
     num_airshowers = np.array(num_airshowers)
 
     # write
     # -----
-    for ebin in range(energy_bin["num"]):
-        grid_intensity = grid_intensities[ebin]
-        num_airshower = num_airshowers[ebin]
+    for enbin in range(energy_bin["num"]):
+        grid_intensity = grid_intensities[enbin]
+        num_airshower = num_airshowers[enbin]
 
         normalized_grid_intensity = grid_intensity
         if num_airshower > 0:
@@ -118,8 +112,8 @@ for pk in res.PARTICLES:
         ax.set_title(
             "num. airshower {: 6d}, energy {: 7.1f} - {: 7.1f} GeV".format(
                 num_airshower,
-                energy_bin["edges"][ebin],
-                energy_bin["edges"][ebin + 1],
+                energy_bin["edges"][enbin],
+                energy_bin["edges"][enbin + 1],
             ),
             family="monospace",
         )
@@ -129,7 +123,7 @@ for pk in res.PARTICLES:
         fig.savefig(
             opj(
                 res.paths["out_dir"],
-                f"{pk:s}_grid_area_pasttrigger_{ebin:06d}.jpg",
+                f"{pk:s}_grid_area_pasttrigger_{enbin:06d}.jpg",
             )
         )
         sebplt.close(fig)
