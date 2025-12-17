@@ -302,7 +302,7 @@ def _make_list_of_bins_to_be_read(
     start=None,
     stop=None,
 ):
-    if (start is not None or stop is not None):
+    if start is not None or stop is not None:
         assert start is not None and stop is not None
 
         return binning_utils.find_bin_indices_in_start_stop_range(
