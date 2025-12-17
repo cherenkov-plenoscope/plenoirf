@@ -85,10 +85,7 @@ for zdbin in range(zenith_bin["num"]):
             zenith_stop_rad=zenith_bin["edges"][zdbin + 1],
             indices=uid_zdbin_features,
         )
-        uid_common = snt.logic.intersection(
-            uid_common,
-            uid_zdbin_features
-        )
+        uid_common = snt.logic.intersection(uid_common, uid_zdbin_features)
         event_table = snt.logic.cut_and_sort_table_on_indices(
             table=event_table,
             common_indices=uid_common,
