@@ -26,9 +26,6 @@ passing_quality = json_utils.tree.Tree(
 passing_trajectory_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
-zenith_assignment = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
-)
 energy_bin = res.energy_binning(key="10_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
@@ -44,43 +41,59 @@ def normed(v):
 
 
 tds = {}
-for zd in range(zenith_bin["num"]):
-    zk = f"zd{zd:d}"
+for zdbin in range(zenith_bin["num"]):
+    zk = f"zd{zdbin:d}"
 
     tds[zk] = {}
     for pk in ["gamma"]:
         tds[zk][pk] = {}
 
         uid_common = snt.logic.intersection(
-            zenith_assignment[zk][pk],
             passing_trigger[pk]["uid"],
             passing_quality[pk]["uid"],
             passing_trajectory_quality[pk]["uid"],
         )
 
-        with res.open_event_table(particle_key=pk) as arc:
-            event_table = arc.query(
-                levels_and_columns={
-                    "primary": (
-                        "uid",
-                        "energy_GeV",
-                        "momentum_x_GeV_per_c",
-                        "momentum_y_GeV_per_c",
-                        "momentum_z_GeV_per_c",
-                        "starting_x_m",
-                        "starting_y_m",
-                        "starting_height_asl_m",
-                    ),
-                    "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
-                    "instrument": ("uid", "start_time_of_exposure_s"),
-                    "features": (
-                        "uid",
-                        "image_smallest_ellipse_object_distance",
-                    ),
-                },
-                indices=uid_common,
-                sort=True,
-            )
+        uid_zdbin_features = res.event_table(particle_key=pk).query(
+            levels_and_columns={
+                "features": ("uid",),
+            },
+            zenith_start_rad=zenith_bin["edges"][zdbin],
+            zenith_stop_rad=zenith_bin["edges"][zdbin + 1],
+        )["features"]["uid"]
+
+        event_table = res.event_table(particle_key=pk).query(
+            levels_and_columns={
+                "primary": (
+                    "uid",
+                    "energy_GeV",
+                    "momentum_x_GeV_per_c",
+                    "momentum_y_GeV_per_c",
+                    "momentum_z_GeV_per_c",
+                    "starting_x_m",
+                    "starting_y_m",
+                    "starting_height_asl_m",
+                ),
+                "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
+                "instrument": ("uid", "start_time_of_exposure_s"),
+                "features": (
+                    "uid",
+                    "image_smallest_ellipse_object_distance",
+                ),
+            },
+            zenith_start_rad=zenith_bin["edges"][zdbin],
+            zenith_stop_rad=zenith_bin["edges"][zdbin + 1],
+            indices=uid_zdbin_features,
+        )
+        uid_common = snt.logic.intersection(
+            uid_common,
+            uid_zdbin_features
+        )
+        event_table = snt.logic.cut_and_sort_table_on_indices(
+            table=event_table,
+            common_indices=uid_common,
+            inplace=True,
+        )
 
         et = snt.logic.make_rectangular_DataFrame(event_table).to_records()
 
@@ -193,7 +206,7 @@ for zd in range(zenith_bin["num"]):
             fig=fig,
             span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
             zenith_bin_edges_rad=zenith_bin["edges"],
-            zenith_bin=zd,
+            zenith_bin=zdbin,
             fontsize=6,
         )
         bincounts = np.histogram(a=tDelta_rel, bins=TIME_BIN_EDGES)[0]
