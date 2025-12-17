@@ -22,11 +22,6 @@ plenoscope_trigger_vs_cherenkov_density = json_utils.tree.Tree(
         "0074_trigger_probability_vs_cherenkov_density_on_ground",
     )
 )
-zenith_assignment = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
-)
-
-
 prng = np.random.Generator(np.random.PCG64(res.analysis["random_seed"]))
 
 ground_grid_geometry = irf.ground_grid.GroundGrid(
@@ -123,7 +118,7 @@ for ak in ARRAY_CONFIGS:
 
 # estimate trigger probability of individual telescope in array
 # -------------------------------------------------------------
-KEY = "passing_trigger_if_only_accepting_not_rejecting"
+TRIGGER_MODE = "far_accepting_focus"
 telescope_trigger = {}
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
@@ -132,11 +127,11 @@ for zd in range(zenith_bin["num"]):
     for pk in res.PARTICLES:
         telescope_trigger[zk][pk] = {}
 
-        pleno_prb = plenoscope_trigger_vs_cherenkov_density[zk][pk][KEY][
-            "mean"
-        ]
+        pleno_prb = plenoscope_trigger_vs_cherenkov_density[zk][pk][
+            TRIGGER_MODE
+        ]["mean"]
         pleno_den_bin_edges = plenoscope_trigger_vs_cherenkov_density[zk][pk][
-            KEY
+            TRIGGER_MODE
         ]["Cherenkov_density_bin_edges_per_m2"]
         pleno_den = binning_utils.centers(bin_edges=pleno_den_bin_edges)
 
@@ -150,9 +145,9 @@ for zd in range(zenith_bin["num"]):
                 np.pi * (0.5 * ARRAY_CONFIGS[ak]["mirror_diameter_m"]) ** 2
             )
 
-            _tprb = plenoscope_trigger_vs_cherenkov_density[zk][pk][KEY][
-                "mean"
-            ]
+            _tprb = plenoscope_trigger_vs_cherenkov_density[zk][pk][
+                TRIGGER_MODE
+            ]["mean"]
             _tprb = irf.utils.fill_nans_from_end(arr=_tprb, val=1.0)
             _tprb = irf.utils.fill_nans_from_start(arr=_tprb, val=0.0)
             _tden = (
@@ -223,15 +218,6 @@ def histogram_ground_grid_intensity(
 
 # simulate telescope triggers
 # ---------------------------
-
-zenith_assignment_set = {}
-for zk in zenith_assignment:
-    zenith_assignment_set[zk] = {}
-    for pk in zenith_assignment[zk]:
-        zenith_assignment_set[zk][pk] = set(zenith_assignment[zk][pk])
-zenith_assignment.clear_cache()
-
-
 out = {}
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
@@ -242,15 +228,22 @@ for zd in range(zenith_bin["num"]):
             out[zk][pk][ak] = []
 
 for pk in res.PARTICLES:
-    with res.open_event_table(particle_key=pk) as arc:
-        _event_table = arc.query(
+
+    groundgrid_choice_by_uid = {}
+    for zdbin in range(zenith_bin["num"]):
+        zk = f"zd{zdbin:d}"
+        groundgrid_choice_by_uid[zk] = {}
+
+        _event_table = res.event_table(particle_key=pk).query(
             levels_and_columns={
                 "groundgrid_choice": ["uid", "bin_idx_x", "bin_idx_y"],
-            }
+            },
+            zenith_start_rad=zenith_bin["edges"][zdbin],
+            zenith_stop_rad=zenith_bin["edges"][zdbin + 1],
         )
-        groundgrid_choice_by_uid = {}
+
         for item in _event_table["groundgrid_choice"]:
-            groundgrid_choice_by_uid[item["uid"]] = (
+            groundgrid_choice_by_uid[zk][item["uid"]] = (
                 item["bin_idx_x"],
                 item["bin_idx_y"],
             )
@@ -264,7 +257,11 @@ for pk in res.PARTICLES:
 
         for shower_uid in grid_reader:
 
-            bin_idx_x, bin_idx_y = groundgrid_choice_by_uid[shower_uid]
+            for zk in groundgrid_choice_by_uid:
+                if shower_uid in groundgrid_choice_by_uid[zk]:
+                    break
+
+            bin_idx_x, bin_idx_y = groundgrid_choice_by_uid[zk][shower_uid]
             grid_cherenkov_intensity = histogram_ground_grid_intensity(
                 intensity=grid_reader[shower_uid],
                 bin_idx_x=bin_idx_x,
@@ -275,10 +272,6 @@ for pk in res.PARTICLES:
             grid_cherenkov_density_per_m2 = (
                 grid_cherenkov_intensity / ground_grid_geometry["bin_area_m2"]
             )
-
-            for zk in zenith_assignment_set:
-                if shower_uid in zenith_assignment_set[zk]:
-                    break
 
             for ak in ARRAY_CONFIGS:
                 num_teles = np.sum(ARRAY_CONFIGS[ak]["mask"])
