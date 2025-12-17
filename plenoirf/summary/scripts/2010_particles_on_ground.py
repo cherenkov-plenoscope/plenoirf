@@ -35,15 +35,14 @@ for pk in ["proton"]:  # PARTICLES:
         passing_quality[pk]["uid"],
     )
 
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(
-            levels_and_columns={
-                "particlepool": "__all__",
-            },
-            indices=uid_common,
-            sort=True,
-        )
-        particlepool = event_table["particlepool"]
+    event_table = res.event_table(particle_key=pk).query(
+        levels_and_columns={
+            "particlepool": "__all__",
+        },
+        indices=uid_common,
+        sort=True,
+    )
+    particlepool = event_table["particlepool"]
 
     print(
         "cosmic: ",
@@ -56,7 +55,7 @@ for pk in ["proton"]:  # PARTICLES:
 
     RRR[pk] = {}
     path_template = opj(
-        paths["plenoirf_dir"],
+        res.paths["plenoirf_dir"],
         "event_table",
         pk,
         "particles.map",
