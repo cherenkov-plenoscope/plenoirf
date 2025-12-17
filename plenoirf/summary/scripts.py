@@ -209,12 +209,14 @@ def run(
             script_name=script_name, script_dependencies=script_dependencies
         )
 
-    out_dir = os.path.join(plenoirf_dir, "analysis", instrument_key, site_key)
-    os.makedirs(out_dir, exist_ok=True)
+    results_dir = os.path.join(
+        plenoirf_dir, "analysis", instrument_key, site_key, "results"
+    )
+    os.makedirs(results_dir, exist_ok=True)
     _dt = datetime.datetime.now()
     _now_str = _dt.isoformat().replace(":", "-").replace(".", "p")
     json_utils.write(
-        os.path.join(out_dir, f"provenance.{_now_str:s}.json"),
+        os.path.join(results_dir, f"provenance.{_now_str:s}.json"),
         provenance.make_provenance(),
     )
 

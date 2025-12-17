@@ -4,6 +4,7 @@ import os
 from os.path import join as opj
 import numpy as np
 import magnetic_deflection as mdfl
+import rename_after_writing as rnw
 import spherical_coordinates
 import spherical_histogram
 import sparse_numeric_table as snt
@@ -20,60 +21,81 @@ passing_trigger = res.read_passed_trigger(
     trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
 )
 
-energy_bin = res.energy_binning(key="10_bins_per_decade")
+energy_bin = res.energy_binning(key="5_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
-cmap = sebplt.plt.colormaps["inferno"].resampled(256)
+cmap = sebplt.plt.colormaps["magma_r"].resampled(256)
 
 dome = spherical_histogram.HemisphereHistogram(num_vertices=256)
 
+
+def write(path, intensity_cube, exposure_cube, num_events_stack):
+    with rnw.Directory(path) as tmp:
+        with rnw.open(opj(tmp, "intensity_cube.npy"), "wb") as f:
+            np.save(f, intensity_cube)
+        with rnw.open(opj(tmp, "exposure_cube.npy"), "wb") as f:
+            np.save(f, exposure_cube)
+        with rnw.open(opj(tmp, "num_events_stack.npy"), "wb") as f:
+            np.save(f, num_events_stack)
+
+
+def read(path):
+    out = {}
+    with open(opj(path, "intensity_cube.npy"), "rb") as f:
+        out["intensity_cube"] = np.load(f)
+    with open(opj(path, "exposure_cube.npy"), "rb") as f:
+        out["exposure_cube"] = np.load(f)
+    with open(opj(path, "num_events_stack.npy"), "rb") as f:
+        out["num_events_stack"] = np.load(f)
+    return out
+
+
 for pk in res.PARTICLES:
 
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(
-            levels_and_columns={
-                "primary": "__all__",
-            }
-        )
+    pk_cache_dir = opj(res.paths["cache_dir"], pk)
 
-    # summarize
-    # ---------
-    mask_triggered = snt.logic.make_mask_of_right_in_left(
-        left_indices=event_table["primary"]["uid"],
-        right_indices=passing_trigger[pk]["uid"],
-    )
+    if os.path.exists(pk_cache_dir):
+        continue
 
     intensity_cube = []
     exposure_cube = []
     num_events_stack = []
-    for ebin in range(energy_bin["num"]):
-        print(pk, ebin)
-        mask_energy = np.logical_and(
-            event_table["primary"]["energy_GeV"] >= energy_bin["edges"][ebin],
-            event_table["primary"]["energy_GeV"]
-            < energy_bin["edges"][ebin + 1],
+    for enbin in range(energy_bin["num"]):
+        print(
+            pk,
+            f"en: {enbin + 1:d}/{energy_bin['num']:d}",
         )
 
-        mask_energy_trigger = np.logical_and(mask_energy, mask_triggered)
+        event_table = res.event_table(particle_key=pk).query(
+            levels_and_columns={
+                "primary": ["uid", "azimuth_rad", "zenith_rad"],
+            },
+            energy_start_GeV=energy_bin["edges"][enbin],
+            energy_stop_GeV=energy_bin["edges"][enbin + 1],
+        )
 
-        num_events = np.sum(mask_triggered[mask_energy])
+        mask_triggered = snt.logic.make_mask_of_right_in_left(
+            left_indices=event_table["primary"]["uid"],
+            right_indices=passing_trigger[pk].uid(
+                energy_start_GeV=energy_bin["edges"][enbin],
+                energy_stop_GeV=energy_bin["edges"][enbin + 1],
+            ),
+        )
+
+        num_events = np.sum(mask_triggered)
         num_events_stack.append(num_events)
 
         dome.reset()
         dome.assign_azimuth_zenith(
-            azimuth_rad=event_table["primary"]["azimuth_rad"][
-                mask_energy_trigger
-            ],
-            zenith_rad=event_table["primary"]["zenith_rad"][
-                mask_energy_trigger
-            ],
+            azimuth_rad=event_table["primary"]["azimuth_rad"][mask_triggered],
+            zenith_rad=event_table["primary"]["zenith_rad"][mask_triggered],
         )
         _i_per_sr = dome.bin_counts / dome.bin_geometry.faces_solid_angles
 
         dome.reset()
         dome.assign_azimuth_zenith(
-            azimuth_rad=event_table["primary"]["azimuth_rad"][mask_energy],
-            zenith_rad=event_table["primary"]["zenith_rad"][mask_energy],
+            azimuth_rad=event_table["primary"]["azimuth_rad"],
+            zenith_rad=event_table["primary"]["zenith_rad"],
         )
         _e_per_sr = dome.bin_counts / dome.bin_geometry.faces_solid_angles
 
@@ -87,11 +109,20 @@ for pk in res.PARTICLES:
     exposure_cube = np.array(exposure_cube)
     num_events_stack = np.array(num_events_stack)
 
-    # write
-    # -----
-    vmax = np.max(intensity_cube)
+    write(
+        path=pk_cache_dir,
+        intensity_cube=intensity_cube,
+        exposure_cube=exposure_cube,
+        num_events_stack=num_events_stack,
+    )
 
-    for ebin in range(energy_bin["num"]):
+
+for pk in res.PARTICLES:
+    A = read(opj(res.paths["cache_dir"], pk))
+
+    vmax = np.max(A["intensity_cube"])
+
+    for enbin in range(energy_bin["num"]):
         fig = sebplt.figure(
             style={"rows": 1380, "cols": 1280, "fontsize": 1.0}
         )
@@ -103,7 +134,7 @@ for pk in res.PARTICLES:
         vaz, vzd = spherical_coordinates.cx_cy_cz_to_az_zd(vx, vy, vz)
 
         faces_counts_per_solid_angle_p99 = np.percentile(
-            intensity_cube[ebin], q=99
+            A["intensity_cube"][enbin], q=99
         )
 
         with warnings.catch_warnings():
@@ -114,7 +145,7 @@ for pk in res.PARTICLES:
                 "ignore", message="divide by zero encountered in divide"
             )
             faces_colors = cmap(
-                intensity_cube[ebin] / faces_counts_per_solid_angle_p99
+                A["intensity_cube"][enbin] / faces_counts_per_solid_angle_p99
             )
 
         sebplt.hemisphere.ax_add_faces(
@@ -133,16 +164,16 @@ for pk in res.PARTICLES:
 
         ax.set_title(
             "num. airshower {: 6d}, energy {: 7.1f} - {: 7.1f} GeV".format(
-                num_events_stack[ebin],
-                energy_bin["edges"][ebin],
-                energy_bin["edges"][ebin + 1],
+                A["num_events_stack"][enbin],
+                energy_bin["edges"][enbin],
+                energy_bin["edges"][enbin + 1],
             ),
             family="monospace",
         )
         fig.savefig(
             opj(
                 res.paths["out_dir"],
-                f"{pk:s}_grid_direction_pasttrigger_{ebin:06d}.jpg",
+                f"{pk:s}_grid_direction_pasttrigger_{enbin:06d}.jpg",
             )
         )
         sebplt.close(fig)
