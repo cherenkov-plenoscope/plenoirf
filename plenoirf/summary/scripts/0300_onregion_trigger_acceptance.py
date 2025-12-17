@@ -84,16 +84,153 @@ for zd in range(zenith_bin["num"]):
         for pk in res.PARTICLES:
             os.makedirs(opj(res.paths["out_dir"], zk, ok, pk), exist_ok=True)
 
+"""
+for pk in res.PARTICLES:
+    for zdbin in range(zenith_bin["num"]):
+        zk = f"zd{zdbin:d}"
+
+        effective_area_point = {}
+        effective_etendue_diffuse = {}
+        for ok in ONREGION_TYPES:
+            effective_area_point[ok] = {
+                "Aeff": np.zeros(energy_bin["num"]),
+                "Aeff_au": np.zeros(energy_bin["num"]),
+            }
+            effective_etendue_diffuse[ok] = {
+                "Qeff": np.zeros(energy_bin["num"]),
+                "Qeff_au": np.zeros(energy_bin["num"]),
+            }
+
+        for enbin in range(energy_bin["num"]):
+            print(
+                pk,
+                f"zd: {zdbin + 1:d}/{zenith_bin['num']:d}, "
+                f"en: {enbin + 1:d}/{energy_bin['num']:d}",
+            )
+
+            diffuse_thrown = res.event_table(particle_key=pk).query(
+                levels_and_columns={
+                    "primary": (
+                        "uid",
+                        "energy_GeV",
+                        "azimuth_rad",
+                        "zenith_rad",
+                        "solid_angle_thrown_sr",
+                    ),
+                    "instrument_pointing": (
+                        "uid",
+                        "azimuth_rad",
+                        "zenith_rad",
+                    ),
+                    "reconstructed_trajectory": (
+                        "uid",
+                        "x_m",
+                        "y_m",
+                        "cx_rad",
+                        "cy_rad",
+                        "fuzzy_main_axis_azimuth_rad",
+                    ),
+                    "features": (
+                        "uid",
+                        "num_photons",
+                        "image_half_depth_shift_cx",
+                        "image_half_depth_shift_cy",
+                    ),
+                    "groundgrid": (
+                        "uid",
+                        "num_bins_thrown",
+                        "num_bins_above_threshold",
+                        "area_thrown_m2",
+                    ),
+                    "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
+                },
+                energy_start_GeV=energy_bin["edges"][enbin],
+                energy_stop_GeV=energy_bin["edges"][enbin + 1],
+                zenith_start_rad=zenith_bin["edges"][zdbin],
+                zenith_stop_rad=zenith_bin["edges"][zdbin + 1],
+            )
+
+            uid_possible_onregion = irf.analysis.cuts.cut_primary_direction_within_angle(
+                event_table=diffuse_thrown,
+                max_angle_between_primary_and_pointing_rad=MAX_SOURCE_ANGLE_RAD,
+            )
+
+            # point source
+            # -------------
+
+            # thrown
+            point_thrown = snt.logic.cut_table_on_indices(
+                table=diffuse_thrown,
+                common_indices=uid_possible_onregion,
+            )
+
+            # detected
+            point_candidate = cut_candidates_for_detection(
+                event_table=point_thrown,
+                uid_trajectory_quality=passing_trajectory_quality[pk]["uid"],
+                uid_trigger=passing_trigger[pk]["uid"],
+                uid_quality=passing_quality[pk]["uid"],
+            )
+
+            poicanarr = (
+                irf.reconstruction.trajectory_quality.make_rectangular_table(
+                    event_table=point_candidate,
+                    instrument_pointing_model=res.config["pointing"]["model"],
+                )
+            )
+
+            for ok in ONREGION_TYPES:
+                print(f"{zk:s}, {pk:s}, {ok:s}, point")
+
+                onregion_config = copy.deepcopy(ONREGION_TYPES[ok])
+                idx_dict_source_in_onregion = {}
+                for ii in range(poicanarr["uid"].shape[0]):
+                    _onregion = irf.reconstruction.onregion.estimate_onregion(
+                        reco_cx=poicanarr["reconstructed_trajectory/cx_rad"][ii],
+                        reco_cy=poicanarr["reconstructed_trajectory/cy_rad"][ii],
+                        reco_main_axis_azimuth=poicanarr[
+                            "reconstructed_trajectory/fuzzy_main_axis_azimuth_rad"
+                        ][ii],
+                        reco_num_photons=poicanarr["features/num_photons"][ii],
+                        reco_core_radius=np.hypot(
+                            poicanarr["reconstructed_trajectory/x_m"][ii],
+                            poicanarr["reconstructed_trajectory/y_m"][ii],
+                        ),
+                        config=onregion_config,
+                    )
+
+                    hit = irf.reconstruction.onregion.is_direction_inside(
+                        cx=poicanarr["true_trajectory/cx_rad"][ii],
+                        cy=poicanarr["true_trajectory/cy_rad"][ii],
+                        onregion=_onregion,
+                    )
+
+                    idx_dict_source_in_onregion[poicanarr["uid"][ii]] = hit
+
+                mask_detected = make_wighted_mask_wrt_primary_table(
+                    primary_table=point_thrown["primary"],
+                    idx_dict_of_weights=idx_dict_source_in_onregion,
+                )
+
+                (
+                    effective_area_point[ok]["Aeff"],
+                    effective_area_point[ok]["Aeff_au"]
+                ) = atmospheric_cherenkov_response.analysis.effective_quantity_for_grid(
+                    mask_detected=mask_detected,
+                    quantity_scatter=point_thrown["groundgrid"]["area_thrown_m2"],
+                    num_grid_cells_above_lose_threshold=point_thrown["groundgrid"][
+                        "num_bins_above_threshold"
+                    ],
+                    total_num_grid_cells=point_thrown["groundgrid"][
+                        "num_bins_thrown"
+                    ],
+                )
+
+"""
 
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
     for pk in res.PARTICLES:
-
-        uid_common = res.event_table(particle_key=pk).query(
-            levels_and_columns={"features": ("uid",)},
-            zenith_start_rad=zenith_bin["edges"][zd],
-            zenith_stop_rad=zenith_bin["edges"][zd + 1],
-        )["features"]["uid"]
 
         diffuse_thrown = res.event_table(particle_key=pk).query(
             levels_and_columns={
@@ -133,7 +270,6 @@ for zd in range(zenith_bin["num"]):
             },
             zenith_start_rad=zenith_bin["edges"][zd],
             zenith_stop_rad=zenith_bin["edges"][zd + 1],
-            indices=uid_common,
         )
 
         uid_possible_onregion = irf.analysis.cuts.cut_primary_direction_within_angle(
