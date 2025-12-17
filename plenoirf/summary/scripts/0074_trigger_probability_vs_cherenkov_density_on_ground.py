@@ -11,7 +11,7 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start()
 
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
-energy_bin = res.zenith_binning("10_bins_per_decade")
+energy_bin = res.energy_binning("10_bins_per_decade")
 
 TRIGGER_MODI = [
     "far_accepting_focus_and_near_rejecting_focus",
