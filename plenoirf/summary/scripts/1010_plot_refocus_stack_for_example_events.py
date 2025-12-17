@@ -295,17 +295,16 @@ for pk in res.PARTICLES:
         passing_quality[pk]["uid"],
     )
 
-    with res.open_event_table(particle_key=pk) as arc:
-        event_table = arc.query(
-            levels_and_columns={
-                "primary": ["uid", "energy_GeV", "azimuth_rad", "zenith_rad"],
-                "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
-                "cherenkovpool": ["uid", "z_emission_p50_m"],
-                "features": ["uid", "num_photons"],
-            },
-            indices=uid_trigger_and_quality,
-            sort=True,
-        )
+    event_table = res.event_table(particle_key=pk).query(
+        levels_and_columns={
+            "primary": ["uid", "energy_GeV", "azimuth_rad", "zenith_rad"],
+            "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
+            "cherenkovpool": ["uid", "z_emission_p50_m"],
+            "features": ["uid", "num_photons"],
+        },
+        indices=uid_trigger_and_quality,
+        sort=True,
+    )
 
     run = pl.photon_stream.loph.LopfTarReader(
         opj(
