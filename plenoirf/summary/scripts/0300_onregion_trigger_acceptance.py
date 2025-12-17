@@ -25,9 +25,6 @@ passing_quality = json_utils.tree.Tree(
 passing_trajectory_quality = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0059_passing_trajectory_quality")
 )
-zenith_assignment = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
-)
 
 MAX_SOURCE_ANGLE_DEG = res.analysis["gamma_ray_source_direction"][
     "max_angle_relative_to_pointing_deg"
@@ -80,6 +77,7 @@ def make_wighted_mask_wrt_primary_table(
     return mask
 
 
+# make out dirs
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
     for ok in ONREGION_TYPES:
@@ -91,45 +89,52 @@ for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
     for pk in res.PARTICLES:
 
-        with res.open_event_table(particle_key=pk) as arc:
-            diffuse_thrown = arc.query(
-                levels_and_columns={
-                    "primary": (
-                        "uid",
-                        "energy_GeV",
-                        "azimuth_rad",
-                        "zenith_rad",
-                        "solid_angle_thrown_sr",
-                    ),
-                    "instrument_pointing": (
-                        "uid",
-                        "azimuth_rad",
-                        "zenith_rad",
-                    ),
-                    "reconstructed_trajectory": (
-                        "uid",
-                        "x_m",
-                        "y_m",
-                        "cx_rad",
-                        "cy_rad",
-                        "fuzzy_main_axis_azimuth_rad",
-                    ),
-                    "features": (
-                        "uid",
-                        "num_photons",
-                        "image_half_depth_shift_cx",
-                        "image_half_depth_shift_cy",
-                    ),
-                    "groundgrid": (
-                        "uid",
-                        "num_bins_thrown",
-                        "num_bins_above_threshold",
-                        "area_thrown_m2",
-                    ),
-                    "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
-                },
-                indices=zenith_assignment[zk][pk],
-            )
+        uid_common = res.event_table(particle_key=pk).query(
+            levels_and_columns={"features": ("uid",)},
+            zenith_start_rad=zenith_bin["edges"][zd],
+            zenith_stop_rad=zenith_bin["edges"][zd + 1],
+        )["features"]["uid"]
+
+        diffuse_thrown = res.event_table(particle_key=pk).query(
+            levels_and_columns={
+                "primary": (
+                    "uid",
+                    "energy_GeV",
+                    "azimuth_rad",
+                    "zenith_rad",
+                    "solid_angle_thrown_sr",
+                ),
+                "instrument_pointing": (
+                    "uid",
+                    "azimuth_rad",
+                    "zenith_rad",
+                ),
+                "reconstructed_trajectory": (
+                    "uid",
+                    "x_m",
+                    "y_m",
+                    "cx_rad",
+                    "cy_rad",
+                    "fuzzy_main_axis_azimuth_rad",
+                ),
+                "features": (
+                    "uid",
+                    "num_photons",
+                    "image_half_depth_shift_cx",
+                    "image_half_depth_shift_cy",
+                ),
+                "groundgrid": (
+                    "uid",
+                    "num_bins_thrown",
+                    "num_bins_above_threshold",
+                    "area_thrown_m2",
+                ),
+                "groundgrid_choice": ("uid", "core_x_m", "core_y_m"),
+            },
+            zenith_start_rad=zenith_bin["edges"][zd],
+            zenith_stop_rad=zenith_bin["edges"][zd + 1],
+            indices=uid_common,
+        )
 
         uid_possible_onregion = irf.analysis.cuts.cut_primary_direction_within_angle(
             event_table=diffuse_thrown,
