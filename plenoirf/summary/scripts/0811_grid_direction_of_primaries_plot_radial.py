@@ -41,7 +41,7 @@ for pk in res.PARTICLES:
 FIGURE_STYLE = {"rows": 1080, "cols": 1380, "fontsize": 1}
 
 
-cache_path = opj(res.paths["out_dir"], "__cache__.pkl")
+cache_path = opj(res.paths["cache_dir"], "o.pkl")
 
 if os.path.exists(cache_path):
     with open(cache_path, "rb") as f:
@@ -51,8 +51,16 @@ else:
     for pk in res.PARTICLES:
         o[pk] = {}
 
-        with res.open_event_table(particle_key=pk) as arc:
-            evttab = arc.query(
+        o[pk]["thrown"] = []
+        o[pk]["detected"] = []
+
+        for enbin in range(energy_bin["num"]):
+            print(
+                pk,
+                f"en: {enbin + 1:d}/{energy_bin['num']:d}",
+            )
+
+            evttab = res.event_table(particle_key=pk).query(
                 levels_and_columns={
                     "primary": (
                         "uid",
@@ -65,47 +73,38 @@ else:
                         "azimuth_rad",
                         "zenith_rad",
                     ),
-                }
+                },
+                energy_start_GeV=energy_bin["edges"][enbin],
+                energy_stop_GeV=energy_bin["edges"][enbin + 1],
+            )
+            evttab = snt.logic.cut_and_sort_table_on_indices(
+                table=evttab,
+                common_indices=evttab["instrument_pointing"]["uid"],
+                inplace=True,
+            )
+            mask_trigger = snt.logic.make_mask_of_right_in_left(
+                left_indices=evttab["primary"]["uid"],
+                right_indices=passing_trigger[pk].uid(
+                    energy_start_GeV=energy_bin["edges"][enbin],
+                    energy_stop_GeV=energy_bin["edges"][enbin + 1],
+                ),
             )
 
-        evttab = snt.logic.cut_and_sort_table_on_indices(
-            table=evttab,
-            common_indices=evttab["instrument_pointing"]["uid"],
-        )
-        scatter_rad = spherical_coordinates.angle_between_az_zd(
-            azimuth1_rad=evttab["primary"]["azimuth_rad"],
-            zenith1_rad=evttab["primary"]["zenith_rad"],
-            azimuth2_rad=evttab["instrument_pointing"]["azimuth_rad"],
-            zenith2_rad=evttab["instrument_pointing"]["zenith_rad"],
-        )
-        scatter_deg = np.rad2deg(scatter_rad)
-
-        mask_trigger = snt.logic.make_mask_of_right_in_left(
-            left_indices=evttab["primary"]["uid"],
-            right_indices=passing_trigger[pk]["uid"],
-        )
-
-        o[pk]["thrown"] = []
-        o[pk]["detected"] = []
-
-        for ebin in range(energy_bin["num"]):
-            print("histogram", pk, "energy", ebin)
-
-            mask_energy = np.logical_and(
-                evttab["primary"]["energy_GeV"] >= energy_bin["edges"][ebin],
-                evttab["primary"]["energy_GeV"]
-                < energy_bin["edges"][ebin + 1],
+            scatter_rad = spherical_coordinates.angle_between_az_zd(
+                azimuth1_rad=evttab["primary"]["azimuth_rad"],
+                zenith1_rad=evttab["primary"]["zenith_rad"],
+                azimuth2_rad=evttab["instrument_pointing"]["azimuth_rad"],
+                zenith2_rad=evttab["instrument_pointing"]["zenith_rad"],
             )
-
-            mask_energy_trigger = np.logical_and(mask_energy, mask_trigger)
+            scatter_deg = np.rad2deg(scatter_rad)
 
             detected = np.histogram(
-                scatter_deg[mask_energy_trigger],
+                scatter_deg[mask_trigger],
                 bins=c_bin_edges_deg[pk],
             )[0]
 
             thrown = np.histogram(
-                scatter_deg[mask_energy],
+                scatter_deg,
                 bins=c_bin_edges_deg[pk],
             )[0]
 
