@@ -57,10 +57,20 @@ def _make_script_out_paths(
         scripts_dir = get_scripts_dir()
 
     out_dir = os.path.join(
-        plenoirf_dir, "analysis", instrument_key, site_key, script_name
+        plenoirf_dir,
+        "analysis",
+        instrument_key,
+        site_key,
+        "results",
+        script_name,
     )
     log_dir = os.path.join(
-        plenoirf_dir, "analysis", instrument_key, site_key, f".{script_name:s}"
+        plenoirf_dir,
+        "analysis",
+        instrument_key,
+        site_key,
+        "results",
+        f".{script_name:s}",
     )
     return {
         "out_dir": out_dir,
