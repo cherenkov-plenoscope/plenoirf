@@ -14,10 +14,9 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 trigger = res.trigger
-TRIGGER_MODI = [
-    "far_accepting_focus_and_near_rejecting_focus",
-    "far_accepting_focus",
-]
+TRIGGER_MODI = json_utils.read(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger", "trigger_modi.json")
+)
 
 cosmic_rates = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles")

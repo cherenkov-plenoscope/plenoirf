@@ -13,10 +13,10 @@ res.start()
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 energy_bin = res.energy_binning("10_bins_per_decade")
 
-TRIGGER_MODI = [
-    "far_accepting_focus_and_near_rejecting_focus",
-    "far_accepting_focus",
-]
+TRIGGER_MODI = json_utils.read(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger", "trigger_modi.json")
+)
+
 passing_trigger_modi = {}
 for tm in TRIGGER_MODI:
     passing_trigger_modi[tm] = {}

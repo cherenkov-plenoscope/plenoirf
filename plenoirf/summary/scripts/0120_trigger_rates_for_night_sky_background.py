@@ -29,10 +29,9 @@ EXPOSURE_TIME_PER_EVENT = NUM_TIME_SLICES_PER_EVENT * TIME_SLICE_DURATION
 EXPOSURE_TIME_PER_EVENT_AU = 0.0
 
 trigger = res.trigger
-TRIGGER_MODI = [
-    "far_accepting_focus_and_near_rejecting_focus",
-    "far_accepting_focus",
-]
+TRIGGER_MODI = json_utils.read(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger", "trigger_modi.json")
+)
 passing_trigger = {}
 for trigger_modus in TRIGGER_MODI:
     passing_trigger[trigger_modus] = res.read_passed_trigger(
