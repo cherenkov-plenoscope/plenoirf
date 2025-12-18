@@ -28,10 +28,17 @@ rejecting_height_above_observation_level_m = (
     - res.SITE["observation_level_asl_m"]
 )
 
-TRIGGER_MODI = [
-    "far_accepting_focus_and_near_rejecting_focus",
-    "far_accepting_focus",
-]
+TRIGGER_MODI = {
+    "far_accepting_focus_and_near_rejecting_focus": {
+        "comment": (
+            "Favors light of point sources further away and rejects "
+            "bright point sources which are near by."
+        )
+    },
+    "far_accepting_focus": {
+        "comment": "Like a classic imaging atmospheric Cherenkov telescope."
+    },
+}
 
 
 def make_event_table_with_search_index(
@@ -223,6 +230,11 @@ def explore_focus_ratios(
     return zdfocrat, ratio_bin
 """
 
+
+with rnw.open(opj(res.paths["out_dir"], "trigger_modi.json"), mode="wt") as f:
+    f.write(json_utils.dumps(TRIGGER_MODI, indent=4))
+
+cc = input("STOP")
 
 rtsc_dtypes = {}
 for irs in range(len(trigger["ratescan_thresholds_pe"])):
