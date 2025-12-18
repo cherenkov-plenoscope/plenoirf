@@ -23,11 +23,9 @@ passing_array_trigger = json_utils.tree.Tree(
         "0820_passing_trigger_of_outer_array_of_small_telescopes",
     )
 )
-_passing_plenoscope_trigger = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0055_passing_trigger")
-)
-zenith_assignment = json_utils.tree.Tree(
-    opj(res.paths["analysis_dir"], "0019_zenith_bin_assignment")
+_passing_plenoscope_trigger = res.read_passed_trigger(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger"),
+    trigger_mode_key="far_accepting_focus_and_near_rejecting_focus",
 )
 
 
@@ -40,29 +38,28 @@ AX_SPAN[3] = AX_SPAN[3] * 0.85
 
 
 passing_plenoscope_trigger = {}
-for zd in range(zenith_bin["num"]):
-    zk = f"zd{zd:d}"
+for zdbin in range(zenith_bin["num"]):
+    zk = f"zd{zdbin:d}"
     passing_plenoscope_trigger[zk] = {}
     for pk in res.PARTICLES:
         passing_plenoscope_trigger[zk][pk] = {}
-        passing_plenoscope_trigger[zk][pk]["uid"] = snt.logic.intersection(
-            zenith_assignment[zk][pk],
-            _passing_plenoscope_trigger[pk]["uid"],
+        passing_plenoscope_trigger[zk][pk][
+            "uid"
+        ] = _passing_plenoscope_trigger[pk].uid(
+            zenith_start_rad=zenith_bin["edges"][zdbin],
+            zenith_stop_rad=zenith_bin["edges"][zdbin + 1],
         )
 
 pv = {}
-for zd in range(zenith_bin["num"]):
-    zk = f"zd{zd:d}"
+for zdbin in range(zenith_bin["num"]):
+    zk = f"zd{zdbin:d}"
     pv[zk] = {}
     for pk in res.PARTICLES:
         pv[zk][pk] = {}
 
-        with res.open_event_table(particle_key=pk) as arc:
-            event_table = arc.query(
-                levels_and_columns={
-                    "primary": ["uid", "energy_GeV"],
-                }
-            )
+        event_table = res.event_table(particle_key=pk).query(
+            levels_and_columns={"primary": ["uid", "energy_GeV"]}
+        )
 
         for ak in ARRAY_CONFIGS:
             print("estimate trigger ratio", zk, pk, ak)
@@ -115,8 +112,8 @@ for zd in range(zenith_bin["num"]):
                 )
 
 
-for zd in range(zenith_bin["num"]):
-    zk = f"zd{zd:d}"
+for zdbin in range(zenith_bin["num"]):
+    zk = f"zd{zdbin:d}"
 
     for ak in ARRAY_CONFIGS:
         print("plot trigger ratio all particles", zk, ak)
@@ -127,7 +124,7 @@ for zd in range(zenith_bin["num"]):
             fig=fig,
             span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
             zenith_bin_edges_rad=zenith_bin["edges"],
-            zenith_bin=zd,
+            zenith_bin=zdbin,
             fontsize=6,
         )
 
