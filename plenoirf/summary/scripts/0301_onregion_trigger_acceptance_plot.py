@@ -55,7 +55,6 @@ for zd in range(zenith_bin["num"]):
                 fontsize=6,
             )
 
-            text_y = 0
             for pk in res.PARTICLES:
                 Q = G[zk][ok][pk][gk]["mean"]
                 Q_au = G[zk][ok][pk][gk]["absolute_uncertainty"]
@@ -71,15 +70,6 @@ for zd in range(zenith_bin["num"]):
                     face_color=res.PARTICLE_COLORS[pk],
                     face_alpha=0.25,
                 )
-
-                ax.text(
-                    0.9,
-                    0.1 + text_y,
-                    pk,
-                    color=res.PARTICLE_COLORS[pk],
-                    transform=ax.transAxes,
-                )
-                text_y += 0.06
 
             ax.set_xlabel("energy / GeV")
             ax.set_ylabel(
