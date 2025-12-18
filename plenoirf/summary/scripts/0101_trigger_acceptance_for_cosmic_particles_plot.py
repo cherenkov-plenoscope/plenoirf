@@ -20,6 +20,10 @@ cr = json_utils.tree.Tree(
 energy_bin = res.energy_binning(key="10_bins_per_decade")
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
+TRIGGER_MODI = json_utils.read(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger", "trigger_modi.json")
+)
+
 trigger_thresholds = np.array(
     res.analysis["trigger"]["ratescan_thresholds_pe"]
 )
@@ -31,67 +35,77 @@ for zd in range(zenith_bin["num"]):
     zd_dir = opj(res.paths["out_dir"], zk)
     os.makedirs(zd_dir, exist_ok=True)
 
-    for source_key in irf.summary.figure.SOURCES:
-        for tt in range(len(trigger_thresholds)):
-            sfig, sax = irf.summary.figure.style(key="4:3")
-            fig = sebplt.figure(sfig)
-            ax = sebplt.add_axes(fig=fig, span=sax)
-            sebplt.add_axes_zenith_range_indicator(
-                fig=fig,
-                span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
-                zenith_bin_edges_rad=zenith_bin["edges"],
-                zenith_bin=zd,
-                fontsize=6,
-            )
+    for tk in TRIGGER_MODI:
+        os.makedirs(opj(zd_dir, tk), exist_ok=True)
 
-            for pk in res.PARTICLES:
-                Q = np.array(cr[zk][pk][source_key]["mean"][tt])
-                Q_au = np.array(
-                    cr[zk][pk][source_key]["absolute_uncertainty"][tt]
+        for source_key in irf.summary.figure.SOURCES:
+            for tt in range(len(trigger_thresholds)):
+                sfig, sax = irf.summary.figure.style(key="4:3")
+                fig = sebplt.figure(sfig)
+                ax = sebplt.add_axes(fig=fig, span=sax)
+                sebplt.add_axes_zenith_range_indicator(
+                    fig=fig,
+                    span=irf.summary.figure.AX_SPAN_ZENITH_INDICATOR,
+                    zenith_bin_edges_rad=zenith_bin["edges"],
+                    zenith_bin=zd,
+                    fontsize=6,
                 )
 
-                sebplt.ax_add_histogram(
-                    ax=ax,
-                    bin_edges=energy_bin["edges"],
-                    bincounts=Q,
-                    linestyle="-",
-                    linecolor=res.PARTICLE_COLORS[pk],
-                    bincounts_upper=Q + Q_au,
-                    bincounts_lower=Q - Q_au,
-                    face_color=res.PARTICLE_COLORS[pk],
-                    face_alpha=0.25,
+                for pk in res.PARTICLES:
+                    Q = np.array(cr[zk][pk][tk][source_key]["mean"][tt])
+                    Q_au = np.array(
+                        cr[zk][pk][tk][source_key]["absolute_uncertainty"][tt]
+                    )
+
+                    sebplt.ax_add_histogram(
+                        ax=ax,
+                        bin_edges=energy_bin["edges"],
+                        bincounts=Q,
+                        linestyle="-",
+                        linecolor=res.PARTICLE_COLORS[pk],
+                        bincounts_upper=Q + Q_au,
+                        bincounts_lower=Q - Q_au,
+                        face_color=res.PARTICLE_COLORS[pk],
+                        face_alpha=0.25,
+                    )
+
+                ax.set_xlabel("energy / GeV")
+                ax.set_ylabel(
+                    "{:s} / {:s}".format(
+                        irf.summary.figure.SOURCES[source_key]["label"],
+                        irf.summary.figure.SOURCES[source_key]["unit"],
+                    )
+                )
+                ax.set_ylim(
+                    irf.summary.figure.SOURCES[source_key]["limits"][
+                        "passed_trigger"
+                    ]
+                )
+                ax.loglog()
+                ax.set_xlim(energy_bin["limits"])
+
+                if (
+                    trigger_thresholds[tt] == analysis_trigger_threshold
+                ) and tk == "far_accepting_focus_and_near_rejecting_focus":
+                    fig.savefig(
+                        opj(
+                            res.paths["out_dir"],
+                            f"{source_key:s}_zd{zd:d}.jpg",
+                        )
+                    )
+
+                ax.text(
+                    0.1,
+                    0.9,
+                    "trigger threshold: {:d} p.e.".format(
+                        trigger_thresholds[tt]
+                    ),
+                    horizontalalignment="left",
+                    verticalalignment="center",
+                    transform=ax.transAxes,
                 )
 
-            ax.set_xlabel("energy / GeV")
-            ax.set_ylabel(
-                "{:s} / {:s}".format(
-                    irf.summary.figure.SOURCES[source_key]["label"],
-                    irf.summary.figure.SOURCES[source_key]["unit"],
-                )
-            )
-            ax.set_ylim(
-                irf.summary.figure.SOURCES[source_key]["limits"][
-                    "passed_trigger"
-                ]
-            )
-            ax.loglog()
-            ax.set_xlim(energy_bin["limits"])
-
-            if trigger_thresholds[tt] == analysis_trigger_threshold:
-                fig.savefig(
-                    opj(res.paths["out_dir"], f"{source_key:s}_zd{zd:d}.jpg")
-                )
-
-            ax.text(
-                0.1,
-                0.9,
-                "trigger threshold: {:d} p.e.".format(trigger_thresholds[tt]),
-                horizontalalignment="left",
-                verticalalignment="center",
-                transform=ax.transAxes,
-            )
-
-            fig.savefig(opj(zd_dir, f"{source_key:s}_{tt:06d}.jpg"))
-            sebplt.close(fig)
+                fig.savefig(opj(zd_dir, tk, f"{source_key:s}_{tt:06d}.jpg"))
+                sebplt.close(fig)
 
 res.stop()
