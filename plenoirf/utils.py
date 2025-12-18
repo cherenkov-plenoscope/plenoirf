@@ -402,3 +402,22 @@ def parse_metric_prefix(s):
         out = int(s)
 
     return out
+
+
+def astronomic_magnitude_to_brightness(magnitude):
+    scale = 100 ** (1 / 5)
+    return 1.0 / (scale ** (magnitude - 1))
+
+
+def astronomic_brightness_to_magnitude(brightness):
+    scale = 100 ** (1 / 5)
+
+    def log_scale(x):
+        return np.log(x) / np.log(scale)
+
+    # brightness = 1.0 / ( scale ** (magnitude - 1))
+    # brightness * ( scale ** (magnitude - 1)) = 1.0
+    # scale ** (magnitude - 1) = 1.0 / brightness
+    # magnitude - 1 = log_scale(1.0 / brightness)
+    magnitude = 1.0 + log_scale(1.0 / brightness)
+    return magnitude
