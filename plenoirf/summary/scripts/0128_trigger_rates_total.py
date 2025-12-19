@@ -21,7 +21,7 @@ TRIGGER_MODI = json_utils.read(
 cosmic_rates = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles")
 )
-nsb = json_utils.tree.Tree(
+nsb_rates = json_utils.tree.Tree(
     opj(
         res.paths["analysis_dir"],
         "0120_trigger_rates_for_night_sky_background",
@@ -29,46 +29,36 @@ nsb = json_utils.tree.Tree(
 )
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
-trigger_rates = {}
 
 num_trigger_thresholds = len(trigger["ratescan_thresholds_pe"])
 
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
 
-    trigger_modi = {
-        "far_accepting_focus": "_far_accepting_focus",
-        "far_accepting_focus_and_near_rejecting_focus": "",
-    }
-    trigger_rates[zk] = {}
-
-    for trigger_modus in TRIGGER_MODI:
-        nsb_key = f"night_sky_background{trigger_modi[trigger_modus]:s}"
-        nsb_filename = f"night_sky_background_rates_{trigger_modus:s}"
-        trigger_rates[zk][nsb_key] = {}
-        trigger_rates[zk][nsb_key]["rate"] = nsb[nsb_filename][zk]["rate"]
-        trigger_rates[zk][nsb_key]["rate_au"] = nsb[nsb_filename][zk][
-            "rate_au"
-        ]
+    os.makedirs(opj(res.paths["out_dir"], zk, "night_sky_background"))
+    for tk in TRIGGER_MODI:
+        rates = {}
+        rates["rate"] = nsb_rates[tk][zk]["rate"]
+        rates["rate_au"] = nsb_rates[tk][zk]["rate_au"]
+        json_utils.write(
+            opj(
+                res.paths["out_dir"], zk, "night_sky_background", tk + ".json"
+            ),
+            rates,
+        )
 
     for pk in res.PARTICLES:
-        trigger_rates[zk][pk] = {}
-        trigger_rates[zk][pk]["rate"] = cosmic_rates[zk][pk]["integral_rate"][
-            "mean"
-        ]
-        trigger_rates[zk][pk]["rate_au"] = cosmic_rates[zk][pk][
-            "integral_rate"
-        ]["absolute_uncertainty"]
+        os.makedirs(opj(res.paths["out_dir"], zk, pk))
 
-json_utils.write(
-    opj(res.paths["out_dir"], "trigger_rates_by_origin.json"),
-    {
-        "comment": (
-            "Trigger rates by origin VS. zenith-bin VS. trigger threshold. "
-        ),
-        "unit": "s$^{-1}$",
-        "origins": trigger_rates,
-    },
-)
+        for tk in TRIGGER_MODI:
+            rates = {}
+            rates["rate"] = cosmic_rates[zk][pk][tk]["integral_rate"]["mean"]
+            rates["rate_au"] = cosmic_rates[zk][pk][tk]["integral_rate"][
+                "absolute_uncertainty"
+            ]
+            json_utils.write(
+                opj(res.paths["out_dir"], zk, pk, tk + ".json"),
+                rates,
+            )
 
 res.stop()

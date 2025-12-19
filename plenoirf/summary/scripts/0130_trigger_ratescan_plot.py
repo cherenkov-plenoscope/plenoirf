@@ -16,9 +16,13 @@ res.start(sebplt=sebplt)
 trigger = res.trigger
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
+TRIGGER_MODI = json_utils.read(
+    opj(res.paths["analysis_dir"], "0055_passing_trigger", "trigger_modi.json")
+)
+
 trigger_rates = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0128_trigger_rates_total")
-)["trigger_rates_by_origin"]["origins"]
+)
 
 num_trigger_thresholds = len(trigger["ratescan_thresholds_pe"])
 
@@ -52,9 +56,16 @@ def ax_plot_au(ax, x, y, y_au, alpha_ratio=0.25, **kwargs):
     ax.plot(x, y, alpha=line_alpha, label=line_label, **kwargs)
 
 
-tr = trigger_rates
-
 RATE_CONTRIBUTIONS = [ck for ck in res.COSMIC_RAYS] + ["night_sky_background"]
+
+trigger_modi_style = {
+    "far_accepting_focus": {"linestyle": "-", "alpha": 0.2},
+    "far_accepting_focus_and_near_rejecting_focus": {
+        "linestyle": "-",
+        "alpha": 1.0,
+    },
+}
+
 
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
@@ -70,54 +81,53 @@ for zd in range(zenith_bin["num"]):
         fontsize=6,
     )
 
-    total_rate = np.zeros(num_trigger_thresholds)
-    total_rate_au = np.zeros(num_trigger_thresholds)
-    for tt in range(num_trigger_thresholds):
-        _xsum = []
-        _xsum_au = []
-        for ck in RATE_CONTRIBUTIONS:
-            _xsum.append(tr[zk][ck]["rate"][tt])
-            _xsum_au.append(tr[zk][ck]["rate_au"][tt])
-        total_rate[tt], total_rate_au[tt] = pru.sum(x=_xsum, x_au=_xsum_au)
+    total_rate = {}
+    total_rate_au = {}
+    for tk in TRIGGER_MODI:
+        total_rate[tk] = np.zeros(num_trigger_thresholds)
+        total_rate_au[tk] = np.zeros(num_trigger_thresholds)
 
-    ax_plot_au(
-        ax=ax,
-        x=trigger["ratescan_thresholds_pe"],
-        y=total_rate,
-        y_au=total_rate_au,
-        color=SUM_COLOR,
-        label="night sky + cosmic rays",
-    )
+        for tt in range(num_trigger_thresholds):
+            _xsum = []
+            _xsum_au = []
+            for ck in RATE_CONTRIBUTIONS:
+                _xsum.append(trigger_rates[zk][ck][tk]["rate"][tt])
+                _xsum_au.append(trigger_rates[zk][ck][tk]["rate_au"][tt])
+            total_rate[tk][tt], total_rate_au[tk][tt] = pru.sum(
+                x=_xsum, x_au=_xsum_au
+            )
 
-    ax_plot_au(
-        ax=ax,
-        x=trigger["ratescan_thresholds_pe"],
-        y=tr[zk]["night_sky_background"]["rate"],
-        y_au=tr[zk]["night_sky_background"]["rate_au"],
-        color=NSB_COLOR,
-        linestyle="-",
-        label="night sky",
-    )
-
-    ax_plot_au(
-        ax=ax,
-        x=trigger["ratescan_thresholds_pe"],
-        y=tr[zk]["night_sky_background_far_accepting_focus"]["rate"],
-        y_au=tr[zk]["night_sky_background_far_accepting_focus"]["rate_au"],
-        color=NSB_COLOR,
-        linestyle=":",
-        label="night sky",
-    )
-
-    for ck in res.COSMIC_RAYS:
+    for tk in TRIGGER_MODI:
         ax_plot_au(
             ax=ax,
             x=trigger["ratescan_thresholds_pe"],
-            y=tr[zk][ck]["rate"],
-            y_au=tr[zk][ck]["rate_au"],
-            color=res.PARTICLE_COLORS[ck],
-            label=ck,
+            y=total_rate[tk],
+            y_au=total_rate_au[tk],
+            color=SUM_COLOR,
+            label="night sky + cosmic rays",
+            **trigger_modi_style[tk],
         )
+
+        ax_plot_au(
+            ax=ax,
+            x=trigger["ratescan_thresholds_pe"],
+            y=trigger_rates[zk]["night_sky_background"][tk]["rate"],
+            y_au=trigger_rates[zk]["night_sky_background"][tk]["rate_au"],
+            color=NSB_COLOR,
+            label="night sky",
+            **trigger_modi_style[tk],
+        )
+
+        for ck in res.COSMIC_RAYS:
+            ax_plot_au(
+                ax=ax,
+                x=trigger["ratescan_thresholds_pe"],
+                y=trigger_rates[zk][ck][tk]["rate"],
+                y_au=trigger_rates[zk][ck][tk]["rate_au"],
+                color=res.PARTICLE_COLORS[ck],
+                label=ck,
+                **trigger_modi_style[tk],
+            )
 
     ax.semilogy()
     ax.set_xlabel("trigger threshold / photo electrons")
@@ -134,7 +144,7 @@ for zd in range(zenith_bin["num"]):
     ax.axvline(
         x=zenith_corrected_threshold_pe, color="k", linestyle="--", alpha=0.25
     )
-    ax.set_ylim([1e0, 1e6])
+    ax.set_ylim([1e0, 1e8])
     fig.savefig(opj(res.paths["out_dir"], f"zd{zd:d}_ratescan.jpg"))
     sebplt.close(fig)
 
