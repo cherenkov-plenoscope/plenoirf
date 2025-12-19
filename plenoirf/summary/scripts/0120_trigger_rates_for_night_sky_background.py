@@ -127,7 +127,7 @@ for trigger_modus in passing_trigger:
     json_utils.write(
         opj(
             res.paths["out_dir"],
-            f"night_sky_background_rates_{trigger_modus:s}.json",
+            f"{trigger_modus:s}.json",
         ),
         nsb,
     )
