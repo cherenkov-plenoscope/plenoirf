@@ -10,7 +10,7 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-trigger = res.trigger
+trigger_config = res.trigger
 
 # trigger
 # -------
@@ -36,9 +36,12 @@ zenith_bin = res.zenith_binning("3_bins_per_45deg")
 ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
 idx_trigger_threshold = np.where(
-    np.array(trigger["ratescan_thresholds_pe"]) == trigger["threshold_pe"],
+    np.array(trigger_config["ratescan_thresholds_pe"])
+    == trigger_config["threshold_pe"],
 )[0][0]
-assert trigger["threshold_pe"] in trigger["ratescan_thresholds_pe"]
+assert (
+    trigger_config["threshold_pe"] in trigger_config["ratescan_thresholds_pe"]
+)
 
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
