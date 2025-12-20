@@ -35,12 +35,9 @@ zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 ONREGION_TYPES = res.analysis["on_off_measuremnent"]["onregion_types"]
 
-idx_trigger_threshold = np.where(
-    np.array(trigger_config["ratescan_thresholds_pe"])
-    == trigger_config["threshold_pe"],
-)[0][0]
-assert (
-    trigger_config["threshold_pe"] in trigger_config["ratescan_thresholds_pe"]
+idx_trigger_threshold = irf.utils.find_closest_index_in_array_for_value(
+    arr=trigger_config["ratescan_thresholds_pe"],
+    val=trigger_config["threshold_pe"],
 )
 
 for zd in range(zenith_bin["num"]):

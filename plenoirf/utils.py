@@ -113,7 +113,7 @@ def find_closest_index_in_array_for_value(
 ):
     arr = np.array(arr)
     idx = np.argmin(np.abs(arr - val))
-    if max_abs_error:
+    if max_abs_error is not None:
         assert np.abs(arr[idx] - val) < max_abs_error
     else:
         assert np.abs(arr[idx] - val) < max_rel_error * val
