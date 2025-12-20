@@ -31,7 +31,9 @@ SUM_COLOR = "olive"
 PLOT_LEGEND = False
 
 
-def ax_plot_au(ax, x, y, y_au, alpha_ratio=0.25, **kwargs):
+def ax_plot_au(
+    ax, x, y, y_au, alpha_ratio=0.25, fadeout_x_below=None, **kwargs
+):
     if "alpha" in kwargs:
         line_alpha = kwargs.pop("alpha")
     else:
@@ -45,27 +47,77 @@ def ax_plot_au(ax, x, y, y_au, alpha_ratio=0.25, **kwargs):
         line_label = None
     fill_label = None
 
-    ax.fill_between(
-        x=x,
-        y1=y - y_au,
-        y2=y + y_au,
-        alpha=fill_alpha,
-        label=fill_label,
-        **kwargs,
-    )
-    ax.plot(x, y, alpha=line_alpha, label=line_label, **kwargs)
+    if fadeout_x_below is not None:
+        x_fade_start = fadeout_x_below[0]
+        x_fade_stop = fadeout_x_below[1]
+        x_fade_width = x_fade_stop - x_fade_start
+        assert x_fade_stop >= x_fade_start
+
+        for i in range(len(x) - 1):
+            dx = np.array([x[i], x[i + 1]])
+            mx = np.mean(dx)
+            dy = np.array([y[i], y[i + 1]])
+            dy_au = np.array([y_au[i], y_au[i + 1]])
+
+            if mx < x_fade_start:
+                # do not plot anything
+                fade_alpha = 0.0
+            elif x_fade_start <= mx < x_fade_stop:
+                # fade
+                fade_alpha = np.interp(
+                    x=mx,
+                    xp=[x_fade_start, x_fade_stop],
+                    fp=[0.0, 1.0],
+                )
+            else:
+                fade_alpha = 1.0
+
+            print(i, mx, fade_alpha)
+
+            ax.fill_between(
+                x=dx,
+                y1=dy - dy_au,
+                y2=dy + dy_au,
+                alpha=fill_alpha * fade_alpha,
+                label=fill_label,
+                **kwargs,
+            )
+            if i == len(x) - 2:
+                iline_label = line_label
+            else:
+                iline_label = None
+            ax.plot(
+                dx,
+                dy,
+                alpha=line_alpha * fade_alpha,
+                label=iline_label,
+                **kwargs,
+            )
+
+    else:
+        ax.fill_between(
+            x=x,
+            y1=y - y_au,
+            y2=y + y_au,
+            alpha=fill_alpha,
+            label=fill_label,
+            **kwargs,
+        )
+        ax.plot(x, y, alpha=line_alpha, label=line_label, **kwargs)
 
 
 RATE_CONTRIBUTIONS = [ck for ck in res.COSMIC_RAYS] + ["night_sky_background"]
 
 trigger_modi_style = {
-    "far_accepting_focus": {"linestyle": "-", "alpha": 0.2},
+    "far_accepting_focus": {"linestyle": ":", "alpha": 0.33},
     "far_accepting_focus_and_near_rejecting_focus": {
         "linestyle": "-",
         "alpha": 1.0,
     },
 }
 
+
+fadeout_x_below = [95, 140]
 
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
@@ -105,6 +157,7 @@ for zd in range(zenith_bin["num"]):
             y_au=total_rate_au[tk],
             color=SUM_COLOR,
             label="night sky + cosmic rays",
+            fadeout_x_below=fadeout_x_below,
             **trigger_modi_style[tk],
         )
 
@@ -118,7 +171,7 @@ for zd in range(zenith_bin["num"]):
             **trigger_modi_style[tk],
         )
 
-        for ck in res.COSMIC_RAYS:
+        for ck in res.PARTICLES:
             ax_plot_au(
                 ax=ax,
                 x=trigger_config["ratescan_thresholds_pe"],
@@ -126,6 +179,7 @@ for zd in range(zenith_bin["num"]):
                 y_au=trigger_rates[zk][ck][tk]["rate_au"],
                 color=res.PARTICLE_COLORS[ck],
                 label=ck,
+                fadeout_x_below=fadeout_x_below,
                 **trigger_modi_style[tk],
             )
 
