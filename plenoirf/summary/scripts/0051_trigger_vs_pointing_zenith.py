@@ -19,7 +19,7 @@ res.start(sebplt=sebplt)
 energy_bin = res.energy_binning(key="5_bins_per_decade")
 zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
 
-trigger = res.trigger
+trigger_config = res.trigger
 
 ttt_cache_path = opj(res.paths["cache_dir"], "ttt")
 if not os.path.exists(ttt_cache_path):
@@ -31,7 +31,7 @@ if not os.path.exists(ttt_cache_path):
             shape=(
                 zenith_bin["num"],
                 energy_bin["num"],
-                trigger["foci_bin"]["num"],
+                trigger_config["foci_bin"]["num"],
             )
         )
         tpk["num_thrown"] = np.zeros(
@@ -44,8 +44,8 @@ if not os.path.exists(ttt_cache_path):
         for zbin in range(zenith_bin["num"]):
             ZENITH_CORRECTED_TRIGGER_THRESHOLD_PE = irf.light_field_trigger.get_trigger_threshold_corrected_for_pointing_zenith(
                 pointing_zenith_rad=zenith_bin["centers"][zbin],
-                trigger=trigger,
-                nominal_threshold_pe=trigger["threshold_pe"],
+                trigger=trigger_config,
+                nominal_threshold_pe=trigger_config["threshold_pe"],
             )
 
             for ebin in range(energy_bin["num"]):
@@ -65,10 +65,13 @@ if not os.path.exists(ttt_cache_path):
                 tpk["num_thrown"][zbin][ebin] = num_energy_zenith
 
                 trigger_in_energy_zenith = np.zeros(
-                    shape=(num_energy_zenith, trigger["foci_bin"]["num"]),
+                    shape=(
+                        num_energy_zenith,
+                        trigger_config["foci_bin"]["num"],
+                    ),
                     dtype=bool,
                 )
-                for fbin in range(trigger["foci_bin"]["num"]):
+                for fbin in range(trigger_config["foci_bin"]["num"]):
                     fkey = f"focus_{fbin:02d}_response_pe"
                     trigger_in_energy_zenith[:, fbin] = (
                         table["trigger"][fkey]
@@ -126,7 +129,7 @@ for pk in ttt:
 
         _pcm_confusion = ax_c.pcolormesh(
             energy_bin["edges"],
-            trigger["foci_bin"]["edges"],
+            trigger_config["foci_bin"]["edges"],
             np.transpose(ratio),
             cmap=cmap[pk],
             norm=sebplt.plt_colors.PowerNorm(gamma=1.0),
@@ -237,18 +240,18 @@ for pk in res.PARTICLES:
             if not np.any(np.isnan(bin_counts)) and np.sum(bin_counts) > 0:
                 qqq[pk][zbin][ebin] = binning_utils.quantile(
                     bin_counts=bin_counts,
-                    bin_edges=trigger["foci_bin"]["edges"],
+                    bin_edges=trigger_config["foci_bin"]["edges"],
                     q=0.5,
                 )
 
 
-yticks = trigger["foci_bin"]["edges"]
+yticks = trigger_config["foci_bin"]["edges"]
 ytick_labels = [f"{depth:.0f}" for depth in yticks]
 
 fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
 ax = sebplt.add_axes(fig=fig, span=irf.summary.figure.AX_SPAN)
 ax.set_xlim(energy_bin["limits"])
-ax.set_ylim(trigger["foci_bin"]["limits"])
+ax.set_ylim(trigger_config["foci_bin"]["limits"])
 ax.grid(color="k", linestyle="-", linewidth=0.66, alpha=0.1)
 ax.set_xlabel("energy / GeV")
 ax.set_ylabel("object distance / m")
