@@ -11,7 +11,7 @@ res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
 zenith_bin = res.zenith_binning(key="3_bins_per_45deg")
-trigger = res.trigger
+trigger_config = res.trigger
 
 
 fig = sebplt.figure(irf.summary.figure.FIGURE_STYLE)
@@ -21,8 +21,8 @@ ax.plot(
     np.rad2deg(x_zd_rad),
     irf.light_field_trigger.get_trigger_threshold_corrected_for_pointing_zenith(
         pointing_zenith_rad=x_zd_rad,
-        trigger=trigger,
-        nominal_threshold_pe=trigger["threshold_pe"],
+        trigger=trigger_config,
+        nominal_threshold_pe=trigger_config["threshold_pe"],
     ),
     color="black",
 )
@@ -44,7 +44,7 @@ accepting_response_pe = np.geomspace(1e2, 1e6, 1337)
 ax.plot(
     accepting_response_pe,
     irf.light_field_trigger.get_accepting_over_rejecting(
-        trigger=trigger,
+        trigger=trigger_config,
         accepting_response_pe=accepting_response_pe,
     ),
     color="black",
@@ -53,7 +53,7 @@ ax.set_xlabel("accepting focus response / photo electrons")
 ax.set_ylabel("accepting over rejecting ratio / 1")
 ax.set_xlim([min(accepting_response_pe), max(accepting_response_pe)])
 ax.semilogx()
-ax.axvline(x=trigger["threshold_pe"], color="gray", linestyle="--")
+ax.axvline(x=trigger_config["threshold_pe"], color="gray", linestyle="--")
 fig.savefig(
     opj(
         res.paths["out_dir"],
