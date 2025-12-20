@@ -13,7 +13,7 @@ import propagate_uncertainties as pru
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-trigger = res.trigger
+trigger_config = res.trigger
 TRIGGER_MODI = json_utils.read(
     opj(res.paths["analysis_dir"], "0055_passing_trigger", "trigger_modi.json")
 )
@@ -30,7 +30,7 @@ nsb_rates = json_utils.tree.Tree(
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 
-num_trigger_thresholds = len(trigger["ratescan_thresholds_pe"])
+num_trigger_thresholds = len(trigger_config["ratescan_thresholds_pe"])
 
 for zd in range(zenith_bin["num"]):
     zk = f"zd{zd:d}"
