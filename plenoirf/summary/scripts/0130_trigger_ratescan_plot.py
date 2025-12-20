@@ -72,8 +72,6 @@ def ax_plot_au(
             else:
                 fade_alpha = 1.0
 
-            print(i, mx, fade_alpha)
-
             ax.fill_between(
                 x=dx,
                 y1=dy - dy_au,
