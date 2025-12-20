@@ -13,7 +13,7 @@ import propagate_uncertainties as pru
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-trigger = res.trigger
+trigger_config = res.trigger
 zenith_bin = res.zenith_binning("3_bins_per_45deg")
 
 TRIGGER_MODI = json_utils.read(
@@ -24,7 +24,7 @@ trigger_rates = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0128_trigger_rates_total")
 )
 
-num_trigger_thresholds = len(trigger["ratescan_thresholds_pe"])
+num_trigger_thresholds = len(trigger_config["ratescan_thresholds_pe"])
 
 NSB_COLOR = "peru"
 SUM_COLOR = "olive"
@@ -100,7 +100,7 @@ for zd in range(zenith_bin["num"]):
     for tk in TRIGGER_MODI:
         ax_plot_au(
             ax=ax,
-            x=trigger["ratescan_thresholds_pe"],
+            x=trigger_config["ratescan_thresholds_pe"],
             y=total_rate[tk],
             y_au=total_rate_au[tk],
             color=SUM_COLOR,
@@ -110,7 +110,7 @@ for zd in range(zenith_bin["num"]):
 
         ax_plot_au(
             ax=ax,
-            x=trigger["ratescan_thresholds_pe"],
+            x=trigger_config["ratescan_thresholds_pe"],
             y=trigger_rates[zk]["night_sky_background"][tk]["rate"],
             y_au=trigger_rates[zk]["night_sky_background"][tk]["rate_au"],
             color=NSB_COLOR,
@@ -121,7 +121,7 @@ for zd in range(zenith_bin["num"]):
         for ck in res.COSMIC_RAYS:
             ax_plot_au(
                 ax=ax,
-                x=trigger["ratescan_thresholds_pe"],
+                x=trigger_config["ratescan_thresholds_pe"],
                 y=trigger_rates[zk][ck][tk]["rate"],
                 y_au=trigger_rates[zk][ck][tk]["rate_au"],
                 color=res.PARTICLE_COLORS[ck],
@@ -137,8 +137,8 @@ for zd in range(zenith_bin["num"]):
 
     zenith_corrected_threshold_pe = irf.light_field_trigger.get_trigger_threshold_corrected_for_pointing_zenith(
         pointing_zenith_rad=zenith_bin["centers"][zd],
-        trigger=trigger,
-        nominal_threshold_pe=trigger["threshold_pe"],
+        trigger=trigger_config,
+        nominal_threshold_pe=trigger_config["threshold_pe"],
     )
 
     ax.axvline(
