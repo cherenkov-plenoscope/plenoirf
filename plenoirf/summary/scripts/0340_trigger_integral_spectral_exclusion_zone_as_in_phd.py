@@ -18,16 +18,16 @@ res.start(sebplt=sebplt)
 TRIGGER = res.trigger
 
 """
-In Sebastian's phd-thesis, the trigger-rate for gamma-rays was estiamted by
-taking the overall acceptance for gamma-rays from a  point-source and
-multiplying it with the PSF-containment-factor of 0.68.
+In Sebastian's PhD. thesis, the trigger rate for gamma rays was estiamted by
+taking the overall acceptance for gamma rays from a point source and
+multiplying it with the PSF containment factor of 0.68.
 
-Cosmic-ray background only included protons and leptons, but nu Helium.
-The trigger-rate for cosmic-rays was based on the acceptance over the entire
+Cosmic ray background only included protons and leptons, but nu Helium.
+The trigger rate for cosmic rays was based on the acceptance over the entire
 field-of-view and multiplied by the ratio of the entire field-of-view's
 solid angle over the onregions's solid angle.
 
-The psf-enclosure-radius was only 0.31 deg as there was no magnetic deflection.
+The psf enclosure radius was only 0.31 deg as there was no magnetic deflection.
 """
 ZK = "zd0"
 PHD_PSF_RADIUS_DEG = 0.31
