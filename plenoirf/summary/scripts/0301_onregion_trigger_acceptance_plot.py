@@ -20,6 +20,7 @@ A = json_utils.tree.Tree(
         "0100_trigger_acceptance_for_cosmic_particles",
     )
 )
+tk = "far_accepting_focus_and_near_rejecting_focus"
 
 # trigger fix onregion
 # --------------------
@@ -95,9 +96,9 @@ for zd in range(zenith_bin["num"]):
 
     for pk in res.PARTICLES:
         for gk in irf.summary.figure.SOURCES:
-            acc_trg = A[zk][pk][gk]["mean"][idx_trigger_threshold]
+            acc_trg = A[zk][pk][tk][gk]["mean"][idx_trigger_threshold]
 
-            acc_trg_au = A[zk][pk][gk]["absolute_uncertainty"][
+            acc_trg_au = A[zk][pk][tk][gk]["absolute_uncertainty"][
                 idx_trigger_threshold
             ]
 
