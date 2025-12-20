@@ -15,7 +15,7 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
-TRIGGER = res.trigger
+trigger_config = res.trigger
 
 """
 In Sebastian's PhD. thesis, the trigger rate for gamma rays was estiamted by
@@ -73,8 +73,8 @@ FOV_RADIUS_DEG = (
 onregion_over_all_fov_ratio = PHD_PSF_RADIUS_DEG**2 / FOV_RADIUS_DEG**2
 
 
-trigger_thresholds = np.array(TRIGGER["ratescan_thresholds_pe"])
-analysis_trigger_threshold = TRIGGER["threshold_pe"]
+trigger_thresholds = np.array(trigger_config["ratescan_thresholds_pe"])
+analysis_trigger_threshold = trigger_config["threshold_pe"]
 trigger_threshold_key = np.where(
     trigger_thresholds == analysis_trigger_threshold
 )[0][0]
