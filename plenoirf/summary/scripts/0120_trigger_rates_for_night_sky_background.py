@@ -28,7 +28,7 @@ NUM_TIME_SLICES_PER_EVENT = (
 EXPOSURE_TIME_PER_EVENT = NUM_TIME_SLICES_PER_EVENT * TIME_SLICE_DURATION
 EXPOSURE_TIME_PER_EVENT_AU = 0.0
 
-trigger = res.trigger
+trigger_config = res.trigger
 TRIGGER_MODI = json_utils.read(
     opj(res.paths["analysis_dir"], "0055_passing_trigger", "trigger_modi.json")
 )
@@ -39,7 +39,7 @@ for trigger_modus in TRIGGER_MODI:
         trigger_mode_key=trigger_modus,
     )
 
-num_thresholds = len(trigger["ratescan_thresholds_pe"])
+num_thresholds = len(trigger_config["ratescan_thresholds_pe"])
 
 
 for trigger_modus in passing_trigger:
@@ -82,7 +82,7 @@ for trigger_modus in passing_trigger:
             nsb[zk]["num_exposures"] += len(uid_nsb)
 
             for tt in range(num_thresholds):
-                threshold_pe = trigger["ratescan_thresholds_pe"][tt]
+                threshold_pe = trigger_config["ratescan_thresholds_pe"][tt]
 
                 print(trigger_modus, pk, zd, tt)
 
