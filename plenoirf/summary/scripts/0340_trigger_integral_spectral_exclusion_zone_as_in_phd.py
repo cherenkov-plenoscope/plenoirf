@@ -15,10 +15,13 @@ import json_utils
 res = irf.summary.ScriptResources.from_argv(sys.argv)
 res.start(sebplt=sebplt)
 
+trigger_mode = "far_accepting_focus"
 trigger_config = res.trigger
 
+energy_bin = res.energy_binning(key="10_bins_per_decade")
+
 """
-In Sebastian's PhD. thesis, the trigger rate for gamma rays was estiamted by
+In Sebastian's Ph.D. thesis, the trigger rate for gamma rays was estiamted by
 taking the overall acceptance for gamma rays from a point source and
 multiplying it with the PSF containment factor of 0.68.
 
@@ -80,7 +83,7 @@ trigger_threshold_key = np.where(
 )[0][0]
 
 electron_rate_onregion = (
-    all_fov_rates[ZK]["electron"]["integral_rate"]["mean"][
+    all_fov_rates[ZK]["electron"][trigger_mode]["integral_rate"]["mean"][
         trigger_threshold_key
     ]
     * onregion_over_all_fov_ratio
@@ -89,7 +92,9 @@ electron_rate_onregion = (
 cosmic_ray_rate_onregion = 0
 for ck in PHD_COSMIC_RAY_KEYS:
     cosmic_ray_rate_onregion += (
-        all_fov_rates[ZK][ck]["integral_rate"]["mean"][trigger_threshold_key]
+        all_fov_rates[ZK][ck][trigger_mode]["integral_rate"]["mean"][
+            trigger_threshold_key
+        ]
         * onregion_over_all_fov_ratio
     )
 
@@ -132,13 +137,18 @@ components.append(com)
 # ----------
 all_fov_gamma_effective_area_m2 = (
     np.array(
-        all_fov_acceptance[ZK]["gamma"]["point"]["mean"][trigger_threshold_key]
+        all_fov_acceptance[ZK]["gamma"][trigger_mode]["point"]["mean"][
+            trigger_threshold_key
+        ]
     )
     * PHD_PSF_CONTAINMENT_FACTOR
 )
 
-all_fov_energy_bin_edges = np.array(
-    all_fov_acceptance[ZK]["gamma"]["point"]["energy_bin_edges_GeV"]
+assert (
+    energy_bin["num"]
+    == all_fov_acceptance["zd0"]["gamma"][trigger_mode]["point"]["mean"].shape[
+        1
+    ]
 )
 
 (
@@ -161,7 +171,7 @@ all_fov_energy_bin_edges = np.array(
     isez_differential_flux_per_GeV_per_m2_per_s,
 ) = flux_sensitivity.integral.estimate_spectral_exclusion_zone(
     signal_area_m2=all_fov_gamma_effective_area_m2,
-    energy_bin_edges_GeV=all_fov_energy_bin_edges,
+    energy_bin_edges_GeV=energy_bin["edges"],
     critical_signal_rate_per_s=critical_signal_rate_per_s,
     power_law_spectral_indices=np.linspace(start=-5, stop=-0.5, num=137),
     power_law_pivot_energy_GeV=1.0,
