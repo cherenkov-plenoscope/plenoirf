@@ -17,6 +17,13 @@ cosmic_rates = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles")
 )
 
+trigger_mode_accepting_only_threshold_correction = json_utils.tree.Tree(
+    opj(
+        res.paths["analysis_dir"],
+        "0111_find_trigger_threshold_for_accepting_only_mode_to_match_rates_in_rejecting_mode",
+    )
+)
+
 TRIGGER_MODI = json_utils.read(
     opj(res.paths["analysis_dir"], "0055_passing_trigger", "trigger_modi.json")
 )
@@ -31,17 +38,18 @@ analysis_trigger_threshold = res.analysis["trigger"]["threshold_pe"]
 
 
 for tk in TRIGGER_MODI:
-
-    tt = irf.utils.find_closest_index_in_array_for_value(
-        arr=trigger_thresholds,
-        val=analysis_trigger_threshold,
-    )
-    if tk == "far_accepting_focus":
-        tt += 18  # roughly same total trigger rate
-
     os.makedirs(opj(res.paths["out_dir"], tk))
     for zd in range(zenith_bin["num"]):
         zk = f"zd{zd:d}"
+
+        tt = irf.utils.find_closest_index_in_array_for_value(
+            arr=trigger_thresholds,
+            val=analysis_trigger_threshold,
+        )
+        if tk == "far_accepting_focus":
+            tt = trigger_mode_accepting_only_threshold_correction[zk]["lower"][
+                "index"
+            ]
 
         sfig, sax = irf.summary.figure.style(key="4:3")
         fig = sebplt.figure(sfig)
