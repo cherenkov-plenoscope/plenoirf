@@ -18,9 +18,6 @@ cosmic_rates = json_utils.tree.Tree(
     opj(res.paths["analysis_dir"], "0105_trigger_rates_for_cosmic_particles")
 )
 
-cosmic_rates["zd0"]["gamma"]["far_accepting_focus"]["integral_rate"]["mean"]
-
-
 TRIGGER_MODI = json_utils.read(
     opj(res.paths["analysis_dir"], "0055_passing_trigger", "trigger_modi.json")
 )
