@@ -32,10 +32,10 @@ analysis_trigger_threshold = res.analysis["trigger"]["threshold_pe"]
 
 for tk in TRIGGER_MODI:
 
-    tt = 0
-    for tt, trigger_threshold in enumerate(trigger_thresholds):
-        if trigger_threshold == analysis_trigger_threshold:
-            break
+    tt = irf.utils.find_closest_index_in_array_for_value(
+        arr=trigger_thresholds,
+        val=analysis_trigger_threshold,
+    )
     if tk == "far_accepting_focus":
         tt += 18  # roughly same total trigger rate
 
