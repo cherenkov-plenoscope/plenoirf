@@ -89,8 +89,10 @@ def _by_run_make_jobs_instrument_site_particle(
         particle_key=particle_key,
     )
 
-    if os.path.exists(reduce_dir) and lazy:
-        print(f"skipping: '{reduce_dir:s}'")
+    reduce_tmp_dir = os.path.join(reduce_dir, _by_run_temporary_dir())
+
+    if os.path.exists(reduce_tmp_dir) and lazy:
+        print(f"skipping: '{reduce_tmp_dir:s}'")
         empty_jobs = []
         return empty_jobs
 
@@ -181,30 +183,27 @@ def by_topic_make_jobs(
                     particle_key=particle_key,
                 )
 
-                if os.path.exists(reduce_dir) and lazy:
-                    print(f"skipping: '{reduce_dir:s}'")
-                else:
-                    temporary_run_reduction_dirs = (
-                        _by_topic_find_temporary_run_reduction_dirs(
-                            reduce_dir=reduce_dir
-                        )
+                temporary_run_reduction_dirs = (
+                    _by_topic_find_temporary_run_reduction_dirs(
+                        reduce_dir=reduce_dir
                     )
-                    topics_in_paths = _by_topic_make_in_paths(
-                        temporary_run_reduction_dirs=temporary_run_reduction_dirs
-                    )
+                )
+                topics_in_paths = _by_topic_make_in_paths(
+                    temporary_run_reduction_dirs=temporary_run_reduction_dirs
+                )
 
-                    for topic_key in by_topic.list_topic_filenames():
-                        if len(topics_in_paths[topic_key]) > 0:
-                            job = {}
-                            job["topic_key"] = topic_key
-                            job["out_path"] = opj(reduce_dir, topic_key)
-                            job["memory_config"] = memory_config
-                            job["in_paths"] = topics_in_paths[topic_key]
+                for topic_key in by_topic.list_topic_filenames():
+                    if len(topics_in_paths[topic_key]) > 0:
+                        job = {}
+                        job["topic_key"] = topic_key
+                        job["out_path"] = opj(reduce_dir, topic_key)
+                        job["memory_config"] = memory_config
+                        job["in_paths"] = topics_in_paths[topic_key]
 
-                            if os.path.exists(job["out_path"]) and lazy:
-                                print(f"skipping: '{job['out_path']:s}'")
-                            else:
-                                jobs.append(job)
+                        if os.path.exists(job["out_path"]) and lazy:
+                            print(f"skipping: '{job['out_path']:s}'")
+                        else:
+                            jobs.append(job)
     return jobs
 
 
