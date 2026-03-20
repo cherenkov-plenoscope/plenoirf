@@ -10,6 +10,7 @@ import sparse_numeric_table as snt
 import glob
 import json_utils
 
+import rename_after_writing as rnw
 import atmospheric_cherenkov_response
 import merlict_development_kit_python
 import solid_angle_utils

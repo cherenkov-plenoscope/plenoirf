@@ -15,6 +15,7 @@ def init(
     event_table_path,
     zenith_bin_edges,
     energy_bin_edges,
+    use_tmp_dir=False,
 ):
     zenith_bin_edges = np.asarray(zenith_bin_edges, dtype=np.float64)
     energy_bin_edges = np.asarray(energy_bin_edges, dtype=np.float64)
@@ -33,16 +34,23 @@ def init(
         energy_bin_edges=energy_bin_edges,
     )
 
-    _populate(work_dir=path, event_table_path=event_table_path)
+    _populate(
+        work_dir=path,
+        event_table_path=event_table_path,
+        use_tmp_dir=use_tmp_dir,
+    )
 
 
-def _populate(work_dir, event_table_path, config=None):
+def _populate(work_dir, event_table_path, config=None, use_tmp_dir=False):
     config = search_index_utils.read_config_if_None(
         work_dir=work_dir, config=config
     )
     bins_path = os.path.join(work_dir, "bins")
 
-    with tempfile.TemporaryDirectory(prefix="plenoirf_") as tmp_dir:
+    _tmp_dir = None if use_tmp_dir else work_dir
+    with tempfile.TemporaryDirectory(
+        prefix="plenoirf.event_table.search_index._populate.", dir=_tmp_dir
+    ) as tmp_dir:
         bin_assignment_path = os.path.join(
             tmp_dir, "uid_zenith_energy_bin.uid-u8.zd-u1.en-u1"
         )
@@ -51,6 +59,7 @@ def _populate(work_dir, event_table_path, config=None):
             zenith_bin_edges=config["zenith_bin"]["edges"],
             energy_bin_edges=config["energy_bin"]["edges"],
             bin_assignment_path=bin_assignment_path,
+            use_tmp_dir=use_tmp_dir,
         )
 
         tmp_stage_path = os.path.join(tmp_dir, "stage")
@@ -139,8 +148,13 @@ def make_bin_assignment(
     zenith_bin_edges,
     energy_bin_edges,
     bin_assignment_path,
+    use_tmp_dir=False,
 ):
-    with tempfile.TemporaryDirectory(prefix="plenoirf_") as tmp_dir:
+    _tmp_dir = None if use_tmp_dir else os.path.dirname(bin_assignment_path)
+    with tempfile.TemporaryDirectory(
+        prefix="plenoirf.event_table.search_index.make_bin_assignment.",
+        dir=_tmp_dir,
+    ) as tmp_dir:
         zenith_bin_assignment_path = os.path.join(
             tmp_dir, "uid_zenith_bin.recarray"
         )
