@@ -123,7 +123,7 @@ class Reader:
         with self.zip.open(filename) as f:
             payload_gz = f.read()
         payload = gzip.decompress(payload_gz)
-        return np.fromstring(payload, dtype=self.record_dtype)
+        return np.frombuffer(payload, dtype=self.record_dtype)
 
     def _read_by_uid(self, uid):
         run_id, event_id = bookkeeping.uid.split_uid(uid)
