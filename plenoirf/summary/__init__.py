@@ -422,12 +422,14 @@ def init(plenoirf_dir, instrument_key, site_key, config=None):
         )
         search_index_path = os.path.join(_event_tables_dir, particle_key)
 
-        event_table.search_index.init(
-            path=search_index_path,
-            event_table_path=event_table_path,
-            zenith_bin_edges=zenith_bin["edges"],
-            energy_bin_edges=energy_bin["edges"],
-        )
+        if not os.path.exists(search_index_path):
+            with rnw.Path(search_index_path) as part_search_index_path:
+                event_table.search_index.init(
+                    path=part_search_index_path,
+                    event_table_path=event_table_path,
+                    zenith_bin_edges=zenith_bin["edges"],
+                    energy_bin_edges=energy_bin["edges"],
+                )
 
 
 def production_name_from_run_dir(path):
