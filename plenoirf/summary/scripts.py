@@ -195,7 +195,7 @@ def run(
     pool=None,
     polling_interval=1.0,
     num_threads=None,
-    skip_when_script_out_dir_exists=False,
+    skip_when_script_out_dir_exists=True,
 ):
     if num_threads is None:
         num_threads = _safe_cpu_count()
