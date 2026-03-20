@@ -234,7 +234,6 @@ def explore_focus_ratios(
 with rnw.open(opj(res.paths["out_dir"], "trigger_modi.json"), mode="wt") as f:
     f.write(json_utils.dumps(TRIGGER_MODI, indent=4))
 
-cc = input("STOP")
 
 rtsc_dtypes = {}
 for irs in range(len(trigger["ratescan_thresholds_pe"])):
