@@ -2,6 +2,7 @@
 import sys
 import plenoirf as irf
 import os
+import numpy as np
 from os.path import join as opj
 import json_utils
 import cosmic_fluxes
